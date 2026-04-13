@@ -1,0 +1,39 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+  batch:
+    jdbc:
+      initialize-schema: always
+    job:
+      enabled: false
+  mail:
+    host: localhost
+    port: 25
+
+jwt:
+  secret: integration-test-secret-key-must-be-at-least-256-bits-long-for-hmac
+  access-token-expiration: 7200000
+  refresh-token-expiration: 604800000
+
+encryption:
+  key: integration-test-encryption-key-32b
+
+docxtemplater:
+  service-url: http://localhost:3000
+
+oauth2:
+  enabled: false
+
+logging:
+  level:
+    com.docgen: DEBUG
+    org.springframework.security: DEBUG

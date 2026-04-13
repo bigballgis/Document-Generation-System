@@ -1,0 +1,28 @@
+{
+  "name": "docxtemplater-service",
+  "version": "1.0.0",
+  "description": "Docxtemplater rendering service with LibreOffice PDF conversion and expression sandbox",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "jest --run-in-band --forceExit",
+    "test:watch": "jest --watch"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "docxtemplater": "^3.48.0",
+    "pizzip": "^3.1.7",
+    "docxtemplater-image-module-free": "^1.1.1",
+    "@formulajs/formulajs": "^4.4.3",
+    "minio": "^8.0.2",
+    "bwip-js": "^4.5.1",
+    "qrcode": "^1.5.4"
+  },
+  "optionalDependencies": {
+    "isolated-vm": "^5.0.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "fast-check": "^3.22.0"
+  }
+}

@@ -1,0 +1,57 @@
+server {
+    listen 80;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Docker 内置 DNS resolver
+    resolver 127.0.0.11 valid=30s;
+
+    # 代理超时配置（支持大文档生成长请求）
+    proxy_connect_timeout 60s;
+    proxy_read_timeout 300s;
+    proxy_send_timeout 60s;
+
+    # 通用代理头
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+
+    # API 反向代理
+    location /api/ {
+        set $backend ${BACKEND_URL};
+        proxy_pass $backend;
+    }
+
+    # Actuator 端点
+    location /actuator/ {
+        set $backend ${BACKEND_URL};
+        proxy_pass $backend;
+    }
+
+    # Swagger / API 文档
+    location /swagger-ui.html {
+        set $backend ${BACKEND_URL};
+        proxy_pass $backend;
+    }
+    location /api-docs/ {
+        set $backend ${BACKEND_URL};
+        proxy_pass $backend;
+    }
+    location /swagger-ui/ {
+        set $backend ${BACKEND_URL};
+        proxy_pass $backend;
+    }
+
+    # Vue Router history 模式
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # 静态资源缓存（Vite 构建产物带 hash，可长期缓存）
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff2?)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}

@@ -1,0 +1,165 @@
+services:
+  # Vue 3 前端应用（Nginx）
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_ONLYOFFICE_URL: ${VITE_ONLYOFFICE_URL:-http://localhost:8088}
+        VITE_BACKEND_INTERNAL_URL: ${VITE_BACKEND_INTERNAL_URL:-http://app:8080}
+    image: docgen-frontend:latest
+    ports:
+      - "80:80"
+    environment:
+      - BACKEND_URL=http://app:8080
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Spring Boot 主应用
+  app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.local
+    image: docgen-app:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=docgen
+      - DB_USERNAME=docgen
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - DOCXTEMPLATER_SERVICE_URL=http://docxtemplater:3000
+      - ONLYOFFICE_URL=http://onlyoffice
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - MAIL_HOST=${MAIL_HOST:-smtp.example.com}
+      - MAIL_PORT=${MAIL_PORT:-587}
+      - MAIL_USERNAME=${MAIL_USERNAME:-}
+      - MAIL_PASSWORD=${MAIL_PASSWORD:-}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      docxtemplater:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Node.js Docxtemplater 服务（含 LibreOffice）
+  docxtemplater:
+    build:
+      context: ./docxtemplater-service
+      dockerfile: Dockerfile
+    image: docgen-docxtemplater:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - SANDBOX_TIMEOUT=${SANDBOX_TIMEOUT:-5000}
+      - SANDBOX_MEMORY_LIMIT=${SANDBOX_MEMORY_LIMIT:-64}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      minio:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # OnlyOffice Document Server
+  onlyoffice:
+    image: onlyoffice/documentserver:latest
+    pull_policy: never
+    ports:
+      - "8443:443"
+      - "8088:80"
+    environment:
+      - JWT_ENABLED=false
+      # Allow OnlyOffice to download from Docker internal network (MinIO/backend private IPs)
+      - ALLOW_PRIVATE_IP_ADDRESS=true
+      - ALLOW_META_IP_ADDRESS=true
+    volumes:
+      - onlyoffice_data:/var/www/onlyoffice/Data
+    depends_on:
+      - app
+      - minio
+    restart: unless-stopped
+
+  # PostgreSQL 数据库
+  postgres:
+    image: postgres:16.5
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=docgen
+      - POSTGRES_USER=docgen
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docgen -d docgen"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # Redis 缓存
+  redis:
+    image: redis:7.2-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  # MinIO 对象存储
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY}
+      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  onlyoffice_data:

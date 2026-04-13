@@ -1,0 +1,19 @@
+{
+  "enabled": true,
+  "name": "Code Quality Review on Save",
+  "description": "Analyzes modified source code files for potential improvements when changes are saved. Reviews for code smells, design pattern opportunities, best practices, readability, maintainability, and performance optimizations while preserving existing functionality.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "*.java",
+      "*.ts",
+      "*.vue",
+      "*.js"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Analyze the modified source code file for potential improvements. Focus on:\n\n1. **Code Smells**: Identify any anti-patterns, duplicated logic, overly complex methods, long parameter lists, or god classes.\n2. **Design Patterns**: Suggest applicable design patterns that could improve the code structure (e.g., Strategy, Factory, Observer).\n3. **Best Practices**: Check adherence to project coding standards — constructor injection, proper use of @Transactional, DTO patterns, validation annotations, i18n usage, and Composition API conventions.\n4. **Readability**: Flag unclear naming, missing or misleading comments, inconsistent formatting, or overly nested logic.\n5. **Maintainability**: Identify tight coupling, missing abstractions, or areas where the code could be more modular.\n6. **Performance**: Spot potential N+1 queries, unnecessary object creation, missing indexes hints, inefficient collection operations, or opportunities for caching.\n\nProvide concise, actionable suggestions. Do not suggest changes that would alter existing functionality. Prioritize the most impactful improvements."
+  }
+}

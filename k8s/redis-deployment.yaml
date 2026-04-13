@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: docgen-redis
+  namespace: docgen
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: docgen-redis
+  template:
+    metadata:
+      labels:
+        app: docgen-redis
+    spec:
+      containers:
+        - name: redis
+          # TODO: 替换为公司私有镜像仓库地址
+          image: redis:7.2-alpine
+          ports:
+            - containerPort: 6379
+          command: ["redis-server", "--requirepass", "$(REDIS_PASSWORD)"]
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: docgen-secrets
+                  key: REDIS_PASSWORD
+          livenessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
+      volumes:
+        - name: redis-data
+          persistentVolumeClaim:
+            claimName: docgen-redis-pvc

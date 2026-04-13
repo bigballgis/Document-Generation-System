@@ -1,0 +1,26 @@
+{
+  "enabled": true,
+  "name": "Sync Docs on Source Change",
+  "description": "When source files (Java, Vue, TypeScript, JavaScript, SQL migrations, Dockerfiles, YAML configs, or pom.xml/package.json) are edited, ask the agent to review the change and update the README.md or docs/ folder accordingly.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "*.java",
+      "*.vue",
+      "*.ts",
+      "*.js",
+      "*.sql",
+      "*.xml",
+      "*.json",
+      "*.yml",
+      "*.yaml",
+      "Dockerfile",
+      "Dockerfile.*"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A source file was just edited. Review the change and determine if it affects project documentation. If it does, update the README.md at the project root (create it if it doesn't exist) or files in the docs/ folder. Focus on: API endpoint changes, configuration changes, new features, architecture changes, dependency updates, and migration notes. Keep documentation concise and accurate. If the change is trivial (e.g., minor refactoring, formatting) and doesn't affect documentation, do nothing."
+  }
+}

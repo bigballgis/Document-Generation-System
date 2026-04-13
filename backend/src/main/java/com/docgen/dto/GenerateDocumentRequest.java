@@ -1,0 +1,29 @@
+package com.docgen.dto;
+
+import java.util.Map;
+
+/**
+ * Request DTO for synchronous document generation.
+ */
+public class GenerateDocumentRequest {
+
+    /** Runtime parameters passed to data sources and expressions. */
+    private Map<String, Object> parameters;
+
+    /** Output format: WORD, PDF, or BOTH. Defaults to template's configured format. */
+    private String outputFormat;
+
+    /** Storage strategy override: TEMP or PERSISTENT. Defaults to template's configured strategy. */
+    private String storageStrategy;
+
+    public GenerateDocumentRequest() {}
+
+    public Map<String, Object> getParameters() { return parameters; }
+    public void setParameters(Map<String, Object> parameters) { this.parameters = parameters; }
+
+    public String getOutputFormat() { return outputFormat; }
+    public void setOutputFormat(String outputFormat) { this.outputFormat = outputFormat; }
+
+    public String getStorageStrategy() { return storageStrategy; }
+    public void setStorageStrategy(String storageStrategy) { this.storageStrategy = storageStrategy; }
+}

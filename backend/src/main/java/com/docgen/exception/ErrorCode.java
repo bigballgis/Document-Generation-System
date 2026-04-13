@@ -1,0 +1,148 @@
+package com.docgen.exception;
+
+/**
+ * Error code constants organized by module prefix.
+ */
+public final class ErrorCode {
+
+    private ErrorCode() {
+    }
+
+    // ── AUTH (认证授权) ──
+    public static final String AUTH_INVALID_TOKEN = "AUTH_INVALID_TOKEN";
+    public static final String AUTH_TOKEN_EXPIRED = "AUTH_TOKEN_EXPIRED";
+    public static final String AUTH_ACCOUNT_LOCKED = "AUTH_ACCOUNT_LOCKED";
+    public static final String AUTH_ACCESS_DENIED = "AUTH_ACCESS_DENIED";
+    public static final String AUTH_INVALID_CREDENTIALS = "AUTH_INVALID_CREDENTIALS";
+
+    // ── TENANT (租户管理) ──
+    public static final String TENANT_NOT_FOUND = "TENANT_NOT_FOUND";
+    public static final String TENANT_DISABLED = "TENANT_DISABLED";
+    public static final String TENANT_QUOTA_EXCEEDED = "TENANT_QUOTA_EXCEEDED";
+
+    // ── TEMPLATE (模板管理) ──
+    public static final String TEMPLATE_NOT_FOUND = "TEMPLATE_NOT_FOUND";
+    public static final String TEMPLATE_INVALID_STATE_TRANSITION = "TEMPLATE_INVALID_STATE_TRANSITION";
+    public static final String TEMPLATE_REVIEW_REQUIRED = "TEMPLATE_REVIEW_REQUIRED";
+    public static final String TEMPLATE_ALREADY_EXISTS = "TEMPLATE_ALREADY_EXISTS";
+    public static final String TEMPLATE_VERSION_NOT_FOUND = "TEMPLATE_VERSION_NOT_FOUND";
+
+    // ── DATASOURCE (数据源) ──
+    public static final String DATASOURCE_CONNECTION_FAILED = "DATASOURCE_CONNECTION_FAILED";
+    public static final String DATASOURCE_TIMEOUT = "DATASOURCE_TIMEOUT";
+    public static final String DATASOURCE_NOT_FOUND = "DATASOURCE_NOT_FOUND";
+
+    // ── EXPRESSION (表达式引擎) ──
+    public static final String EXPRESSION_SYNTAX_ERROR = "EXPRESSION_SYNTAX_ERROR";
+    public static final String EXPRESSION_SANDBOX_VIOLATION = "EXPRESSION_SANDBOX_VIOLATION";
+    public static final String EXPRESSION_EVALUATION_FAILED = "EXPRESSION_EVALUATION_FAILED";
+
+    // ── GENERATE (文档生成) ──
+    public static final String GENERATE_FAILED = "GENERATE_FAILED";
+    public static final String GENERATE_TIMEOUT = "GENERATE_TIMEOUT";
+    public static final String GENERATE_RENDER_FAILED = "GENERATE_RENDER_FAILED";
+    public static final String GENERATE_PDF_CONVERSION_FAILED = "GENERATE_PDF_CONVERSION_FAILED";
+    public static final String GENERATE_STORAGE_FAILED = "GENERATE_STORAGE_FAILED";
+    public static final String GENERATE_VERSION_NOT_ALLOWED = "GENERATE_VERSION_NOT_ALLOWED";
+    public static final String GENERATE_BATCH_LIMIT_EXCEEDED = "GENERATE_BATCH_LIMIT_EXCEEDED";
+
+    // ── ASYNC TASK ──
+    public static final String TASK_NOT_FOUND = "TASK_NOT_FOUND";
+    public static final String TASK_NOT_COMPLETED = "TASK_NOT_COMPLETED";
+
+    // ── DOCUMENT (文档管理) ──
+    public static final String DOCUMENT_NOT_FOUND = "DOCUMENT_NOT_FOUND";
+    public static final String DOCUMENT_EXPIRED = "DOCUMENT_EXPIRED";
+    public static final String DOCUMENT_DOWNLOAD_FAILED = "DOCUMENT_DOWNLOAD_FAILED";
+
+    // ── VALIDATION (数据验证) ──
+    public static final String VALIDATION_REQUIRED_FIELD = "VALIDATION_REQUIRED_FIELD";
+    public static final String VALIDATION_TYPE_MISMATCH = "VALIDATION_TYPE_MISMATCH";
+    public static final String VALIDATION_FAILED = "VALIDATION_FAILED";
+
+    // ── RATE_LIMIT (限流) ──
+    public static final String RATE_LIMIT_EXCEEDED = "RATE_LIMIT_EXCEEDED";
+    public static final String RATE_LIMIT_QUOTA_EXHAUSTED = "RATE_LIMIT_QUOTA_EXHAUSTED";
+
+    // ── REVIEW (审查) ──
+    public static final String REVIEW_ALREADY_COMPLETED = "REVIEW_ALREADY_COMPLETED";
+    public static final String REVIEW_NOT_AUTHORIZED = "REVIEW_NOT_AUTHORIZED";
+    public static final String REVIEW_NOT_FOUND = "REVIEW_NOT_FOUND";
+
+    // ── ENCRYPTION (加密) ──
+    public static final String ENCRYPTION_FAILED = "ENCRYPTION_FAILED";
+    public static final String DECRYPTION_FAILED = "DECRYPTION_FAILED";
+    public static final String ENCRYPTION_KEY_INVALID = "ENCRYPTION_KEY_INVALID";
+
+    // ── PIPELINE (数据管道) ──
+    public static final String PIPELINE_STAGE_FAILED = "PIPELINE_STAGE_FAILED";
+    public static final String PIPELINE_CIRCULAR_DEPENDENCY = "PIPELINE_CIRCULAR_DEPENDENCY";
+
+    // ── TEMPLATE VARIABLE (模板变量) ──
+    public static final String TEMPLATE_VARIABLE_NOT_FOUND = "TEMPLATE_VARIABLE_NOT_FOUND";
+    public static final String TEMPLATE_VARIABLE_INVALID_TYPE = "TEMPLATE_VARIABLE_INVALID_TYPE";
+    public static final String TEMPLATE_VARIABLE_SCAN_FAILED = "TEMPLATE_VARIABLE_SCAN_FAILED";
+
+    // ── COVERAGE (覆盖率检查) ──
+    public static final String COVERAGE_CHECK_FAILED = "COVERAGE_CHECK_FAILED";
+    public static final String COVERAGE_BELOW_THRESHOLD = "COVERAGE_BELOW_THRESHOLD";
+
+    // ── IMPORT/EXPORT (导入导出) ──
+    public static final String IMPORT_INVALID_FILE = "IMPORT_INVALID_FILE";
+    public static final String IMPORT_INVALID_CONFIG = "IMPORT_INVALID_CONFIG";
+    public static final String EXPORT_FAILED = "EXPORT_FAILED";
+
+    // ── ONLYOFFICE (在线编辑) ──
+    public static final String ONLYOFFICE_URL_FAILED = "ONLYOFFICE_URL_FAILED";
+    public static final String ONLYOFFICE_CALLBACK_FAILED = "ONLYOFFICE_CALLBACK_FAILED";
+
+    // ── WEBHOOK (Webhook 通知) ──
+    public static final String WEBHOOK_NOT_FOUND = "WEBHOOK_NOT_FOUND";
+    public static final String WEBHOOK_SEND_FAILED = "WEBHOOK_SEND_FAILED";
+
+    // ── SCHEDULED TASK (定时任务) ──
+    public static final String SCHEDULED_TASK_NOT_FOUND = "SCHEDULED_TASK_NOT_FOUND";
+    public static final String SCHEDULED_TASK_INVALID_CRON = "SCHEDULED_TASK_INVALID_CRON";
+    public static final String SCHEDULED_TASK_EXECUTION_FAILED = "SCHEDULED_TASK_EXECUTION_FAILED";
+
+    // ── AUDIT (审计日志) ──
+    public static final String AUDIT_EXPORT_FAILED = "AUDIT_EXPORT_FAILED";
+
+    // ── API KEY (API 密钥) ──
+    public static final String API_KEY_NOT_FOUND = "API_KEY_NOT_FOUND";
+
+    // ── WATERMARK (水印) ──
+    public static final String WATERMARK_FAILED = "WATERMARK_FAILED";
+    public static final String WATERMARK_INVALID_CONFIG = "WATERMARK_INVALID_CONFIG";
+
+    // ── MERGE (文档合并) ──
+    public static final String MERGE_INVALID_REQUEST = "MERGE_INVALID_REQUEST";
+    public static final String MERGE_INVALID_DOCUMENT_IDS = "MERGE_INVALID_DOCUMENT_IDS";
+    public static final String MERGE_FAILED = "MERGE_FAILED";
+
+    // ── TEST CASE (模板测试) ──
+    public static final String TEST_CASE_NOT_FOUND = "TEST_CASE_NOT_FOUND";
+    public static final String TEST_CASE_EXECUTION_FAILED = "TEST_CASE_EXECUTION_FAILED";
+
+    // ── MARKET (模板市场) ──
+    public static final String MARKET_TEMPLATE_NOT_FOUND = "MARKET_TEMPLATE_NOT_FOUND";
+    public static final String MARKET_TEMPLATE_ALREADY_SHARED = "MARKET_TEMPLATE_ALREADY_SHARED";
+
+    // ── SEGMENT (段落管理) ──
+    public static final String SEGMENT_NOT_FOUND = "SEGMENT_NOT_FOUND";
+    public static final String SEGMENT_REFERENCED = "SEGMENT_REFERENCED";
+    public static final String SEGMENT_VERSION_FILE_MISSING = "SEGMENT_VERSION_FILE_MISSING";
+
+    // ── COMPONENT (组件模板) ──
+    public static final String COMPONENT_REFERENCED = "COMPONENT_REFERENCED";
+
+    // ── COMPOSITE TEMPLATE (组合模板) ──
+    public static final String COMPOSITE_TEMPLATE_EMPTY = "COMPOSITE_TEMPLATE_EMPTY";
+    public static final String GENERATE_ALL_SEGMENTS_SKIPPED = "GENERATE_ALL_SEGMENTS_SKIPPED";
+
+    // ── MIGRATION (迁移工具) ──
+    public static final String MIGRATION_FILE_ACCESS_FAILED = "MIGRATION_FILE_ACCESS_FAILED";
+
+    // ── INTERNAL ──
+    public static final String INTERNAL_ERROR = "INTERNAL_ERROR";
+}

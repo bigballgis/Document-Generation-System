@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: docgen-frontend
+  namespace: docgen
+spec:
+  type: ClusterIP
+  selector:
+    app: docgen-frontend
+  ports:
+    - port: 80
+      targetPort: 80

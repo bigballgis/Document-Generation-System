@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+docxtemplater-service/node_modules/
+
+# Build outputs
+backend/target/
+frontend/dist/
+backend/.jqwik-database
+
+# IDE
+.idea/
+*.iml
+
+# Environment
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

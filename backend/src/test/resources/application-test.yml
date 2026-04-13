@@ -1,0 +1,36 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+  flyway:
+    enabled: false
+  batch:
+    jdbc:
+      initialize-schema: embedded
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+minio:
+  endpoint: http://localhost:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket-name: docgen-test
+
+jwt:
+  secret: test-secret-key-for-testing-purposes-only-256bit
+  access-token-expiration: 7200000
+  refresh-token-expiration: 604800000
+
+encryption:
+  key: test-encryption-key-for-testing
+
+docxtemplater:
+  service-url: http://localhost:3000

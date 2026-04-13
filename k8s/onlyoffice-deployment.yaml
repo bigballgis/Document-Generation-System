@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: docgen-onlyoffice
+  namespace: docgen
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: docgen-onlyoffice
+  template:
+    metadata:
+      labels:
+        app: docgen-onlyoffice
+    spec:
+      containers:
+        - name: onlyoffice
+          # TODO: 替换为公司私有镜像仓库地址
+          image: onlyoffice/documentserver:latest
+          ports:
+            - containerPort: 80
+            - containerPort: 443
+          env:
+            - name: JWT_ENABLED
+              value: "true"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: docgen-secrets
+                  key: ONLYOFFICE_JWT_SECRET
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 2
+              memory: 4Gi
+          volumeMounts:
+            - name: onlyoffice-data
+              mountPath: /var/www/onlyoffice/Data
+      volumes:
+        - name: onlyoffice-data
+          persistentVolumeClaim:
+            claimName: docgen-onlyoffice-pvc

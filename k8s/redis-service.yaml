@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: docgen-redis
+  namespace: docgen
+spec:
+  type: ClusterIP
+  selector:
+    app: docgen-redis
+  ports:
+    - port: 6379
+      targetPort: 6379

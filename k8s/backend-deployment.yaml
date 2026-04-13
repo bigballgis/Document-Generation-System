@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: docgen-backend
+  namespace: docgen
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: docgen-backend
+  template:
+    metadata:
+      labels:
+        app: docgen-backend
+    spec:
+      containers:
+        - name: backend
+          # TODO: 替换为公司私有镜像仓库地址
+          image: docgen-backend:latest
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: docgen-config
+            - secretRef:
+                name: docgen-secrets
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: "2"
+              memory: 2Gi

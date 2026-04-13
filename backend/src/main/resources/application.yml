@@ -1,0 +1,142 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: docgen-backend
+
+  # PostgreSQL
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:docgen}
+    username: ${DB_USERNAME:docgen}
+    password: ${DB_PASSWORD:docgen}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:20}
+      minimum-idle: ${DB_POOL_MIN_IDLE:5}
+      idle-timeout: 300000
+      max-lifetime: 600000
+      connection-timeout: 30000
+
+  # JPA
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  # Flyway
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  # Redis
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+      timeout: 5000ms
+
+  # Spring Batch
+  batch:
+    jdbc:
+      initialize-schema: always
+    job:
+      enabled: false
+
+  # Mail
+  mail:
+    host: ${MAIL_HOST:smtp.example.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+# MinIO
+minio:
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  # External endpoint used for presigned URLs (must be reachable by OnlyOffice)
+  external-endpoint: ${MINIO_EXTERNAL_ENDPOINT:${MINIO_ENDPOINT:http://localhost:9000}}
+  access-key: ${MINIO_ACCESS_KEY:minioadmin}
+  secret-key: ${MINIO_SECRET_KEY:minioadmin}
+  bucket-name: ${MINIO_BUCKET:docgen}
+
+# JWT
+jwt:
+  secret: ${JWT_SECRET:your-256-bit-secret-key-change-in-production}
+  access-token-expiration: ${JWT_ACCESS_EXPIRATION:7200000}
+  refresh-token-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+
+# OAuth2 Resource Server (disabled by default)
+oauth2:
+  enabled: ${OAUTH2_ENABLED:false}
+  issuer-uri: ${OAUTH2_ISSUER_URI:}
+  jwk-set-uri: ${OAUTH2_JWK_SET_URI:}
+
+# Encryption
+encryption:
+  key: ${ENCRYPTION_KEY:your-aes-256-encryption-key-change-me}
+
+# Docxtemplater Service
+docxtemplater:
+  service-url: ${DOCXTEMPLATER_SERVICE_URL:http://localhost:3000}
+
+# OnlyOffice
+onlyoffice:
+  url: ${ONLYOFFICE_URL:http://localhost}
+
+# Document Storage
+document:
+  temp-cleanup-hours: ${DOCUMENT_TEMP_CLEANUP_HOURS:24}
+  storage:
+    default-strategy: ${DOCUMENT_STORAGE_STRATEGY:TEMP}
+
+# SpringDoc OpenAPI
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+# Actuator & Monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+  health:
+    db:
+      enabled: true
+    redis:
+      enabled: true
+    diskspace:
+      enabled: true
+
+# External service monitoring
+monitoring:
+  check-interval-ms: ${MONITORING_CHECK_INTERVAL_MS:30000}
+
+# Audit Log
+audit:
+  retention-days: ${AUDIT_RETENTION_DAYS:365}
+
+# Logging
+logging:
+  level:
+    com.docgen: ${LOG_LEVEL:INFO}
+    org.springframework.security: WARN

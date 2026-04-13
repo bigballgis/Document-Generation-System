@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: docgen-docxtemplater
+  namespace: docgen
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: docgen-docxtemplater
+  template:
+    metadata:
+      labels:
+        app: docgen-docxtemplater
+    spec:
+      containers:
+        - name: docxtemplater
+          # TODO: 替换为公司私有镜像仓库地址
+          image: docgen-docxtemplater:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: MINIO_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: docgen-config
+                  key: MINIO_ENDPOINT
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: docgen-secrets
+                  key: MINIO_ACCESS_KEY
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: docgen-secrets
+                  key: MINIO_SECRET_KEY
+            - name: SANDBOX_TIMEOUT
+              value: "5000"
+            - name: SANDBOX_MEMORY_LIMIT
+              value: "64"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi

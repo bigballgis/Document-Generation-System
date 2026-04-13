@@ -1,0 +1,25 @@
+# DocGen 系统非敏感配置
+# 首次部署前请确保外部 PostgreSQL 已创建 docgen 数据库
+# Flyway 会在 Backend 启动时自动执行数据库迁移
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: docgen-config
+  namespace: docgen
+data:
+  # 外部 PostgreSQL 连接信息（请修改为公司自建数据库地址）
+  DB_HOST: "external-postgres.company.internal"
+  DB_PORT: "5432"
+  DB_NAME: "docgen"
+  # Redis 集群内部地址
+  REDIS_HOST: "docgen-redis"
+  REDIS_PORT: "6379"
+  # MinIO 集群内部地址
+  MINIO_ENDPOINT: "http://docgen-minio:9000"
+  # Docxtemplater 集群内部地址
+  DOCXTEMPLATER_SERVICE_URL: "http://docgen-docxtemplater:3000"
+  # OnlyOffice 集群内部地址
+  ONLYOFFICE_URL: "http://docgen-onlyoffice"
+  # 邮件配置（非敏感部分）
+  MAIL_HOST: "smtp.company.internal"
+  MAIL_PORT: "587"

@@ -1,0 +1,147 @@
+<template>
+  <div class="composite-detail" v-loading="loading">
+    <div class="page-header">
+      <div class="header-left">
+        <el-button @click="router.push('/composite-templates')">
+          <el-icon><ArrowLeft /></el-icon> {{ $t('common.back') }}
+        </el-button>
+        <h2 v-if="template">{{ template.name }}</h2>
+      </div>
+      <div v-if="template" class="header-actions">
+        <el-button type="primary" @click="router.push(`/composite-templates/${templateId}/editor`)">
+          {{ $t('composite.assemblyEditor') }}
+        </el-button>
+        <el-button @click="handlePreview">{{ $t('common.preview') }}</el-button>
+        <el-button @click="migrationDialogVisible = true">{{ $t('migration.title') }}</el-button>
+      </div>
+    </div>
+
+    <template v-if="template">
+      <!-- Basic Info -->
+      <el-card shadow="never" style="margin-bottom: 16px">
+        <el-descriptions :column="3" border>
+          <el-descriptions-item :label="$t('common.status')">
+            <el-tag :type="statusTagType(template.status)" size="small">{{ template.status }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item :label="$t('template.version')">
+            {{ template.version }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="$t('template.outputFormat')">
+            {{ template.outputFormat || 'DOCX' }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="$t('common.createdAt')">
+            {{ template.createdAt }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="$t('common.updatedAt')">
+            {{ template.updatedAt }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="$t('common.description')" :span="3">
+            {{ template.description || '-' }}
+          </el-descriptions-item>
+        </el-descriptions>
+      </el-card>
+
+      <!-- Coverage Indicator -->
+      <CoverageIndicator :template-id="templateId" />
+
+      <!-- Tabs -->
+      <el-tabs v-model="activeTab" type="border-card" style="margin-top: 16px">
+        <el-tab-pane :label="$t('composite.segments')" name="segments">
+          <!-- Segment Preview List -->
+          <el-table :data="compositeSegments" v-loading="segmentsLoading" stripe>
+            <el-table-column prop="name" :label="$t('segment.name')" min-width="180" />
+            <el-table-column prop="description" :label="$t('common.description')" min-width="180" show-overflow-tooltip />
+            <el-table-column :label="$t('segment.isComponent')" width="100" align="center">
+              <template #default="{ row }">
+                <el-tag v-if="row.isComponent" size="small" type="success">{{ $t('segment.componentSegment') }}</el-tag>
+                <el-tag v-else size="small" type="info">{{ $t('segment.normalSegment') }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column :label="$t('segment.type')" width="120">
+              <template #default="{ row }">
+                <el-tag v-if="row.segmentType" size="small" type="info">{{ row.segmentType }}</el-tag>
+                <span v-else>-</span>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-tab-pane>
+
+        <el-tab-pane :label="$t('composite.reviews')" name="reviews">
+          <SegmentReviewPanel :template-id="templateId" />
+        </el-tab-pane>
+      </el-tabs>
+    </template>
+
+    <!-- Migration Dialog -->
+    <MigrationDialog v-model:visible="migrationDialogVisible" @migrated="fetchTemplate" />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { ElMessage } from 'element-plus'
+import { ArrowLeft } from '@element-plus/icons-vue'
+import { getTemplate, type TemplateDTO } from '@/api/templates'
+import { getCompositeSegments, previewCompositeTemplate } from '@/api/composite-templates'
+import type { Segment } from '@/types/segment'
+import CoverageIndicator from './components/CoverageIndicator.vue'
+import SegmentReviewPanel from './components/SegmentReviewPanel.vue'
+import MigrationDialog from './components/MigrationDialog.vue'
+
+const route = useRoute()
+const router = useRouter()
+const { t } = useI18n()
+
+const templateId = Number(route.params.id)
+const loading = ref(false)
+const template = ref<TemplateDTO | null>(null)
+const activeTab = ref('segments')
+const compositeSegments = ref<Segment[]>([])
+const segmentsLoading = ref(false)
+const migrationDialogVisible = ref(false)
+
+function statusTagType(status: string) {
+  const map: Record<string, string> = { DRAFT: 'info', PENDING_REVIEW: 'warning', REVIEWED: '', ACTIVE: 'success', ARCHIVED: 'danger' }
+  return map[status] || 'info'
+}
+
+async function fetchTemplate() {
+  loading.value = true
+  try {
+    template.value = await getTemplate(templateId)
+  } catch { /* handled */ } finally {
+    loading.value = false
+  }
+}
+
+async function fetchSegments() {
+  segmentsLoading.value = true
+  try {
+    compositeSegments.value = await getCompositeSegments(templateId)
+  } catch { /* handled */ } finally {
+    segmentsLoading.value = false
+  }
+}
+
+async function handlePreview() {
+  try {
+    await previewCompositeTemplate(templateId)
+    ElMessage.success(t('common.preview'))
+  } catch { /* handled */ }
+}
+
+onMounted(() => {
+  fetchTemplate()
+  fetchSegments()
+})
+</script>
+
+<style scoped>
+.composite-detail { padding: 0; }
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.header-left { display: flex; align-items: center; gap: 12px; }
+.header-left h2 { margin: 0; }
+.header-actions { display: flex; gap: 8px; }
+</style>

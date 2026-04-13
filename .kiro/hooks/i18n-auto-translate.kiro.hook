@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "Auto-translate i18n changes",
+  "description": "When the primary locale file (en-US.json) is edited, automatically detect new or modified translation keys and generate corresponding translations for zh-CN (Simplified Chinese) and zh-TW (Traditional Chinese), maintaining proper context, meaning, and locale-specific conventions.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "frontend/src/i18n/en-US.json"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "The primary locale file (frontend/src/i18n/en-US.json) was just modified. Please:\n\n1. Read the current content of all three locale files: frontend/src/i18n/en-US.json, frontend/src/i18n/zh-CN.json, and frontend/src/i18n/zh-TW.json.\n2. Compare the keys and values in en-US.json against zh-CN.json and zh-TW.json to identify:\n   - New keys present in en-US.json but missing in the target locale files.\n   - Keys whose en-US values have changed (suggesting the translations may be stale).\n3. For each identified key, generate accurate translations:\n   - zh-CN: Use Simplified Chinese with mainland China conventions.\n   - zh-TW: Use Traditional Chinese with Taiwan conventions (not just character conversion — use locale-appropriate terminology).\n4. Update frontend/src/i18n/zh-CN.json and frontend/src/i18n/zh-TW.json by adding or updating only the affected keys. Preserve existing translations that are still valid. Maintain the same JSON structure and key ordering as en-US.json.\n5. Do NOT modify frontend/src/i18n/en-US.json."
+  }
+}

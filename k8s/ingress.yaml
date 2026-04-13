@@ -1,0 +1,22 @@
+# 修改 host 为实际域名
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: docgen-ingress
+  namespace: docgen
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: docgen.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: docgen-frontend
+                port:
+                  number: 80

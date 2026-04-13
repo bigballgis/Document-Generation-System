@@ -1,0 +1,127 @@
+const express = require('express');
+const router = express.Router();
+const Docxtemplater = require('docxtemplater');
+const PizZip = require('pizzip');
+const ImageModule = require('docxtemplater-image-module-free');
+const { getFileBuffer, putFileBuffer } = require('../minio-client');
+const { generateBarcode, generateQRCode } = require('../utils/barcode');
+const { applyTextWatermark, applyImageWatermark } = require('../utils/watermark');
+
+function createImageModule() {
+  return new ImageModule({
+    centered: false,
+    getImage(tagValue) {
+      if (typeof tagValue === 'string' && tagValue.startsWith('data:')) {
+        // Base64 image
+        const base64Data = tagValue.split(',')[1] || tagValue;
+        return Buffer.from(base64Data, 'base64');
+      }
+      if (Buffer.isBuffer(tagValue)) {
+        return tagValue;
+      }
+      // For URL-based images, the caller should pre-resolve them to buffers
+      return tagValue;
+    },
+    getSize(img) {
+      // Default size; can be overridden via tag options
+      return [150, 150];
+    },
+  });
+}
+
+/**
+ * POST /render
+ * Body: {
+ *   templatePath: string,       // MinIO path to .docx template
+ *   data: object,               // Data context for rendering
+ *   outputPath?: string,        // MinIO path for output (optional)
+ *   watermark?: { type: 'text'|'image', ... },
+ *   barcodes?: { [key]: { type: 'barcode'|'qrcode', value: string, ... } }
+ * }
+ */
+router.post('/', async (req, res) => {
+  try {
+    const { templatePath, data, outputPath, watermark, barcodes } = req.body;
+
+    if (!templatePath) {
+      return res.status(400).json({
+        error: { code: 'MISSING_TEMPLATE_PATH', message: 'templatePath is required' },
+      });
+    }
+    if (!data || typeof data !== 'object') {
+      return res.status(400).json({
+        error: { code: 'MISSING_DATA', message: 'data object is required' },
+      });
+    }
+
+    // Fetch template from MinIO
+    const templateBuffer = await getFileBuffer(templatePath);
+    const zip = new PizZip(templateBuffer);
+
+    // Prepare rendering data - resolve barcodes/QR codes to image buffers
+    const renderData = { ...data };
+    if (barcodes && typeof barcodes === 'object') {
+      for (const [key, config] of Object.entries(barcodes)) {
+        try {
+          if (config.type === 'qrcode') {
+            renderData[key] = await generateQRCode(config.value, config.options);
+          } else {
+            renderData[key] = await generateBarcode(config.value, config.format, config.options);
+          }
+        } catch (err) {
+          console.warn(`Failed to generate barcode/qrcode for key "${key}":`, err.message);
+        }
+      }
+    }
+
+    // Configure Docxtemplater
+    const modules = [createImageModule()];
+    const doc = new Docxtemplater(zip, {
+      modules,
+      paragraphLoop: true,
+      linebreaks: true,
+      delimiters: { start: '{', end: '}' },
+    });
+
+    // Render document with data (supports conditions, loops, nested loops, tables)
+    doc.render(renderData);
+
+    let outputBuffer = doc.getZip().generate({ type: 'nodebuffer' });
+
+    // Apply watermark if configured
+    if (watermark) {
+      if (watermark.type === 'text') {
+        outputBuffer = await applyTextWatermark(outputBuffer, watermark);
+      } else if (watermark.type === 'image') {
+        outputBuffer = await applyImageWatermark(outputBuffer, watermark);
+      }
+    }
+
+    // Store result to MinIO if outputPath provided
+    if (outputPath) {
+      await putFileBuffer(outputPath, outputBuffer, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      return res.json({
+        success: true,
+        outputPath,
+        size: outputBuffer.length,
+      });
+    }
+
+    // Return the document directly
+    res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.set('Content-Disposition', 'attachment; filename="rendered.docx"');
+    res.send(outputBuffer);
+  } catch (err) {
+    console.error('Render error:', err);
+    const code = err.properties && err.properties.id ? 'TEMPLATE_RENDER_ERROR' : 'RENDER_FAILED';
+    res.status(500).json({
+      error: {
+        code,
+        message: err.message,
+        details: err.properties || undefined,
+      },
+    });
+  }
+});
+
+module.exports = router;
