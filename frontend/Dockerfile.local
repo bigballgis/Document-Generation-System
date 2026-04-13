@@ -1,0 +1,12 @@
+# 本地构建版本：使用宿主机预编译的 dist/，跳过 Docker 内 npm install + vite build
+# 使用前请先运行: cd frontend && npm run build
+FROM nginx:1.25-alpine
+
+ENV NGINX_ENVSUBST_FILTER=BACKEND_URL
+ENV BACKEND_URL=http://app:8080
+
+COPY dist /usr/share/nginx/html
+COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
+
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

@@ -23,7 +23,8 @@
           <el-tree-select
             v-model="query.categoryId"
             :data="categoryTree"
-            :props="{ label: 'name', value: 'id', children: 'children' }"
+            :props="{ label: 'name', children: 'children' }"
+            node-key="id"
             :placeholder="$t('common.all')"
             clearable
             check-strictly
@@ -151,7 +152,6 @@ import {
   promoteToComponent,
   demoteFromComponent,
   addSegmentFavorite,
-  removeSegmentFavorite,
 } from '@/api/segments'
 import { getCategories, getTags, type CategoryDTO, type TagDTO } from '@/api/templates'
 import type { Segment, SegmentQuery } from '@/types/segment'

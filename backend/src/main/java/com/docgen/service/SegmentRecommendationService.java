@@ -157,7 +157,7 @@ public class SegmentRecommendationService {
     @Transactional(readOnly = true)
     public DuplicateAnalysisDTO analyzeDuplicates() {
         Long tenantId = TenantContext.getCurrentTenantId();
-        List<Segment> segments = segmentRepository.findByTenantIdAndIsComponent(tenantId, false);
+        List<Segment> segments = segmentRepository.findByTenantIdAndComponent(tenantId, false);
 
         // Extract text content from each segment's .docx
         Map<Long, String> segmentTexts = new HashMap<>();
@@ -207,7 +207,7 @@ public class SegmentRecommendationService {
         // Add custom templates: segments marked as templates (is_component = true with segment_type set)
         Long tenantId = TenantContext.getCurrentTenantId();
         if (tenantId != null) {
-            List<Segment> customTemplates = segmentRepository.findByTenantIdAndIsComponent(tenantId, true);
+            List<Segment> customTemplates = segmentRepository.findByTenantIdAndComponent(tenantId, true);
             for (Segment seg : customTemplates) {
                 SegmentTemplateDTO dto = new SegmentTemplateDTO();
                 dto.setId(seg.getId());

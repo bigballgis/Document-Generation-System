@@ -129,11 +129,13 @@ const createRules = {
   name: [{ required: true, message: () => t('validation.required', { field: t('composite.name') }), trigger: 'blur' }],
 }
 
-function statusTagType(status: string) {
-  const map: Record<string, string> = {
+type ElTagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
+
+function statusTagType(status: string): ElTagType {
+  const map: Record<string, ElTagType> = {
     DRAFT: 'info',
     PENDING_REVIEW: 'warning',
-    REVIEWED: '',
+    REVIEWED: 'primary',
     ACTIVE: 'success',
     ARCHIVED: 'danger',
   }

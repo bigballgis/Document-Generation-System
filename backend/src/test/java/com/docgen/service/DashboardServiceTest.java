@@ -62,7 +62,7 @@ class DashboardServiceTest {
         when(templateRepository.countByStatus("ACTIVE")).thenReturn(1L);
         when(generatedDocumentRepository.count()).thenReturn(42L);
         when(segmentRepository.count()).thenReturn(10L);
-        when(segmentRepository.countByIsComponent(true)).thenReturn(3L);
+        when(segmentRepository.countByComponent(true)).thenReturn(3L);
         when(templateRepository.countByTemplateType("COMPOSITE")).thenReturn(2L);
 
         // Register a counter to simulate API calls
@@ -86,7 +86,7 @@ class DashboardServiceTest {
         when(templateRepository.countByStatus("ACTIVE")).thenReturn(0L);
         when(generatedDocumentRepository.count()).thenReturn(0L);
         when(segmentRepository.count()).thenReturn(0L);
-        when(segmentRepository.countByIsComponent(true)).thenReturn(0L);
+        when(segmentRepository.countByComponent(true)).thenReturn(0L);
         when(templateRepository.countByTemplateType("COMPOSITE")).thenReturn(0L);
 
         SystemOverviewDTO overview = dashboardService.getSystemOverview();

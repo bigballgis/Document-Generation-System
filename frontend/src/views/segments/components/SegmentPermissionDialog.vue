@@ -54,7 +54,7 @@ import { getSegmentPermissions, grantSegmentPermission, revokeSegmentPermission 
 import type { SegmentPermission, PermissionType } from '@/types/segment'
 
 const props = defineProps<{ visible: boolean; segmentId: number }>()
-const emit = defineEmits<{ 'update:visible': [val: boolean] }>()
+defineEmits<{ 'update:visible': [val: boolean] }>()
 const { t } = useI18n()
 
 const loading = ref(false)

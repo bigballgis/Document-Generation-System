@@ -250,7 +250,7 @@
         </el-form-item>
         <el-form-item :label="$t('review.suggestions')">
           <div style="width: 100%">
-            <div v-for="(s, idx) in conditionalApproveSuggestions" :key="idx" style="display: flex; gap: 8px; margin-bottom: 8px;">
+            <div v-for="(_s, idx) in conditionalApproveSuggestions" :key="idx" style="display: flex; gap: 8px; margin-bottom: 8px;">
               <el-input v-model="conditionalApproveSuggestions[idx]" />
               <el-button type="danger" link @click="conditionalApproveSuggestions.splice(idx, 1)">{{ $t('common.delete') }}</el-button>
             </div>
@@ -534,7 +534,7 @@ async function handleScanVariables() {
 
 async function handleExportCoverageReport() {
   try {
-    const blob = await exportCoverageReport(templateId)
+    const blob = await exportCoverageReport(templateId) as unknown as Blob
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url

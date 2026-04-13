@@ -134,8 +134,10 @@ const query = reactive<TaskQuery>({
 const pollingTaskId = ref<string | null>(null)
 const { task: polledTask, progress: polledProgress, stop: stopPolling } = useTaskPolling(pollingTaskId)
 
-function statusTagType(status: string) {
-  const map: Record<string, string> = {
+type ElTagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
+
+function statusTagType(status: string): ElTagType {
+  const map: Record<string, ElTagType> = {
     PENDING: 'info',
     RUNNING: 'warning',
     COMPLETED: 'success',

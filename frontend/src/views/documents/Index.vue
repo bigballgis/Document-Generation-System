@@ -148,8 +148,10 @@ const query = reactive<DocumentQuery>({
   size: 10,
 })
 
-function statusTagType(status: string) {
-  const map: Record<string, string> = {
+type ElTagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
+
+function statusTagType(status: string): ElTagType {
+  const map: Record<string, ElTagType> = {
     GENERATED: 'success',
     EXPIRED: 'warning',
     DELETED: 'danger',

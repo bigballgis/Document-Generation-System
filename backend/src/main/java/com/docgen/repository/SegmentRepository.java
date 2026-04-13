@@ -16,19 +16,19 @@ public interface SegmentRepository extends JpaRepository<Segment, Long> {
 
     Page<Segment> findByTenantId(Long tenantId, Pageable pageable);
 
-    Page<Segment> findByTenantIdAndIsComponent(Long tenantId, boolean isComponent, Pageable pageable);
+    Page<Segment> findByTenantIdAndComponent(Long tenantId, boolean component, Pageable pageable);
 
     Page<Segment> findByTenantIdAndNameContainingIgnoreCase(Long tenantId, String name, Pageable pageable);
 
     Page<Segment> findByTenantIdAndCategoryId(Long tenantId, Long categoryId, Pageable pageable);
 
-    List<Segment> findByTenantIdAndIsComponent(Long tenantId, boolean isComponent);
+    List<Segment> findByTenantIdAndComponent(Long tenantId, boolean component);
 
     long countByTenantId(Long tenantId);
 
-    long countByTenantIdAndIsComponent(Long tenantId, boolean isComponent);
+    long countByTenantIdAndComponent(Long tenantId, boolean component);
 
-    long countByIsComponent(boolean isComponent);
+    long countByComponent(boolean component);
 
     Page<Segment> findByIdIn(List<Long> ids, Pageable pageable);
 

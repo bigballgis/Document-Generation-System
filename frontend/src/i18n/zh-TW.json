@@ -120,7 +120,10 @@
     "audit": "稽核日誌",
     "documents": "文件",
     "tasks": "任務",
-    "templateComponents": "範本元件"
+    "templateComponents": "範本元件",
+    "segments": "段落管理",
+    "components": "元件範本",
+    "compositeTemplates": "組合範本"
   },
   "template": {
     "title": "範本管理",

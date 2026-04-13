@@ -102,8 +102,10 @@ const compositeSegments = ref<Segment[]>([])
 const segmentsLoading = ref(false)
 const migrationDialogVisible = ref(false)
 
-function statusTagType(status: string) {
-  const map: Record<string, string> = { DRAFT: 'info', PENDING_REVIEW: 'warning', REVIEWED: '', ACTIVE: 'success', ARCHIVED: 'danger' }
+type ElTagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
+
+function statusTagType(status: string): ElTagType {
+  const map: Record<string, ElTagType> = { DRAFT: 'info', PENDING_REVIEW: 'warning', REVIEWED: 'primary', ACTIVE: 'success', ARCHIVED: 'danger' }
   return map[status] || 'info'
 }
 

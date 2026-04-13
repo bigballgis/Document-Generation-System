@@ -120,7 +120,10 @@
     "audit": "Audit Logs",
     "documents": "Documents",
     "tasks": "Tasks",
-    "templateComponents": "Template Components"
+    "templateComponents": "Template Components",
+    "segments": "Segments",
+    "components": "Component Templates",
+    "compositeTemplates": "Composite Templates"
   },
   "template": {
     "title": "Template Management",

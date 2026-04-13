@@ -50,9 +50,9 @@
             <el-icon><Grid /></el-icon>
             <span>{{ $t('nav.templateComponents') }}</span>
           </template>
-          <el-menu-item index="/segments">{{ $t('segment.title') }}</el-menu-item>
-          <el-menu-item index="/components">{{ $t('component.title') }}</el-menu-item>
-          <el-menu-item index="/composite-templates">{{ $t('composite.title') }}</el-menu-item>
+          <el-menu-item index="/segments">{{ $t('nav.segments') }}</el-menu-item>
+          <el-menu-item index="/components">{{ $t('nav.components') }}</el-menu-item>
+          <el-menu-item index="/composite-templates">{{ $t('nav.compositeTemplates') }}</el-menu-item>
         </el-sub-menu>
       </el-menu>
     </el-aside>
@@ -157,18 +157,23 @@ const navTitleMap: Record<string, string> = {
   '/audit': 'nav.audit',
   '/documents': 'nav.documents',
   '/tasks': 'nav.tasks',
-  '/segments': 'segment.title',
-  '/components': 'component.title',
-  '/composite-templates': 'composite.title',
+  '/segments': 'nav.segments',
+  '/components': 'nav.components',
+  '/composite-templates': 'nav.compositeTemplates',
 }
 
 const breadcrumbs = computed(() => {
   const items: Array<{ path: string; title: string }> = []
   const path = route.path
+  // Exact match first, then prefix match for detail/editor sub-routes
   const titleKey = navTitleMap[path]
+    ?? Object.entries(navTitleMap).find(([prefix]) => path.startsWith(prefix + '/'))?.[1]
   if (titleKey) {
-    items.push({ path, title: t(titleKey) })
-  } else if (route.meta.title) {
+    const basePath = navTitleMap[path] ? path : Object.keys(navTitleMap).find((prefix) => path.startsWith(prefix + '/'))!
+    items.push({ path: basePath, title: t(titleKey) })
+  }
+  // Always append the current page title for sub-routes (detail, editor, etc.)
+  if (!navTitleMap[path] && route.meta.title) {
     items.push({ path, title: route.meta.title as string })
   }
   return items

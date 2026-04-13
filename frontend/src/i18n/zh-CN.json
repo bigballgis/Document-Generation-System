@@ -120,7 +120,10 @@
     "audit": "审计日志",
     "documents": "文档",
     "tasks": "任务",
-    "templateComponents": "模板组件"
+    "templateComponents": "模板组件",
+    "segments": "段落管理",
+    "components": "组件模板",
+    "compositeTemplates": "组合模板"
   },
   "template": {
     "title": "模板管理",

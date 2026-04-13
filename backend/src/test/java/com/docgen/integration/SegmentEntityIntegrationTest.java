@@ -190,11 +190,11 @@ class SegmentEntityIntegrationTest extends BaseIntegrationTest {
         createSegment(tenantAId, userAId, "Seg A2", true);
         createSegment(tenantBId, userBId, "Seg B1", false);
 
-        List<Segment> tenantASegments = segmentRepository.findByTenantIdAndIsComponent(tenantAId, false);
+        List<Segment> tenantASegments = segmentRepository.findByTenantIdAndComponent(tenantAId, false);
         assertThat(tenantASegments).hasSize(1);
         assertThat(tenantASegments.get(0).getName()).isEqualTo("Seg A1");
 
-        List<Segment> tenantAComponents = segmentRepository.findByTenantIdAndIsComponent(tenantAId, true);
+        List<Segment> tenantAComponents = segmentRepository.findByTenantIdAndComponent(tenantAId, true);
         assertThat(tenantAComponents).hasSize(1);
     }
 

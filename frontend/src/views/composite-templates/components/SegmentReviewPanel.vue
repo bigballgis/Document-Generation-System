@@ -44,15 +44,17 @@ import { useI18n } from 'vue-i18n'
 import { approveSegmentReview, rejectSegmentReview } from '@/api/composite-templates'
 import type { SegmentReview } from '@/types/segment'
 
-const props = defineProps<{ templateId: number }>()
+defineProps<{ templateId: number }>()
 const { t } = useI18n()
 
 const loading = ref(false)
 const reviews = ref<SegmentReview[]>([])
 const submitDialogVisible = ref(false)
 
-function reviewStatusType(status: string) {
-  const map: Record<string, string> = { PENDING: 'warning', APPROVED: 'success', REJECTED: 'danger' }
+type ElTagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
+
+function reviewStatusType(status: string): ElTagType {
+  const map: Record<string, ElTagType> = { PENDING: 'warning', APPROVED: 'success', REJECTED: 'danger' }
   return map[status] || 'info'
 }
 

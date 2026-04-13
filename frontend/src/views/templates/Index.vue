@@ -45,7 +45,8 @@
           <el-tree-select
             v-model="query.categoryId"
             :data="categoryTree"
-            :props="{ label: 'name', value: 'id', children: 'children' }"
+            :props="{ label: 'name', children: 'children' }"
+            node-key="id"
             :placeholder="$t('common.all')"
             clearable
             check-strictly

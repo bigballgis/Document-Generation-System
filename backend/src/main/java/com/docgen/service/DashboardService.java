@@ -77,7 +77,7 @@ public class DashboardService {
 
         SystemOverviewDTO dto = new SystemOverviewDTO(totalTemplates, activeTemplates, totalApiCalls, totalDocuments);
         dto.setSegmentCount(segmentRepository.count());
-        dto.setComponentCount(segmentRepository.countByIsComponent(true));
+        dto.setComponentCount(segmentRepository.countByComponent(true));
         dto.setCompositeTemplateCount(templateRepository.countByTemplateType("COMPOSITE"));
         return dto;
     }
@@ -177,8 +177,8 @@ public class DashboardService {
     public SegmentStatsDTO getSegmentStats() {
         SegmentStatsDTO stats = new SegmentStatsDTO();
         stats.setTotalSegments(segmentRepository.count());
-        stats.setComponentSegments(segmentRepository.countByIsComponent(true));
-        stats.setRegularSegments(segmentRepository.countByIsComponent(false));
+        stats.setComponentSegments(segmentRepository.countByComponent(true));
+        stats.setRegularSegments(segmentRepository.countByComponent(false));
         stats.setCompositeTemplates(templateRepository.countByTemplateType("COMPOSITE"));
         stats.setSingleTemplates(templateRepository.countByTemplateType("SINGLE"));
         return stats;
