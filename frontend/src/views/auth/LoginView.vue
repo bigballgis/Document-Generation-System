@@ -37,9 +37,14 @@
         </el-form-item>
         <div class="form-footer">
           <router-link to="/register">{{ $t('auth.goRegister') }}</router-link>
+          <a href="#" class="forgot-password-link" @click.prevent="resetPasswordDialogVisible = true">
+            {{ $t('auth.forgotPassword') }}
+          </a>
         </div>
       </el-form>
     </el-card>
+
+    <ResetPasswordDialog v-model:visible="resetPasswordDialogVisible" />
   </div>
 </template>
 
@@ -51,6 +56,7 @@ import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
+import ResetPasswordDialog from './ResetPasswordDialog.vue'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -58,6 +64,7 @@ const userStore = useUserStore()
 
 const formRef = ref<FormInstance>()
 const loading = ref(false)
+const resetPasswordDialogVisible = ref(false)
 
 const form = reactive({
   username: '',
@@ -103,11 +110,16 @@ async function handleLogin() {
   color: #303133;
 }
 .form-footer {
-  text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 .form-footer a {
   color: #409eff;
   text-decoration: none;
   font-size: 14px;
+}
+.forgot-password-link {
+  cursor: pointer;
 }
 </style>

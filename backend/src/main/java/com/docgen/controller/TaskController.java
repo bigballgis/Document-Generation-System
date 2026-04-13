@@ -7,6 +7,8 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,6 +26,18 @@ public class TaskController {
 
     public TaskController(AsyncDocumentService asyncDocumentService) {
         this.asyncDocumentService = asyncDocumentService;
+    }
+
+    @Operation(summary = "List tasks", description = "Query async tasks with optional status and templateId filters")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Task list returned")
+    })
+    @GetMapping
+    public ResponseEntity<Page<AsyncTaskDTO>> listTasks(
+            @Parameter(description = "Filter by task status") @RequestParam(required = false) String status,
+            @Parameter(description = "Filter by template ID") @RequestParam(required = false) Long templateId,
+            Pageable pageable) {
+        return ResponseEntity.ok(asyncDocumentService.listTasks(status, templateId, pageable));
     }
 
     @Operation(summary = "Get task status", description = "Query the status of an async task by task ID")

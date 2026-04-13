@@ -22,6 +22,10 @@
       <el-tab-pane :label="$t('review.title')" name="reviews">
         <ReviewManagement />
       </el-tab-pane>
+      <!-- Rate Limits Tab -->
+      <el-tab-pane :label="$t('admin.rateLimits')" name="rateLimits">
+        <RateLimitPanel />
+      </el-tab-pane>
     </el-tabs>
   </div>
 </template>
@@ -33,6 +37,7 @@ import UserManagement from './UserManagement.vue'
 import PermissionManagement from './PermissionManagement.vue'
 import ApiKeyManagement from './ApiKeyManagement.vue'
 import ReviewManagement from './ReviewManagement.vue'
+import RateLimitPanel from './RateLimitPanel.vue'
 
 const activeTab = ref('tenants')
 </script>

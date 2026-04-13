@@ -194,3 +194,37 @@ export function approveReview(id: number, comment: string) {
 export function rejectReview(id: number, reason: string) {
   return request.put(`/reviews/${id}/reject`, { comment: reason })
 }
+
+/** Submit a template for review (create review records) */
+export function submitForReview(templateId: number, data: { reviewerIds: number[]; reviewLevel?: number }) {
+  return request.post(`/templates/${templateId}/reviews`, data)
+}
+
+/** Get paginated reviews for a specific template */
+export function getTemplateReviews(templateId: number, params: { page: number; size: number }) {
+  return request.get<any, PageResult<ReviewDTO>>(`/templates/${templateId}/reviews`, { params })
+}
+
+/** Conditionally approve a review with suggestions */
+export function conditionalApproveReview(reviewId: number, data: { comment?: string; suggestions: string[] }) {
+  return request.put<any, ReviewDTO>(`/reviews/${reviewId}/conditional-approve`, data)
+}
+
+/** Get OnlyOffice review editor URL for a template */
+export function getReviewEditorUrl(templateId: number) {
+  return request.get<any, string>(`/templates/${templateId}/reviews/editor-url`)
+}
+
+// ---- User Detail & Delete ----
+export function getUser(id: number) {
+  return request.get<any, UserDTO>(`/users/${id}`)
+}
+
+export function deleteUser(id: number) {
+  return request.delete(`/users/${id}`)
+}
+
+// ---- Tenant Detail ----
+export function getTenant(id: number) {
+  return request.get<any, TenantDTO>(`/tenants/${id}`)
+}

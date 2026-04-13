@@ -1,88 +1,74 @@
 ---
-description: Spec 文档质量标准，包括 EARS 模式、INCOSE 规则、正确性属性和任务文档规范
-inclusion: auto
-fileMatchPattern: '.kiro/specs/**/*.md'
+inclusion: manual
 ---
 
 # Spec 文档质量标准
 
-## 需求文档 (requirements.md) 质量规则
+## 前后端一致性检查规则
 
-### EARS 模式 (Easy Approach to Requirements Syntax)
+### 任务粒度要求
 
-所有验收标准必须使用以下 EARS 模式之一：
+1. 前端任务不得将多个独立页面合并为一个子任务。每个前端页面（含 API 层、视图、组件、i18n）应为独立子任务。
+2. 每个前端子任务必须明确列出：
+   - 要创建的 API 调用文件（如 `frontend/src/api/xxx.ts`）
+   - 要创建的视图文件（如 `frontend/src/views/xxx/Index.vue`）
+   - 要创建的组件文件
+   - 要扩展的路由配置
+   - 要添加的 i18n key
 
-- **Ubiquitous**: `THE <system> SHALL <action>` — 系统始终执行的行为
-- **Event-driven**: `WHEN <trigger>, THE <system> SHALL <action>` — 事件触发的行为
-- **State-driven**: `WHERE <state>, THE <system> SHALL <action>` — 特定状态下的行为
-- **Unwanted**: `IF <condition>, THEN THE <system> SHALL <action>` — 异常/边界情况处理
-- **Optional**: `WHERE <feature is included>, THE <system> SHALL <action>` — 可选功能
+### 检查点验收标准
 
-### INCOSE 质量规则
+检查点任务必须包含以下验证步骤：
 
-每条验收标准必须满足：
-- **原子性**: 一条标准只描述一个可验证的行为
-- **可测试性**: 必须能通过自动化测试或手动测试验证
-- **无歧义**: 避免"等"、"可能"、"应该考虑"等模糊用语
-- **完整性**: 包含正常流程和异常/边界情况
-- **一致性**: 术语使用与术语表一致，不引入未定义术语
+1. **API 覆盖率检查**: 遍历 `backend/src/main/java/com/docgen/controller/` 下所有 Controller，确认每个 `@RequestMapping` 端点在 `frontend/src/api/` 中有对应的调用函数
+2. **路由完整性检查**: 确认每个前端页面在 `frontend/src/router/index.ts` 中注册了路由
+3. **i18n 完整性检查**: 确认所有用户可见文本使用了 i18n key，且 en-US、zh-CN、zh-TW 三个语言文件中都有对应翻译
 
-### 需求完整性检查清单
+### 后端 Controller 与前端 API 映射规则
 
-每个需求必须覆盖：
-- [ ] 正常流程 (Happy Path)
-- [ ] 异常/错误处理
-- [ ] 边界条件
-- [ ] 与现有功能的交互/兼容性
-- [ ] 多租户隔离影响
-- [ ] 权限控制影响
-- [ ] 性能约束（如适用）
+每个后端 Controller 必须有对应的前端 API 文件：
 
-## 设计文档 (design.md) 质量规则
+| 后端 Controller | 前端 API 文件 |
+|---|---|
+| `XxxController.java` | `frontend/src/api/xxx.ts` |
 
-### 必须包含的章节
+例外情况（仅后端使用的端点，如 OnlyOffice callback）需在任务文档中明确标注。
 
-1. **Overview**: 功能概述和核心目标
-2. **Architecture**: 架构图和架构决策
-3. **Components and Interfaces**: 组件定义、接口签名、交互流程
-4. **Data Model**: 数据库表设计、实体关系
-5. **API Design**: REST API 端点设计
-6. **Correctness Properties**: 正确性属性定义（用于 PBT）
+### 前端任务拆分模式
 
-### 正确性属性 (Correctness Properties)
-
-每个核心功能必须定义至少一个可执行的正确性属性，格式：
+推荐的前端任务拆分方式（以"表达式管理"为例）：
 
 ```
-Property: <属性名称>
-Description: <属性描述>
-Formal: ∀ <变量> ∈ <域>, <谓词>
-Test Strategy: <PBT 测试策略>
+- [ ] N. 前端 — 表达式管理
+  - [ ] N.1 创建前端 API 调用层
+    - 创建 `frontend/src/api/expressions.ts`
+    - 包含: createExpression, listExpressions, updateExpression, deleteExpression, validateExpression
+    - 对应后端: ExpressionController 的所有端点
+  - [ ] N.2 创建表达式管理组件
+    - 创建 ExpressionFormDialog.vue（创建/编辑表达式对话框）
+    - 创建 ExpressionList.vue（表达式列表组件）
+    - 创建 ExpressionValidator.vue（表达式验证/测试组件）
+  - [ ] N.3 集成到模板详情页
+    - 在模板详情页中添加"表达式"标签页
+    - 集成 ExpressionList 和 ExpressionFormDialog
+  - [ ] N.4 扩展 i18n 翻译
+    - 在 en-US.json、zh-CN.json、zh-TW.json 中添加 expression.* 前缀的翻译 key
 ```
 
-## 任务文档 (tasks.md) 质量规则
+## EARS 需求模式
 
-### 任务粒度
+需求文档中的验收标准应使用 EARS（Easy Approach to Requirements Syntax）模式：
 
-- 每个任务应在 2-4 小时内可完成
-- 任务之间的依赖关系必须明确
-- 每个任务必须包含可验证的完成标准
+- **Ubiquitous**: THE [system] SHALL [action]
+- **Event-driven**: WHEN [trigger], THE [system] SHALL [action]
+- **State-driven**: WHILE [state], THE [system] SHALL [action]
+- **Unwanted behavior**: IF [condition], THEN THE [system] SHALL [action]
+- **Optional**: WHERE [feature], THE [system] SHALL [action]
 
-### 任务结构
+## 正确性属性（Correctness Properties）
 
-```markdown
-- [ ] N. 任务标题
-  - [ ] N.1 子任务 1
-  - [ ] N.2 子任务 2
-```
+每个 spec 应定义可执行的正确性属性，使用 Property-Based Testing 验证：
 
-## 与现有系统的集成规范
-
-新功能的 spec 必须考虑：
-- 与现有 Template 实体的关系和兼容性
-- 多租户隔离 (tenant_id + Hibernate Filter)
-- 权限控制 (PermissionService)
-- 审计日志 (AuditLogService)
-- 模板状态机 (TemplateStateMachineService)
-- Flyway 数据库迁移（从 V29 开始）
-- MinIO 文件存储路径规范
+- 后端属性测试使用 jqwik 框架
+- 前端属性测试使用 fast-check 框架
+- 每个属性测试必须引用对应的需求编号

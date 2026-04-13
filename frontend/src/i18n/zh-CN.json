@@ -108,7 +108,8 @@
     "resetPasswordEmail": "输入您的邮箱以接收密码重置链接",
     "resetPasswordSent": "密码重置链接已发送到您的邮箱",
     "sessionExpired": "登录已过期，请重新登录",
-    "accountLocked": "由于多次登录失败，账号已被锁定。请30分钟后重试"
+    "accountLocked": "由于多次登录失败，账号已被锁定。请30分钟后重试",
+    "forgotPassword": "忘记密码？"
   },
   "nav": {
     "dashboard": "仪表板",
@@ -116,7 +117,10 @@
     "dataSources": "数据源",
     "market": "模板市场",
     "admin": "系统管理",
-    "audit": "审计日志"
+    "audit": "审计日志",
+    "documents": "文档",
+    "tasks": "任务",
+    "templateComponents": "模板组件"
   },
   "template": {
     "title": "模板管理",
@@ -189,7 +193,12 @@
     "boundTags": "已绑定标签",
     "unboundTags": "未绑定标签",
     "unusedFields": "未使用的数据源字段",
-    "exportCoverageReport": "导出覆盖率报告"
+    "exportCoverageReport": "导出覆盖率报告",
+    "importTemplate": "导入模板",
+    "importConfiguration": "导入配置",
+    "scanVariables": "扫描变量",
+    "scanVariablesSuccess": "扫描完成，发现 {count} 个变量",
+    "availableTransitions": "可用操作"
   },
   "category": {
     "title": "分类管理",
@@ -285,7 +294,11 @@
     "validationSuccess": "表达式有效",
     "validationFailed": "表达式验证失败",
     "result": "结果",
-    "testExpression": "测试表达式"
+    "testExpression": "测试表达式",
+    "executionOrder": "执行顺序",
+    "description": "描述",
+    "confirmDelete": "确定要删除表达式「{name}」吗？",
+    "errorPosition": "错误位置：{pos}"
   },
   "document": {
     "title": "文档",
@@ -312,7 +325,29 @@
     "generateSuccess": "文档生成成功",
     "batchProgress": "进度：{completed}/{total}",
     "batchComplete": "批量生成完成",
-    "downloadZip": "下载 ZIP"
+    "downloadZip": "下载 ZIP",
+    "generateMode": "生成模式",
+    "modeSync": "同步",
+    "modeAsync": "异步",
+    "modeBatch": "批量",
+    "parameters": "参数",
+    "parametersHint": "JSON 格式运行时参数",
+    "dataSets": "数据集",
+    "dataSetsHint": "每行一个 JSON 对象，最多 1000 条",
+    "failureStrategy": "失败策略",
+    "strategyContinue": "继续",
+    "strategyThreshold": "阈值",
+    "failureThreshold": "失败阈值",
+    "history": "文档历史",
+    "id": "ID",
+    "templateId": "模板 ID",
+    "format": "格式",
+    "status": "状态",
+    "pageCount": "页数",
+    "dateRange": "日期范围",
+    "startDate": "开始日期",
+    "endDate": "结束日期",
+    "mergeSuccess": "文档合并成功"
   },
   "task": {
     "title": "任务",
@@ -326,7 +361,11 @@
     "createdAt": "创建时间",
     "completedAt": "完成时间",
     "errorMessage": "错误信息",
-    "downloadResult": "下载结果"
+    "downloadResult": "下载结果",
+    "viewProgress": "查看进度",
+    "pollingActive": "自动刷新中...",
+    "taskType": "任务类型",
+    "templateId": "模板 ID"
   },
   "review": {
     "title": "模板审查",
@@ -351,7 +390,10 @@
     "levelFinal": "终审",
     "submitSuccess": "审查已提交",
     "approveSuccess": "审查已通过",
-    "rejectSuccess": "审查已驳回"
+    "rejectSuccess": "审查已驳回",
+    "reviewInEditor": "在编辑器中审查",
+    "selectReviewers": "选择审查人",
+    "conditionalApproveDialog": "条件通过"
   },
   "market": {
     "title": "模板市场",
@@ -493,7 +535,17 @@
       "currentUsage": "当前使用量",
       "limit": "限制",
       "remaining": "剩余",
-      "resetAt": "重置时间"
+      "resetAt": "重置时间",
+      "apiKeyName": "API Key 名称",
+      "limitPerSecond": "每秒限制",
+      "remainingPerSecond": "每秒剩余",
+      "limitPerMinute": "每分钟限制",
+      "remainingPerMinute": "每分钟剩余",
+      "limitPerHour": "每小时限制",
+      "remainingPerHour": "每小时剩余",
+      "monthlyQuota": "月度配额",
+      "currentMonthUsage": "当月已用",
+      "remainingQuota": "剩余配额"
     }
   },
   "audit": {
@@ -586,7 +638,14 @@
     "statusSuccess": "成功",
     "statusFailed": "失败",
     "retryCount": "重试次数",
-    "lastTriggered": "最后触发"
+    "lastTriggered": "最后触发",
+    "payloadTemplate": "负载模板",
+    "confirmDelete": "确定要删除此 Webhook 吗？",
+    "eventType": "事件类型",
+    "responseStatus": "响应状态",
+    "responseBody": "响应内容",
+    "sentAt": "发送时间",
+    "noLogs": "暂无 Webhook 日志"
   },
   "schedule": {
     "title": "定时任务",

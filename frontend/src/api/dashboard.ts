@@ -69,3 +69,25 @@ export function getDataSourceHealth() {
 export function getSystemResources() {
   return request.get<any, SystemResourceDTO>('/dashboard/system-resources')
 }
+
+// --- Segment & Component Stats ---
+
+export interface SegmentStatsDTO {
+  segmentCount: number
+  componentCount: number
+  compositeTemplateCount: number
+}
+
+export interface ComponentRankingDTO {
+  segmentId: number
+  segmentName: string
+  referenceCount: number
+}
+
+export function getSegmentStats() {
+  return request.get<any, SegmentStatsDTO>('/dashboard/segment-stats')
+}
+
+export function getComponentRanking() {
+  return request.get<any, ComponentRankingDTO[]>('/dashboard/component-ranking')
+}

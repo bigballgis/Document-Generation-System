@@ -21,6 +21,14 @@
           <el-icon><Document /></el-icon>
           <template #title>{{ $t('nav.templates') }}</template>
         </el-menu-item>
+        <el-menu-item index="/documents">
+          <el-icon><Files /></el-icon>
+          <template #title>{{ $t('nav.documents') }}</template>
+        </el-menu-item>
+        <el-menu-item index="/tasks">
+          <el-icon><Clock /></el-icon>
+          <template #title>{{ $t('nav.tasks') }}</template>
+        </el-menu-item>
         <el-menu-item index="/data-sources">
           <el-icon><Connection /></el-icon>
           <template #title>{{ $t('nav.dataSources') }}</template>
@@ -37,6 +45,15 @@
           <el-icon><List /></el-icon>
           <template #title>{{ $t('nav.audit') }}</template>
         </el-menu-item>
+        <el-sub-menu index="template-components">
+          <template #title>
+            <el-icon><Grid /></el-icon>
+            <span>{{ $t('nav.templateComponents') }}</span>
+          </template>
+          <el-menu-item index="/segments">{{ $t('segment.title') }}</el-menu-item>
+          <el-menu-item index="/components">{{ $t('component.title') }}</el-menu-item>
+          <el-menu-item index="/composite-templates">{{ $t('composite.title') }}</el-menu-item>
+        </el-sub-menu>
       </el-menu>
     </el-aside>
     <el-container>
@@ -98,7 +115,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import {
   Monitor, Document, Connection, Shop, Setting, List,
-  Fold, Expand, UserFilled,
+  Fold, Expand, UserFilled, Files, Clock, Grid,
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 
@@ -138,6 +155,11 @@ const navTitleMap: Record<string, string> = {
   '/market': 'nav.market',
   '/admin': 'nav.admin',
   '/audit': 'nav.audit',
+  '/documents': 'nav.documents',
+  '/tasks': 'nav.tasks',
+  '/segments': 'segment.title',
+  '/components': 'component.title',
+  '/composite-templates': 'composite.title',
 }
 
 const breadcrumbs = computed(() => {

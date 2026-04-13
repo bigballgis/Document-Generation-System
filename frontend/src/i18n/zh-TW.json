@@ -108,7 +108,8 @@
     "resetPasswordEmail": "輸入您的電子郵件以接收密碼重設連結",
     "resetPasswordSent": "密碼重設連結已傳送到您的電子郵件",
     "sessionExpired": "登入已過期，請重新登入",
-    "accountLocked": "由於多次登入失敗，帳號已被鎖定。請30分鐘後重試"
+    "accountLocked": "由於多次登入失敗，帳號已被鎖定。請30分鐘後重試",
+    "forgotPassword": "忘記密碼？"
   },
   "nav": {
     "dashboard": "儀表板",
@@ -116,7 +117,10 @@
     "dataSources": "資料來源",
     "market": "範本市場",
     "admin": "系統管理",
-    "audit": "稽核日誌"
+    "audit": "稽核日誌",
+    "documents": "文件",
+    "tasks": "任務",
+    "templateComponents": "範本元件"
   },
   "template": {
     "title": "範本管理",
@@ -189,7 +193,12 @@
     "boundTags": "已繫結標籤",
     "unboundTags": "未繫結標籤",
     "unusedFields": "未使用的資料來源欄位",
-    "exportCoverageReport": "匯出覆蓋率報告"
+    "exportCoverageReport": "匯出覆蓋率報告",
+    "importTemplate": "匯入範本",
+    "importConfiguration": "匯入設定",
+    "scanVariables": "掃描變數",
+    "scanVariablesSuccess": "掃描完成，發現 {count} 個變數",
+    "availableTransitions": "可用操作"
   },
   "category": {
     "title": "分類管理",
@@ -285,7 +294,11 @@
     "validationSuccess": "運算式有效",
     "validationFailed": "運算式驗證失敗",
     "result": "結果",
-    "testExpression": "測試運算式"
+    "testExpression": "測試運算式",
+    "executionOrder": "執行順序",
+    "description": "描述",
+    "confirmDelete": "確定要刪除運算式「{name}」嗎？",
+    "errorPosition": "錯誤位置：{pos}"
   },
   "document": {
     "title": "文件",
@@ -312,7 +325,29 @@
     "generateSuccess": "文件產生成功",
     "batchProgress": "進度：{completed}/{total}",
     "batchComplete": "批次產生完成",
-    "downloadZip": "下載 ZIP"
+    "downloadZip": "下載 ZIP",
+    "generateMode": "產生模式",
+    "modeSync": "同步",
+    "modeAsync": "非同步",
+    "modeBatch": "批次",
+    "parameters": "參數",
+    "parametersHint": "JSON 格式執行時參數",
+    "dataSets": "資料集",
+    "dataSetsHint": "每行一個 JSON 物件，最多 1000 筆",
+    "failureStrategy": "失敗策略",
+    "strategyContinue": "繼續",
+    "strategyThreshold": "閾值",
+    "failureThreshold": "失敗閾值",
+    "history": "文件歷史",
+    "id": "ID",
+    "templateId": "範本 ID",
+    "format": "格式",
+    "status": "狀態",
+    "pageCount": "頁數",
+    "dateRange": "日期範圍",
+    "startDate": "開始日期",
+    "endDate": "結束日期",
+    "mergeSuccess": "文件合併成功"
   },
   "task": {
     "title": "工作",
@@ -326,7 +361,11 @@
     "createdAt": "建立時間",
     "completedAt": "完成時間",
     "errorMessage": "錯誤訊息",
-    "downloadResult": "下載結果"
+    "downloadResult": "下載結果",
+    "viewProgress": "檢視進度",
+    "pollingActive": "自動重新整理中...",
+    "taskType": "工作類型",
+    "templateId": "範本 ID"
   },
   "review": {
     "title": "範本審查",
@@ -351,7 +390,10 @@
     "levelFinal": "終審",
     "submitSuccess": "審查已提交",
     "approveSuccess": "審查已通過",
-    "rejectSuccess": "審查已駁回"
+    "rejectSuccess": "審查已駁回",
+    "reviewInEditor": "在編輯器中審查",
+    "selectReviewers": "選擇審查人",
+    "conditionalApproveDialog": "條件通過"
   },
   "market": {
     "title": "範本市場",
@@ -493,7 +535,17 @@
       "currentUsage": "目前使用量",
       "limit": "限制",
       "remaining": "剩餘",
-      "resetAt": "重設時間"
+      "resetAt": "重設時間",
+      "apiKeyName": "API Key 名稱",
+      "limitPerSecond": "每秒限制",
+      "remainingPerSecond": "每秒剩餘",
+      "limitPerMinute": "每分鐘限制",
+      "remainingPerMinute": "每分鐘剩餘",
+      "limitPerHour": "每小時限制",
+      "remainingPerHour": "每小時剩餘",
+      "monthlyQuota": "月度配額",
+      "currentMonthUsage": "當月已用",
+      "remainingQuota": "剩餘配額"
     }
   },
   "audit": {
@@ -586,7 +638,14 @@
     "statusSuccess": "成功",
     "statusFailed": "失敗",
     "retryCount": "重試次數",
-    "lastTriggered": "最後觸發"
+    "lastTriggered": "最後觸發",
+    "payloadTemplate": "負載範本",
+    "confirmDelete": "確定要刪除此 Webhook 嗎？",
+    "eventType": "事件類型",
+    "responseStatus": "回應狀態",
+    "responseBody": "回應內容",
+    "sentAt": "傳送時間",
+    "noLogs": "暫無 Webhook 日誌"
   },
   "schedule": {
     "title": "排程工作",

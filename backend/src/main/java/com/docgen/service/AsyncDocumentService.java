@@ -12,6 +12,8 @@ import com.docgen.repository.TemplateRepository;
 import com.docgen.util.TenantContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -107,6 +109,16 @@ public class AsyncDocumentService {
             task.setCompletedAt(Instant.now());
             asyncTaskRepository.save(task);
         }
+    }
+
+    /**
+     * List async tasks for the current tenant with optional filters.
+     */
+    @Transactional(readOnly = true)
+    public Page<AsyncTaskDTO> listTasks(String status, Long templateId, Pageable pageable) {
+        Long tenantId = TenantContext.getCurrentTenantId();
+        return asyncTaskRepository.findByFilters(tenantId, status, templateId, pageable)
+                .map(this::toDTO);
     }
 
     /**

@@ -81,6 +81,18 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Audit Logs', roles: ['SUPER_ADMIN', 'TENANT_ADMIN', 'TEAM_ADMIN'] },
       },
       {
+        path: 'documents',
+        name: 'Documents',
+        component: () => import('@/views/documents/Index.vue'),
+        meta: { title: 'Documents', requiresAuth: true },
+      },
+      {
+        path: 'tasks',
+        name: 'Tasks',
+        component: () => import('@/views/tasks/Index.vue'),
+        meta: { title: 'Tasks', requiresAuth: true },
+      },
+      {
         path: 'segments',
         name: 'Segments',
         component: () => import('@/views/segments/Index.vue'),

@@ -179,3 +179,15 @@ export function getTaskExecutions(taskId: number, page = 0, size = 20) {
     params: { page, size },
   })
 }
+
+/** Export test cases as JSON string */
+export function exportTestCases(templateId: number) {
+  return request.get<any, string>(`/templates/${templateId}/test-cases/export`)
+}
+
+/** Import test cases from JSON string */
+export function importTestCases(templateId: number, json: string) {
+  return request.post<any, TestCaseDTO[]>(`/templates/${templateId}/test-cases/import`, json, {
+    headers: { 'Content-Type': 'application/json' },
+  })
+}

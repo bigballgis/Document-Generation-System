@@ -196,3 +196,69 @@ export function getTags() {
 export function getOnlyOfficeUrl(templateId: number) {
   return request.get<any, { url: string }>(`/templates/${templateId}/onlyoffice-url`)
 }
+
+/** Submit template for review via state machine (DRAFT → PENDING_REVIEW) */
+export function submitReview(templateId: number) {
+  return request.post<any, TemplateDTO>(`/templates/${templateId}/submit-review`)
+}
+
+/** Get available state transitions for a template */
+export function getAvailableTransitions(templateId: number) {
+  return request.get<any, string[]>(`/templates/${templateId}/available-transitions`)
+}
+
+/** Trigger a manual variable scan */
+export function scanVariables(templateId: number) {
+  return request.post<any, VariableDTO[]>(`/templates/${templateId}/variables/scan`)
+}
+
+/** Export coverage report as JSON file download */
+export function exportCoverageReport(templateId: number) {
+  return request.get(`/templates/${templateId}/coverage/export`, { responseType: 'blob' })
+}
+
+// Category CRUD
+export function getCategory(id: number) {
+  return request.get<any, CategoryDTO>(`/categories/${id}`)
+}
+
+export function createCategory(data: { name: string; parentId?: number | null; sortOrder?: number }) {
+  return request.post<any, CategoryDTO>('/categories', data)
+}
+
+export function updateCategory(id: number, data: { name?: string; parentId?: number | null; sortOrder?: number }) {
+  return request.put<any, CategoryDTO>(`/categories/${id}`, data)
+}
+
+export function deleteCategory(id: number) {
+  return request.delete(`/categories/${id}`)
+}
+
+// Tag CRUD
+export function getTag(id: number) {
+  return request.get<any, TagDTO>(`/tags/${id}`)
+}
+
+export function createTag(data: { name: string }) {
+  return request.post<any, TagDTO>('/tags', data)
+}
+
+export function updateTag(id: number, data: { name: string }) {
+  return request.put<any, TagDTO>(`/tags/${id}`, data)
+}
+
+export function deleteTag(id: number) {
+  return request.delete(`/tags/${id}`)
+}
+
+export function addTagToTemplate(tagId: number, templateId: number) {
+  return request.post(`/tags/${tagId}/templates/${templateId}`)
+}
+
+export function removeTagFromTemplate(tagId: number, templateId: number) {
+  return request.delete(`/tags/${tagId}/templates/${templateId}`)
+}
+
+export function getTemplateTags(templateId: number) {
+  return request.get<any, TagDTO[]>(`/tags/templates/${templateId}`)
+}

@@ -2,9 +2,31 @@
   <div class="templates-page">
     <div class="page-header">
       <h2>{{ $t('template.title') }}</h2>
-      <el-button type="primary" @click="openCreateDialog">
-        {{ $t('template.create') }}
-      </el-button>
+      <div style="display: flex; gap: 8px;">
+        <el-button @click="importDocxInput?.click()">
+          {{ $t('template.importTemplate') }}
+        </el-button>
+        <input
+          ref="importDocxInput"
+          type="file"
+          accept=".docx"
+          style="display: none"
+          @change="handleImportDocx"
+        />
+        <el-button @click="importConfigInput?.click()">
+          {{ $t('template.importConfiguration') }}
+        </el-button>
+        <input
+          ref="importConfigInput"
+          type="file"
+          accept=".json"
+          style="display: none"
+          @change="handleImportConfig"
+        />
+        <el-button type="primary" @click="openCreateDialog">
+          {{ $t('template.create') }}
+        </el-button>
+      </div>
     </div>
 
     <!-- Filters -->
@@ -168,6 +190,7 @@ import {
   type TemplateDTO, type TemplateQuery, type CategoryDTO, type TagDTO,
 } from '@/api/templates'
 import TemplateFormDialog from './components/TemplateFormDialog.vue'
+import { importDocx, importConfig } from '@/api/import-export'
 
 const { t } = useI18n()
 
@@ -178,6 +201,9 @@ const categoryTree = ref<CategoryDTO[]>([])
 const tagList = ref<TagDTO[]>([])
 const formDialogVisible = ref(false)
 const editingTemplate = ref<TemplateDTO | null>(null)
+
+const importDocxInput = ref<HTMLInputElement | null>(null)
+const importConfigInput = ref<HTMLInputElement | null>(null)
 
 const query = reactive<TemplateQuery>({
   keyword: '',
@@ -296,6 +322,32 @@ async function handleDelete(row: TemplateDTO) {
     ElMessage.success(t('message.deleteSuccess'))
     fetchTemplates()
   } catch { /* cancelled or error */ }
+}
+
+async function handleImportDocx(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  try {
+    await importDocx(file)
+    ElMessage.success(t('message.importSuccess'))
+    fetchTemplates()
+  } catch { /* handled */ } finally {
+    input.value = ''
+  }
+}
+
+async function handleImportConfig(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  try {
+    await importConfig(file)
+    ElMessage.success(t('message.importSuccess'))
+    fetchTemplates()
+  } catch { /* handled */ } finally {
+    input.value = ''
+  }
 }
 
 onMounted(() => {
