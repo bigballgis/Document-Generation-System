@@ -42,11 +42,7 @@ export function getSegment(id: number) {
 export function createSegment(data: CreateSegmentRequest, file: File) {
   const formData = new FormData()
   formData.append('file', file)
-  formData.append('name', data.name)
-  if (data.description) formData.append('description', data.description)
-  if (data.segmentType) formData.append('segmentType', data.segmentType)
-  if (data.categoryId != null) formData.append('categoryId', String(data.categoryId))
-  if (data.tagIds?.length) formData.append('tagIds', data.tagIds.join(','))
+  formData.append('request', new Blob([JSON.stringify(data)], { type: 'application/json' }))
   return request.post<any, Segment>('/segments', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
@@ -55,11 +51,7 @@ export function createSegment(data: CreateSegmentRequest, file: File) {
 export function updateSegment(id: number, data: UpdateSegmentRequest, file?: File) {
   const formData = new FormData()
   if (file) formData.append('file', file)
-  if (data.name) formData.append('name', data.name)
-  if (data.description !== undefined) formData.append('description', data.description ?? '')
-  if (data.segmentType) formData.append('segmentType', data.segmentType)
-  if (data.categoryId != null) formData.append('categoryId', String(data.categoryId))
-  if (data.tagIds?.length) formData.append('tagIds', data.tagIds.join(','))
+  formData.append('request', new Blob([JSON.stringify(data)], { type: 'application/json' }))
   return request.put<any, Segment>(`/segments/${id}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
