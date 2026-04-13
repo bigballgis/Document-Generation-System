@@ -25,13 +25,13 @@ public interface MarketTemplateRepository extends JpaRepository<MarketTemplate, 
     @Query(value = "SELECT mt.* FROM market_templates mt "
             + "JOIN templates t ON mt.template_id = t.id "
             + "WHERE (mt.share_scope = 'GLOBAL' OR t.tenant_id = :tenantId) "
-            + "AND (:keyword IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', :keyword, '%')) "
-            + "OR LOWER(t.description) LIKE LOWER(CONCAT('%', :keyword, '%')))",
+            + "AND (CAST(:keyword AS TEXT) IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%')) "
+            + "OR LOWER(t.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%')))",
             countQuery = "SELECT COUNT(*) FROM market_templates mt "
             + "JOIN templates t ON mt.template_id = t.id "
             + "WHERE (mt.share_scope = 'GLOBAL' OR t.tenant_id = :tenantId) "
-            + "AND (:keyword IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', :keyword, '%')) "
-            + "OR LOWER(t.description) LIKE LOWER(CONCAT('%', :keyword, '%')))",
+            + "AND (CAST(:keyword AS TEXT) IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%')) "
+            + "OR LOWER(t.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%')))",
             nativeQuery = true)
     Page<MarketTemplate> searchMarketTemplates(
             @Param("tenantId") Long tenantId,
@@ -44,15 +44,15 @@ public interface MarketTemplateRepository extends JpaRepository<MarketTemplate, 
     @Query(value = "SELECT mt.* FROM market_templates mt "
             + "JOIN templates t ON mt.template_id = t.id "
             + "WHERE (mt.share_scope = 'GLOBAL' OR t.tenant_id = :tenantId) "
-            + "AND (:keyword IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', :keyword, '%')) "
-            + "OR LOWER(t.description) LIKE LOWER(CONCAT('%', :keyword, '%'))) "
-            + "AND (:categoryId IS NULL OR t.category_id = :categoryId)",
+            + "AND (CAST(:keyword AS TEXT) IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%')) "
+            + "OR LOWER(t.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%'))) "
+            + "AND (CAST(:categoryId AS BIGINT) IS NULL OR t.category_id = :categoryId)",
             countQuery = "SELECT COUNT(*) FROM market_templates mt "
             + "JOIN templates t ON mt.template_id = t.id "
             + "WHERE (mt.share_scope = 'GLOBAL' OR t.tenant_id = :tenantId) "
-            + "AND (:keyword IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', :keyword, '%')) "
-            + "OR LOWER(t.description) LIKE LOWER(CONCAT('%', :keyword, '%'))) "
-            + "AND (:categoryId IS NULL OR t.category_id = :categoryId)",
+            + "AND (CAST(:keyword AS TEXT) IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%')) "
+            + "OR LOWER(t.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%'))) "
+            + "AND (CAST(:categoryId AS BIGINT) IS NULL OR t.category_id = :categoryId)",
             nativeQuery = true)
     Page<MarketTemplate> searchMarketTemplatesWithCategory(
             @Param("tenantId") Long tenantId,

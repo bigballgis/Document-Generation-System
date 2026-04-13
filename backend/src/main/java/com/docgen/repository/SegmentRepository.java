@@ -11,16 +11,11 @@ import java.util.List;
 
 /**
  * Spring Data JPA repository for {@link Segment} entities.
+ *
+ * <p>For filtered listing queries, prefer {@link #findByFilters} over single-purpose
+ * derived query methods — it handles all optional filter combinations in one query.</p>
  */
 public interface SegmentRepository extends JpaRepository<Segment, Long> {
-
-    Page<Segment> findByTenantId(Long tenantId, Pageable pageable);
-
-    Page<Segment> findByTenantIdAndComponent(Long tenantId, boolean component, Pageable pageable);
-
-    Page<Segment> findByTenantIdAndNameContainingIgnoreCase(Long tenantId, String name, Pageable pageable);
-
-    Page<Segment> findByTenantIdAndCategoryId(Long tenantId, Long categoryId, Pageable pageable);
 
     List<Segment> findByTenantIdAndComponent(Long tenantId, boolean component);
 
@@ -30,17 +25,21 @@ public interface SegmentRepository extends JpaRepository<Segment, Long> {
 
     long countByComponent(boolean component);
 
-    Page<Segment> findByIdIn(List<Long> ids, Pageable pageable);
+    Page<Segment> findByTenantIdAndIdIn(Long tenantId, List<Long> ids, Pageable pageable);
 
     /**
      * Dynamic query for segment listing with optional filters.
      * All filter parameters are optional — pass null to skip a filter.
+     *
+     * <p>Note: The {@code LOWER(name) LIKE} pattern bypasses standard B-tree indexes.
+     * For high-traffic deployments, consider adding a {@code pg_trgm} GIN index:
+     * {@code CREATE INDEX idx_segments_name_trgm ON segments USING gin (LOWER(name) gin_trgm_ops);}</p>
      */
     @Query("SELECT s FROM Segment s WHERE s.tenantId = :tenantId "
             + "AND (CAST(:name AS string) IS NULL OR LOWER(s.name) LIKE LOWER(CONCAT('%', CAST(:name AS string), '%'))) "
             + "AND (CAST(:categoryId AS long) IS NULL OR s.categoryId = :categoryId) "
             + "AND (CAST(:segmentType AS string) IS NULL OR s.segmentType = :segmentType) "
-            + "AND (:isComponent IS NULL OR s.component = :isComponent) "
+            + "AND (CAST(:isComponent AS boolean) IS NULL OR s.component = :isComponent) "
             + "AND (:segmentIds IS NULL OR s.id IN :segmentIds)")
     Page<Segment> findByFilters(@Param("tenantId") Long tenantId,
                                 @Param("name") String name,

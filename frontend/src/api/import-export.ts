@@ -1,11 +1,11 @@
 import request from './request'
 import type { TemplateDTO } from './templates'
 
-/** Upload a file via multipart POST and return TemplateDTO */
-function uploadFile(url: string, file: File): Promise<TemplateDTO> {
+/** Upload a file via multipart POST and return typed response */
+export function uploadFile<T = TemplateDTO>(url: string, file: File): Promise<T> {
   const formData = new FormData()
   formData.append('file', file)
-  return request.post<any, TemplateDTO>(url, formData, {
+  return request.post<any, T>(url, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
 }

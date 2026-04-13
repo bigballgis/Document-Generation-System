@@ -1,5 +1,6 @@
 import request from './request'
 import type { TemplateDTO } from './templates'
+import { uploadFile } from './import-export'
 import type {
   Segment,
   AssemblyConfig,
@@ -87,11 +88,7 @@ export function exportCompositeConfig(id: number) {
 }
 
 export function importCompositeFromZip(file: File) {
-  const formData = new FormData()
-  formData.append('file', file)
-  return request.post<any, TemplateDTO>('/composite-templates/import', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  })
+  return uploadFile<TemplateDTO>('/composite-templates/import', file)
 }
 
 // ── Recommendations ──
