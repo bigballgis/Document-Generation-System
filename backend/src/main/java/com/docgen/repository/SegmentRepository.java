@@ -37,9 +37,9 @@ public interface SegmentRepository extends JpaRepository<Segment, Long> {
      * All filter parameters are optional — pass null to skip a filter.
      */
     @Query("SELECT s FROM Segment s WHERE s.tenantId = :tenantId "
-            + "AND (:name IS NULL OR LOWER(s.name) LIKE LOWER(CONCAT('%', :name, '%'))) "
-            + "AND (:categoryId IS NULL OR s.categoryId = :categoryId) "
-            + "AND (:segmentType IS NULL OR s.segmentType = :segmentType) "
+            + "AND (CAST(:name AS string) IS NULL OR LOWER(s.name) LIKE LOWER(CONCAT('%', CAST(:name AS string), '%'))) "
+            + "AND (CAST(:categoryId AS long) IS NULL OR s.categoryId = :categoryId) "
+            + "AND (CAST(:segmentType AS string) IS NULL OR s.segmentType = :segmentType) "
             + "AND (:isComponent IS NULL OR s.component = :isComponent) "
             + "AND (:segmentIds IS NULL OR s.id IN :segmentIds)")
     Page<Segment> findByFilters(@Param("tenantId") Long tenantId,
