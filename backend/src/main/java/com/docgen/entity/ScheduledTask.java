@@ -1,6 +1,8 @@
 package com.docgen.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 
@@ -27,6 +29,7 @@ public class ScheduledTask {
     private boolean enabled = false;
 
     @Column(name = "params_json", columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     private String paramsJson;
 
     @Column(name = "max_retries", nullable = false)

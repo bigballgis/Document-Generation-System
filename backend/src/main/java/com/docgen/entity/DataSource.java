@@ -3,7 +3,9 @@ package com.docgen.entity;
 import jakarta.persistence.*;
 import org.hibernate.annotations.Filter;
 import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.ParamDef;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 
@@ -29,6 +31,7 @@ public class DataSource {
     private String type;
 
     @Column(name = "config_json", nullable = false, columnDefinition = "JSONB")
+    @JdbcTypeCode(SqlTypes.JSON)
     private String configJson;
 
     @Column(name = "cache_enabled", nullable = false)

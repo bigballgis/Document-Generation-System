@@ -1,6 +1,8 @@
 package com.docgen.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 
@@ -33,6 +35,7 @@ public class AuditLog {
     private Long resourceId;
 
     @Column(name = "details_json", columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     private String detailsJson;
 
     @Column(name = "ip_address", length = 45)

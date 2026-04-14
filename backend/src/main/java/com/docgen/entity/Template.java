@@ -2,6 +2,8 @@ package com.docgen.entity;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 
@@ -60,6 +62,7 @@ public class Template {
     private String templateType = "SINGLE";
 
     @Column(name = "assembly_config", columnDefinition = "JSONB")
+    @JdbcTypeCode(SqlTypes.JSON)
     private String assemblyConfig;
 
     @Column(name = "created_at", nullable = false, updatable = false)

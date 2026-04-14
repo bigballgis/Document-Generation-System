@@ -1,6 +1,8 @@
 package com.docgen.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 
@@ -24,6 +26,7 @@ public class SegmentTestData {
     private String name;
 
     @Column(name = "test_data_json", nullable = false, columnDefinition = "JSONB")
+    @JdbcTypeCode(SqlTypes.JSON)
     private String testDataJson;
 
     @Column(name = "created_by", nullable = false)

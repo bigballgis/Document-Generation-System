@@ -2,6 +2,8 @@ package com.docgen.entity;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 
@@ -55,6 +57,7 @@ public class AsyncTask {
     private String errorMessage;
 
     @Column(name = "result_data", columnDefinition = "JSONB")
+    @JdbcTypeCode(SqlTypes.JSON)
     private String resultData;
 
     @Column(name = "created_at", nullable = false, updatable = false)
