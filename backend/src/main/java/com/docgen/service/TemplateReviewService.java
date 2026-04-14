@@ -41,15 +41,18 @@ public class TemplateReviewService {
     private final TemplateRepository templateRepository;
     private final TemplateStateMachineService stateMachineService;
     private final ObjectMapper objectMapper;
+    private final AutoActivationService autoActivationService;
 
     public TemplateReviewService(TemplateReviewRepository reviewRepository,
                                  TemplateRepository templateRepository,
                                  TemplateStateMachineService stateMachineService,
-                                 ObjectMapper objectMapper) {
+                                 ObjectMapper objectMapper,
+                                 AutoActivationService autoActivationService) {
         this.reviewRepository = reviewRepository;
         this.templateRepository = templateRepository;
         this.stateMachineService = stateMachineService;
         this.objectMapper = objectMapper;
+        this.autoActivationService = autoActivationService;
     }
 
     /**
@@ -219,9 +222,9 @@ public class TemplateReviewService {
                 .existsByTemplateIdAndReviewLevelAndStatus(templateId, reviewLevel + 1, ReviewStatus.PENDING);
 
         if (!nextLevelPending) {
-            // All levels completed — transition to REVIEWED
-            stateMachineService.transition(templateId, TemplateState.REVIEWED);
-            log.info("All review levels completed, template {} transitioned to REVIEWED", templateId);
+            // All levels completed — auto-activate (PENDING_REVIEW → REVIEWED → ACTIVE + API Key)
+            autoActivationService.tryAutoActivate(templateId);
+            log.info("All review levels completed, auto-activation triggered for template {}", templateId);
         }
     }
 

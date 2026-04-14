@@ -268,6 +268,25 @@ public class TemplateService {
         return toDTO(saved);
     }
 
+    /**
+     * Create a new draft version from an ACTIVE template.
+     * This is a special operation that bypasses the state machine,
+     * allowing ACTIVE → DRAFT transition for editing purposes.
+     */
+    @Transactional
+    public TemplateDTO createDraftVersion(Long templateId, Long userId) {
+        Template template = findTemplateOrThrow(templateId);
+        if (!"ACTIVE".equals(template.getStatus())) {
+            throw new BusinessException(ErrorCode.TEMPLATE_INVALID_STATE_TRANSITION,
+                    "只有 ACTIVE 状态的模板才能创建草稿版本", HttpStatus.BAD_REQUEST);
+        }
+        createVersionSnapshot(template);
+        template.setStatus("DRAFT");
+        templateRepository.save(template);
+        log.info("Draft version created for template: id={}, by userId={}", templateId, userId);
+        return toDTO(template);
+    }
+
     // ── Private helpers ──
 
     private Template findTemplateOrThrow(Long id) {
@@ -403,7 +422,7 @@ public class TemplateService {
     }
 
     private TemplateDTO toDTO(Template template) {
-        return new TemplateDTO(
+        TemplateDTO dto = new TemplateDTO(
                 template.getId(),
                 template.getTenantId(),
                 template.getName(),
@@ -420,6 +439,9 @@ public class TemplateService {
                 template.getCreatedAt(),
                 template.getUpdatedAt()
         );
+        dto.setTemplateType(template.getTemplateType());
+        dto.setVersion(templateVersionRepository.findMaxVersionNumber(template.getId()).orElse(0));
+        return dto;
     }
 
     private TemplateVersionDTO toVersionDTO(TemplateVersion version) {

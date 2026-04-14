@@ -20,6 +20,8 @@ public class TemplateDTO {
     private Long categoryId;
     private boolean reviewRequired;
     private String status;
+    private String templateType;
+    private Integer version;
     private Instant createdAt;
     private Instant updatedAt;
 
@@ -91,4 +93,10 @@ public class TemplateDTO {
 
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+
+    public String getTemplateType() { return templateType; }
+    public void setTemplateType(String templateType) { this.templateType = templateType; }
+
+    public Integer getVersion() { return version; }
+    public void setVersion(Integer version) { this.version = version; }
 }

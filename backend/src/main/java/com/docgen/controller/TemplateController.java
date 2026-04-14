@@ -187,6 +187,16 @@ public class TemplateController {
         return ResponseEntity.ok(stateMachineService.getAvailableTransitions(id));
     }
 
+    // ── Create Draft Version endpoint ──
+
+    @PostMapping("/{id}/create-draft-version")
+    public ResponseEntity<TemplateDTO> createDraftVersion(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        TemplateDTO result = templateService.createDraftVersion(id, principal.getUserId());
+        return ResponseEntity.ok(result);
+    }
+
     // ── Migration endpoint ──
 
     /**
