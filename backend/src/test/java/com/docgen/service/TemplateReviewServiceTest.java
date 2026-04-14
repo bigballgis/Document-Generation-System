@@ -38,6 +38,9 @@ class TemplateReviewServiceTest {
     @Mock
     private TemplateStateMachineService stateMachineService;
 
+    @Mock
+    private AutoActivationService autoActivationService;
+
     private TemplateReviewService reviewService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -45,7 +48,7 @@ class TemplateReviewServiceTest {
     @BeforeEach
     void setUp() {
         reviewService = new TemplateReviewService(
-                reviewRepository, templateRepository, stateMachineService, objectMapper);
+                reviewRepository, templateRepository, stateMachineService, objectMapper, autoActivationService);
     }
 
     // ── submitForReview tests ──
@@ -119,7 +122,7 @@ class TemplateReviewServiceTest {
     }
 
     @Test
-    void approveReview_allApproved_transitionsToReviewed() {
+    void approveReview_allApproved_triggersAutoActivation() {
         TemplateReview review = createPendingReview(1L, 100L, 10L, 1);
         when(reviewRepository.findById(1L)).thenReturn(Optional.of(review));
         when(reviewRepository.save(any())).thenAnswer(inv -> {
@@ -137,7 +140,7 @@ class TemplateReviewServiceTest {
 
         reviewService.approveReview(1L, 10L, "OK");
 
-        verify(stateMachineService).transition(100L, com.docgen.entity.TemplateState.REVIEWED);
+        verify(autoActivationService).tryAutoActivate(100L);
     }
 
     @Test
@@ -155,8 +158,8 @@ class TemplateReviewServiceTest {
 
         reviewService.approveReview(1L, 10L, "OK");
 
-        // Should NOT transition to REVIEWED since level 2 is still pending
-        verify(stateMachineService, never()).transition(eq(100L), eq(com.docgen.entity.TemplateState.REVIEWED));
+        // Should NOT trigger auto-activation since level 2 is still pending
+        verify(autoActivationService, never()).tryAutoActivate(anyLong());
     }
 
     // ── conditionalApprove tests ──
@@ -250,6 +253,64 @@ class TemplateReviewServiceTest {
 
         assertTrue(url.contains("templates/test.docx"));
         assertTrue(url.contains("mode=review"));
+    }
+
+    // ── AutoActivationService integration tests ──
+
+    @Test
+    void approveReview_partialReviewsIncomplete_doesNotCallAutoActivation() {
+        TemplateReview review1 = createPendingReview(1L, 100L, 10L, 1);
+        when(reviewRepository.findById(1L)).thenReturn(Optional.of(review1));
+        when(reviewRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        // One approved, one still pending at same level
+        TemplateReview approved = createPendingReview(1L, 100L, 10L, 1);
+        approved.setStatus(ReviewStatus.APPROVED);
+        TemplateReview pending = createPendingReview(2L, 100L, 20L, 1);
+        when(reviewRepository.findByTemplateIdAndReviewLevel(100L, 1))
+                .thenReturn(List.of(approved, pending));
+
+        reviewService.approveReview(1L, 10L, "OK");
+
+        verify(autoActivationService, never()).tryAutoActivate(anyLong());
+    }
+
+    @Test
+    void conditionalApprove_allCompleted_noNextLevel_triggersAutoActivation() {
+        TemplateReview review = createPendingReview(1L, 100L, 10L, 1);
+        when(reviewRepository.findById(1L)).thenReturn(Optional.of(review));
+        when(reviewRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        TemplateReview conditionallyApproved = createPendingReview(1L, 100L, 10L, 1);
+        conditionallyApproved.setStatus(ReviewStatus.CONDITIONAL_APPROVED);
+        when(reviewRepository.findByTemplateIdAndReviewLevel(100L, 1))
+                .thenReturn(List.of(conditionallyApproved));
+        when(reviewRepository.existsByTemplateIdAndReviewLevelAndStatus(100L, 2, ReviewStatus.PENDING))
+                .thenReturn(false);
+
+        com.docgen.dto.ConditionalApproveRequest request =
+                new com.docgen.dto.ConditionalApproveRequest("OK with changes", List.of("Fix typo"));
+        reviewService.conditionalApprove(1L, 10L, request);
+
+        verify(autoActivationService).tryAutoActivate(100L);
+    }
+
+    @Test
+    void approveReview_nextLevelExists_doesNotCallAutoActivation() {
+        TemplateReview review = createPendingReview(1L, 100L, 10L, 1);
+        when(reviewRepository.findById(1L)).thenReturn(Optional.of(review));
+        when(reviewRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        TemplateReview approved = createPendingReview(1L, 100L, 10L, 1);
+        approved.setStatus(ReviewStatus.APPROVED);
+        when(reviewRepository.findByTemplateIdAndReviewLevel(100L, 1))
+                .thenReturn(List.of(approved));
+        when(reviewRepository.existsByTemplateIdAndReviewLevelAndStatus(100L, 2, ReviewStatus.PENDING))
+                .thenReturn(true);
+
+        reviewService.approveReview(1L, 10L, "OK");
+
+        verify(autoActivationService, never()).tryAutoActivate(anyLong());
     }
 
     // ── Helper methods ──
