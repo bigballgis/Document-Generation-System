@@ -2,7 +2,7 @@
   <div class="visual-editor-tab">
     <!-- Empty state -->
     <el-empty
-      v-if="mergedSegments.length === 0"
+      v-if="segments.length === 0"
       :description="t('workspace.editor.empty')"
     >
       <el-button type="primary" link @click="$emit('switchToSegments')">
@@ -24,10 +24,10 @@
             v-if="selectiveMode"
             type="warning"
             :loading="previewLoading"
-            :disabled="selectedSegmentIds.length === 0"
+            :disabled="selectedPositions.length === 0"
             @click="handleSelectivePreview"
           >
-            {{ t('workspace.editor.selectivePreview') }} ({{ selectedSegmentIds.length }})
+            {{ t('workspace.editor.selectivePreview') }} ({{ selectedPositions.length }})
           </el-button>
           <el-button
             type="primary"
@@ -41,8 +41,7 @@
 
       <!-- Segment table -->
       <el-table
-        v-loading="loadingLocks"
-        :data="mergedSegments"
+        :data="segments"
         style="width: 100%"
         @selection-change="handleSelectionChange"
       >
@@ -76,35 +75,13 @@
           </template>
         </el-table-column>
         <el-table-column
-          :label="t('common.updatedAt')"
-          width="170"
-        >
-          <template #default="{ row }">
-            {{ row.updatedAt ?? '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column
-          :label="t('workspace.editor.lockStatus')"
-          width="180"
-        >
-          <template #default="{ row }">
-            <span v-if="getLockInfo(row.segmentId)" class="lock-indicator">
-              <el-icon><Lock /></el-icon>
-              <span class="lock-user">
-                {{ t('workspace.editor.lockedBy', { user: getLockInfo(row.segmentId)!.lockedByUsername }) }}
-              </span>
-            </span>
-          </template>
-        </el-table-column>
-        <el-table-column
           :label="t('common.actions')"
           width="140"
           align="center"
         >
           <template #default="{ row }">
-            <el-button type="primary" link @click="openEditor(row.segmentId)">
-              {{ t('workspace.editor.openEditor') }}
-            </el-button>
+            <el-tag v-if="!row.enabled" size="small" type="info">{{ t('common.disable') }}</el-tag>
+            <el-tag v-else-if="row.filePath" size="small" type="success">{{ t('common.enable') }}</el-tag>
           </template>
         </el-table-column>
       </el-table>
@@ -116,11 +93,9 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
-import { Lock } from '@element-plus/icons-vue'
 import { useTemplateWorkspaceStore } from '@/stores/templateWorkspace'
-import { getSegmentLockInfo } from '@/api/segments'
 import { previewCompositeTemplate, previewSelectiveSegments } from '@/api/composite-templates'
-import type { AssemblySegmentEntry, LockInfo } from '@/types/segment'
+import type { AssemblySegmentEntry } from '@/types/segment'
 
 defineEmits<{
   switchToSegments: []
@@ -129,62 +104,14 @@ defineEmits<{
 const { t } = useI18n()
 const store = useTemplateWorkspaceStore()
 
-const lockInfoMap = ref<Map<number, LockInfo | null>>(new Map())
-const loadingLocks = ref(false)
 const previewLoading = ref(false)
 const selectiveMode = ref(false)
-const selectedSegmentIds = ref<number[]>([])
+const selectedPositions = ref<number[]>([])
 
-// ── Merged segment entries ──
-interface MergedSegmentEntry extends AssemblySegmentEntry {
-  name: string
-  segmentType: string | null
-  updatedAt: string | null
-}
-
-const mergedSegments = computed<MergedSegmentEntry[]>(() => {
-  const segmentMap = new Map(store.segments.map(s => [s.id, s]))
-  return (store.assemblyConfig?.segments ?? []).map(entry => {
-    const detail = segmentMap.get(entry.segmentId)
-    return {
-      ...entry,
-      name: detail?.name ?? `Unknown Segment #${entry.segmentId}`,
-      segmentType: detail?.segmentType ?? null,
-      updatedAt: detail?.updatedAt ?? null,
-    }
-  })
+// ── Segments from assembly config ──
+const segments = computed<AssemblySegmentEntry[]>(() => {
+  return store.assemblyConfig?.segments ?? []
 })
-
-// ── Lock status ──
-function getLockInfo(segmentId: number): LockInfo | null {
-  return lockInfoMap.value.get(segmentId) ?? null
-}
-
-async function checkLocks() {
-  const segmentIds = store.assemblyConfig?.segments?.map(s => s.segmentId) ?? []
-  if (segmentIds.length === 0) return
-  loadingLocks.value = true
-  try {
-    const results = await Promise.allSettled(
-      segmentIds.map(id => getSegmentLockInfo(id)),
-    )
-    const newMap = new Map<number, LockInfo | null>()
-    results.forEach((result, index) => {
-      newMap.set(
-        segmentIds[index],
-        result.status === 'fulfilled' ? result.value : null,
-      )
-    })
-    lockInfoMap.value = newMap
-  } finally {
-    loadingLocks.value = false
-  }
-}
-
-// ── Editor ──
-function openEditor(segmentId: number) {
-  window.open(`/segments/${segmentId}/editor`, '_blank')
-}
 
 // ── Preview Composite ──
 async function handlePreviewComposite() {
@@ -200,16 +127,16 @@ async function handlePreviewComposite() {
 }
 
 // ── Selective Preview ──
-function handleSelectionChange(rows: MergedSegmentEntry[]) {
-  selectedSegmentIds.value = rows.map(r => r.segmentId)
+function handleSelectionChange(rows: AssemblySegmentEntry[]) {
+  selectedPositions.value = rows.map(r => r.position)
 }
 
 async function handleSelectivePreview() {
-  if (selectedSegmentIds.value.length === 0) return
+  if (selectedPositions.value.length === 0) return
   previewLoading.value = true
   try {
     const result = await previewSelectiveSegments(store.templateId, {
-      segmentIds: selectedSegmentIds.value,
+      positions: selectedPositions.value,
     })
     window.open(result.previewUrl, '_blank')
   } catch (e: any) {
@@ -218,8 +145,6 @@ async function handleSelectivePreview() {
     previewLoading.value = false
   }
 }
-
-defineExpose({ checkLocks })
 </script>
 
 <style scoped>
@@ -244,20 +169,5 @@ defineExpose({ checkLocks })
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.lock-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--el-color-warning);
-  font-size: 13px;
-}
-
-.lock-user {
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 </style>

@@ -5,7 +5,6 @@ package com.docgen.dto;
  */
 public class SegmentRenderResult {
 
-    private Long segmentId;
     private String segmentName;
     private boolean success;
     private long renderTimeMs;
@@ -18,9 +17,6 @@ public class SegmentRenderResult {
     private transient byte[] renderedBytes;
 
     public SegmentRenderResult() {}
-
-    public Long getSegmentId() { return segmentId; }
-    public void setSegmentId(Long segmentId) { this.segmentId = segmentId; }
 
     public String getSegmentName() { return segmentName; }
     public void setSegmentName(String segmentName) { this.segmentName = segmentName; }

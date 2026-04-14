@@ -6,9 +6,6 @@
           <el-icon><ArrowLeft /></el-icon> {{ $t('common.back') }}
         </el-button>
         <h2>{{ $t('composite.assemblyEditor') }}</h2>
-        <el-tag v-if="editLocked" type="warning" size="small">
-          <el-icon><Lock /></el-icon> {{ $t('assembly.editLocked') }}
-        </el-tag>
       </div>
       <div class="header-actions">
         <el-button :disabled="!canUndo" @click="undo">{{ $t('assembly.undo') }}</el-button>
@@ -34,11 +31,7 @@
       <div class="editor-main">
         <!-- Empty State -->
         <div v-if="assemblyConfig.segments.value.length === 0" class="empty-state">
-          <el-empty :description="$t('assembly.emptyHint')">
-            <el-button type="primary" @click="searchPanelVisible = true">
-              {{ $t('assembly.addFirstSegment') }}
-            </el-button>
-          </el-empty>
+          <el-empty :description="$t('assembly.emptyHint')" />
         </div>
 
         <!-- Batch Actions -->
@@ -53,14 +46,13 @@
         <div class="segment-list">
           <div
             v-for="(entry, index) in assemblyConfig.segments.value"
-            :key="entry.segmentId + '-' + index"
+            :key="entry.filePath + '-' + index"
             class="segment-card"
             :class="{
               'is-dragging': drag.draggingIndex.value === index,
               'is-drop-target': drag.dropTargetIndex.value === index,
               'is-disabled': !entry.enabled,
               'is-selected': selectedIndex === index,
-              'is-locked': segmentLocks[entry.segmentId],
             }"
             draggable="true"
             @dragstart="drag.onDragStart(index)"
@@ -76,10 +68,9 @@
                 @click.stop
               />
               <span class="position-badge">{{ index + 1 }}</span>
-              <span class="segment-name">{{ segmentNameMap[entry.segmentId] || `#${entry.segmentId}` }}</span>
+              <span class="segment-name">{{ entry.name || `#${index + 1}` }}</span>
               <el-tag v-if="!entry.enabled" size="small" type="info">{{ $t('common.disable') }}</el-tag>
-              <el-tag v-if="entry.lockedVersion" size="small" type="warning">v{{ entry.lockedVersion }}</el-tag>
-              <el-icon v-if="segmentLocks[entry.segmentId]" class="lock-icon"><Lock /></el-icon>
+              <el-tag v-if="entry.segmentType" size="small" type="info">{{ entry.segmentType }}</el-tag>
             </div>
 
             <!-- Segment Config -->
@@ -90,16 +81,6 @@
                 </el-form-item>
                 <el-form-item :label="$t('assembly.pageBreak')">
                   <el-switch v-model="entry.pageBreakBefore" @change="markChanged(index, { pageBreakBefore: entry.pageBreakBefore })" />
-                </el-form-item>
-                <el-form-item :label="$t('assembly.lockedVersion')">
-                  <el-input-number
-                    v-model="entry.lockedVersion"
-                    :min="0"
-                    :placeholder="$t('assembly.latestVersion')"
-                    controls-position="right"
-                    style="width: 120px"
-                    @change="markChanged(index, { lockedVersion: entry.lockedVersion })"
-                  />
                 </el-form-item>
               </el-form>
               <el-form size="small" label-width="100px">
@@ -120,18 +101,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Right: Search & Recommend -->
-      <div class="editor-right-panel">
-        <el-button style="width: 100%; margin-bottom: 12px" @click="searchPanelVisible = !searchPanelVisible">
-          {{ $t('assembly.searchSegments') }}
-        </el-button>
-        <SegmentSearchPanel
-          v-if="searchPanelVisible"
-          @add="handleAddSegment"
-        />
-        <SegmentRecommendPanel :template-id="templateId" @add="handleAddSegment" />
-      </div>
     </div>
   </div>
 </template>
@@ -141,14 +110,12 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
-import { ArrowLeft, Lock } from '@element-plus/icons-vue'
-import { getAssemblyConfig, updateAssemblyConfig, getCompositeSegments } from '@/api/composite-templates'
-import type { AssemblySegmentEntry, Segment } from '@/types/segment'
+import { ArrowLeft } from '@element-plus/icons-vue'
+import { getAssemblyConfig, updateAssemblyConfig } from '@/api/composite-templates'
+import type { AssemblySegmentEntry } from '@/types/segment'
 import { useAssemblyConfig } from '@/composables/useAssemblyConfig'
 import { useSegmentDrag } from '@/composables/useSegmentDrag'
 import OutlineNavigation from './components/OutlineNavigation.vue'
-import SegmentSearchPanel from './components/SegmentSearchPanel.vue'
-import SegmentRecommendPanel from './components/SegmentRecommendPanel.vue'
 import DataScopeMapper from './components/DataScopeMapper.vue'
 
 const route = useRoute()
@@ -159,10 +126,6 @@ const templateId = Number(route.params.id)
 const saving = ref(false)
 const selectedIndex = ref<number>(-1)
 const selectedIndices = ref<number[]>([])
-const searchPanelVisible = ref(false)
-const editLocked = ref(false)
-const segmentLocks = ref<Record<number, boolean>>({})
-const segmentNameMap = ref<Record<number, string>>({})
 
 const assemblyConfig = useAssemblyConfig()
 const { canUndo, canRedo, undo, redo } = assemblyConfig
@@ -217,20 +180,6 @@ function markChanged(index: number, patch: Partial<AssemblySegmentEntry>) {
   assemblyConfig.updateSegment(index, patch)
 }
 
-function handleAddSegment(segment: { id: number; name: string }) {
-  const entry: AssemblySegmentEntry = {
-    segmentId: segment.id,
-    position: assemblyConfig.segments.value.length,
-    enabled: true,
-    pageBreakBefore: true,
-    lockedVersion: null,
-    conditionExpression: null,
-    dataScope: null,
-  }
-  assemblyConfig.addSegment(entry)
-  segmentNameMap.value[segment.id] = segment.name
-}
-
 function handleRemove(index: number) {
   assemblyConfig.removeSegment(index)
   selectedIndex.value = -1
@@ -269,20 +218,8 @@ async function loadConfig() {
   } catch { /* handled */ }
 }
 
-async function loadSegmentNames() {
-  try {
-    const segs: Segment[] = await getCompositeSegments(templateId)
-    const map: Record<number, string> = {}
-    for (const s of segs) {
-      map[s.id] = s.name
-    }
-    segmentNameMap.value = map
-  } catch { /* handled */ }
-}
-
 onMounted(() => {
   loadConfig()
-  loadSegmentNames()
 })
 </script>
 
@@ -295,7 +232,6 @@ onMounted(() => {
 .editor-layout { display: flex; gap: 16px; min-height: 500px; }
 .editor-sidebar { width: 200px; flex-shrink: 0; }
 .editor-main { flex: 1; min-width: 0; }
-.editor-right-panel { width: 280px; flex-shrink: 0; }
 .empty-state { padding: 60px 0; }
 .batch-actions { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding: 8px 12px; background: var(--el-fill-color-light); border-radius: 4px; }
 .segment-list { display: flex; flex-direction: column; gap: 8px; }
@@ -305,11 +241,9 @@ onMounted(() => {
 .segment-card.is-drop-target { border-color: var(--el-color-primary); border-style: dashed; }
 .segment-card.is-disabled { opacity: 0.6; background: var(--el-fill-color-lighter); }
 .segment-card.is-selected { border-color: var(--el-color-primary); box-shadow: 0 0 0 1px var(--el-color-primary-light-7); }
-.segment-card.is-locked { border-left: 3px solid var(--el-color-warning); }
 .card-header { display: flex; align-items: center; gap: 8px; }
 .position-badge { background: var(--el-color-primary-light-9); color: var(--el-color-primary); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
 .segment-name { font-weight: 500; flex: 1; }
-.lock-icon { color: var(--el-color-warning); }
 .card-config { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--el-border-color-lighter); }
 .estimated-pages { margin-top: 12px; padding: 8px; background: var(--el-fill-color-light); border-radius: 4px; font-size: 13px; text-align: center; }
 </style>

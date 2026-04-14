@@ -143,7 +143,6 @@ public class WebhookService {
             List<Map<String, Object>> segmentDetails = new ArrayList<>();
             for (SegmentRenderStat stat : segmentStats) {
                 Map<String, Object> detail = new LinkedHashMap<>();
-                detail.put("segmentId", stat.getSegmentId());
                 detail.put("segmentName", stat.getSegmentName());
                 detail.put("status", stat.isSuccess() ? "SUCCESS" : "FAILED");
                 detail.put("renderTimeMs", stat.getRenderTimeMs());

@@ -37,7 +37,6 @@ public class MigrationService {
     private static final Logger log = LoggerFactory.getLogger(MigrationService.class);
 
     private final TemplateRepository templateRepository;
-    private final SegmentRepository segmentRepository;
     private final AssemblyConfigService assemblyConfigService;
     private final AuditLogService auditLogService;
     private final MinioClient minioClient;
@@ -49,7 +48,6 @@ public class MigrationService {
     private String bucketName;
 
     public MigrationService(TemplateRepository templateRepository,
-                            SegmentRepository segmentRepository,
                             AssemblyConfigService assemblyConfigService,
                             AuditLogService auditLogService,
                             MinioClient minioClient,
@@ -57,7 +55,6 @@ public class MigrationService {
                             ExpressionRepository expressionRepository,
                             TemplateVariableRepository templateVariableRepository) {
         this.templateRepository = templateRepository;
-        this.segmentRepository = segmentRepository;
         this.assemblyConfigService = assemblyConfigService;
         this.auditLogService = auditLogService;
         this.minioClient = minioClient;
@@ -95,18 +92,8 @@ public class MigrationService {
         // 2. Read the original .docx file from MinIO
         byte[] docxBytes = readTemplateFile(original.getTemplateFilePath());
 
-        // 3. Create a Segment with the original .docx content
+        // 3. Upload the .docx as a segment file in MinIO (inline mode, no Segment entity)
         String segmentFilePath = uploadSegmentFile(docxBytes, tenantId, original.getName());
-        Segment segment = new Segment();
-        segment.setTenantId(tenantId);
-        segment.setName(original.getName());
-        segment.setDescription(original.getDescription());
-        segment.setFilePath(segmentFilePath);
-        segment.setComponent(false);
-        segment.setSegmentType("CHAPTER");
-        segment.setCreatedBy(userId);
-        segment.setCategoryId(original.getCategoryId());
-        Segment savedSegment = segmentRepository.save(segment);
 
         // 4. Create the Composite_Template
         Template composite = new Template();
@@ -123,10 +110,12 @@ public class MigrationService {
         composite.setReviewRequired(original.isReviewRequired());
         composite.setAllowHistoryVersions(original.isAllowHistoryVersions());
 
-        // Build Assembly_Config with the single segment
+        // Build Assembly_Config with inline segment data
         AssemblyConfigDTO assemblyConfig = new AssemblyConfigDTO();
         AssemblySegmentEntry entry = new AssemblySegmentEntry();
-        entry.setSegmentId(savedSegment.getId());
+        entry.setFilePath(segmentFilePath);
+        entry.setName(original.getName());
+        entry.setSegmentType("CHAPTER");
         entry.setPosition(0);
         entry.setEnabled(true);
         entry.setPageBreakBefore(false);
@@ -148,20 +137,19 @@ public class MigrationService {
 
         // 7. Record audit log
         String details = String.format(
-                "{\"sourceTemplateId\":%d,\"compositeTemplateId\":%d,\"segmentId\":%d,"
+                "{\"sourceTemplateId\":%d,\"compositeTemplateId\":%d,"
                         + "\"migratedDataSources\":%d,\"migratedExpressions\":%d,\"migratedVariableBindings\":%d}",
-                templateId, savedComposite.getId(), savedSegment.getId(),
+                templateId, savedComposite.getId(),
                 migratedDataSources, migratedExpressions, migratedVariableBindings);
         auditLogService.log(tenantId, userId, "TEMPLATE_MIGRATED",
                 "TEMPLATE", savedComposite.getId(), details, null);
 
-        log.info("Template migrated: sourceId={}, compositeId={}, segmentId={}, tenantId={}",
-                templateId, savedComposite.getId(), savedSegment.getId(), tenantId);
+        log.info("Template migrated: sourceId={}, compositeId={}, tenantId={}",
+                templateId, savedComposite.getId(), tenantId);
 
         // 8. Build result
         MigrationResultDTO result = new MigrationResultDTO();
         result.setCompositeTemplateId(savedComposite.getId());
-        result.setSegmentId(savedSegment.getId());
         result.setMigratedDataSources(migratedDataSources);
         result.setMigratedExpressions(migratedExpressions);
         result.setMigratedVariableBindings(migratedVariableBindings);

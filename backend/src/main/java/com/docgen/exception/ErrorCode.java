@@ -128,17 +128,11 @@ public final class ErrorCode {
     public static final String MARKET_TEMPLATE_NOT_FOUND = "MARKET_TEMPLATE_NOT_FOUND";
     public static final String MARKET_TEMPLATE_ALREADY_SHARED = "MARKET_TEMPLATE_ALREADY_SHARED";
 
-    // ── SEGMENT (段落管理) ──
-    public static final String SEGMENT_NOT_FOUND = "SEGMENT_NOT_FOUND";
-    public static final String SEGMENT_REFERENCED = "SEGMENT_REFERENCED";
-    public static final String SEGMENT_VERSION_FILE_MISSING = "SEGMENT_VERSION_FILE_MISSING";
-
-    // ── COMPONENT (组件模板) ──
-    public static final String COMPONENT_REFERENCED = "COMPONENT_REFERENCED";
-
     // ── COMPOSITE TEMPLATE (组合模板) ──
     public static final String COMPOSITE_TEMPLATE_EMPTY = "COMPOSITE_TEMPLATE_EMPTY";
     public static final String GENERATE_ALL_SEGMENTS_SKIPPED = "GENERATE_ALL_SEGMENTS_SKIPPED";
+    public static final String ASSEMBLY_CONFIG_INVALID = "ASSEMBLY_CONFIG_INVALID";
+    public static final String SEGMENT_FILE_NOT_FOUND = "SEGMENT_FILE_NOT_FOUND";
 
     // ── MIGRATION (迁移工具) ──
     public static final String MIGRATION_FILE_ACCESS_FAILED = "MIGRATION_FILE_ACCESS_FAILED";

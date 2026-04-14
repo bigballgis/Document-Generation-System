@@ -47,27 +47,25 @@
       <!-- Tabs -->
       <el-tabs v-model="activeTab" type="border-card" style="margin-top: 16px">
         <el-tab-pane :label="$t('composite.segments')" name="segments">
-          <!-- Segment Preview List -->
-          <el-table :data="compositeSegments" v-loading="segmentsLoading" stripe>
-            <el-table-column prop="name" :label="$t('segment.name')" min-width="180" />
-            <el-table-column prop="description" :label="$t('common.description')" min-width="180" show-overflow-tooltip />
-            <el-table-column :label="$t('segment.isComponent')" width="100" align="center">
-              <template #default="{ row }">
-                <el-tag v-if="row.isComponent" size="small" type="success">{{ $t('segment.componentSegment') }}</el-tag>
-                <el-tag v-else size="small" type="info">{{ $t('segment.normalSegment') }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column :label="$t('segment.type')" width="120">
+          <!-- Segment list from assembly config -->
+          <el-table :data="assemblySegments" v-loading="configLoading" stripe>
+            <el-table-column prop="name" :label="$t('common.name')" min-width="180" />
+            <el-table-column :label="$t('common.type')" width="120">
               <template #default="{ row }">
                 <el-tag v-if="row.segmentType" size="small" type="info">{{ row.segmentType }}</el-tag>
                 <span v-else>-</span>
               </template>
             </el-table-column>
+            <el-table-column :label="$t('common.status')" width="100" align="center">
+              <template #default="{ row }">
+                <el-tag v-if="row.enabled" size="small" type="success">{{ $t('common.enable') }}</el-tag>
+                <el-tag v-else size="small" type="info">{{ $t('common.disable') }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column :label="$t('workspace.editor.position')" width="80" align="center">
+              <template #default="{ row }">{{ row.position + 1 }}</template>
+            </el-table-column>
           </el-table>
-        </el-tab-pane>
-
-        <el-tab-pane :label="$t('composite.reviews')" name="reviews">
-          <SegmentReviewPanel :template-id="templateId" />
         </el-tab-pane>
       </el-tabs>
     </template>
@@ -84,10 +82,9 @@ import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { getTemplate, type TemplateDTO } from '@/api/templates'
-import { getCompositeSegments, previewCompositeTemplate } from '@/api/composite-templates'
-import type { Segment } from '@/types/segment'
+import { getAssemblyConfig, previewCompositeTemplate } from '@/api/composite-templates'
+import type { AssemblySegmentEntry } from '@/types/segment'
 import CoverageIndicator from './components/CoverageIndicator.vue'
-import SegmentReviewPanel from './components/SegmentReviewPanel.vue'
 import MigrationDialog from './components/MigrationDialog.vue'
 
 const route = useRoute()
@@ -98,8 +95,8 @@ const templateId = Number(route.params.id)
 const loading = ref(false)
 const template = ref<TemplateDTO | null>(null)
 const activeTab = ref('segments')
-const compositeSegments = ref<Segment[]>([])
-const segmentsLoading = ref(false)
+const assemblySegments = ref<AssemblySegmentEntry[]>([])
+const configLoading = ref(false)
 const migrationDialogVisible = ref(false)
 
 type ElTagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
@@ -118,12 +115,13 @@ async function fetchTemplate() {
   }
 }
 
-async function fetchSegments() {
-  segmentsLoading.value = true
+async function fetchAssemblyConfig() {
+  configLoading.value = true
   try {
-    compositeSegments.value = await getCompositeSegments(templateId)
+    const config = await getAssemblyConfig(templateId)
+    assemblySegments.value = config.segments ?? []
   } catch { /* handled */ } finally {
-    segmentsLoading.value = false
+    configLoading.value = false
   }
 }
 
@@ -136,7 +134,7 @@ async function handlePreview() {
 
 onMounted(() => {
   fetchTemplate()
-  fetchSegments()
+  fetchAssemblyConfig()
 })
 </script>
 

@@ -3,14 +3,12 @@ package com.docgen.service;
 import com.docgen.dto.*;
 import com.docgen.entity.DataSource;
 import com.docgen.entity.Expression;
-import com.docgen.entity.Segment;
 import com.docgen.entity.Template;
 import com.docgen.entity.TestCase;
 import com.docgen.exception.BusinessException;
 import com.docgen.exception.ErrorCode;
 import com.docgen.repository.DataSourceRepository;
 import com.docgen.repository.ExpressionRepository;
-import com.docgen.repository.SegmentRepository;
 import com.docgen.repository.TemplateRepository;
 import com.docgen.repository.TestCaseRepository;
 import com.docgen.util.TenantContext;
@@ -37,19 +35,7 @@ import java.util.zip.ZipOutputStream;
 
 /**
  * Service for importing and exporting Composite_Templates as ZIP archives.
- * <p>
- * ZIP structure:
- * <pre>
- *   config.json            — Assembly_Config + template metadata
- *   segments/
- *     {segmentName}.docx   — Each segment's .docx file
- *   data-sources.json      — Data source configurations (credentials masked)
- *   expressions.json       — Expression definitions
- *   test-data.json         — Test case entries
- *   coverage-report.json   — Coverage report (export-only, not imported)
- * </pre>
- *
- * <p>Validates: Requirements 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 12.1, 12.2, 12.3, 12.4, 12.5</p>
+ * Uses inline segment data from assembly_config (filePath-based, no SegmentRepository).
  */
 @Service
 public class CompositeImportExportService {
@@ -58,7 +44,6 @@ public class CompositeImportExportService {
     static final String CREDENTIAL_PLACEHOLDER = "__CREDENTIAL_PLACEHOLDER__";
 
     private final TemplateRepository templateRepository;
-    private final SegmentRepository segmentRepository;
     private final AssemblyConfigService assemblyConfigService;
     private final MinioClient minioClient;
     private final ObjectMapper objectMapper;
@@ -71,7 +56,6 @@ public class CompositeImportExportService {
     private String bucketName;
 
     public CompositeImportExportService(TemplateRepository templateRepository,
-                                        SegmentRepository segmentRepository,
                                         AssemblyConfigService assemblyConfigService,
                                         MinioClient minioClient,
                                         ObjectMapper objectMapper,
@@ -80,7 +64,6 @@ public class CompositeImportExportService {
                                         TestCaseRepository testCaseRepository,
                                         CompositeCoverageService compositeCoverageService) {
         this.templateRepository = templateRepository;
-        this.segmentRepository = segmentRepository;
         this.assemblyConfigService = assemblyConfigService;
         this.minioClient = minioClient;
         this.objectMapper = objectMapper;
@@ -92,6 +75,7 @@ public class CompositeImportExportService {
 
     /**
      * Export a Composite_Template as a ZIP containing all Segment .docx files + config.json.
+     * Downloads files directly from assembly_config filePath.
      */
     @Transactional(readOnly = true)
     public byte[] exportAsZip(Long compositeTemplateId) {
@@ -108,24 +92,23 @@ public class CompositeImportExportService {
             zos.write(configBytes);
             zos.closeEntry();
 
-            // Write each segment .docx
+            // Write each segment .docx directly from inline filePath
             if (config.getSegments() != null) {
                 Set<String> usedNames = new HashSet<>();
                 for (AssemblySegmentEntry entry : config.getSegments()) {
-                    Segment segment = segmentRepository.findById(entry.getSegmentId()).orElse(null);
-                    if (segment == null) {
-                        log.warn("Segment {} not found during export, skipping", entry.getSegmentId());
+                    if (entry.getFilePath() == null || entry.getFilePath().isBlank()) {
+                        log.warn("Segment '{}' has no filePath during export, skipping", entry.getName());
                         continue;
                     }
-                    byte[] docxBytes = downloadFromMinio(segment.getFilePath());
-                    String fileName = uniqueFileName(segment.getName(), usedNames);
+                    byte[] docxBytes = downloadFromMinio(entry.getFilePath());
+                    String fileName = uniqueFileName(entry.getName() != null ? entry.getName() : "segment", usedNames);
                     zos.putNextEntry(new ZipEntry("segments/" + fileName + ".docx"));
                     zos.write(docxBytes);
                     zos.closeEntry();
                 }
             }
 
-            // P4: data-sources.json (credentials masked)
+            // data-sources.json (credentials masked)
             List<DataSource> dataSources = dataSourceRepository.findByTemplateIdOrderByPriorityDesc(compositeTemplateId);
             List<Map<String, Object>> maskedDataSources = dataSources.stream()
                     .map(this::toMaskedDataSourceMap)
@@ -135,7 +118,7 @@ public class CompositeImportExportService {
             zos.write(dsBytes);
             zos.closeEntry();
 
-            // P4: expressions.json
+            // expressions.json
             List<Expression> expressions = expressionRepository.findByTemplateIdOrderByExecutionOrderAsc(compositeTemplateId);
             byte[] exprBytes = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(
                     expressions.stream().map(this::toExpressionExportMap).toList());
@@ -143,7 +126,7 @@ public class CompositeImportExportService {
             zos.write(exprBytes);
             zos.closeEntry();
 
-            // P4: test-data.json
+            // test-data.json
             List<TestCase> testCases = testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(compositeTemplateId);
             byte[] testBytes = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(
                     testCases.stream().map(this::toTestCaseExportMap).toList());
@@ -151,7 +134,7 @@ public class CompositeImportExportService {
             zos.write(testBytes);
             zos.closeEntry();
 
-            // P4: coverage-report.json (export-only, not imported)
+            // coverage-report.json (export-only)
             try {
                 CompositeCoverageReport coverageReport = compositeCoverageService.checkCoverage(compositeTemplateId);
                 byte[] covBytes = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(coverageReport);
@@ -193,8 +176,7 @@ public class CompositeImportExportService {
 
     /**
      * Import a Composite_Template from a ZIP file.
-     * Validates ZIP structure, creates Segments, creates Composite_Template.
-     * If a Component_Template with the same name exists, it is linked instead of creating a new Segment.
+     * Uploads files to MinIO and writes filePath inline to assembly_config.
      */
     @Transactional
     public TemplateDTO importFromZip(MultipartFile zipFile, Long userId) {
@@ -202,7 +184,6 @@ public class CompositeImportExportService {
 
         Map<String, byte[]> segmentFiles = new LinkedHashMap<>();
         CompositeExportConfig exportConfig = null;
-        // P4: extended file contents
         byte[] dataSourcesBytes = null;
         byte[] expressionsBytes = null;
         byte[] testDataBytes = null;
@@ -228,7 +209,6 @@ public class CompositeImportExportService {
                 } else if ("test-data.json".equals(name)) {
                     testDataBytes = content;
                 }
-                // coverage-report.json is ignored during import
                 zis.closeEntry();
             }
         } catch (Exception e) {
@@ -237,7 +217,6 @@ public class CompositeImportExportService {
                     "Invalid ZIP file: " + e.getMessage(), HttpStatus.BAD_REQUEST, e);
         }
 
-        // Validate structure
         if (exportConfig == null) {
             throw new BusinessException(ErrorCode.IMPORT_INVALID_FILE,
                     "ZIP must contain config.json", HttpStatus.BAD_REQUEST);
@@ -248,34 +227,17 @@ public class CompositeImportExportService {
                     HttpStatus.BAD_REQUEST);
         }
 
-        // Create segments and build mapping: original segmentName -> new segmentId
-        Map<String, Long> nameToSegmentId = new LinkedHashMap<>();
+        // Upload segment files to MinIO and build name -> filePath mapping
+        Map<String, String> nameToFilePath = new LinkedHashMap<>();
         for (Map.Entry<String, byte[]> fileEntry : segmentFiles.entrySet()) {
             String segmentName = fileEntry.getKey();
             byte[] docxBytes = fileEntry.getValue();
-
-            // Check if a Component_Template with the same name exists
-            Long existingComponentId = findExistingComponentByName(segmentName, tenantId);
-            if (existingComponentId != null) {
-                nameToSegmentId.put(segmentName, existingComponentId);
-                log.info("Linked existing component '{}' (id={}) during import", segmentName, existingComponentId);
-                continue;
-            }
-
-            // Create new segment
             String filePath = uploadToMinio(docxBytes, segmentName, tenantId);
-            Segment segment = new Segment();
-            segment.setTenantId(tenantId);
-            segment.setName(segmentName);
-            segment.setFilePath(filePath);
-            segment.setComponent(false);
-            segment.setCreatedBy(userId);
-            segment = segmentRepository.save(segment);
-            nameToSegmentId.put(segmentName, segment.getId());
+            nameToFilePath.put(segmentName, filePath);
         }
 
-        // Build assembly config with new segment IDs
-        AssemblyConfigDTO assemblyConfig = rebuildAssemblyConfig(exportConfig, nameToSegmentId);
+        // Build assembly config with inline filePath
+        AssemblyConfigDTO assemblyConfig = rebuildAssemblyConfig(exportConfig, nameToFilePath);
         String assemblyConfigJson;
         try {
             assemblyConfigJson = objectMapper.writeValueAsString(assemblyConfig);
@@ -298,11 +260,9 @@ public class CompositeImportExportService {
         template.setStatus("DRAFT");
         template = templateRepository.save(template);
 
-        log.info("Imported composite template: name={}, id={}, segments={}, dataSources={}, expressions={}, testData={}",
-                template.getName(), template.getId(), nameToSegmentId.size(),
-                dataSourcesBytes != null, expressionsBytes != null, testDataBytes != null);
+        log.info("Imported composite template: name={}, id={}, segments={}",
+                template.getName(), template.getId(), nameToFilePath.size());
 
-        // P4: import extended files (backward compatible — skip if not present)
         if (dataSourcesBytes != null) {
             importDataSources(dataSourcesBytes, template.getId());
         }
@@ -338,15 +298,14 @@ public class CompositeImportExportService {
         if (config.getSegments() != null) {
             for (AssemblySegmentEntry entry : config.getSegments()) {
                 CompositeExportConfig.SegmentExportEntry exportEntry = new CompositeExportConfig.SegmentExportEntry();
-                Segment segment = segmentRepository.findById(entry.getSegmentId()).orElse(null);
-                exportEntry.setSegmentName(segment != null ? segment.getName() : "unknown");
+                exportEntry.setSegmentName(entry.getName() != null ? entry.getName() : "unknown");
+                exportEntry.setFilePath(entry.getFilePath());
+                exportEntry.setSegmentType(entry.getSegmentType());
                 exportEntry.setPosition(entry.getPosition());
                 exportEntry.setEnabled(entry.isEnabled());
                 exportEntry.setPageBreakBefore(entry.isPageBreakBefore());
-                exportEntry.setLockedVersion(entry.getLockedVersion());
                 exportEntry.setConditionExpression(entry.getConditionExpression());
                 exportEntry.setDataScope(entry.getDataScope());
-                exportEntry.setComponent(segment != null && segment.isComponent());
                 entries.add(exportEntry);
             }
         }
@@ -354,32 +313,23 @@ public class CompositeImportExportService {
         return export;
     }
 
-    private Long findExistingComponentByName(String name, Long tenantId) {
-        return segmentRepository.findAll().stream()
-                .filter(s -> s.getTenantId().equals(tenantId)
-                        && s.isComponent()
-                        && s.getName().equals(name))
-                .map(Segment::getId)
-                .findFirst()
-                .orElse(null);
-    }
-
     private AssemblyConfigDTO rebuildAssemblyConfig(CompositeExportConfig exportConfig,
-                                                     Map<String, Long> nameToSegmentId) {
+                                                     Map<String, String> nameToFilePath) {
         AssemblyConfigDTO config = new AssemblyConfigDTO();
         List<AssemblySegmentEntry> entries = new ArrayList<>();
 
         if (exportConfig.getSegments() != null) {
             for (CompositeExportConfig.SegmentExportEntry exportEntry : exportConfig.getSegments()) {
-                Long segmentId = nameToSegmentId.get(exportEntry.getSegmentName());
-                if (segmentId == null) continue;
+                String filePath = nameToFilePath.get(exportEntry.getSegmentName());
+                if (filePath == null) continue;
 
                 AssemblySegmentEntry entry = new AssemblySegmentEntry();
-                entry.setSegmentId(segmentId);
+                entry.setFilePath(filePath);
+                entry.setName(exportEntry.getSegmentName());
+                entry.setSegmentType(exportEntry.getSegmentType());
                 entry.setPosition(exportEntry.getPosition());
                 entry.setEnabled(exportEntry.isEnabled());
                 entry.setPageBreakBefore(exportEntry.isPageBreakBefore());
-                entry.setLockedVersion(exportEntry.getLockedVersion());
                 entry.setConditionExpression(exportEntry.getConditionExpression());
                 entry.setDataScope(exportEntry.getDataScope());
                 entries.add(entry);
@@ -432,11 +382,8 @@ public class CompositeImportExportService {
         return result;
     }
 
-    // ── P4: Export helper methods ──
+    // ── Export helper methods ──
 
-    /**
-     * Convert a DataSource to an export Map with credential fields masked.
-     */
     Map<String, Object> toMaskedDataSourceMap(DataSource ds) {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("name", ds.getName());
@@ -457,12 +404,6 @@ public class CompositeImportExportService {
         return map;
     }
 
-    /**
-     * Mask sensitive credential fields in a data source config map.
-     * DATABASE type: mask password.
-     * All types: mask top-level apiKey, clientSecret.
-     * Recursively mask apiKey, clientSecret, password in nested auth object.
-     */
     void maskCredentialFields(Map<String, Object> config, String type) {
         if ("DATABASE".equals(type)) {
             if (config.containsKey("password")) {
@@ -475,7 +416,6 @@ public class CompositeImportExportService {
         if (config.containsKey("clientSecret")) {
             config.put("clientSecret", CREDENTIAL_PLACEHOLDER);
         }
-        // Recursively handle nested auth config
         if (config.containsKey("auth") && config.get("auth") instanceof Map) {
             @SuppressWarnings("unchecked")
             Map<String, Object> auth = (Map<String, Object>) config.get("auth");
@@ -504,7 +444,7 @@ public class CompositeImportExportService {
         return map;
     }
 
-    // ── P4: Import helper methods ──
+    // ── Import helper methods ──
 
     private void importDataSources(byte[] bytes, Long templateId) {
         try {
@@ -610,30 +550,30 @@ public class CompositeImportExportService {
 
         public static class SegmentExportEntry {
             private String segmentName;
+            private String filePath;
+            private String segmentType;
             private Integer position;
             private boolean enabled = true;
             private boolean pageBreakBefore = false;
-            private Integer lockedVersion;
             private String conditionExpression;
             private Map<String, String> dataScope;
-            private boolean component = false;
 
             public String getSegmentName() { return segmentName; }
             public void setSegmentName(String segmentName) { this.segmentName = segmentName; }
+            public String getFilePath() { return filePath; }
+            public void setFilePath(String filePath) { this.filePath = filePath; }
+            public String getSegmentType() { return segmentType; }
+            public void setSegmentType(String segmentType) { this.segmentType = segmentType; }
             public Integer getPosition() { return position; }
             public void setPosition(Integer position) { this.position = position; }
             public boolean isEnabled() { return enabled; }
             public void setEnabled(boolean enabled) { this.enabled = enabled; }
             public boolean isPageBreakBefore() { return pageBreakBefore; }
             public void setPageBreakBefore(boolean pageBreakBefore) { this.pageBreakBefore = pageBreakBefore; }
-            public Integer getLockedVersion() { return lockedVersion; }
-            public void setLockedVersion(Integer lockedVersion) { this.lockedVersion = lockedVersion; }
             public String getConditionExpression() { return conditionExpression; }
             public void setConditionExpression(String conditionExpression) { this.conditionExpression = conditionExpression; }
             public Map<String, String> getDataScope() { return dataScope; }
             public void setDataScope(Map<String, String> dataScope) { this.dataScope = dataScope; }
-            public boolean isComponent() { return component; }
-            public void setComponent(boolean component) { this.component = component; }
         }
     }
 }

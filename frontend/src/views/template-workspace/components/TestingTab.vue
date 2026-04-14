@@ -166,7 +166,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowDown, Check, Close, Warning } from '@element-plus/icons-vue'
 import { useTemplateWorkspaceStore } from '@/stores/templateWorkspace'
 import { deleteTestCase, exportTestCases, importTestCases, runTestCase } from '@/api/market'
-import { runAllCompositeTests, previewCompositeTemplate } from '@/api/composite-templates'
+import { previewCompositeTemplate } from '@/api/composite-templates'
 import { getTemplateCoverage } from '@/api/templates'
 import type { CoverageReport } from '@/api/templates'
 import type { TestCaseDTO } from '@/api/market'
@@ -275,8 +275,24 @@ async function handleImportChange(uploadFile: UploadFile) {
 async function handleRunAll() {
   runAllLoading.value = true
   try {
-    const report = await runAllCompositeTests(store.templateId)
-    store.testReport = report
+    // Run each test case individually and collect results
+    const results = await Promise.allSettled(
+      store.testCases.map(tc => runTestCase(tc.id)),
+    )
+    const passed = results.filter(r => r.status === 'fulfilled' && (r.value as any).passed).length
+    const failed = results.length - passed
+    store.testReport = {
+      totalTests: results.length,
+      passedTests: passed,
+      failedTests: failed,
+      segmentResults: results.map((r, i) => ({
+        testDataName: store.testCases[i]?.name ?? '',
+        success: r.status === 'fulfilled' && (r.value as any).passed,
+        renderTimeMs: 0,
+        errorMessage: r.status === 'rejected' ? (r.reason?.message ?? 'Failed') : (r.status === 'fulfilled' && !(r.value as any).passed ? (r.value as any).diffDetails : null),
+      })),
+      executedAt: new Date().toISOString(),
+    }
   } catch (e: any) {
     ElMessage.error(e.response?.data?.message || e.message || t('workspace.testing.runAllFailed'))
   } finally {

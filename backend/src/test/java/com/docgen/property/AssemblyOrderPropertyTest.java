@@ -3,12 +3,8 @@ package com.docgen.property;
 import com.docgen.dto.AssemblyConfigDTO;
 import com.docgen.dto.AssemblyResult;
 import com.docgen.dto.AssemblySegmentEntry;
-import com.docgen.dto.SegmentRenderResult;
-import com.docgen.entity.ExpressionType;
-import com.docgen.entity.Segment;
-import com.docgen.repository.SegmentRepository;
-import com.docgen.repository.SegmentVersionRepository;
-import com.docgen.service.*;
+import com.docgen.service.AssemblyEngineService;
+import com.docgen.service.ExpressionEngine;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
@@ -27,57 +23,35 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Property-based test for AssemblyEngineService — Property 1: Segment Order Preservation.
+ * Property-based test for AssemblyEngineService — Property 4: Segment Order Preservation.
  *
- * <p><b>Validates: Requirements 8.1, 8.2</b></p>
+ * <p><b>Validates: Requirements 3.4, 3.6, 11.14</b></p>
  *
  * <p>Verifies that after assembly, the content order in the merged document matches
- * the position order defined in the Assembly_Config.</p>
+ * the position order defined in the Assembly_Config with inline segment entries.</p>
  */
-@Tag("Feature: template-segmentation, Property 1: segmentOrderPreservedAfterAssembly")
+@Tag("Feature: remove-segment-library, Property 4: assemblyEngineSegmentOrderAndConditionFiltering")
 class AssemblyOrderPropertyTest {
 
     /**
-     * Property 1: segmentOrderPreservedAfterAssembly
+     * Property 4: assemblyEngineSegmentOrderAndConditionFiltering
      *
-     * Generate a random permutation of segments with distinct positions.
+     * Generate a random permutation of segments with distinct positions and inline filePath/name.
      * After assembly, verify that the merged document contains segment content
      * in the order defined by their position values.
-     *
-     * Strategy: Each segment renders to a unique marker string. The /merge-segments
-     * endpoint concatenates all segment buffers in order. We verify the markers
-     * appear in position-sorted order in the merged output.
      */
     @Property(tries = 100)
     void segmentOrderPreservedAfterAssembly(
             @ForAll("randomSegmentConfigs") SegmentConfigInput input
     ) throws Exception {
         // Setup mocks
-        SegmentRepository segmentRepository = mock(SegmentRepository.class);
-        SegmentVersionRepository segmentVersionRepository = mock(SegmentVersionRepository.class);
         RestTemplate restTemplate = mock(RestTemplate.class);
         MinioClient minioClient = mock(MinioClient.class);
 
         CircuitBreaker cb = CircuitBreakerRegistry.of(CircuitBreakerConfig.ofDefaults())
                 .circuitBreaker("test-cb-" + UUID.randomUUID());
 
-        // Create SegmentRendererService
-        SegmentRendererService rendererService = new SegmentRendererService(
-                restTemplate, cb, segmentRepository, segmentVersionRepository, minioClient);
-        setField(rendererService, "docxtemplaterServiceUrl", "http://localhost:3000");
-        setField(rendererService, "bucketName", "docgen-test");
-
-        // For each segment, mock the repository to return a Segment entity
-        for (SegmentInfo info : input.segments) {
-            Segment seg = new Segment();
-            seg.setId(info.id);
-            seg.setName("Segment-" + info.id);
-            seg.setFilePath("segments/test/" + info.id + ".docx");
-            seg.setTenantId(1L);
-            when(segmentRepository.findById(info.id)).thenReturn(Optional.of(seg));
-        }
-
-        // Mock /render: return a unique marker for each segment based on its ID
+        // Mock /render: return a unique marker for each segment based on its filePath
         when(restTemplate.exchange(
                 eq("http://localhost:3000/render"),
                 eq(HttpMethod.POST),
@@ -87,9 +61,7 @@ class AssemblyOrderPropertyTest {
             HttpEntity<Map<String, Object>> entity = invocation.getArgument(2);
             Map<String, Object> body = entity.getBody();
             String templatePath = (String) body.get("templatePath");
-            // Extract segment ID from path: "segments/test/{id}.docx"
-            String idStr = templatePath.replace("segments/test/", "").replace(".docx", "");
-            String marker = "<<SEGMENT_" + idStr + ">>";
+            String marker = "<<SEGMENT_" + templatePath + ">>";
             return new ResponseEntity<>(marker.getBytes(StandardCharsets.UTF_8), HttpStatus.OK);
         });
 
@@ -112,19 +84,20 @@ class AssemblyOrderPropertyTest {
             return new ResponseEntity<>(merged.toString().getBytes(StandardCharsets.UTF_8), HttpStatus.OK);
         });
 
-        // Create services
-        SegmentDataScopeService dataScopeService = new SegmentDataScopeService();
+        // Create services — no more SegmentRendererService or SegmentDataScopeService
         ExpressionEngine expressionEngine = mock(ExpressionEngine.class);
 
         AssemblyEngineService assemblyEngine = new AssemblyEngineService(
-                rendererService, dataScopeService, expressionEngine, restTemplate, cb);
+                expressionEngine, restTemplate, cb, minioClient);
         setField(assemblyEngine, "docxtemplaterServiceUrl", "http://localhost:3000");
+        setField(assemblyEngine, "bucketName", "docgen-test");
 
-        // Build AssemblyConfigDTO from input
+        // Build AssemblyConfigDTO from input with inline filePath/name
         AssemblyConfigDTO config = new AssemblyConfigDTO();
         List<AssemblySegmentEntry> entries = input.segments.stream().map(info -> {
             AssemblySegmentEntry entry = new AssemblySegmentEntry();
-            entry.setSegmentId(info.id);
+            entry.setFilePath(info.filePath);
+            entry.setName(info.name);
             entry.setPosition(info.position);
             entry.setEnabled(true);
             entry.setPageBreakBefore(false);
@@ -146,11 +119,11 @@ class AssemblyOrderPropertyTest {
         // Verify each marker appears in the correct order
         int lastIndex = -1;
         for (SegmentInfo info : sortedByPosition) {
-            String marker = "<<SEGMENT_" + info.id + ">>";
+            String marker = "<<SEGMENT_" + info.filePath + ">>";
             int idx = mergedContent.indexOf(marker);
-            assertTrue(idx >= 0, "Marker for segment " + info.id + " not found in merged document");
+            assertTrue(idx >= 0, "Marker for segment '" + info.name + "' not found in merged document");
             assertTrue(idx > lastIndex,
-                    "Segment " + info.id + " (position " + info.position + ") appears before a segment with lower position");
+                    "Segment '" + info.name + "' (position " + info.position + ") appears before a segment with lower position");
             lastIndex = idx;
         }
     }
@@ -158,17 +131,19 @@ class AssemblyOrderPropertyTest {
     // ── Helper types ──
 
     static class SegmentInfo {
-        final long id;
+        final String filePath;
+        final String name;
         final int position;
 
-        SegmentInfo(long id, int position) {
-            this.id = id;
+        SegmentInfo(String filePath, String name, int position) {
+            this.filePath = filePath;
+            this.name = name;
             this.position = position;
         }
 
         @Override
         public String toString() {
-            return "Segment{id=" + id + ", pos=" + position + "}";
+            return "Segment{filePath='" + filePath + "', name='" + name + "', pos=" + position + "}";
         }
     }
 
@@ -190,11 +165,8 @@ class AssemblyOrderPropertyTest {
     @Provide
     Arbitrary<SegmentConfigInput> randomSegmentConfigs() {
         return Arbitraries.integers().between(2, 8).flatMap(count -> {
-            // Generate 'count' segments with unique IDs and unique positions
-            List<Long> ids = new ArrayList<>();
             List<Integer> positions = new ArrayList<>();
             for (int i = 0; i < count; i++) {
-                ids.add((long) (i + 1));
                 positions.add(i);
             }
 
@@ -202,7 +174,9 @@ class AssemblyOrderPropertyTest {
             return Arbitraries.shuffle(positions).map(shuffledPositions -> {
                 List<SegmentInfo> segments = new ArrayList<>();
                 for (int i = 0; i < count; i++) {
-                    segments.add(new SegmentInfo(ids.get(i), shuffledPositions.get(i)));
+                    String filePath = "segments/test/" + (i + 1) + ".docx";
+                    String name = "Segment-" + (i + 1);
+                    segments.add(new SegmentInfo(filePath, name, shuffledPositions.get(i)));
                 }
                 return new SegmentConfigInput(segments);
             });

@@ -23,7 +23,6 @@
             <span>{{ $t('nav.templateManagement') }}</span>
           </template>
           <el-menu-item index="/templates">{{ $t('nav.templateList') }}</el-menu-item>
-          <el-menu-item index="/segments">{{ $t('nav.segmentLibrary') }}</el-menu-item>
         </el-sub-menu>
         <el-menu-item index="/documents">
           <el-icon><Files /></el-icon>
@@ -120,7 +119,6 @@ const isCollapsed = ref(false)
 const activeMenuIndex = computed(() => {
   const path = route.path
   if (path.startsWith('/templates')) return '/templates'
-  if (path.startsWith('/segments')) return '/segments'
   return path
 })
 

@@ -98,24 +98,6 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Tasks', requiresAuth: true },
       },
       {
-        path: 'segments',
-        name: 'Segments',
-        component: () => import('@/views/segments/Index.vue'),
-        meta: { title: 'Segments' },
-      },
-      {
-        path: 'segments/:id',
-        name: 'SegmentDetail',
-        component: () => import('@/views/segments/Detail.vue'),
-        meta: { title: 'Segment Detail' },
-      },
-      {
-        path: 'segments/:id/editor',
-        name: 'SegmentEditor',
-        component: () => import('@/views/segments/Editor.vue'),
-        meta: { title: 'Segment Editor' },
-      },
-      {
         path: 'components',
         name: 'Components',
         component: () => import('@/views/components/Index.vue'),

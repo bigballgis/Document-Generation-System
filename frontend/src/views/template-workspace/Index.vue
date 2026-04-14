@@ -164,7 +164,7 @@ async function handleBeforeLeave(newTab: TabName | string | number, oldTab: TabN
     }
   }
   if (String(newTab) === 'editor') {
-    visualEditorRef.value?.checkLocks()
+    // No lock checking needed in inline mode
   }
   return true
 }

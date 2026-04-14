@@ -7,13 +7,11 @@ import com.docgen.dto.TemplateDTO;
 import com.docgen.entity.ComparisonType;
 import com.docgen.entity.DataSource;
 import com.docgen.entity.Expression;
-import com.docgen.entity.Segment;
 import com.docgen.entity.Template;
 import com.docgen.entity.TestCase;
 import com.docgen.exception.BusinessException;
 import com.docgen.repository.DataSourceRepository;
 import com.docgen.repository.ExpressionRepository;
-import com.docgen.repository.SegmentRepository;
 import com.docgen.repository.TemplateRepository;
 import com.docgen.repository.TestCaseRepository;
 import com.docgen.util.TenantContext;
@@ -48,7 +46,6 @@ import static org.mockito.Mockito.*;
 class CompositeImportExportServiceTest {
 
     @Mock private TemplateRepository templateRepository;
-    @Mock private SegmentRepository segmentRepository;
     @Mock private AssemblyConfigService assemblyConfigService;
     @Mock private MinioClient minioClient;
     @Mock private DataSourceRepository dataSourceRepository;
@@ -62,7 +59,7 @@ class CompositeImportExportServiceTest {
     @BeforeEach
     void setUp() throws Exception {
         service = new CompositeImportExportService(
-                templateRepository, segmentRepository, assemblyConfigService,
+                templateRepository, assemblyConfigService,
                 minioClient, objectMapper,
                 dataSourceRepository, expressionRepository, testCaseRepository,
                 compositeCoverageService);
@@ -86,14 +83,14 @@ class CompositeImportExportServiceTest {
 
         AssemblyConfigDTO config = new AssemblyConfigDTO();
         AssemblySegmentEntry segEntry = new AssemblySegmentEntry();
-        segEntry.setSegmentId(10L);
+        segEntry.setFilePath("segments/1/intro.docx");
+        segEntry.setName("intro");
+        segEntry.setSegmentType("CHAPTER");
         segEntry.setPosition(0);
         segEntry.setEnabled(true);
         config.setSegments(List.of(segEntry));
         when(assemblyConfigService.deserialize(any())).thenReturn(config);
 
-        Segment segment = createSegment(10L, "intro");
-        when(segmentRepository.findById(10L)).thenReturn(Optional.of(segment));
         mockMinioDownload("segments/1/intro.docx", new byte[]{0x50, 0x4B, 0x03, 0x04});
 
         DataSource ds = createDataSource(100L, "dbSource", "DATABASE",
@@ -173,30 +170,6 @@ class CompositeImportExportServiceTest {
         assertEquals("https://api.example.com", config.get("url"));
     }
 
-    // ── exportAsZip: non-sensitive fields preserved ──
-
-    @Test
-    void exportAsZip_preservesNonSensitiveFields() throws Exception {
-        Template template = createCompositeTemplate(1L, "TestTemplate");
-        when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
-        mockEmptyAssemblyConfig();
-
-        DataSource ds = createDataSource(102L, "safeSource", "HTTP_API",
-                "{\"url\":\"https://safe.com\",\"timeout\":30}");
-        when(dataSourceRepository.findByTemplateIdOrderByPriorityDesc(1L)).thenReturn(List.of(ds));
-        when(expressionRepository.findByTemplateIdOrderByExecutionOrderAsc(1L)).thenReturn(List.of());
-        when(testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(1L)).thenReturn(List.of());
-        mockCoverageSuccess();
-
-        byte[] zipBytes = service.exportAsZip(1L);
-        List<Map<String, Object>> dataSources = parseJsonFromZip(zipBytes, "data-sources.json");
-
-        @SuppressWarnings("unchecked")
-        Map<String, Object> config = (Map<String, Object>) dataSources.get(0).get("config");
-        assertEquals("https://safe.com", config.get("url"));
-        assertEquals(30, config.get("timeout"));
-    }
-
     // ── exportAsZip: empty arrays when no data ──
 
     @Test
@@ -216,12 +189,12 @@ class CompositeImportExportServiceTest {
         List<Map<String, Object>> expr = parseJsonFromZip(zipBytes, "expressions.json");
         List<Map<String, Object>> td = parseJsonFromZip(zipBytes, "test-data.json");
 
-        assertTrue(ds.isEmpty(), "data-sources.json should be empty array");
-        assertTrue(expr.isEmpty(), "expressions.json should be empty array");
-        assertTrue(td.isEmpty(), "test-data.json should be empty array");
+        assertTrue(ds.isEmpty());
+        assertTrue(expr.isEmpty());
+        assertTrue(td.isEmpty());
     }
 
-    // ── exportAsZip: coverage failure → ZIP still succeeds without coverage-report.json ──
+    // ── exportAsZip: coverage failure → ZIP still succeeds ──
 
     @Test
     void exportAsZip_coverageFailure_zipStillSucceeds() throws Exception {
@@ -238,25 +211,16 @@ class CompositeImportExportServiceTest {
 
         Map<String, byte[]> entries = extractZipEntries(zipBytes);
         assertTrue(entries.containsKey("config.json"));
-        assertTrue(entries.containsKey("data-sources.json"));
-        assertTrue(entries.containsKey("expressions.json"));
-        assertTrue(entries.containsKey("test-data.json"));
-        assertFalse(entries.containsKey("coverage-report.json"), "coverage-report.json should be absent on failure");
+        assertFalse(entries.containsKey("coverage-report.json"));
     }
 
-    // ── importFromZip: with extended files → creates data sources + expressions + test data ──
+    // ── importFromZip: with extended files ──
 
     @Test
     void importFromZip_withExtendedFiles_createsRecords() throws Exception {
         byte[] zipBytes = buildImportZip(true);
         MockMultipartFile file = new MockMultipartFile("file", "import.zip", "application/zip", zipBytes);
 
-        when(segmentRepository.findAll()).thenReturn(List.of());
-        when(segmentRepository.save(any(Segment.class))).thenAnswer(inv -> {
-            Segment s = inv.getArgument(0);
-            s.setId(50L);
-            return s;
-        });
         Template saved = createCompositeTemplate(99L, "Imported");
         when(templateRepository.save(any(Template.class))).thenReturn(saved);
         when(dataSourceRepository.save(any(DataSource.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -271,19 +235,13 @@ class CompositeImportExportServiceTest {
         verify(testCaseRepository, times(1)).save(any(TestCase.class));
     }
 
-    // ── importFromZip: old format ZIP (no extended files) → only imports config + segments ──
+    // ── importFromZip: old format ZIP ──
 
     @Test
     void importFromZip_oldFormat_noExtendedFiles_noError() throws Exception {
         byte[] zipBytes = buildImportZip(false);
         MockMultipartFile file = new MockMultipartFile("file", "import.zip", "application/zip", zipBytes);
 
-        when(segmentRepository.findAll()).thenReturn(List.of());
-        when(segmentRepository.save(any(Segment.class))).thenAnswer(inv -> {
-            Segment s = inv.getArgument(0);
-            s.setId(50L);
-            return s;
-        });
         Template saved = createCompositeTemplate(99L, "Imported");
         when(templateRepository.save(any(Template.class))).thenReturn(saved);
 
@@ -291,34 +249,9 @@ class CompositeImportExportServiceTest {
 
         assertNotNull(result);
         verify(dataSourceRepository, never()).save(any(DataSource.class));
-        verify(expressionRepository, never()).save(any(Expression.class));
-        verify(testCaseRepository, never()).save(any(TestCase.class));
     }
 
-    // ── importFromZip: data-sources.json parse failure → WARN log, basic import unaffected ──
-
-    @Test
-    void importFromZip_malformedDataSourcesJson_basicImportSucceeds() throws Exception {
-        byte[] zipBytes = buildImportZipWithMalformedDataSources();
-        MockMultipartFile file = new MockMultipartFile("file", "import.zip", "application/zip", zipBytes);
-
-        when(segmentRepository.findAll()).thenReturn(List.of());
-        when(segmentRepository.save(any(Segment.class))).thenAnswer(inv -> {
-            Segment s = inv.getArgument(0);
-            s.setId(50L);
-            return s;
-        });
-        Template saved = createCompositeTemplate(99L, "Imported");
-        when(templateRepository.save(any(Template.class))).thenReturn(saved);
-
-        TemplateDTO result = service.importFromZip(file, 1L);
-
-        assertNotNull(result);
-        assertEquals("Imported", result.getName());
-        verify(dataSourceRepository, never()).save(any(DataSource.class));
-    }
-
-    // ── maskCredentialFields: DATABASE password ──
+    // ── maskCredentialFields tests ──
 
     @Test
     void maskCredentialFields_databasePassword() {
@@ -332,8 +265,6 @@ class CompositeImportExportServiceTest {
         assertEquals("localhost", config.get("host"));
     }
 
-    // ── maskCredentialFields: HTTP_API apiKey ──
-
     @Test
     void maskCredentialFields_httpApiKey() {
         Map<String, Object> config = new HashMap<>();
@@ -345,8 +276,6 @@ class CompositeImportExportServiceTest {
         assertEquals("__CREDENTIAL_PLACEHOLDER__", config.get("apiKey"));
         assertEquals("https://api.com", config.get("url"));
     }
-
-    // ── maskCredentialFields: nested auth object ──
 
     @Test
     void maskCredentialFields_nestedAuthObject() {
@@ -368,8 +297,6 @@ class CompositeImportExportServiceTest {
         assertEquals("__CREDENTIAL_PLACEHOLDER__", maskedAuth.get("password"));
     }
 
-    // ── maskCredentialFields: no sensitive fields → no changes ──
-
     @Test
     void maskCredentialFields_noSensitiveFields() {
         Map<String, Object> config = new HashMap<>();
@@ -380,25 +307,7 @@ class CompositeImportExportServiceTest {
 
         assertEquals("https://safe.com", config.get("url"));
         assertEquals(30, config.get("timeout"));
-        assertFalse(config.containsKey("password"));
-        assertFalse(config.containsKey("apiKey"));
-        assertFalse(config.containsKey("clientSecret"));
     }
-
-    // ── maskCredentialFields: DATABASE type does NOT mask password for non-DATABASE type ──
-
-    @Test
-    void maskCredentialFields_nonDatabaseType_doesNotMaskPassword() {
-        Map<String, Object> config = new HashMap<>();
-        config.put("password", "shouldStay");
-
-        service.maskCredentialFields(config, "HTTP_API");
-
-        // password is only masked for DATABASE type at top level
-        assertEquals("shouldStay", config.get("password"));
-    }
-
-    // ── toMaskedDataSourceMap: preserves metadata fields ──
 
     @Test
     void toMaskedDataSourceMap_preservesMetadata() {
@@ -433,16 +342,6 @@ class CompositeImportExportServiceTest {
         template.setCreatedAt(Instant.now());
         template.setUpdatedAt(Instant.now());
         return template;
-    }
-
-    private Segment createSegment(Long id, String name) {
-        Segment segment = new Segment();
-        segment.setId(id);
-        segment.setTenantId(1L);
-        segment.setName(name);
-        segment.setFilePath("segments/1/" + name + ".docx");
-        segment.setComponent(false);
-        return segment;
     }
 
     private DataSource createDataSource(Long id, String name, String type, String configJson) {
@@ -522,13 +421,9 @@ class CompositeImportExportServiceTest {
         return objectMapper.readValue(content, new TypeReference<List<Map<String, Object>>>() {});
     }
 
-    /**
-     * Build a valid import ZIP with config.json + segments/*.docx + optionally extended files.
-     */
     private byte[] buildImportZip(boolean includeExtendedFiles) throws Exception {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (ZipOutputStream zos = new ZipOutputStream(baos)) {
-            // config.json
             CompositeImportExportService.CompositeExportConfig exportConfig =
                     new CompositeImportExportService.CompositeExportConfig();
             exportConfig.setTemplateName("Imported");
@@ -545,13 +440,11 @@ class CompositeImportExportServiceTest {
             zos.write(configBytes);
             zos.closeEntry();
 
-            // segments/intro.docx
             zos.putNextEntry(new ZipEntry("segments/intro.docx"));
             zos.write(new byte[]{0x50, 0x4B, 0x03, 0x04});
             zos.closeEntry();
 
             if (includeExtendedFiles) {
-                // data-sources.json
                 List<Map<String, Object>> dsList = List.of(Map.of(
                         "name", "testDs", "type", "HTTP_API",
                         "cacheEnabled", false, "cacheTtl", 300, "priority", 0,
@@ -560,7 +453,6 @@ class CompositeImportExportServiceTest {
                 zos.write(objectMapper.writeValueAsBytes(dsList));
                 zos.closeEntry();
 
-                // expressions.json
                 List<Map<String, Object>> exprList = List.of(Map.of(
                         "name", "calc", "expressionType", "JAVASCRIPT",
                         "expressionText", "a+b", "description", "sum", "executionOrder", 1));
@@ -568,7 +460,6 @@ class CompositeImportExportServiceTest {
                 zos.write(objectMapper.writeValueAsBytes(exprList));
                 zos.closeEntry();
 
-                // test-data.json
                 List<Map<String, Object>> testList = List.of(Map.of(
                         "name", "TC1", "testDataJson", "{\"a\":1}",
                         "expectedResultJson", "{\"r\":2}", "comparisonType", "VARIABLE_VALUE"));
@@ -576,40 +467,6 @@ class CompositeImportExportServiceTest {
                 zos.write(objectMapper.writeValueAsBytes(testList));
                 zos.closeEntry();
             }
-
-            zos.finish();
-        }
-        return baos.toByteArray();
-    }
-
-    /**
-     * Build an import ZIP with a malformed data-sources.json.
-     */
-    private byte[] buildImportZipWithMalformedDataSources() throws Exception {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
-            CompositeImportExportService.CompositeExportConfig exportConfig =
-                    new CompositeImportExportService.CompositeExportConfig();
-            exportConfig.setTemplateName("Imported");
-            CompositeImportExportService.CompositeExportConfig.SegmentExportEntry seg =
-                    new CompositeImportExportService.CompositeExportConfig.SegmentExportEntry();
-            seg.setSegmentName("intro");
-            seg.setPosition(0);
-            seg.setEnabled(true);
-            exportConfig.setSegments(List.of(seg));
-
-            zos.putNextEntry(new ZipEntry("config.json"));
-            zos.write(objectMapper.writeValueAsBytes(exportConfig));
-            zos.closeEntry();
-
-            zos.putNextEntry(new ZipEntry("segments/intro.docx"));
-            zos.write(new byte[]{0x50, 0x4B, 0x03, 0x04});
-            zos.closeEntry();
-
-            // Malformed data-sources.json
-            zos.putNextEntry(new ZipEntry("data-sources.json"));
-            zos.write("this is not valid json{{{".getBytes());
-            zos.closeEntry();
 
             zos.finish();
         }

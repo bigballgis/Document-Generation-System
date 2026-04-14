@@ -4,22 +4,30 @@ import java.util.Map;
 
 /**
  * Represents a single segment entry within an Assembly_Config.
- * Defines the segment reference, position, rendering options, and data scope mapping.
+ * Contains inline segment metadata (filePath, name, segmentType),
+ * position, rendering options, and data scope mapping.
  */
 public class AssemblySegmentEntry {
 
-    private Long segmentId;
+    private String filePath;
+    private String name;
+    private String segmentType;
     private Integer position;
     private boolean enabled = true;
     private boolean pageBreakBefore = false;
-    private Integer lockedVersion;
     private String conditionExpression;
     private Map<String, String> dataScope;
 
     public AssemblySegmentEntry() {}
 
-    public Long getSegmentId() { return segmentId; }
-    public void setSegmentId(Long segmentId) { this.segmentId = segmentId; }
+    public String getFilePath() { return filePath; }
+    public void setFilePath(String filePath) { this.filePath = filePath; }
+
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+
+    public String getSegmentType() { return segmentType; }
+    public void setSegmentType(String segmentType) { this.segmentType = segmentType; }
 
     public Integer getPosition() { return position; }
     public void setPosition(Integer position) { this.position = position; }
@@ -29,9 +37,6 @@ public class AssemblySegmentEntry {
 
     public boolean isPageBreakBefore() { return pageBreakBefore; }
     public void setPageBreakBefore(boolean pageBreakBefore) { this.pageBreakBefore = pageBreakBefore; }
-
-    public Integer getLockedVersion() { return lockedVersion; }
-    public void setLockedVersion(Integer lockedVersion) { this.lockedVersion = lockedVersion; }
 
     public String getConditionExpression() { return conditionExpression; }
     public void setConditionExpression(String conditionExpression) { this.conditionExpression = conditionExpression; }

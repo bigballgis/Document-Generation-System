@@ -5,13 +5,11 @@ import com.docgen.dto.AssemblySegmentEntry;
 import com.docgen.dto.MarketTemplateDTO;
 import com.docgen.dto.TemplateDTO;
 import com.docgen.entity.MarketTemplate;
-import com.docgen.entity.Segment;
 import com.docgen.entity.Template;
 import com.docgen.exception.BusinessException;
 import com.docgen.exception.ErrorCode;
 import com.docgen.exception.ResourceNotFoundException;
 import com.docgen.repository.MarketTemplateRepository;
-import com.docgen.repository.SegmentRepository;
 import com.docgen.repository.TemplateCategoryRepository;
 import com.docgen.repository.TemplateRepository;
 import com.docgen.util.TenantContext;
@@ -39,7 +37,6 @@ public class CompositeMarketService {
 
     private final MarketTemplateRepository marketTemplateRepository;
     private final TemplateRepository templateRepository;
-    private final SegmentRepository segmentRepository;
     private final TemplateCategoryRepository categoryRepository;
     private final MinioClient minioClient;
     private final ObjectMapper objectMapper;
@@ -49,13 +46,11 @@ public class CompositeMarketService {
 
     public CompositeMarketService(MarketTemplateRepository marketTemplateRepository,
                                   TemplateRepository templateRepository,
-                                  SegmentRepository segmentRepository,
                                   TemplateCategoryRepository categoryRepository,
                                   MinioClient minioClient,
                                   ObjectMapper objectMapper) {
         this.marketTemplateRepository = marketTemplateRepository;
         this.templateRepository = templateRepository;
-        this.segmentRepository = segmentRepository;
         this.categoryRepository = categoryRepository;
         this.minioClient = minioClient;
         this.objectMapper = objectMapper;
@@ -63,8 +58,7 @@ public class CompositeMarketService {
 
     /**
      * Copy a composite template from the market, creating a fully independent copy.
-     * All Segment .docx files are copied, Component_Template references are broken
-     * (segments become independent copies).
+     * All segment .docx files referenced by inline filePath are copied in MinIO.
      */
     @Transactional
     public TemplateDTO copyCompositeFromMarket(Long marketTemplateId) {
@@ -86,22 +80,8 @@ public class CompositeMarketService {
         // Parse the source assembly config
         AssemblyConfigDTO sourceConfig = parseAssemblyConfig(sourceTemplate.getAssemblyConfig());
 
-        // Copy each segment independently, mapping old IDs to new IDs
-        Map<Long, Long> segmentIdMapping = new HashMap<>();
-        if (sourceConfig != null && sourceConfig.getSegments() != null) {
-            for (AssemblySegmentEntry entry : sourceConfig.getSegments()) {
-                Long sourceSegmentId = entry.getSegmentId();
-                if (sourceSegmentId != null && !segmentIdMapping.containsKey(sourceSegmentId)) {
-                    segmentRepository.findById(sourceSegmentId).ifPresent(sourceSegment -> {
-                        Segment copy = copySegment(sourceSegment, tenantId);
-                        segmentIdMapping.put(sourceSegmentId, copy.getId());
-                    });
-                }
-            }
-        }
-
-        // Build new assembly config with remapped segment IDs
-        String newAssemblyConfig = remapAssemblyConfig(sourceConfig, segmentIdMapping);
+        // Copy each segment's file in MinIO and build new assembly config with copied filePaths
+        String newAssemblyConfig = copyAndRemapAssemblyConfig(sourceConfig, tenantId);
 
         // Create the composite template copy
         Template copy = new Template();
@@ -125,8 +105,8 @@ public class CompositeMarketService {
         marketTemplate.setUsageCount(marketTemplate.getUsageCount() + 1);
         marketTemplateRepository.save(marketTemplate);
 
-        log.info("Composite template copied from market: marketTemplateId={}, newTemplateId={}, segmentsCopied={}",
-                marketTemplateId, saved.getId(), segmentIdMapping.size());
+        log.info("Composite template copied from market: marketTemplateId={}, newTemplateId={}",
+                marketTemplateId, saved.getId());
 
         return toTemplateDTO(saved);
     }
@@ -162,20 +142,42 @@ public class CompositeMarketService {
 
     // ── Private helpers ──
 
-    private Segment copySegment(Segment source, Long tenantId) {
-        String copiedFilePath = copyFileInMinio(source.getFilePath(), tenantId);
+    /**
+     * Copy segment files in MinIO and remap assembly config to use new filePaths.
+     */
+    private String copyAndRemapAssemblyConfig(AssemblyConfigDTO config, Long tenantId) {
+        if (config == null || config.getSegments() == null) return null;
 
-        Segment copy = new Segment();
-        copy.setTenantId(tenantId);
-        copy.setName(source.getName());
-        copy.setDescription(source.getDescription());
-        copy.setFilePath(copiedFilePath);
-        copy.setComponent(false); // Break component reference
-        copy.setSegmentType(source.getSegmentType());
-        copy.setCreatedBy(tenantId);
-        copy.setCategoryId(source.getCategoryId());
+        AssemblyConfigDTO newConfig = new AssemblyConfigDTO();
+        List<AssemblySegmentEntry> newEntries = new ArrayList<>();
 
-        return segmentRepository.save(copy);
+        for (AssemblySegmentEntry entry : config.getSegments()) {
+            AssemblySegmentEntry newEntry = new AssemblySegmentEntry();
+
+            // Copy the file in MinIO if filePath exists
+            String copiedFilePath = "";
+            if (entry.getFilePath() != null && !entry.getFilePath().isBlank()) {
+                copiedFilePath = copyFileInMinio(entry.getFilePath(), tenantId);
+            }
+
+            newEntry.setFilePath(copiedFilePath);
+            newEntry.setName(entry.getName());
+            newEntry.setSegmentType(entry.getSegmentType());
+            newEntry.setPosition(entry.getPosition());
+            newEntry.setEnabled(entry.isEnabled());
+            newEntry.setPageBreakBefore(entry.isPageBreakBefore());
+            newEntry.setConditionExpression(entry.getConditionExpression());
+            newEntry.setDataScope(entry.getDataScope());
+            newEntries.add(newEntry);
+        }
+
+        newConfig.setSegments(newEntries);
+        try {
+            return objectMapper.writeValueAsString(newConfig);
+        } catch (Exception e) {
+            log.error("Failed to serialize assembly_config: {}", e.getMessage());
+            return null;
+        }
     }
 
     private String copyFileInMinio(String sourceFilePath, Long tenantId) {
@@ -211,31 +213,6 @@ public class CompositeMarketService {
             return objectMapper.readValue(json, AssemblyConfigDTO.class);
         } catch (Exception e) {
             log.warn("Failed to parse assembly_config: {}", e.getMessage());
-            return null;
-        }
-    }
-
-    private String remapAssemblyConfig(AssemblyConfigDTO config, Map<Long, Long> segmentIdMapping) {
-        if (config == null || config.getSegments() == null) return null;
-        AssemblyConfigDTO newConfig = new AssemblyConfigDTO();
-        List<AssemblySegmentEntry> newEntries = new ArrayList<>();
-        for (AssemblySegmentEntry entry : config.getSegments()) {
-            AssemblySegmentEntry newEntry = new AssemblySegmentEntry();
-            Long newId = segmentIdMapping.getOrDefault(entry.getSegmentId(), entry.getSegmentId());
-            newEntry.setSegmentId(newId);
-            newEntry.setPosition(entry.getPosition());
-            newEntry.setEnabled(entry.isEnabled());
-            newEntry.setPageBreakBefore(entry.isPageBreakBefore());
-            newEntry.setLockedVersion(null); // Reset version lock for copied segments
-            newEntry.setConditionExpression(entry.getConditionExpression());
-            newEntry.setDataScope(entry.getDataScope());
-            newEntries.add(newEntry);
-        }
-        newConfig.setSegments(newEntries);
-        try {
-            return objectMapper.writeValueAsString(newConfig);
-        } catch (Exception e) {
-            log.error("Failed to serialize assembly_config: {}", e.getMessage());
             return null;
         }
     }

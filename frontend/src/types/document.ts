@@ -7,7 +7,6 @@ export interface GenerateDocumentRequest {
 }
 
 export interface SegmentRenderStat {
-  segmentId: number
   segmentName: string
   renderTimeMs: number
   success: boolean

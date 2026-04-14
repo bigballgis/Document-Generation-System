@@ -43,7 +43,6 @@ function hasFullCoverage(cov: CompositeCoverageReport | null): boolean {
 // ── Generators ──
 
 const arbSegmentCoverageEntry: fc.Arbitrary<SegmentCoverageEntry> = fc.record({
-  segmentId: fc.integer({ min: 1, max: 1000 }),
   segmentName: fc.string({ minLength: 1, maxLength: 30 }),
   totalVariables: fc.integer({ min: 0, max: 100 }),
   boundVariables: fc.integer({ min: 0, max: 100 }),

@@ -7,9 +7,6 @@
         <el-button @click="createFormVisible = !createFormVisible">
           {{ t('workspace.segment.createNew') }}
         </el-button>
-        <el-button @click="openExistingSegmentDialog">
-          {{ t('workspace.segment.addExisting') }}
-        </el-button>
         <el-button
           :disabled="!assemblyConfig.canUndo.value"
           @click="assemblyConfig.undo()"
@@ -35,7 +32,7 @@
       </div>
     </div>
 
-    <!-- Create new segment inline form -->
+    <!-- Create new segment inline form (upload .docx) -->
     <div v-if="createFormVisible" class="create-segment-form">
       <el-form
         ref="createFormRef"
@@ -62,14 +59,6 @@
             <el-option v-for="st in segmentTypeOptions" :key="st.value" :label="st.label" :value="st.value" />
           </el-select>
         </el-form-item>
-        <el-form-item :label="t('common.description')">
-          <el-input
-            v-model="newSegmentForm.description"
-            type="textarea"
-            :rows="2"
-            maxlength="500"
-          />
-        </el-form-item>
         <el-form-item :label="t('workspace.segment.file')">
           <el-upload
             ref="uploadRef"
@@ -94,15 +83,15 @@
 
     <!-- Empty state -->
     <el-empty
-      v-if="mergedSegments.length === 0 && !createFormVisible"
+      v-if="assemblyConfig.segments.value.length === 0 && !createFormVisible"
       :description="t('assembly.emptyHint')"
     />
 
     <!-- Segment list -->
-    <div v-else-if="mergedSegments.length > 0" class="segment-list">
+    <div v-else-if="assemblyConfig.segments.value.length > 0" class="segment-list">
       <div
-        v-for="(seg, index) in mergedSegments"
-        :key="seg.segmentId"
+        v-for="(seg, index) in assemblyConfig.segments.value"
+        :key="seg.filePath + '-' + index"
         class="segment-card"
         :class="{
           'is-dragging': segmentDrag.draggingIndex.value === index,
@@ -154,25 +143,6 @@
                 @change="(val: string | number | boolean) => handleConfigChange(index, { pageBreakBefore: !!val })"
               />
             </el-form-item>
-            <el-form-item :label="t('workspace.segment.lockedVersion')">
-              <div class="locked-version-row">
-                <el-checkbox
-                  :model-value="seg.lockedVersion === null"
-                  @change="(val: string | number | boolean) => handleUseLatest(index, !!val)"
-                >
-                  {{ t('workspace.segment.useLatest') }}
-                </el-checkbox>
-                <el-input-number
-                  v-if="seg.lockedVersion !== null"
-                  :model-value="seg.lockedVersion"
-                  :min="1"
-                  :step="1"
-                  controls-position="right"
-                  style="width: 160px; margin-left: 12px"
-                  @change="(val: number | undefined) => handleConfigChange(index, { lockedVersion: val ?? 1 })"
-                />
-              </div>
-            </el-form-item>
             <el-form-item :label="t('workspace.segment.conditionExpr')">
               <el-input
                 :model-value="seg.conditionExpression ?? ''"
@@ -190,76 +160,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Add Existing Segment Dialog -->
-    <el-dialog
-      v-model="existingSegmentDialogVisible"
-      :title="t('workspace.segment.addExisting')"
-      width="680px"
-      destroy-on-close
-      @open="searchExistingSegments"
-    >
-      <div class="existing-segment-search">
-        <el-input
-          v-model="searchQuery"
-          :placeholder="t('segment.searchPlaceholder')"
-          clearable
-          style="width: 240px"
-          @keyup.enter="handleSearchExisting"
-        />
-        <el-select
-          v-model="searchType"
-          :placeholder="t('common.type')"
-          clearable
-          style="width: 160px"
-        >
-          <el-option v-for="st in segmentTypeOptions" :key="st.value" :label="st.label" :value="st.value" />
-        </el-select>
-        <el-button type="primary" @click="handleSearchExisting">
-          {{ t('common.search') }}
-        </el-button>
-      </div>
-
-      <el-table
-        ref="existingTableRef"
-        v-loading="searchLoading"
-        :data="filteredSearchResults"
-        style="width: 100%; margin-top: 12px"
-        @selection-change="handleSelectionChange"
-      >
-        <el-table-column type="selection" width="45" />
-        <el-table-column prop="name" :label="t('common.name')" min-width="180" />
-        <el-table-column prop="segmentType" :label="t('common.type')" width="120">
-          <template #default="{ row }">
-            <el-tag v-if="row.segmentType" size="small" type="info">{{ row.segmentType }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="updatedAt" :label="t('common.updatedAt')" width="170" />
-      </el-table>
-
-      <div class="existing-segment-pagination">
-        <el-pagination
-          v-model:current-page="searchPage"
-          :page-size="20"
-          :total="searchTotal"
-          layout="total, prev, pager, next"
-          small
-          @current-change="searchExistingSegments"
-        />
-      </div>
-
-      <template #footer>
-        <el-button @click="existingSegmentDialogVisible = false">{{ t('common.cancel') }}</el-button>
-        <el-button
-          type="primary"
-          :disabled="selectedExistingSegments.length === 0"
-          :loading="addingExisting"
-          @click="handleAddExisting"
-        >
-          {{ t('common.confirm') }} ({{ selectedExistingSegments.length }})
-        </el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -273,9 +173,8 @@ import KeyValueEditor from '@/views/data-sources/KeyValueEditor.vue'
 import { useTemplateWorkspaceStore } from '@/stores/templateWorkspace'
 import { useAssemblyConfig } from '@/composables/useAssemblyConfig'
 import { useSegmentDrag } from '@/composables/useSegmentDrag'
-import { updateAssemblyConfig } from '@/api/composite-templates'
-import { createSegment, getSegments } from '@/api/segments'
-import type { AssemblySegmentEntry, Segment } from '@/types/segment'
+import { updateAssemblyConfig, uploadSegment } from '@/api/composite-templates'
+import type { AssemblySegmentEntry } from '@/types/segment'
 
 const { t } = useI18n()
 const store = useTemplateWorkspaceStore()
@@ -296,7 +195,6 @@ const selectedFile = ref<File | null>(null)
 const newSegmentForm = reactive({
   name: '',
   segmentType: '',
-  description: '',
 })
 
 const segmentTypeOptions = [
@@ -327,7 +225,6 @@ function onFileRemove() {
 function resetCreateForm() {
   newSegmentForm.name = ''
   newSegmentForm.segmentType = ''
-  newSegmentForm.description = ''
   selectedFile.value = null
   createFormRef.value?.resetFields()
   createFormVisible.value = false
@@ -336,31 +233,28 @@ function resetCreateForm() {
 async function handleCreateSegment() {
   const valid = await createFormRef.value?.validate().catch(() => false)
   if (!valid) return
+  if (!selectedFile.value) {
+    ElMessage.warning(t('workspace.segment.fileHint'))
+    return
+  }
 
   creating.value = true
   try {
-    const segment = await createSegment(
-      {
-        name: newSegmentForm.name,
-        segmentType: newSegmentForm.segmentType || undefined,
-        description: newSegmentForm.description || undefined,
-      },
-      selectedFile.value ?? undefined,
+    const entry = await uploadSegment(
+      store.templateId,
+      selectedFile.value,
+      newSegmentForm.name,
+      newSegmentForm.segmentType || undefined,
     )
 
     assemblyConfig.addSegment({
-      segmentId: segment.id,
+      ...entry,
       position: assemblyConfig.segments.value.length,
-      enabled: true,
-      pageBreakBefore: false,
-      lockedVersion: null,
-      conditionExpression: null,
-      dataScope: null,
     })
 
     try {
       await updateAssemblyConfig(store.templateId, assemblyConfig.serialize())
-      await Promise.all([store.refreshAssemblyConfig(), store.refreshSegments()])
+      await store.refreshAssemblyConfig()
       assemblyConfig.deserialize(store.assemblyConfig!)
       updateSavedSnapshot()
       ElMessage.success(t('message.createSuccess'))
@@ -373,110 +267,6 @@ async function handleCreateSegment() {
     creating.value = false
   }
 }
-
-// ── Add Existing Segment ──
-const existingSegmentDialogVisible = ref(false)
-const searchQuery = ref('')
-const searchType = ref('')
-const searchPage = ref(1)
-const searchResults = ref<Segment[]>([])
-const searchTotal = ref(0)
-const searchLoading = ref(false)
-const addingExisting = ref(false)
-const selectedExistingSegments = ref<Segment[]>([])
-const existingTableRef = ref()
-
-const existingSegmentIds = computed(() =>
-  new Set(assemblyConfig.segments.value.map(s => s.segmentId)),
-)
-
-const filteredSearchResults = computed(() =>
-  searchResults.value.filter(s => !existingSegmentIds.value.has(s.id)),
-)
-
-function openExistingSegmentDialog() {
-  searchQuery.value = ''
-  searchType.value = ''
-  searchPage.value = 1
-  searchResults.value = []
-  searchTotal.value = 0
-  selectedExistingSegments.value = []
-  existingSegmentDialogVisible.value = true
-}
-
-function handleSearchExisting() {
-  searchPage.value = 1
-  searchExistingSegments()
-}
-
-async function searchExistingSegments() {
-  searchLoading.value = true
-  try {
-    const result = await getSegments({
-      keyword: searchQuery.value || undefined,
-      segmentType: searchType.value || undefined,
-      page: searchPage.value,
-      size: 20,
-    })
-    searchResults.value = result.content
-    searchTotal.value = result.totalElements
-  } catch {
-    ElMessage.error(t('message.operationFailed'))
-  } finally {
-    searchLoading.value = false
-  }
-}
-
-function handleSelectionChange(rows: Segment[]) {
-  selectedExistingSegments.value = rows
-}
-
-async function handleAddExisting() {
-  addingExisting.value = true
-  try {
-    for (const seg of selectedExistingSegments.value) {
-      assemblyConfig.addSegment({
-        segmentId: seg.id,
-        position: assemblyConfig.segments.value.length,
-        enabled: true,
-        pageBreakBefore: false,
-        lockedVersion: null,
-        conditionExpression: null,
-        dataScope: null,
-      })
-    }
-    await updateAssemblyConfig(store.templateId, assemblyConfig.serialize())
-    await Promise.all([store.refreshAssemblyConfig(), store.refreshSegments(), store.refreshCoverage()])
-    assemblyConfig.deserialize(store.assemblyConfig!)
-    updateSavedSnapshot()
-    ElMessage.success(t('message.saveSuccess'))
-    existingSegmentDialogVisible.value = false
-  } catch (e: any) {
-    ElMessage.error(e.response?.data?.message || e.message || t('message.operationFailed'))
-  } finally {
-    addingExisting.value = false
-  }
-}
-
-// ── Merged segment entries ──
-interface MergedSegmentEntry extends AssemblySegmentEntry {
-  name: string
-  segmentType: string | null
-  updatedAt: string | null
-}
-
-const mergedSegments = computed<MergedSegmentEntry[]>(() => {
-  const segmentMap = new Map(store.segments.map(s => [s.id, s]))
-  return assemblyConfig.segments.value.map(entry => {
-    const detail = segmentMap.get(entry.segmentId)
-    return {
-      ...entry,
-      name: detail?.name ?? `Unknown Segment #${entry.segmentId}`,
-      segmentType: detail?.segmentType ?? null,
-      updatedAt: detail?.updatedAt ?? null,
-    }
-  })
-})
 
 // ── Unsaved changes detection ──
 const lastSavedSnapshot = ref<string>('')
@@ -559,10 +349,6 @@ function handleConfigChange(index: number, patch: Partial<AssemblySegmentEntry>)
   assemblyConfig.updateSegment(index, patch)
 }
 
-function handleUseLatest(index: number, useLatest: boolean) {
-  assemblyConfig.updateSegment(index, { lockedVersion: useLatest ? null : 1 })
-}
-
 function handleDataScopeChange(index: number, val: Record<string, string>) {
   const hasKeys = Object.keys(val).length > 0
   assemblyConfig.updateSegment(index, { dataScope: hasKeys ? val : null })
@@ -591,7 +377,6 @@ async function handleSave() {
     await updateAssemblyConfig(store.templateId, assemblyConfig.serialize())
     await Promise.all([
       store.refreshAssemblyConfig(),
-      store.refreshSegments(),
       store.refreshCoverage(),
     ])
     assemblyConfig.deserialize(store.assemblyConfig!)
@@ -730,18 +515,6 @@ async function handleSave() {
   color: var(--el-text-color-secondary);
 }
 
-.existing-segment-search {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.existing-segment-pagination {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 12px;
-}
-
 .config-panel {
   margin-top: 12px;
   padding-top: 12px;
@@ -755,11 +528,6 @@ async function handleSave() {
 
 .config-panel :deep(.el-form-item:last-child) {
   margin-bottom: 0;
-}
-
-.locked-version-row {
-  display: flex;
-  align-items: center;
 }
 
 .segment-card.is-expanded {

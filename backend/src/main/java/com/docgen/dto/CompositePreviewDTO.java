@@ -24,15 +24,11 @@ public class CompositePreviewDTO {
      */
     public static class SegmentPreviewEntry {
 
-        private Long segmentId;
         private String segmentName;
         private String status;
         private String errorMessage;
 
         public SegmentPreviewEntry() {}
-
-        public Long getSegmentId() { return segmentId; }
-        public void setSegmentId(Long segmentId) { this.segmentId = segmentId; }
 
         public String getSegmentName() { return segmentName; }
         public void setSegmentName(String segmentName) { this.segmentName = segmentName; }

@@ -1,16 +1,12 @@
 package com.docgen.service;
 
 import com.docgen.dto.ApiCallMetricDTO;
-import com.docgen.dto.ComponentRankingDTO;
 import com.docgen.dto.DataSourceHealthDTO;
-import com.docgen.dto.SegmentStatsDTO;
 import com.docgen.dto.SystemOverviewDTO;
 import com.docgen.dto.SystemResourceDTO;
 import com.docgen.entity.DataSource;
-import com.docgen.entity.Segment;
 import com.docgen.repository.DataSourceRepository;
 import com.docgen.repository.GeneratedDocumentRepository;
-import com.docgen.repository.SegmentRepository;
 import com.docgen.repository.TemplateRepository;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
@@ -44,31 +40,21 @@ public class DashboardService {
     private final DataSourceRepository dataSourceRepository;
     private final MeterRegistry meterRegistry;
     private final RedisConnectionFactory redisConnectionFactory;
-    private final SegmentRepository segmentRepository;
-    private final DependencyGraphService dependencyGraphService;
 
     public DashboardService(TemplateRepository templateRepository,
                             GeneratedDocumentRepository generatedDocumentRepository,
                             DataSourceRepository dataSourceRepository,
                             MeterRegistry meterRegistry,
-                            RedisConnectionFactory redisConnectionFactory,
-                            SegmentRepository segmentRepository,
-                            DependencyGraphService dependencyGraphService) {
+                            RedisConnectionFactory redisConnectionFactory) {
         this.templateRepository = templateRepository;
         this.generatedDocumentRepository = generatedDocumentRepository;
         this.dataSourceRepository = dataSourceRepository;
         this.meterRegistry = meterRegistry;
         this.redisConnectionFactory = redisConnectionFactory;
-        this.segmentRepository = segmentRepository;
-        this.dependencyGraphService = dependencyGraphService;
     }
 
     // ── System Overview ──
 
-    /**
-     * Returns high-level system counts: total templates, active templates,
-     * total API calls (from Micrometer counter), and total generated documents.
-     */
     public SystemOverviewDTO getSystemOverview() {
         long totalTemplates = templateRepository.count();
         long activeTemplates = templateRepository.countByStatus("ACTIVE");
@@ -76,28 +62,19 @@ public class DashboardService {
         long totalDocuments = generatedDocumentRepository.count();
 
         SystemOverviewDTO dto = new SystemOverviewDTO(totalTemplates, activeTemplates, totalApiCalls, totalDocuments);
-        dto.setSegmentCount(segmentRepository.count());
-        dto.setComponentCount(segmentRepository.countByComponent(true));
         dto.setCompositeTemplateCount(templateRepository.countByTemplateType("COMPOSITE"));
         return dto;
     }
 
     // ── API Call Metrics ──
 
-    /**
-     * Returns API call volume data points for the last {@code minutes} minutes,
-     * bucketed into 1-minute intervals. Defaults to 60 minutes (1 hour).
-     */
     public List<ApiCallMetricDTO> getApiCallMetrics(int minutes) {
         if (minutes <= 0) {
             minutes = 60;
         }
-        // Micrometer timers are cumulative; we return the current snapshot
-        // bucketed by minute for the requested window.
         List<ApiCallMetricDTO> metrics = new ArrayList<>();
         Instant now = Instant.now();
 
-        // Collect aggregate counts and mean from the api.request.duration timer
         double totalCount = 0;
         double totalTime = 0;
 
@@ -108,14 +85,10 @@ public class DashboardService {
 
         double avgResponseTime = totalCount > 0 ? totalTime / totalCount : 0;
 
-        // Produce a single current-snapshot data point per minute bucket
-        // Since Micrometer doesn't store per-minute history, we provide the
-        // current aggregate as the latest data point and zero-fill the rest.
         for (int i = minutes - 1; i >= 1; i--) {
             Instant bucketTime = now.minus(Duration.ofMinutes(i));
             metrics.add(new ApiCallMetricDTO(bucketTime, 0, 0));
         }
-        // Latest bucket carries the cumulative snapshot
         metrics.add(new ApiCallMetricDTO(now, (long) totalCount, avgResponseTime));
 
         return metrics;
@@ -123,11 +96,6 @@ public class DashboardService {
 
     // ── Data Source Health ──
 
-    /**
-     * Returns health status for every registered data source.
-     * Connectivity is tested by checking if the data source config is parseable
-     * and the type is known. Average response time comes from Micrometer if available.
-     */
     public List<DataSourceHealthDTO> getDataSourceHealth() {
         List<DataSource> dataSources = dataSourceRepository.findAll();
         List<DataSourceHealthDTO> healthList = new ArrayList<>();
@@ -138,12 +106,10 @@ public class DashboardService {
             dto.setName(ds.getName());
             dto.setType(ds.getType());
 
-            // Check basic reachability: config must be non-empty and type known
             boolean reachable = ds.getConfigJson() != null && !ds.getConfigJson().isBlank()
                     && isKnownType(ds.getType());
             dto.setReachable(reachable);
 
-            // Try to get average response time from Micrometer timer tagged by data source name
             double avgMs = getDataSourceAvgResponseTime(ds.getName());
             dto.setAvgResponseTimeMs(avgMs);
 
@@ -158,48 +124,12 @@ public class DashboardService {
 
     // ── System Resources ──
 
-    /**
-     * Collects JVM heap memory, HikariCP connection pool, and Redis memory usage.
-     */
     public SystemResourceDTO getSystemResources() {
         SystemResourceDTO dto = new SystemResourceDTO();
         dto.setJvmMemory(collectJvmMemory());
         dto.setDbPool(collectDbPool());
         dto.setRedisMemory(collectRedisMemory());
         return dto;
-    }
-
-    // ── Private helpers ──
-
-    /**
-     * Returns segment statistics: total segments, component vs regular, composite vs single templates.
-     */
-    public SegmentStatsDTO getSegmentStats() {
-        SegmentStatsDTO stats = new SegmentStatsDTO();
-        stats.setTotalSegments(segmentRepository.count());
-        stats.setComponentSegments(segmentRepository.countByComponent(true));
-        stats.setRegularSegments(segmentRepository.countByComponent(false));
-        stats.setCompositeTemplates(templateRepository.countByTemplateType("COMPOSITE"));
-        stats.setSingleTemplates(templateRepository.countByTemplateType("SINGLE"));
-        return stats;
-    }
-
-    /**
-     * Returns the top 10 component templates ranked by reference count (descending).
-     */
-    public List<ComponentRankingDTO> getComponentRanking() {
-        List<Segment> components = segmentRepository.findAll().stream()
-                .filter(Segment::isComponent)
-                .toList();
-
-        return components.stream()
-                .map(seg -> new ComponentRankingDTO(
-                        seg.getId(),
-                        seg.getName(),
-                        dependencyGraphService.getReferenceCount(seg.getId())))
-                .sorted((a, b) -> Integer.compare(b.getReferenceCount(), a.getReferenceCount()))
-                .limit(10)
-                .toList();
     }
 
     // ── Private helpers ──
@@ -221,7 +151,6 @@ public class DashboardService {
     }
 
     private double getDataSourceAvgResponseTime(String dataSourceName) {
-        // Convention: timers tagged with datasource=<name>
         Search search = meterRegistry.find("datasource.request.duration")
                 .tag("datasource", dataSourceName);
         Timer timer = search.timer();
@@ -235,7 +164,6 @@ public class DashboardService {
         long usedBytes = 0;
         long maxBytes = 0;
 
-        // Micrometer auto-registers jvm.memory.used and jvm.memory.max gauges
         for (Gauge gauge : meterRegistry.find("jvm.memory.used").gauges()) {
             usedBytes += (long) gauge.value();
         }
@@ -253,7 +181,6 @@ public class DashboardService {
     private SystemResourceDTO.DbPool collectDbPool() {
         SystemResourceDTO.DbPool pool = new SystemResourceDTO.DbPool();
 
-        // HikariCP exposes metrics via Micrometer with prefix hikaricp
         Gauge activeGauge = meterRegistry.find("hikaricp.connections.active").gauge();
         Gauge idleGauge = meterRegistry.find("hikaricp.connections.idle").gauge();
         Gauge totalGauge = meterRegistry.find("hikaricp.connections").gauge();

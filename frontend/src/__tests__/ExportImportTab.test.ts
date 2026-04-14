@@ -55,7 +55,7 @@ function populateStore(overrides: Record<string, any> = {}) {
     version: 1, description: '', tenantId: 1, createdAt: '', updatedAt: '',
     categoryId: null, tags: [], outputFormat: 'DOCX', reviewRequired: false,
   }
-  store.assemblyConfig = { segments: overrides.segments || [{ segmentId: 1 }, { segmentId: 2 }] } as any
+  store.assemblyConfig = { segments: overrides.segments || [{ filePath: 'f1.docx', name: 'S1' }, { filePath: 'f2.docx', name: 'S2' }] } as any
   store.dataSources = overrides.dataSources || [{ id: 1 }] as any
   store.expressions = overrides.expressions || [{ id: 1 }, { id: 2 }] as any
   store.testCases = overrides.testCases || [{ id: 1 }] as any
@@ -85,7 +85,7 @@ describe('ExportImportTab', () => {
   })
 
   it('displays 4 export summary statistics', async () => {
-    populateStore({ segments: [{ segmentId: 1 }, { segmentId: 2 }, { segmentId: 3 }], dataSources: [{ id: 1 }], expressions: [{ id: 1 }, { id: 2 }], testCases: [{ id: 1 }] })
+    populateStore({ segments: [{ filePath: 'f1.docx', name: 'S1' }, { filePath: 'f2.docx', name: 'S2' }, { filePath: 'f3.docx', name: 'S3' }], dataSources: [{ id: 1 }], expressions: [{ id: 1 }, { id: 2 }], testCases: [{ id: 1 }] })
     const wrapper = mount(ExportImportTab)
     await flushPromises()
 

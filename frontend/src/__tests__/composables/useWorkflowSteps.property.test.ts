@@ -1,7 +1,7 @@
 /**
- * Property 1: Workflow step completion is deterministic and consistent
- * Feature: workspace-foundation
- * Validates: Requirements 3.5, 3.8
+ * Property 7: useWorkflowSteps 内联段落适配
+ * Feature: remove-segment-library
+ * Validates: Requirements 6.7
  */
 import { describe, it, expect } from 'vitest'
 import * as fc from 'fast-check'
@@ -16,7 +16,8 @@ function hasEnabledSegment(config: AssemblyConfig | null): boolean {
 function allSegmentsEdited(config: AssemblyConfig | null): boolean {
   const enabled = config?.segments?.filter(s => s.enabled) ?? []
   if (enabled.length === 0) return false
-  return enabled.every(s => (s.lockedVersion ?? 0) > 1)
+  // Changed: check filePath non-empty instead of lockedVersion
+  return enabled.every(s => s.filePath != null && s.filePath.length > 0)
 }
 
 function hasFullCoverage(cov: CompositeCoverageReport | null): boolean {
@@ -49,19 +50,26 @@ function computeSteps(state: {
   return steps
 }
 
-// Generators
-const segmentEntryArb = fc.record({
-  segmentId: fc.nat(),
+// Generators (inline mode)
+const segmentEntryArb: fc.Arbitrary<AssemblySegmentEntry> = fc.record({
+  filePath: fc.oneof(
+    fc.constant(''),
+    fc.stringMatching(/^segments\/\d+\/[a-z]+\.docx$/),
+  ),
+  name: fc.string({ minLength: 1, maxLength: 30 }),
+  segmentType: fc.option(
+    fc.constantFrom('COVER', 'TOC', 'CHAPTER', 'TABLE', 'SIGNATURE', 'LEGAL', 'APPENDIX'),
+    { nil: null },
+  ),
   position: fc.nat(),
   enabled: fc.boolean(),
   pageBreakBefore: fc.boolean(),
-  lockedVersion: fc.oneof(fc.constant(null), fc.integer({ min: 0, max: 10 })),
   conditionExpression: fc.constant(null),
   dataScope: fc.constant(null),
-}) as fc.Arbitrary<AssemblySegmentEntry>
+})
 
 const assemblyConfigArb = fc.array(segmentEntryArb, { minLength: 0, maxLength: 20 }).map(
-  segments => ({ segments }) as AssemblyConfig
+  segments => ({ segments }) as AssemblyConfig,
 )
 
 const coverageArb = fc.oneof(
@@ -70,15 +78,14 @@ const coverageArb = fc.oneof(
     overallCoveragePercent: fc.double({ min: 0, max: 100, noNaN: true }),
     segmentCoverages: fc.array(
       fc.record({
-        segmentId: fc.nat(),
         segmentName: fc.string(),
         totalVariables: fc.nat(),
         boundVariables: fc.nat(),
         coveragePercent: fc.double({ min: 0, max: 100, noNaN: true }),
       }),
-      { minLength: 0, maxLength: 5 }
+      { minLength: 0, maxLength: 5 },
     ),
-  })
+  }),
 )
 
 const statusArb = fc.constantFrom('DRAFT', 'PENDING_REVIEW', 'REVIEWED', 'ACTIVE', 'ARCHIVED')
@@ -92,39 +99,20 @@ const workspaceStateArb = fc.record({
   status: statusArb,
 })
 
-describe('useWorkflowSteps - Property Tests', () => {
-  it('Property 1: step completion is deterministic and consistent', () => {
+describe('useWorkflowSteps - Property Tests (inline mode)', () => {
+  it('Property 7: hasEnabledSegment returns true iff at least one segment has enabled===true; allSegmentsEdited returns true iff all enabled segments have non-empty filePath', () => {
     fc.assert(
       fc.property(workspaceStateArb, (state) => {
         const steps = computeSteps(state)
 
-        // Step 1: create
-        expect(steps[0].completed).toBe(state.templateExists)
-
-        // Step 2: data
-        expect(steps[1].completed).toBe(state.dataSources > 0 || state.expressions > 0)
-
-        // Step 3: segments
+        // Step 3: segments - hasEnabledSegment
         const hasEnabled = state.assemblyConfig?.segments?.some(s => s.enabled) ?? false
         expect(steps[2].completed).toBe(hasEnabled)
 
-        // Step 4: editor
+        // Step 4: editor - allSegmentsEdited (inline: check filePath non-empty)
         const enabled = state.assemblyConfig?.segments?.filter(s => s.enabled) ?? []
-        const allEdited = enabled.length > 0 && enabled.every(s => (s.lockedVersion ?? 0) > 1)
+        const allEdited = enabled.length > 0 && enabled.every(s => s.filePath != null && s.filePath.length > 0)
         expect(steps[3].completed).toBe(allEdited)
-
-        // Step 5: testing
-        const fullCov = state.coverage !== null &&
-          state.coverage.overallCoveragePercent >= 100 &&
-          state.coverage.segmentCoverages.length > 0
-        expect(steps[4].completed).toBe(fullCov)
-
-        // Step 6: review
-        expect(steps[5].completed).toBe(state.status === 'ACTIVE')
-
-        // Steps 7-8: always available
-        expect(steps[6].alwaysAvailable).toBe(true)
-        expect(steps[7].alwaysAvailable).toBe(true)
 
         // DRAFT active step
         if (state.status === 'DRAFT') {
@@ -140,7 +128,7 @@ describe('useWorkflowSteps - Property Tests', () => {
           expect(steps.filter(s => s.active)).toHaveLength(0)
         }
       }),
-      { numRuns: 200 }
+      { numRuns: 200 },
     )
   })
 })

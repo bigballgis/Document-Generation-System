@@ -14,7 +14,7 @@ export function useWorkflowSteps(store: ReturnType<typeof useTemplateWorkspaceSt
   function allSegmentsEdited(config: AssemblyConfig | null): boolean {
     const enabled = config?.segments?.filter(s => s.enabled) ?? []
     if (enabled.length === 0) return false
-    return enabled.every(s => (s.lockedVersion ?? 0) > 1)
+    return enabled.every(s => s.filePath != null && s.filePath.length > 0)
   }
 
   function hasFullCoverage(cov: CompositeCoverageReport | null): boolean {

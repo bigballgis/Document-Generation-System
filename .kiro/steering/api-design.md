@@ -1,67 +1,39 @@
 ---
-description: RESTful API 设计规范，包括 URL 命名、HTTP 方法语义、响应格式和前端 API 调用规范
 inclusion: auto
-fileMatchPattern: '**/*Controller*.java,**/*controller*.java,**/api/**/*.ts'
+name: api-design
+description: RESTful API 设计规范。在创建或修改 Controller、API 调用层时使用。
 ---
 
 # API 设计规范
 
-## RESTful API 设计原则
+## URL 命名
 
-### URL 命名
+- 小写 + 连字符: `/api/composite-templates/{id}/segments`
+- 资源名复数，嵌套最多两层
+- 操作用动词子路径: `/api/templates/{id}/activate`
 
-- 使用小写字母和连字符: `/api/composite-templates/{id}/segments`
-- 资源名使用复数: `/api/segments`, `/api/templates`
-- 嵌套资源最多两层: `/api/templates/{id}/versions`
-- 操作使用动词子路径: `/api/templates/{id}/activate`, `/api/segments/{id}/promote`
+## HTTP 方法
 
-### HTTP 方法语义
-
-| 方法 | 用途 | 幂等性 | 响应码 |
-|------|------|--------|--------|
-| GET | 查询资源 | 是 | 200 |
-| POST | 创建资源 | 否 | 201 |
+| 方法 | 用途 | 幂等 | 响应码 |
+|------|------|------|--------|
+| GET | 查询 | 是 | 200 |
+| POST | 创建 | 否 | 201 |
 | PUT | 全量更新 | 是 | 200 |
 | PATCH | 部分更新 | 否 | 200 |
-| DELETE | 删除资源 | 是 | 204 |
+| DELETE | 删除 | 是 | 204 |
 
-### 响应格式
+## 响应格式
 
-成功响应:
 ```json
-{
-  "id": 1,
-  "name": "...",
-  ...
-}
+// 分页
+{ "content": [...], "totalElements": 100, "totalPages": 10, "number": 0, "size": 10 }
+
+// 错误
+{ "code": "RESOURCE_NOT_FOUND", "message": "模板不存在", "timestamp": "2025-01-01T00:00:00Z" }
 ```
 
-分页响应:
-```json
-{
-  "content": [...],
-  "totalElements": 100,
-  "totalPages": 10,
-  "number": 0,
-  "size": 10
-}
-```
+## 前端 API 层
 
-错误响应:
-```json
-{
-  "code": "RESOURCE_NOT_FOUND",
-  "message": "模板不存在",
-  "timestamp": "2025-01-01T00:00:00Z"
-}
-```
-
-### 版本控制
-
-- API 版本通过 URL 前缀: `/api/v1/...`（当前版本不加前缀，未来破坏性变更时引入）
-
-## 前端 API 调用规范
-
-- 所有 API 调用通过 `src/api/request.ts` 的 Axios 实例
-- 每个功能模块一个 API 文件: `src/api/segments.ts`, `src/api/composite-templates.ts`
-- 使用 TypeScript 类型定义请求和响应
+- 每模块一个文件: `src/api/segments.ts`
+- 使用 TypeScript 类型定义请求/响应
+- 统一通过 `src/api/request.ts` Axios 实例

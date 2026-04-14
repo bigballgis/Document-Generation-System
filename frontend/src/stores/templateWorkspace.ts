@@ -1,13 +1,13 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { getTemplate, getAvailableTransitions, getTemplateVersions } from '@/api/templates'
-import { getAssemblyConfig, getCompositeCoverage, getCompositeSegments } from '@/api/composite-templates'
+import { getAssemblyConfig, getCompositeCoverage } from '@/api/composite-templates'
 import { getDataSources } from '@/api/data-sources'
 import { getExpressions } from '@/api/expressions'
 import { getTestCases } from '@/api/market'
 import { getTemplateReviews, getTemplatePermissions } from '@/api/admin'
 import type { TemplateDTO, TemplateVersionDTO } from '@/api/templates'
-import type { AssemblyConfig, CompositeCoverageReport, CompositeTestReport, Segment } from '@/types/segment'
+import type { AssemblyConfig, CompositeCoverageReport } from '@/types/segment'
 import type { DataSourceDTO } from '@/api/data-sources'
 import type { ExpressionDTO } from '@/types/document'
 import type { TestCaseDTO } from '@/api/market'
@@ -22,11 +22,10 @@ export const useTemplateWorkspaceStore = defineStore('templateWorkspace', () => 
   const expressions = ref<ExpressionDTO[]>([])
   const coverage = ref<CompositeCoverageReport | null>(null)
   const availableTransitions = ref<string[]>([])
-  const segments = ref<Segment[]>([])
 
   // P3 — on-demand loaded state (NOT in initWorkspace)
   const testCases = ref<TestCaseDTO[]>([])
-  const testReport = ref<CompositeTestReport | null>(null)
+  const testReport = ref<any | null>(null)
   const reviews = ref<ReviewDTO[]>([])
 
   // P4 — on-demand loaded state (NOT in initWorkspace)
@@ -64,7 +63,6 @@ export const useTemplateWorkspaceStore = defineStore('templateWorkspace', () => 
       getExpressions(id),
       getCompositeCoverage(id),
       getAvailableTransitions(id),
-      getCompositeSegments(id),
     ])
 
     try {
@@ -78,7 +76,7 @@ export const useTemplateWorkspaceStore = defineStore('templateWorkspace', () => 
     }
 
     const settled = await nonCriticalResults
-    const sections = ['dataSources', 'expressions', 'coverage', 'transitions', 'segments'] as const
+    const sections = ['dataSources', 'expressions', 'coverage', 'transitions'] as const
     settled.forEach((result, index) => {
       if (result.status === 'fulfilled') {
         switch (index) {
@@ -86,7 +84,6 @@ export const useTemplateWorkspaceStore = defineStore('templateWorkspace', () => 
           case 1: expressions.value = result.value as ExpressionDTO[]; break
           case 2: coverage.value = result.value as CompositeCoverageReport; break
           case 3: availableTransitions.value = result.value as string[]; break
-          case 4: segments.value = result.value as Segment[]; break
         }
       } else {
         warnings.value[sections[index]] = result.reason?.message || 'Load failed'
@@ -141,16 +138,6 @@ export const useTemplateWorkspaceStore = defineStore('templateWorkspace', () => 
       delete warnings.value.coverage
     } catch (e: any) {
       warnings.value.coverage = e.message || 'Refresh failed'
-    }
-  }
-
-  async function refreshSegments(): Promise<void> {
-    if (!templateId.value) return
-    try {
-      segments.value = await getCompositeSegments(templateId.value)
-      delete warnings.value.segments
-    } catch (e: any) {
-      warnings.value.segments = e.message || 'Refresh failed'
     }
   }
 
@@ -213,7 +200,6 @@ export const useTemplateWorkspaceStore = defineStore('templateWorkspace', () => 
     expressions.value = []
     coverage.value = null
     availableTransitions.value = []
-    segments.value = []
     testCases.value = []
     testReport.value = null
     reviews.value = []
@@ -226,12 +212,12 @@ export const useTemplateWorkspaceStore = defineStore('templateWorkspace', () => 
 
   return {
     templateId, template, assemblyConfig, dataSources, expressions,
-    coverage, availableTransitions, segments, loading, criticalError, warnings,
+    coverage, availableTransitions, loading, criticalError, warnings,
     testCases, testReport, reviews, versions, permissions,
     templateStatus, isActive, isDraft,
     initWorkspace, refreshTemplate, refreshAssemblyConfig,
     refreshDataSources, refreshExpressions, refreshCoverage,
-    refreshSegments, refreshTransitions, refreshTestCases, refreshReviews,
+    refreshTransitions, refreshTestCases, refreshReviews,
     refreshVersions, refreshPermissions, $reset,
   }
 })

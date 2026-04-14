@@ -2,18 +2,13 @@ import request from './request'
 import type { TemplateDTO } from './templates'
 import { uploadFile } from './import-export'
 import type {
-  Segment,
   AssemblyConfig,
   UpdateAssemblyConfigRequest,
   CreateCompositeTemplateRequest,
   SelectivePreviewRequest,
   CompositePreview,
   CompositeCoverageReport,
-  SegmentReview,
-  SubmitCompositeReviewRequest,
-  ReviewActionRequest,
-  CompositeTestReport,
-  SegmentRecommendation,
+  AssemblySegmentEntry,
   MigrationResult,
 } from '@/types/segment'
 
@@ -49,28 +44,20 @@ export function getCompositeCoverage(id: number) {
   return request.get<any, CompositeCoverageReport>(`/composite-templates/${id}/coverage`)
 }
 
-// ── Segments ──
+// ── Upload Segment ──
 
-export function getCompositeSegments(id: number) {
-  return request.get<any, Segment[]>(`/composite-templates/${id}/segments`)
-}
-
-// ── Reviews ──
-
-export function submitCompositeReview(id: number, data: SubmitCompositeReviewRequest) {
-  return request.post<any, SegmentReview[]>(`/composite-templates/${id}/reviews`, data)
-}
-
-export function getSegmentReviews(id: number, reviewId: number) {
-  return request.get<any, SegmentReview[]>(`/composite-templates/${id}/reviews/${reviewId}/segments`)
-}
-
-export function approveSegmentReview(reviewId: number, data?: ReviewActionRequest) {
-  return request.put<any, SegmentReview>(`/segment-reviews/${reviewId}/approve`, data ?? {})
-}
-
-export function rejectSegmentReview(reviewId: number, data: ReviewActionRequest) {
-  return request.put<any, SegmentReview>(`/segment-reviews/${reviewId}/reject`, data)
+export function uploadSegment(templateId: number, file: File, name: string, segmentType?: string) {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('name', name)
+  if (segmentType) {
+    formData.append('segmentType', segmentType)
+  }
+  return request.post<any, AssemblySegmentEntry>(
+    `/composite-templates/${templateId}/upload-segment`,
+    formData,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  )
 }
 
 // ── Import / Export ──
@@ -89,18 +76,6 @@ export function exportCompositeConfig(id: number) {
 
 export function importCompositeFromZip(file: File) {
   return uploadFile<TemplateDTO>('/composite-templates/import', file)
-}
-
-// ── Recommendations ──
-
-export function getSegmentRecommendations(id: number) {
-  return request.get<any, SegmentRecommendation[]>(`/composite-templates/${id}/recommendations`)
-}
-
-// ── Composite Tests ──
-
-export function runAllCompositeTests(id: number) {
-  return request.post<any, CompositeTestReport>(`/composite-templates/${id}/tests/run`)
 }
 
 // ── Migration ──

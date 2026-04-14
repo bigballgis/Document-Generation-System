@@ -8,7 +8,6 @@ const mockDeleteTestCase = vi.fn()
 const mockExportTestCases = vi.fn()
 const mockImportTestCases = vi.fn()
 const mockRunTestCase = vi.fn()
-const mockRunAllCompositeTests = vi.fn()
 const mockPreviewCompositeTemplate = vi.fn()
 const mockGetTemplateCoverage = vi.fn()
 
@@ -25,8 +24,6 @@ vi.mock('@/api/market', () => ({
 vi.mock('@/api/composite-templates', () => ({
   getAssemblyConfig: vi.fn().mockResolvedValue({ segments: [] }),
   getCompositeCoverage: vi.fn().mockResolvedValue({ overallCoveragePercent: 0, segmentCoverages: [] }),
-  getCompositeSegments: vi.fn().mockResolvedValue([]),
-  runAllCompositeTests: (...args: any[]) => mockRunAllCompositeTests(...args),
   previewCompositeTemplate: (...args: any[]) => mockPreviewCompositeTemplate(...args),
 }))
 
@@ -80,8 +77,8 @@ function populateStore(overrides: Record<string, any> = {}) {
   store.template = { id: 1, name: 'Test', status: 'DRAFT', templateType: 'COMPOSITE', version: 1 } as any
   store.testCases = [...sampleTestCases]
   store.coverage = { overallCoveragePercent: 75, segmentCoverages: [
-    { segmentId: 1, segmentName: 'Seg1', totalVariables: 10, boundVariables: 8, coveragePercent: 80 },
-    { segmentId: 2, segmentName: 'Seg2', totalVariables: 5, boundVariables: 3, coveragePercent: 60 },
+    { segmentName: 'Seg1', totalVariables: 10, boundVariables: 8, coveragePercent: 80 },
+    { segmentName: 'Seg2', totalVariables: 5, boundVariables: 3, coveragePercent: 60 },
   ] }
   Object.assign(store, overrides)
   return store
@@ -98,7 +95,6 @@ describe('TestingTab', () => {
     mockExportTestCases.mockReset()
     mockImportTestCases.mockReset()
     mockRunTestCase.mockReset()
-    mockRunAllCompositeTests.mockReset()
     mockPreviewCompositeTemplate.mockReset()
     mockGetTemplateCoverage.mockReset()
     mockConfirm.mockReset()
@@ -249,20 +245,19 @@ describe('TestingTab', () => {
   describe('run all tests', () => {
     it('calls runAllCompositeTests and sets store.testReport', async () => {
       const store = populateStore()
-      const report = { totalTests: 2, passedTests: 1, failedTests: 1, executedAt: '2024-06-01', segmentResults: [] }
-      mockRunAllCompositeTests.mockResolvedValue(report)
+      mockRunTestCase.mockResolvedValue({ passed: true })
       const wrapper = mountTab()
       await flushPromises()
       const vm = wrapper.vm as any
       await vm.handleRunAll()
       await flushPromises()
-      expect(mockRunAllCompositeTests).toHaveBeenCalledWith(1)
-      expect(store.testReport).toEqual(report)
+      expect(mockRunTestCase).toHaveBeenCalledTimes(store.testCases.length)
+      expect(store.testReport).toBeTruthy()
     })
 
     it('re-enables button on failure', async () => {
       populateStore()
-      mockRunAllCompositeTests.mockRejectedValue(new Error('fail'))
+      mockRunTestCase.mockRejectedValue(new Error('fail'))
       const wrapper = mountTab()
       await flushPromises()
       const vm = wrapper.vm as any
@@ -316,7 +311,7 @@ describe('TestingTab', () => {
 
     it('shows green progress when coverage is 100%', async () => {
       populateStore({ coverage: { overallCoveragePercent: 100, segmentCoverages: [
-        { segmentId: 1, segmentName: 'S1', totalVariables: 5, boundVariables: 5, coveragePercent: 100 },
+        { segmentName: 'S1', totalVariables: 5, boundVariables: 5, coveragePercent: 100 },
       ] } })
       const wrapper = mountTab()
       await flushPromises()

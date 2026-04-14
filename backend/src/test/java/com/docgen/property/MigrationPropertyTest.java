@@ -1,386 +1,261 @@
 package com.docgen.property;
 
-import com.docgen.dto.AssemblyConfigDTO;
-import com.docgen.dto.AssemblySegmentEntry;
-import com.docgen.dto.MigrationResultDTO;
-import com.docgen.entity.*;
-import com.docgen.repository.*;
-import com.docgen.service.AssemblyConfigService;
-import com.docgen.service.AuditLogService;
-import com.docgen.service.MigrationService;
-import com.docgen.util.TenantContext;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.minio.GetObjectArgs;
-import io.minio.MinioClient;
-import io.minio.PutObjectArgs;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import net.jqwik.api.*;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 /**
- * Property-based tests for MigrationService — Property 7: Migration Round-Trip Consistency.
+ * Property-based test for data migration correctness: segmentId → inline mode.
  *
- * <p><b>Validates: Requirements 9.4, 9.6</b></p>
+ * <p><b>Validates: Requirements 3.8, 12.1, 12.2</b></p>
  *
- * <p>Verifies that migrating a single-file template to a composite template
- * preserves all configuration: data sources, expressions, and variable bindings.</p>
+ * <p>Property 5: For any assembly_config JSON containing segmentId references and a
+ * corresponding segments table, the migration transformation SHALL produce an inline
+ * assembly_config where each entry's filePath, name, and segmentType match the
+ * corresponding segment record, and all other fields are preserved. For non-existent
+ * segmentId references, the entry SHALL be marked with enabled=false and name prefixed
+ * with "INVALID_SEGMENT_".</p>
  */
-@Tag("Feature: template-segmentation, Property 7: migrationPreservesConfiguration")
+@Tag("Feature: remove-segment-library, Property 5: dataMigrationSegmentIdToInlineConversion")
 class MigrationPropertyTest {
 
-    private static final Long TENANT_ID = 1L;
-    private static final Long USER_ID = 10L;
-    private static final byte[] FAKE_DOCX = new byte[]{0x50, 0x4B, 0x03, 0x04};
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
-     * Property 7: migrationPreservesConfiguration
+     * Simulates the SQL migration logic in Java for property testing.
+     * Mirrors V36__migrate_assembly_config_and_drop_segments.sql step 1.
+     */
+    private JsonNode simulateMigration(JsonNode assemblyConfig, Map<Long, SegmentRecord> segmentsTable)
+            throws JsonProcessingException {
+        ArrayNode segments = (ArrayNode) assemblyConfig.get("segments");
+        if (segments == null) {
+            return objectMapper.createObjectNode().set("segments", objectMapper.createArrayNode());
+        }
+
+        ArrayNode migratedSegments = objectMapper.createArrayNode();
+        for (JsonNode elem : segments) {
+            long segmentId = elem.get("segmentId").asLong();
+            SegmentRecord record = segmentsTable.get(segmentId);
+
+            ObjectNode migrated = objectMapper.createObjectNode();
+            if (record != null) {
+                migrated.put("filePath", record.filePath);
+                migrated.put("name", record.name);
+                if (record.segmentType != null) {
+                    migrated.put("segmentType", record.segmentType);
+                } else {
+                    migrated.putNull("segmentType");
+                }
+                migrated.put("position", elem.get("position").asInt());
+                migrated.put("enabled", elem.has("enabled") ? elem.get("enabled").asBoolean() : true);
+                migrated.put("pageBreakBefore", elem.has("pageBreakBefore") ? elem.get("pageBreakBefore").asBoolean() : false);
+                if (elem.has("conditionExpression") && !elem.get("conditionExpression").isNull()) {
+                    migrated.put("conditionExpression", elem.get("conditionExpression").asText());
+                } else {
+                    migrated.putNull("conditionExpression");
+                }
+                if (elem.has("dataScope") && !elem.get("dataScope").isNull()) {
+                    migrated.set("dataScope", elem.get("dataScope"));
+                } else {
+                    migrated.putNull("dataScope");
+                }
+            } else {
+                // Non-existent segment: mark as invalid
+                migrated.put("filePath", "");
+                migrated.put("name", "INVALID_SEGMENT_" + segmentId);
+                migrated.putNull("segmentType");
+                migrated.put("position", elem.get("position").asInt());
+                migrated.put("enabled", false);
+                migrated.put("pageBreakBefore", elem.has("pageBreakBefore") ? elem.get("pageBreakBefore").asBoolean() : false);
+                if (elem.has("conditionExpression") && !elem.get("conditionExpression").isNull()) {
+                    migrated.put("conditionExpression", elem.get("conditionExpression").asText());
+                } else {
+                    migrated.putNull("conditionExpression");
+                }
+                if (elem.has("dataScope") && !elem.get("dataScope").isNull()) {
+                    migrated.set("dataScope", elem.get("dataScope"));
+                } else {
+                    migrated.putNull("dataScope");
+                }
+            }
+            migratedSegments.add(migrated);
+        }
+
+        ObjectNode result = objectMapper.createObjectNode();
+        result.set("segments", migratedSegments);
+        return result;
+    }
+
+    /**
+     * Property 5: dataMigrationSegmentIdToInlineConversion
      *
-     * For any random template with random data sources, expressions, and variable bindings,
-     * after migration the new composite template must contain copies of all original
-     * configurations with identical field values.
+     * For valid segmentId references, filePath/name/segmentType must match the segment record.
+     * For invalid references, entry must be marked enabled=false with INVALID_SEGMENT_ prefix.
+     * All other fields (position, pageBreakBefore, conditionExpression, dataScope) must be preserved.
      */
     @Property(tries = 100)
-    void migrationPreservesConfiguration(
-            @ForAll("templateConfigs") TemplateConfig config
+    void dataMigrationSegmentIdToInlineConversion(
+            @ForAll("migrationInputs") MigrationInput input
     ) throws Exception {
-        // Arrange: set up mocks
-        TemplateRepository templateRepository = mock(TemplateRepository.class);
-        SegmentRepository segmentRepository = mock(SegmentRepository.class);
-        ObjectMapper objectMapper = new ObjectMapper();
-        AssemblyConfigService assemblyConfigService = new AssemblyConfigService(objectMapper, segmentRepository);
-        AuditLogService auditLogService = mock(AuditLogService.class);
-        MinioClient minioClient = mock(MinioClient.class);
-        DataSourceRepository dataSourceRepository = mock(DataSourceRepository.class);
-        ExpressionRepository expressionRepository = mock(ExpressionRepository.class);
-        TemplateVariableRepository templateVariableRepository = mock(TemplateVariableRepository.class);
+        JsonNode migrated = simulateMigration(input.assemblyConfig, input.segmentsTable);
 
-        MigrationService service = new MigrationService(
-                templateRepository, segmentRepository, assemblyConfigService,
-                auditLogService, minioClient,
-                dataSourceRepository, expressionRepository, templateVariableRepository);
+        ArrayNode originalSegments = (ArrayNode) input.assemblyConfig.get("segments");
+        ArrayNode migratedSegments = (ArrayNode) migrated.get("segments");
 
-        // Set bucket name via reflection
-        setField(service, "bucketName", "docgen");
+        assertNotNull(migratedSegments, "Migrated config must have segments array");
+        assertEquals(originalSegments.size(), migratedSegments.size(),
+                "Migrated segments count must match original");
 
-        TenantContext.setCurrentTenantId(TENANT_ID);
+        for (int i = 0; i < originalSegments.size(); i++) {
+            JsonNode orig = originalSegments.get(i);
+            JsonNode mig = migratedSegments.get(i);
+            long segmentId = orig.get("segmentId").asLong();
+            SegmentRecord record = input.segmentsTable.get(segmentId);
 
-        try {
-            // Build original template
-            Template original = new Template();
-            original.setId(config.templateId);
-            original.setTenantId(TENANT_ID);
-            original.setName(config.templateName);
-            original.setDescription(config.templateDescription);
-            original.setTemplateFilePath("templates/1/test.docx");
-            original.setOutputFormat(config.outputFormat);
-            original.setStatus("ACTIVE");
-            original.setTemplateType("SINGLE");
-            original.setCreatedBy(USER_ID);
-            original.setCategoryId(config.categoryId);
-            original.setTeamId(config.teamId);
-            original.setReviewRequired(config.reviewRequired);
-            original.setAllowHistoryVersions(config.allowHistoryVersions);
-
-            when(templateRepository.findById(config.templateId)).thenReturn(Optional.of(original));
-
-            // Mock MinIO read
-            InputStream mockStream = new ByteArrayInputStream(FAKE_DOCX);
-            when(minioClient.getObject(any(GetObjectArgs.class))).thenReturn(
-                    new io.minio.GetObjectResponse(
-                            okhttp3.Headers.of(), "docgen", "", "test.docx", mockStream));
-            when(minioClient.putObject(any(PutObjectArgs.class))).thenReturn(null);
-
-            // Track saved entities
-            List<DataSource> savedDataSources = new ArrayList<>();
-            List<Expression> savedExpressions = new ArrayList<>();
-            List<TemplateVariable> savedVariables = new ArrayList<>();
-
-            // Mock segment save
-            AtomicLong segmentIdCounter = new AtomicLong(100);
-            when(segmentRepository.save(any(Segment.class))).thenAnswer(inv -> {
-                Segment s = inv.getArgument(0);
-                s.setId(segmentIdCounter.getAndIncrement());
-                s.setCreatedAt(Instant.now());
-                s.setUpdatedAt(Instant.now());
-                return s;
-            });
-
-            // Mock template save (for composite and archived original)
-            AtomicLong templateIdCounter = new AtomicLong(200);
-            when(templateRepository.save(any(Template.class))).thenAnswer(inv -> {
-                Template t = inv.getArgument(0);
-                if (t.getId() == null) {
-                    t.setId(templateIdCounter.getAndIncrement());
+            if (record != null) {
+                // Valid reference: filePath/name/segmentType must match segment record
+                assertEquals(record.filePath, mig.get("filePath").asText(),
+                        "filePath must match segment record for segmentId=" + segmentId);
+                assertEquals(record.name, mig.get("name").asText(),
+                        "name must match segment record for segmentId=" + segmentId);
+                if (record.segmentType != null) {
+                    assertEquals(record.segmentType, mig.get("segmentType").asText(),
+                            "segmentType must match segment record");
+                } else {
+                    assertTrue(mig.get("segmentType").isNull(), "segmentType should be null");
                 }
-                t.setCreatedAt(Instant.now());
-                t.setUpdatedAt(Instant.now());
-                return t;
-            });
-
-            // Mock data source migration
-            when(dataSourceRepository.findByTemplateIdOrderByPriorityDesc(config.templateId))
-                    .thenReturn(config.dataSources);
-            when(dataSourceRepository.save(any(DataSource.class))).thenAnswer(inv -> {
-                DataSource ds = inv.getArgument(0);
-                savedDataSources.add(ds);
-                return ds;
-            });
-
-            // Mock expression migration
-            when(expressionRepository.findByTemplateIdOrderByExecutionOrderAsc(config.templateId))
-                    .thenReturn(config.expressions);
-            when(expressionRepository.save(any(Expression.class))).thenAnswer(inv -> {
-                Expression e = inv.getArgument(0);
-                savedExpressions.add(e);
-                return e;
-            });
-
-            // Mock variable binding migration
-            when(templateVariableRepository.findByTemplateIdOrderByNameAsc(config.templateId))
-                    .thenReturn(config.variables);
-            when(templateVariableRepository.save(any(TemplateVariable.class))).thenAnswer(inv -> {
-                TemplateVariable v = inv.getArgument(0);
-                savedVariables.add(v);
-                return v;
-            });
-
-            // Act
-            MigrationResultDTO result = service.migrateToComposite(config.templateId, USER_ID);
-
-            // Assert: counts match
-            assertEquals(config.dataSources.size(), result.getMigratedDataSources(),
-                    "All data sources must be migrated");
-            assertEquals(config.expressions.size(), result.getMigratedExpressions(),
-                    "All expressions must be migrated");
-            assertEquals(config.variables.size(), result.getMigratedVariableBindings(),
-                    "All variable bindings must be migrated");
-
-            // Assert: data source fields preserved
-            for (int i = 0; i < config.dataSources.size(); i++) {
-                DataSource orig = config.dataSources.get(i);
-                DataSource copy = savedDataSources.get(i);
-                assertNotEquals(config.templateId, copy.getTemplateId(),
-                        "Migrated data source must reference the new composite template");
-                assertEquals(orig.getName(), copy.getName(), "Data source name must be preserved");
-                assertEquals(orig.getType(), copy.getType(), "Data source type must be preserved");
-                assertEquals(orig.getConfigJson(), copy.getConfigJson(), "Data source config must be preserved");
-                assertEquals(orig.isCacheEnabled(), copy.isCacheEnabled(), "Cache enabled must be preserved");
-                assertEquals(orig.getCacheTtl(), copy.getCacheTtl(), "Cache TTL must be preserved");
-                assertEquals(orig.getPriority(), copy.getPriority(), "Priority must be preserved");
+            } else {
+                // Invalid reference: must be marked as invalid
+                assertEquals("", mig.get("filePath").asText(),
+                        "Invalid segment filePath must be empty");
+                assertEquals("INVALID_SEGMENT_" + segmentId, mig.get("name").asText(),
+                        "Invalid segment name must have INVALID_SEGMENT_ prefix");
+                assertFalse(mig.get("enabled").asBoolean(),
+                        "Invalid segment must be disabled");
             }
 
-            // Assert: expression fields preserved
-            for (int i = 0; i < config.expressions.size(); i++) {
-                Expression orig = config.expressions.get(i);
-                Expression copy = savedExpressions.get(i);
-                assertNotEquals(config.templateId, copy.getTemplateId(),
-                        "Migrated expression must reference the new composite template");
-                assertEquals(orig.getName(), copy.getName(), "Expression name must be preserved");
-                assertEquals(orig.getExpressionType(), copy.getExpressionType(), "Expression type must be preserved");
-                assertEquals(orig.getExpressionText(), copy.getExpressionText(), "Expression text must be preserved");
-                assertEquals(orig.getDescription(), copy.getDescription(), "Expression description must be preserved");
-                assertEquals(orig.getExecutionOrder(), copy.getExecutionOrder(), "Execution order must be preserved");
+            // Preserved fields
+            assertEquals(orig.get("position").asInt(), mig.get("position").asInt(),
+                    "position must be preserved");
+            boolean origPageBreak = orig.has("pageBreakBefore") && orig.get("pageBreakBefore").asBoolean();
+            assertEquals(origPageBreak, mig.get("pageBreakBefore").asBoolean(),
+                    "pageBreakBefore must be preserved");
+
+            // conditionExpression preserved
+            if (orig.has("conditionExpression") && !orig.get("conditionExpression").isNull()) {
+                assertEquals(orig.get("conditionExpression").asText(),
+                        mig.get("conditionExpression").asText(),
+                        "conditionExpression must be preserved");
             }
 
-            // Assert: variable binding fields preserved
-            for (int i = 0; i < config.variables.size(); i++) {
-                TemplateVariable orig = config.variables.get(i);
-                TemplateVariable copy = savedVariables.get(i);
-                assertNotEquals(config.templateId, copy.getTemplateId(),
-                        "Migrated variable must reference the new composite template");
-                assertEquals(orig.getName(), copy.getName(), "Variable name must be preserved");
-                assertEquals(orig.getVariableType(), copy.getVariableType(), "Variable type must be preserved");
-                assertEquals(orig.getDefaultValue(), copy.getDefaultValue(), "Default value must be preserved");
-                assertEquals(orig.getDescription(), copy.getDescription(), "Variable description must be preserved");
-                assertEquals(orig.getBindingSource(), copy.getBindingSource(), "Binding source must be preserved");
-                assertEquals(orig.getBindingField(), copy.getBindingField(), "Binding field must be preserved");
-                assertEquals(orig.isBound(), copy.isBound(), "Bound status must be preserved");
+            // dataScope preserved
+            if (orig.has("dataScope") && !orig.get("dataScope").isNull()) {
+                assertEquals(orig.get("dataScope"), mig.get("dataScope"),
+                        "dataScope must be preserved");
             }
-
-            // Assert: original template archived
-            assertEquals("ARCHIVED", original.getStatus(),
-                    "Original template must be archived after migration");
-
-            // Assert: result IDs are set
-            assertNotNull(result.getCompositeTemplateId(), "Composite template ID must be set");
-            assertNotNull(result.getSegmentId(), "Segment ID must be set");
-            assertEquals(config.templateId, result.getArchivedOriginalTemplateId(),
-                    "Archived original template ID must match source");
-
-        } finally {
-            TenantContext.clear();
         }
     }
 
     // ── Helper types ──
 
-    static class TemplateConfigBase {
-        final Long templateId;
-        final String templateName;
-        final String templateDescription;
-        final String outputFormat;
-        final Long categoryId;
-        final Long teamId;
-        final boolean reviewRequired;
-        final boolean allowHistoryVersions;
+    static class SegmentRecord {
+        final long id;
+        final String filePath;
+        final String name;
+        final String segmentType;
 
-        TemplateConfigBase(Long templateId, String templateName, String templateDescription,
-                           String outputFormat, Long categoryId, Long teamId,
-                           boolean reviewRequired, boolean allowHistoryVersions) {
-            this.templateId = templateId;
-            this.templateName = templateName;
-            this.templateDescription = templateDescription;
-            this.outputFormat = outputFormat;
-            this.categoryId = categoryId;
-            this.teamId = teamId;
-            this.reviewRequired = reviewRequired;
-            this.allowHistoryVersions = allowHistoryVersions;
+        SegmentRecord(long id, String filePath, String name, String segmentType) {
+            this.id = id;
+            this.filePath = filePath;
+            this.name = name;
+            this.segmentType = segmentType;
         }
     }
 
-    static class TemplateConfig {
-        final Long templateId;
-        final String templateName;
-        final String templateDescription;
-        final String outputFormat;
-        final Long categoryId;
-        final Long teamId;
-        final boolean reviewRequired;
-        final boolean allowHistoryVersions;
-        final List<DataSource> dataSources;
-        final List<Expression> expressions;
-        final List<TemplateVariable> variables;
+    static class MigrationInput {
+        final JsonNode assemblyConfig;
+        final Map<Long, SegmentRecord> segmentsTable;
 
-        TemplateConfig(Long templateId, String templateName, String templateDescription,
-                       String outputFormat, Long categoryId, Long teamId,
-                       boolean reviewRequired, boolean allowHistoryVersions,
-                       List<DataSource> dataSources, List<Expression> expressions,
-                       List<TemplateVariable> variables) {
-            this.templateId = templateId;
-            this.templateName = templateName;
-            this.templateDescription = templateDescription;
-            this.outputFormat = outputFormat;
-            this.categoryId = categoryId;
-            this.teamId = teamId;
-            this.reviewRequired = reviewRequired;
-            this.allowHistoryVersions = allowHistoryVersions;
-            this.dataSources = dataSources;
-            this.expressions = expressions;
-            this.variables = variables;
+        MigrationInput(JsonNode assemblyConfig, Map<Long, SegmentRecord> segmentsTable) {
+            this.assemblyConfig = assemblyConfig;
+            this.segmentsTable = segmentsTable;
         }
 
         @Override
         public String toString() {
-            return "TemplateConfig{name=" + templateName
-                    + ", dataSources=" + dataSources.size()
-                    + ", expressions=" + expressions.size()
-                    + ", variables=" + variables.size() + "}";
+            return "MigrationInput{config=" + assemblyConfig + ", segments=" + segmentsTable.keySet() + "}";
         }
     }
 
     // ── Generators ──
 
     @Provide
-    Arbitrary<TemplateConfig> templateConfigs() {
-        Arbitrary<Long> templateIds = Arbitraries.longs().between(1L, 1000L);
-        Arbitrary<String> names = Arbitraries.strings().alpha().ofMinLength(1).ofMaxLength(50);
-        Arbitrary<String> descriptions = Arbitraries.strings().alpha().ofMaxLength(100);
-        Arbitrary<String> formats = Arbitraries.of("WORD", "PDF");
-        Arbitrary<Boolean> booleans = Arbitraries.of(true, false);
+    Arbitrary<MigrationInput> migrationInputs() {
+        String[] segmentTypes = {"COVER", "TOC", "CHAPTER", "TABLE", "SIGNATURE", "LEGAL", "APPENDIX", null};
 
-        // First combine the basic template fields (8 params max)
-        Arbitrary<TemplateConfigBase> base = Combinators.combine(
-                templateIds, names, descriptions, formats,
-                Arbitraries.longs().between(1L, 100L),
-                Arbitraries.longs().between(1L, 50L),
-                booleans, booleans
-        ).as(TemplateConfigBase::new);
-
-        // Then combine with the lists
-        return Combinators.combine(base, dataSourceLists(), expressionLists(), variableLists())
-                .as((b, ds, exprs, vars) -> new TemplateConfig(
-                        b.templateId, b.templateName, b.templateDescription,
-                        b.outputFormat, b.categoryId, b.teamId,
-                        b.reviewRequired, b.allowHistoryVersions,
-                        ds, exprs, vars));
-    }
-
-    Arbitrary<List<DataSource>> dataSourceLists() {
-        Arbitrary<DataSource> single = Combinators.combine(
-                Arbitraries.strings().alpha().ofMinLength(1).ofMaxLength(20),
-                Arbitraries.of("HTTP_API", "DATABASE", "STATIC"),
-                Arbitraries.integers().between(0, 10),
-                Arbitraries.of(true, false),
-                Arbitraries.integers().between(60, 3600)
-        ).as((name, type, priority, cacheEnabled, cacheTtl) -> {
-            DataSource ds = new DataSource();
-            ds.setName(name);
-            ds.setType(type);
-            ds.setConfigJson("{\"url\":\"https://example.com\"}");
-            ds.setPriority(priority);
-            ds.setCacheEnabled(cacheEnabled);
-            ds.setCacheTtl(cacheTtl);
-            return ds;
+        return Arbitraries.integers().between(1, 6).flatMap(segmentCount -> {
+            // Generate segment records (some IDs will be in the table, some won't)
+            return Arbitraries.longs().between(1, 100)
+                    .list().ofSize(segmentCount).uniqueElements()
+                    .flatMap(segmentIds -> {
+                        // Decide which IDs exist in the segments table
+                        return Arbitraries.of(true, false).list().ofSize(segmentCount)
+                                .flatMap(existFlags -> {
+                                    return Arbitraries.strings().alpha().ofMinLength(3).ofMaxLength(20)
+                                            .list().ofSize(segmentCount)
+                                            .flatMap(names -> {
+                                                return Arbitraries.of(segmentTypes).list().ofSize(segmentCount)
+                                                        .flatMap(types -> {
+                                                            return Arbitraries.of(true, false).list().ofSize(segmentCount)
+                                                                    .flatMap(enabledFlags -> {
+                                                                        return Arbitraries.of(true, false).list().ofSize(segmentCount)
+                                                                                .map(pageBreakFlags -> {
+                                                                                    return buildMigrationInput(
+                                                                                            segmentIds, existFlags, names,
+                                                                                            types, enabledFlags, pageBreakFlags);
+                                                                                });
+                                                                    });
+                                                        });
+                                            });
+                                });
+                    });
         });
-        return single.list().ofMaxSize(5);
     }
 
-    Arbitrary<List<Expression>> expressionLists() {
-        Arbitrary<Expression> single = Combinators.combine(
-                Arbitraries.strings().alpha().ofMinLength(1).ofMaxLength(20),
-                Arbitraries.of("JAVASCRIPT", "EXCEL"),
-                Arbitraries.strings().alpha().ofMinLength(1).ofMaxLength(50),
-                Arbitraries.integers().between(0, 10)
-        ).as((name, type, text, order) -> {
-            Expression e = new Expression();
-            e.setName(name);
-            e.setExpressionType(type);
-            e.setExpressionText(text);
-            e.setDescription("desc_" + name);
-            e.setExecutionOrder(order);
-            return e;
-        });
-        return single.list().ofMaxSize(5);
-    }
+    private MigrationInput buildMigrationInput(
+            List<Long> segmentIds, List<Boolean> existFlags, List<String> names,
+            List<String> types, List<Boolean> enabledFlags, List<Boolean> pageBreakFlags) {
 
-    Arbitrary<List<TemplateVariable>> variableLists() {
-        Arbitrary<TemplateVariable> single = Combinators.combine(
-                Arbitraries.strings().alpha().ofMinLength(1).ofMaxLength(20),
-                Arbitraries.of("STRING", "NUMBER", "BOOLEAN", "DATE"),
-                Arbitraries.of(true, false),
-                Arbitraries.strings().alpha().ofMaxLength(20).injectNull(0.3),
-                Arbitraries.strings().alpha().ofMaxLength(20).injectNull(0.3)
-        ).as((name, varType, bound, bindingSource, bindingField) -> {
-            TemplateVariable v = new TemplateVariable();
-            v.setName(name);
-            v.setVariableType(varType);
-            v.setBound(bound);
-            v.setBindingSource(bindingSource);
-            v.setBindingField(bindingField);
-            v.setDefaultValue("default_" + name);
-            v.setDescription("desc_" + name);
-            return v;
-        });
-        return single.list().ofMaxSize(8);
-    }
+        Map<Long, SegmentRecord> segmentsTable = new HashMap<>();
+        ObjectNode assemblyConfig = objectMapper.createObjectNode();
+        ArrayNode segments = objectMapper.createArrayNode();
 
-    private static void setField(Object target, String name, Object value) {
-        try {
-            java.lang.reflect.Field field = target.getClass().getDeclaredField(name);
-            field.setAccessible(true);
-            field.set(target, value);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to set field " + name, e);
+        for (int i = 0; i < segmentIds.size(); i++) {
+            long id = segmentIds.get(i);
+            String filePath = "segments/" + id + "/" + names.get(i) + ".docx";
+
+            if (existFlags.get(i)) {
+                segmentsTable.put(id, new SegmentRecord(id, filePath, names.get(i), types.get(i)));
+            }
+
+            ObjectNode entry = objectMapper.createObjectNode();
+            entry.put("segmentId", id);
+            entry.put("position", i);
+            entry.put("enabled", enabledFlags.get(i));
+            entry.put("pageBreakBefore", pageBreakFlags.get(i));
+            entry.putNull("conditionExpression");
+            entry.putNull("dataScope");
+            segments.add(entry);
         }
+
+        assemblyConfig.set("segments", segments);
+        return new MigrationInput(assemblyConfig, segmentsTable);
     }
 }

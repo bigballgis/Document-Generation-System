@@ -177,7 +177,6 @@ public class CompositeGeneratorService {
         return assemblyResult.getSegmentResults().stream()
                 .map(r -> {
                     SegmentRenderStat stat = new SegmentRenderStat();
-                    stat.setSegmentId(r.getSegmentId());
                     stat.setSegmentName(r.getSegmentName());
                     stat.setRenderTimeMs(r.getRenderTimeMs());
                     stat.setSuccess(r.isSuccess());

@@ -89,7 +89,7 @@ function populateStore(overrides: Record<string, any> = {}) {
   store.templateId = 1
   store.template = { id: 1, name: 'Test', status: 'DRAFT', templateType: 'COMPOSITE', version: 1 } as any
   store.reviews = []
-  store.coverage = { overallCoveragePercent: 100, segmentCoverages: [{ segmentId: 1, segmentName: 'S1', totalVariables: 5, boundVariables: 5, coveragePercent: 100 }] }
+  store.coverage = { overallCoveragePercent: 100, segmentCoverages: [{ segmentName: 'S1', totalVariables: 5, boundVariables: 5, coveragePercent: 100 }] }
   Object.assign(store, overrides)
   return store
 }

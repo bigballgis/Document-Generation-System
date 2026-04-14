@@ -7,7 +7,6 @@ import com.docgen.dto.SystemResourceDTO;
 import com.docgen.entity.DataSource;
 import com.docgen.repository.DataSourceRepository;
 import com.docgen.repository.GeneratedDocumentRepository;
-import com.docgen.repository.SegmentRepository;
 import com.docgen.repository.TemplateRepository;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
@@ -27,7 +26,6 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,8 +37,6 @@ class DashboardServiceTest {
     @Mock private RedisConnectionFactory redisConnectionFactory;
     @Mock private RedisConnection redisConnection;
     @Mock private RedisServerCommands redisServerCommands;
-    @Mock private SegmentRepository segmentRepository;
-    @Mock private DependencyGraphService dependencyGraphService;
 
     private SimpleMeterRegistry meterRegistry;
     private DashboardService dashboardService;
@@ -50,8 +46,7 @@ class DashboardServiceTest {
         meterRegistry = new SimpleMeterRegistry();
         dashboardService = new DashboardService(
                 templateRepository, generatedDocumentRepository,
-                dataSourceRepository, meterRegistry, redisConnectionFactory,
-                segmentRepository, dependencyGraphService);
+                dataSourceRepository, meterRegistry, redisConnectionFactory);
     }
 
     // ── getSystemOverview ──
@@ -61,11 +56,8 @@ class DashboardServiceTest {
         when(templateRepository.count()).thenReturn(5L);
         when(templateRepository.countByStatus("ACTIVE")).thenReturn(1L);
         when(generatedDocumentRepository.count()).thenReturn(42L);
-        when(segmentRepository.count()).thenReturn(10L);
-        when(segmentRepository.countByComponent(true)).thenReturn(3L);
         when(templateRepository.countByTemplateType("COMPOSITE")).thenReturn(2L);
 
-        // Register a counter to simulate API calls
         meterRegistry.counter("api.request.count", "method", "GET", "uri", "/api/test", "status", "200")
                 .increment(10);
 
@@ -75,8 +67,6 @@ class DashboardServiceTest {
         assertEquals(1, overview.getActiveTemplates());
         assertEquals(10, overview.getTotalApiCalls());
         assertEquals(42, overview.getTotalDocuments());
-        assertEquals(10, overview.getSegmentCount());
-        assertEquals(3, overview.getComponentCount());
         assertEquals(2, overview.getCompositeTemplateCount());
     }
 
@@ -85,8 +75,6 @@ class DashboardServiceTest {
         when(templateRepository.count()).thenReturn(1L);
         when(templateRepository.countByStatus("ACTIVE")).thenReturn(0L);
         when(generatedDocumentRepository.count()).thenReturn(0L);
-        when(segmentRepository.count()).thenReturn(0L);
-        when(segmentRepository.countByComponent(true)).thenReturn(0L);
         when(templateRepository.countByTemplateType("COMPOSITE")).thenReturn(0L);
 
         SystemOverviewDTO overview = dashboardService.getSystemOverview();
@@ -112,7 +100,6 @@ class DashboardServiceTest {
 
     @Test
     void getApiCallMetrics_latestBucketCarriesSnapshot() {
-        // Record some timer data
         Timer timer = meterRegistry.timer("api.request.duration", "method", "GET", "uri", "/api/x", "status", "200");
         timer.record(100, TimeUnit.MILLISECONDS);
         timer.record(200, TimeUnit.MILLISECONDS);
@@ -120,7 +107,6 @@ class DashboardServiceTest {
         List<ApiCallMetricDTO> metrics = dashboardService.getApiCallMetrics(5);
         assertEquals(5, metrics.size());
 
-        // Last bucket should have the cumulative count
         ApiCallMetricDTO last = metrics.get(metrics.size() - 1);
         assertEquals(2, last.getCallCount());
         assertTrue(last.getAvgResponseTimeMs() > 0);
@@ -172,19 +158,16 @@ class DashboardServiceTest {
 
     @Test
     void getSystemResources_collectsJvmAndDbPoolAndRedis() {
-        // Register JVM gauges
         Gauge.builder("jvm.memory.used", () -> 500_000_000.0)
                 .register(meterRegistry);
         Gauge.builder("jvm.memory.max", () -> 1_000_000_000.0)
                 .register(meterRegistry);
 
-        // Register HikariCP gauges
         Gauge.builder("hikaricp.connections.active", () -> 3.0).register(meterRegistry);
         Gauge.builder("hikaricp.connections.idle", () -> 7.0).register(meterRegistry);
         Gauge.builder("hikaricp.connections", () -> 10.0).register(meterRegistry);
         Gauge.builder("hikaricp.connections.max", () -> 20.0).register(meterRegistry);
 
-        // Mock Redis
         Properties redisInfo = new Properties();
         redisInfo.setProperty("used_memory", "104857600");
         redisInfo.setProperty("maxmemory", "536870912");
@@ -195,13 +178,11 @@ class DashboardServiceTest {
 
         SystemResourceDTO resources = dashboardService.getSystemResources();
 
-        // JVM
         assertNotNull(resources.getJvmMemory());
         assertEquals(500_000_000L, resources.getJvmMemory().getUsedBytes());
         assertEquals(1_000_000_000L, resources.getJvmMemory().getMaxBytes());
         assertEquals(50.0, resources.getJvmMemory().getUsagePercent());
 
-        // DB Pool
         assertNotNull(resources.getDbPool());
         assertEquals(3, resources.getDbPool().getActiveConnections());
         assertEquals(7, resources.getDbPool().getIdleConnections());
@@ -209,7 +190,6 @@ class DashboardServiceTest {
         assertEquals(20, resources.getDbPool().getMaxConnections());
         assertEquals(15.0, resources.getDbPool().getUsagePercent());
 
-        // Redis
         assertNotNull(resources.getRedisMemory());
         assertEquals(104857600L, resources.getRedisMemory().getUsedMemoryBytes());
         assertEquals(536870912L, resources.getRedisMemory().getMaxMemoryBytes());
@@ -218,7 +198,6 @@ class DashboardServiceTest {
 
     @Test
     void getSystemResources_handlesRedisConnectionFailure() {
-        // Register minimal JVM gauges
         Gauge.builder("jvm.memory.used", () -> 100.0).register(meterRegistry);
         Gauge.builder("jvm.memory.max", () -> 200.0).register(meterRegistry);
 
@@ -226,7 +205,6 @@ class DashboardServiceTest {
 
         SystemResourceDTO resources = dashboardService.getSystemResources();
 
-        // Redis should gracefully degrade
         assertNotNull(resources.getRedisMemory());
         assertEquals(0, resources.getRedisMemory().getUsedMemoryBytes());
         assertEquals(0, resources.getRedisMemory().getMaxMemoryBytes());

@@ -1,9 +1,7 @@
 package com.docgen.controller;
 
 import com.docgen.dto.ApiCallMetricDTO;
-import com.docgen.dto.ComponentRankingDTO;
 import com.docgen.dto.DataSourceHealthDTO;
-import com.docgen.dto.SegmentStatsDTO;
 import com.docgen.dto.SystemOverviewDTO;
 import com.docgen.dto.SystemResourceDTO;
 import com.docgen.service.DashboardService;
@@ -58,19 +56,5 @@ public class DashboardController {
             description = "Returns JVM memory, database connection pool, and Redis memory usage")
     public ResponseEntity<SystemResourceDTO> getSystemResources() {
         return ResponseEntity.ok(dashboardService.getSystemResources());
-    }
-
-    @GetMapping("/segment-stats")
-    @Operation(summary = "Segment statistics",
-            description = "Returns segment and composite template statistics")
-    public ResponseEntity<SegmentStatsDTO> getSegmentStats() {
-        return ResponseEntity.ok(dashboardService.getSegmentStats());
-    }
-
-    @GetMapping("/component-ranking")
-    @Operation(summary = "Component reuse ranking",
-            description = "Returns top 10 component templates ranked by reference count")
-    public ResponseEntity<List<ComponentRankingDTO>> getComponentRanking() {
-        return ResponseEntity.ok(dashboardService.getComponentRanking());
     }
 }

@@ -21,7 +21,6 @@ vi.mock('@/api/templates', () => ({
 vi.mock('@/api/composite-templates', () => ({
   getAssemblyConfig: vi.fn().mockResolvedValue({ segments: [] }),
   getCompositeCoverage: vi.fn().mockResolvedValue({ overallCoveragePercent: 0, segmentCoverages: [] }),
-  getCompositeSegments: vi.fn().mockResolvedValue([]),
   migrateToComposite: vi.fn(),
   updateAssemblyConfig: vi.fn(),
   previewCompositeTemplate: vi.fn(),
@@ -38,12 +37,6 @@ vi.mock('@/api/expressions', () => ({
   getExpressions: vi.fn().mockResolvedValue([]),
   deleteExpression: vi.fn(),
   validateExpression: vi.fn(),
-}))
-
-vi.mock('@/api/segments', () => ({
-  createSegment: vi.fn(),
-  getSegments: vi.fn().mockResolvedValue({ content: [], totalElements: 0 }),
-  getSegmentLockInfo: vi.fn(),
 }))
 
 vi.mock('@/api/market', () => ({
@@ -89,11 +82,6 @@ vi.mock('@/views/template-workspace/components/VisualEditorTab.vue', () => ({
     name: 'VisualEditorTab',
     template: '<div class="stub-visual-editor-tab">VisualEditorTab</div>',
     emits: ['switch-to-segments'],
-    setup(_props: any, { expose }: any) {
-      const checkLocks = vi.fn()
-      expose({ checkLocks })
-      return { checkLocks }
-    },
   },
 }))
 
@@ -173,7 +161,6 @@ function populateStore() {
   store.assemblyConfig = { segments: [] }
   store.dataSources = []
   store.expressions = []
-  store.segments = []
   return store
 }
 
@@ -335,20 +322,6 @@ describe('TemplateWorkspace Index', () => {
 
       expect(mockConfirm).toHaveBeenCalledTimes(1)
       expect(result).toBe(false)
-    })
-
-    it('triggers lock check when switching to editor tab', async () => {
-      populateStore()
-      const wrapper = mountIndex()
-      await flushPromises()
-
-      const mockCheckLocks = vi.fn()
-      const vm = wrapper.vm as any
-      vm.visualEditorRef = { checkLocks: mockCheckLocks }
-
-      await vm.handleBeforeLeave('editor', 'dataStructure')
-
-      expect(mockCheckLocks).toHaveBeenCalledTimes(1)
     })
   })
 

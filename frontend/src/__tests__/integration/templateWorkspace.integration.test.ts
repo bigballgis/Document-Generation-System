@@ -10,7 +10,6 @@ vi.mock('@/api/templates', () => ({
 vi.mock('@/api/composite-templates', () => ({
   getAssemblyConfig: vi.fn().mockResolvedValue({ segments: [] }),
   getCompositeCoverage: vi.fn().mockResolvedValue({ overallCoveragePercent: 0, segmentCoverages: [] }),
-  getCompositeSegments: vi.fn().mockResolvedValue([]),
 }))
 
 vi.mock('@/api/data-sources', () => ({

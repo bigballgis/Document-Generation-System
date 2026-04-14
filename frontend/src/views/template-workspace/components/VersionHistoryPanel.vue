@@ -47,7 +47,6 @@ async function handleRollback(version: TemplateVersionDTO) {
     await Promise.all([
       store.refreshTemplate(),
       store.refreshAssemblyConfig(),
-      store.refreshSegments(),
       store.refreshCoverage(),
       store.refreshVersions(),
     ])

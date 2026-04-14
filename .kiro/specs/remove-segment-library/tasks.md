@@ -1,0 +1,494 @@
+# Implementation Plan: Remove Segment Library
+
+## Overview
+
+从文档生成系统中移除段落库（Segment Library）独立共享模块，将组合模板的段落编排从"引用模式"重构为"内联模式"。执行顺序：先重构 DTO 和核心服务 → 数据迁移 → 删除段落库代码 → 前端重构 → 测试更新 → 最终验证。
+
+## Tasks
+
+- [x] 1. 重构 AssemblySegmentEntry DTO（后端 + 前端）
+  - [x] 1.1 重构后端 AssemblySegmentEntry DTO 为内联模式
+    - 修改 `backend/src/main/java/com/docgen/dto/AssemblySegmentEntry.java`
+    - 移除 `segmentId` 和 `lockedVersion` 字段及其 getter/setter
+    - 新增 `filePath`（String）、`name`（String）、`segmentType`（String）字段及其 getter/setter
+    - 保留 `position`、`enabled`、`pageBreakBefore`、`conditionExpression`、`dataScope` 字段
+    - _Requirements: 1.7, 3.1_
+  - [x] 1.2 重构后端 SegmentRenderResult DTO
+    - 修改 `backend/src/main/java/com/docgen/dto/SegmentRenderResult.java`
+    - 移除 `segmentId` 字段及其 getter/setter
+    - 保留 `segmentName`、`success`、`renderTimeMs`、`errorMessage`、`renderedBytes` 字段
+    - _Requirements: 1.7_
+  - [x] 1.3 重构后端 SegmentRenderStat DTO
+    - 修改 `backend/src/main/java/com/docgen/dto/SegmentRenderStat.java`
+    - 移除 `segmentId` 字段及其 getter/setter
+    - 保留 `segmentName`、`renderTimeMs`、`success`、`errorMessage` 字段
+    - _Requirements: 1.7_
+  - [x] 1.4 重构后端 CompositePreviewDTO.SegmentPreviewEntry
+    - 修改 `backend/src/main/java/com/docgen/dto/CompositePreviewDTO.java` 中的 `SegmentPreviewEntry` 内部类
+    - 移除 `segmentId` 字段，保留 `segmentName`、`status`、`errorMessage`
+    - _Requirements: 1.7_
+  - [x] 1.5 重构后端 CompositeCoverageReport.SegmentCoverageEntry
+    - 修改 `backend/src/main/java/com/docgen/dto/CompositeCoverageReport.java` 中的 `SegmentCoverageEntry` 内部类
+    - 移除 `segmentId` 字段，保留 `segmentName`、`totalVariables`、`boundVariables`、`coveragePercent`
+    - _Requirements: 1.7_
+  - [x] 1.6 重构后端 SelectivePreviewRequest DTO
+    - 修改 `backend/src/main/java/com/docgen/dto/SelectivePreviewRequest.java`
+    - 将 `List<Long> segmentIds` 字段改为 `List<Integer> positions`（按段落位置选择预览）
+    - 更新 getter/setter 和 Javadoc
+    - _Requirements: 1.7_
+  - [x] 1.6 重构前端 AssemblySegmentEntry 类型定义
+    - 修改 `frontend/src/types/segment.ts` 中的 `AssemblySegmentEntry` 接口
+    - 移除 `segmentId` 和 `lockedVersion` 字段
+    - 新增 `filePath: string`、`name: string`、`segmentType: SegmentType | string | null` 字段
+    - 保留 `position`、`enabled`、`pageBreakBefore`、`conditionExpression`、`dataScope` 字段
+    - _Requirements: 8.2_
+
+- [x] 2. 新增 ErrorCode 常量
+  - 在 `backend/src/main/java/com/docgen/exception/ErrorCode.java` 中新增 `ASSEMBLY_CONFIG_INVALID` 和 `SEGMENT_FILE_NOT_FOUND` 常量
+  - 保留 `COMPOSITE_TEMPLATE_EMPTY` 和 `GENERATE_ALL_SEGMENTS_SKIPPED`
+  - _Requirements: 1.9, 3.3_
+
+- [x] 3. 重构 AssemblyConfigService（移除 SegmentRepository 依赖）
+  - [x] 3.1 重构 AssemblyConfigService 验证逻辑
+    - 修改 `backend/src/main/java/com/docgen/service/AssemblyConfigService.java`
+    - 移除构造器中的 `SegmentRepository` 注入
+    - 移除 `validate()` 方法中通过 `segmentRepository.findAllById()` 验证 segmentId 存在性的逻辑
+    - 新增基于内联数据的验证：检查每个段落条目的 `filePath` 非空非空白
+    - 保留"至少一个启用段落"的验证逻辑
+    - 验证标准：`validate()` 对 filePath 为空的条目抛出 `ASSEMBLY_CONFIG_INVALID`，对全禁用抛出 `COMPOSITE_TEMPLATE_EMPTY`
+    - _Requirements: 3.3_
+  - [x] 3.2 更新 AssemblyConfigServiceTest 单元测试
+    - 修改 `backend/src/test/java/com/docgen/service/AssemblyConfigServiceTest.java`
+    - 移除对 `SegmentRepository` mock 的依赖
+    - 新增测试用例：filePath 为空时验证失败、filePath 非空时验证通过、全禁用时验证失败
+    - _Requirements: 11.11_
+  - [x] 3.3 更新 SegmentAssemblyConfigPropertyTest
+    - 修改 `backend/src/test/java/com/docgen/property/SegmentAssemblyConfigPropertyTest.java`
+    - 更新 Arbitrary 生成器：生成包含 `filePath`/`name`/`segmentType` 的 `AssemblySegmentEntry`（而非 `segmentId`）
+    - 更新序列化往返测试以验证新字段
+    - **Property 1: AssemblyConfig 序列化往返一致性**
+    - **Validates: Requirements 1.7, 3.1, 8.2**
+    - _Requirements: 11.12_
+
+- [x] 4. 重构 AssemblyEngineService（移除 SegmentRendererService 和 SegmentDataScopeService 依赖）
+  - [x] 4.1 内联 DataScope 解析逻辑到 AssemblyEngineService
+    - 修改 `backend/src/main/java/com/docgen/service/AssemblyEngineService.java`
+    - 移除构造器中的 `SegmentDataScopeService` 注入
+    - 新增 `resolveDataScope(Map<String, Object> globalData, Map<String, String> dataScope)` 方法，逻辑从 `SegmentDataScopeService` 内联
+    - 将 `assembleDocument()` 中的 `segmentDataScopeService.resolveDataScope()` 调用替换为本地方法
+    - _Requirements: 3.4, 3.5_
+  - [x] 4.2 内联段落渲染逻辑到 AssemblyEngineService
+    - 移除构造器中的 `SegmentRendererService` 注入
+    - 新增 `MinioClient` 注入和 `@Value("${minio.bucket-name:docgen}") String bucketName`
+    - 新增 `renderSegmentSafe(String filePath, String name, Map<String, Object> data)` 方法
+    - 新增 `renderSegment(String filePath, Map<String, Object> data)` 方法，直接调用 Docxtemplater `/render` 端点
+    - 将 `assembleDocument()` 中的 `segmentRendererService.renderSegmentSafe()` 调用替换为本地方法
+    - 更新 `assembleDocument()` 中的日志和 `SegmentRenderResult` 设置：使用 `entry.getName()` 替代 `entry.getSegmentId()`
+    - _Requirements: 3.4, 3.5, 10.2_
+  - [x] 4.3 新增 DataScope 解析 Property Test
+    - 在 `backend/src/test/java/com/docgen/property/` 中新增 `DataScopeResolutionPropertyTest.java`
+    - 新增 DataScope 解析映射正确性的 property test
+    - **Property 3: DataScope 解析映射正确性**
+    - **Validates: Requirements 3.4, 3.5**
+    - _Requirements: 3.4, 3.5_
+  - [x] 4.4 更新 AssemblyOrderPropertyTest
+    - 修改 `backend/src/test/java/com/docgen/property/AssemblyOrderPropertyTest.java`
+    - 更新 Arbitrary 生成器：生成包含 `filePath`/`name` 的 `AssemblySegmentEntry`
+    - 移除对 `SegmentRendererService` 的 mock
+    - **Property 4: 组装引擎段落排序与条件过滤**
+    - **Validates: Requirements 3.4, 3.6, 11.14**
+    - _Requirements: 11.14_
+  - [x] 4.5 更新 ConditionalRenderingPropertyTest
+    - 修改 `backend/src/test/java/com/docgen/property/ConditionalRenderingPropertyTest.java`
+    - 更新 Arbitrary 生成器：生成包含 `filePath`/`name` 的 `AssemblySegmentEntry`
+    - 移除对 `SegmentRendererService` 的 mock
+    - **Property 4: 组装引擎段落排序与条件过滤**
+    - **Validates: Requirements 3.4, 11.14**
+    - _Requirements: 11.14_
+
+- [x] 5. Checkpoint - 核心 DTO 和服务重构验证
+  - 确保后端编译通过（`mvn compile -pl backend`），如有编译错误则修复
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 6. 重构 CompositeTemplateService（移除 SegmentRepository 和 DependencyGraphService 依赖）
+  - 修改 `backend/src/main/java/com/docgen/service/CompositeTemplateService.java`
+  - 移除构造器中的 `SegmentRepository` 和 `DependencyGraphService` 注入
+  - 重构 `previewCompositeTemplate()` 方法：从 `assembly_config` 内联数据中读取段落名称和状态，不再查询 segments 表
+  - 重构 `activateCompositeTemplate()` 方法：验证内联 `filePath` 非空，不再查询 `SegmentRepository`
+  - 重构 `previewSelectiveSegments()` 方法：基于内联段落数据过滤，不再使用 segmentId
+  - 验证标准：preview 和 activate 方法基于内联数据正常工作
+  - _Requirements: 3.6_
+
+- [x] 7. 重构 CompositeCoverageService（移除 DependencyGraphService 和 SegmentVariableService 依赖）
+  - [x] 7.1 重构 CompositeCoverageService 为基于内联段落数据
+    - 修改 `backend/src/main/java/com/docgen/service/CompositeCoverageService.java`
+    - 移除构造器中的 `SegmentVariableService` 和 `DependencyGraphService` 注入
+    - 新增 `TemplateRepository`、`AssemblyConfigService`、`MinioClient`、`RestTemplate` 注入
+    - 重构 `checkCoverage()` 方法：从 assembly_config 中遍历内联段落，通过 Docxtemplater `/evaluate` 端点扫描变量
+    - _Requirements: 5.4_
+  - [x] 7.2 更新 CompositeCoveragePropertyTest
+    - 修改 `backend/src/test/java/com/docgen/property/CompositeCoveragePropertyTest.java`
+    - 移除对 `SegmentVariableService` 和 `DependencyGraphService` 的 mock
+    - 更新为基于内联段落数据的覆盖率计算测试
+    - _Requirements: 11.13_
+
+- [x] 8. 重构 CompositeImportExportService（移除 SegmentRepository 依赖）
+  - [x] 8.1 重构 CompositeImportExportService 为基于内联 filePath
+    - 修改 `backend/src/main/java/com/docgen/service/CompositeImportExportService.java`
+    - 移除构造器中的 `SegmentRepository` 注入
+    - 重构导出逻辑：直接从 assembly_config 中的 `filePath` 下载 MinIO 文件
+    - 重构导入逻辑：上传文件到 MinIO，将 `filePath` 内联写入 assembly_config，不再创建 Segment 实体
+    - 更新 `SegmentExportEntry` 内部类：移除 `lockedVersion`、`component` 字段，新增 `filePath`、`segmentType` 字段
+    - _Requirements: 4.6_
+  - [x] 8.2 更新 CompositeImportExportServiceTest
+    - 修改 `backend/src/test/java/com/docgen/service/CompositeImportExportServiceTest.java`
+    - 移除对 `SegmentRepository` 的 mock
+    - 更新测试用例为基于内联段落数据的导入导出
+    - _Requirements: 11.15_
+
+- [x] 9. 重构 CompositeTemplateController（移除段落库依赖端点和注入）
+  - 修改 `backend/src/main/java/com/docgen/controller/CompositeTemplateController.java`
+  - 移除构造器中的 `DependencyGraphService`、`SegmentReviewService`、`SegmentTestService`、`SegmentRecommendationService`、`TemplateReviewService`（仅在被移除的 reviews 端点中使用）注入
+  - 移除 `GET /{id}/segments` 端点
+  - 移除 `POST /{id}/reviews` 和 `GET /{id}/reviews/{reviewId}/segments` 端点
+  - 移除 `GET /{id}/recommendations` 端点
+  - 移除 `POST /{id}/tests/run` 端点
+  - 新增 `POST /{id}/upload-segment` 端点（接收 MultipartFile，上传到 MinIO，返回 AssemblySegmentEntry）
+  - 保留 POST /、GET/PUT assembly-config、preview、selective preview、coverage、export/import 端点
+  - 验证标准：保留的端点正常工作，移除的端点返回 404
+  - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
+
+- [x] 10. 重构 DashboardService 和 DashboardController（移除段落库依赖）
+  - [x] 10.1 重构 DashboardService
+    - 修改 `backend/src/main/java/com/docgen/service/DashboardService.java`
+    - 移除构造器中的 `SegmentRepository` 和 `DependencyGraphService` 注入
+    - 移除 `getSegmentStats()` 方法
+    - 移除 `getComponentRanking()` 方法
+    - 重构 `getSystemOverview()` 方法：移除 `segmentRepository.count()` 和 `segmentRepository.countByComponent(true)` 调用
+    - _Requirements: 5.5, 5.6, 5.7_
+  - [x] 10.2 重构 DashboardController
+    - 修改 `backend/src/main/java/com/docgen/controller/DashboardController.java`
+    - 移除 `/segment-stats` 端点
+    - 移除 `/component-ranking` 端点
+    - _Requirements: 5.5_
+  - [x] 10.3 重构 SystemOverviewDTO
+    - 修改 `backend/src/main/java/com/docgen/dto/SystemOverviewDTO.java`
+    - 移除 `segmentCount`、`componentCount` 字段及其 getter/setter
+    - _Requirements: 5.6_
+  - [x] 10.4 更新 DashboardServiceTest
+    - 修改 `backend/src/test/java/com/docgen/service/DashboardServiceTest.java`
+    - 移除对 `SegmentRepository` 和 `DependencyGraphService` 的 mock
+    - 移除 `getSegmentStats()` 和 `getComponentRanking()` 的测试用例
+    - 更新 `getSystemOverview()` 测试用例
+    - _Requirements: 5.5, 5.6, 5.7_
+
+- [x] 10a. 重构 CompositeGeneratorService 和 WebhookService（适配内联段落模式）
+  - [x] 10a.1 重构 CompositeGeneratorService.buildSegmentStats()
+    - 修改 `backend/src/main/java/com/docgen/service/CompositeGeneratorService.java`
+    - 更新 `buildSegmentStats()` 方法：使用 `r.getSegmentName()` 替代 `r.getSegmentId()`（因为 SegmentRenderResult 已移除 segmentId）
+    - _Requirements: 3.7_
+  - [x] 10a.2 重构 WebhookService 段落统计序列化
+    - 修改 `backend/src/main/java/com/docgen/service/WebhookService.java`
+    - 更新段落统计序列化：使用 `stat.getSegmentName()` 替代 `stat.getSegmentId()`
+    - _Requirements: 13.4_
+  - [x] 10a.3 重构 CompositeMarketService（适配内联段落模式）
+    - 修改 `backend/src/main/java/com/docgen/service/CompositeMarketService.java`
+    - 重构段落复制逻辑：从基于 segmentId 查找 SegmentRepository 改为基于内联 filePath 复制 MinIO 文件
+    - 更新 assembly_config 构建逻辑：使用 filePath/name/segmentType 替代 segmentId
+    - _Requirements: 3.7, 13.4_
+
+- [x] 11. Checkpoint - 后端服务重构验证
+  - 确保后端编译通过（`mvn compile -pl backend`），如有编译错误则修复
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 12. 移除后端段落库 ErrorCode 常量
+  - 修改 `backend/src/main/java/com/docgen/exception/ErrorCode.java`
+  - 移除 `SEGMENT_NOT_FOUND`、`SEGMENT_REFERENCED`、`SEGMENT_VERSION_FILE_MISSING`、`COMPONENT_REFERENCED` 常量
+  - 验证标准：无其他代码引用这些常量（使用 grep 确认）
+  - _Requirements: 1.8_
+
+- [x] 13. 创建 Flyway 数据迁移脚本
+  - [x] 13.1 创建 V36 数据迁移脚本
+    - 创建 `backend/src/main/resources/db/migration/V36__migrate_assembly_config_and_drop_segments.sql`
+    - 步骤 1：将 `templates.assembly_config` 中的 `segmentId` 引用解析为内联模式（filePath + name + segmentType），通过 LEFT JOIN segments 表查找对应记录
+    - 步骤 2：对 segmentId 引用不存在的段落，标记为 `enabled=false`，名称前缀 `INVALID_SEGMENT_`
+    - 步骤 3：清理 permissions 表中 `resource_type = 'SEGMENT'` 的记录
+    - 步骤 4：按依赖顺序删除表：segment_favorites → segment_test_data → segment_reviews → segment_tag_mappings → segment_versions → segments
+    - 验证标准：迁移脚本在 PostgreSQL 上正确执行，assembly_config 数据完整转换
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 3.8, 12.1, 12.2_
+  - [x] 13.2 新增 MigrationPropertyTest
+    - 创建 `backend/src/test/java/com/docgen/property/MigrationPropertyTest.java`
+    - 验证 segmentId 到内联模式的转换正确性：filePath/name/segmentType 匹配、其他字段保留、无效引用标记为 INVALID_SEGMENT_
+    - **Property 5: 数据迁移 segmentId 到内联模式转换**
+    - **Validates: Requirements 3.8, 12.1, 12.2**
+    - _Requirements: 3.8, 12.1, 12.2_
+
+- [x] 14. Checkpoint - 数据迁移脚本验证
+  - 确保 Flyway 迁移脚本语法正确
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 15. 移除后端段落库独立管理服务
+  - [x] 15.1 移除段落库 Controller
+    - 删除 `backend/src/main/java/com/docgen/controller/SegmentController.java`
+    - 删除 `backend/src/main/java/com/docgen/controller/SegmentReviewController.java`
+    - _Requirements: 1.1, 1.2_
+  - [x] 15.2 移除段落库核心 Service
+    - 删除 `backend/src/main/java/com/docgen/service/SegmentService.java`
+    - 删除 `backend/src/main/java/com/docgen/service/SegmentVersionService.java`
+    - 删除 `backend/src/main/java/com/docgen/service/SegmentVariableService.java`
+    - 删除 `backend/src/main/java/com/docgen/service/SegmentLockService.java`
+    - 删除 `backend/src/main/java/com/docgen/service/SegmentPermissionService.java`
+    - 删除 `backend/src/main/java/com/docgen/service/SegmentTestService.java`
+    - 删除 `backend/src/main/java/com/docgen/service/SegmentRecommendationService.java`
+    - 删除 `backend/src/main/java/com/docgen/service/SegmentReviewService.java`
+    - _Requirements: 1.3_
+  - [x] 15.3 移除段落库辅助 Service
+    - 删除 `backend/src/main/java/com/docgen/service/DependencyGraphService.java`
+    - 删除 `backend/src/main/java/com/docgen/service/SegmentRendererService.java`
+    - 删除 `backend/src/main/java/com/docgen/service/SegmentDataScopeService.java`
+    - _Requirements: 5.1, 5.2, 5.3_
+  - [x] 15.4 移除段落库 Entity
+    - 删除 `backend/src/main/java/com/docgen/entity/Segment.java`
+    - 删除 `backend/src/main/java/com/docgen/entity/SegmentFavorite.java`
+    - 删除 `backend/src/main/java/com/docgen/entity/SegmentReview.java`
+    - 删除 `backend/src/main/java/com/docgen/entity/SegmentTagMapping.java`
+    - 删除 `backend/src/main/java/com/docgen/entity/SegmentTestData.java`
+    - 删除 `backend/src/main/java/com/docgen/entity/SegmentVersion.java`
+    - _Requirements: 1.5_
+  - [x] 15.5 移除段落库 Repository
+    - 删除 `backend/src/main/java/com/docgen/repository/SegmentRepository.java`
+    - 删除 `backend/src/main/java/com/docgen/repository/SegmentFavoriteRepository.java`
+    - 删除 `backend/src/main/java/com/docgen/repository/SegmentReviewRepository.java`
+    - 删除 `backend/src/main/java/com/docgen/repository/SegmentTagMappingRepository.java`
+    - 删除 `backend/src/main/java/com/docgen/repository/SegmentTestDataRepository.java`
+    - 删除 `backend/src/main/java/com/docgen/repository/SegmentVersionRepository.java`
+    - _Requirements: 1.4_
+  - [x] 15.6 移除段落库 DTO
+    - 删除以下 DTO 文件：`SegmentDTO.java`, `CreateSegmentRequest.java`, `UpdateSegmentRequest.java`, `SegmentVersionDTO.java`, `SegmentVariableDTO.java`, `SegmentTestDataDTO.java`, `SegmentTestResultDTO.java`, `SegmentReviewDTO.java`, `SegmentRecommendationDTO.java`, `SegmentStatsDTO.java`, `SegmentTemplateDTO.java`, `SegmentQueryRequest.java`, `CreateSegmentTemplateRequest.java`, `CreateSegmentTestDataRequest.java`, `DuplicateAnalysisDTO.java`, `LockInfo.java`, `SubmitCompositeReviewRequest.java`, `SegmentReviewerAssignment.java`, `ComponentRankingDTO.java`, `CompositeTestReportDTO.java`
+    - 所有文件位于 `backend/src/main/java/com/docgen/dto/` 目录
+    - _Requirements: 1.6_
+
+- [x] 16. 清理后端残留引用
+  - 使用 grep 搜索所有 Java 文件中对已删除类的 import 引用
+  - 修复所有编译错误（如 SecurityConfig URL 模式、OpenApiConfig tag 配置等）
+  - 检查 `application.yml` / `application.properties` 中是否有段落库相关配置
+  - 在代码注释或 README 中记录识别和清理 MinIO 中孤立段落文件的步骤（仅被段落库引用但未被任何组合模板使用的文件）
+  - 验证标准：`mvn compile -pl backend` 编译通过
+  - _Requirements: 12.4, 13.1, 13.4_
+
+- [x] 17. Checkpoint - 后端段落库代码移除验证
+  - 确保后端编译通过（`mvn compile -pl backend`）
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 18. 移除后端段落库测试文件
+  - [x] 18.1 移除段落库单元测试
+    - 删除 `backend/src/test/java/com/docgen/service/SegmentServiceTest.java`
+    - 删除 `backend/src/test/java/com/docgen/service/SegmentLockServiceTest.java`
+    - _Requirements: 11.8_
+  - [x] 18.2 移除段落库 Property-Based 测试
+    - 删除 `backend/src/test/java/com/docgen/property/SegmentVersionPropertyTest.java`
+    - 删除 `backend/src/test/java/com/docgen/property/SegmentTenantIsolationPropertyTest.java`
+    - 删除 `backend/src/test/java/com/docgen/property/SegmentServicePropertyTest.java`
+    - 删除 `backend/src/test/java/com/docgen/property/SegmentLockPropertyTest.java`
+    - 删除 `backend/src/test/java/com/docgen/property/SegmentEmptyDocxPropertyTest.java`
+    - _Requirements: 11.9_
+  - [x] 18.3 移除段落库集成测试
+    - 删除 `backend/src/test/java/com/docgen/integration/SegmentEntityIntegrationTest.java`
+    - 删除 `backend/src/test/java/com/docgen/integration/SegmentControllerIntegrationTest.java`
+    - _Requirements: 11.10_
+  - [x] 18.4 更新 CompositeTemplateControllerIntegrationTest
+    - 修改 `backend/src/test/java/com/docgen/integration/CompositeTemplateControllerIntegrationTest.java`
+    - 移除对已删除端点（segments、reviews、recommendations、tests/run）的测试用例
+    - 保留对保留端点（assembly-config、preview、coverage、export/import）的测试用例
+    - _Requirements: 11.16_
+
+- [x] 19. Checkpoint - 后端测试清理验证
+  - 确保后端所有剩余测试通过（`mvn test -pl backend`）
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 20. 重构前端类型定义
+  - [x] 20.1 移除段落库独立管理类型
+    - 修改 `frontend/src/types/segment.ts`
+    - 移除以下类型：`Segment`, `SegmentType`（如果仅用于段落库独立管理则移除，如果 AssemblySegmentEntry 使用则保留）, `SegmentVersion`, `SegmentVariable`, `SegmentReview`, `SegmentReviewStatus`, `SegmentTestData`, `SegmentTestResult`, `LockInfo`, `SegmentRecommendation`, `DuplicatePair`, `DuplicateAnalysis`, `SegmentTemplate`, `SegmentPermission`, `GrantSegmentPermissionRequest`, `SegmentQuery`, `CreateSegmentRequest`, `UpdateSegmentRequest`, `CreateSegmentTestDataRequest`, `CreateSegmentTemplateRequest`
+    - 移除依赖段落库审查/测试的类型：`SubmitCompositeReviewRequest`, `SegmentReviewerAssignment`, `ReviewActionRequest`, `CompositeTestReport`
+    - 保留 `SegmentType` 枚举（AssemblySegmentEntry 使用）、`AssemblyConfig`, `CreateCompositeTemplateRequest`, `UpdateAssemblyConfigRequest`, `SelectivePreviewRequest`, `CompositePreview`, `SegmentPreviewEntry`, `CompositeCoverageReport`, `SegmentCoverageEntry`, `MigrationResult`
+    - _Requirements: 8.1, 8.2, 8.3, 8.4_
+  - [x] 20.2 重构前端 SegmentPreviewEntry、SegmentCoverageEntry 和 SelectivePreviewRequest 类型
+    - 修改 `frontend/src/types/segment.ts`
+    - 从 `SegmentPreviewEntry` 和 `SegmentCoverageEntry` 中移除 `segmentId` 字段
+    - 将 `SelectivePreviewRequest` 中的 `segmentIds: number[]` 改为 `positions: number[]`
+    - _Requirements: 1.7, 8.2_
+
+- [x] 21. 重构前端 API 调用层
+  - [x] 21.1 清理 composite-templates API
+    - 修改 `frontend/src/api/composite-templates.ts`
+    - 移除 `getCompositeSegments`、`submitCompositeReview`、`getSegmentReviews`、`approveSegmentReview`、`rejectSegmentReview`、`getSegmentRecommendations`、`runAllCompositeTests` 函数
+    - 新增 `uploadSegment(templateId: number, file: File, name: string, segmentType?: string)` 函数
+    - 保留 `createCompositeTemplate`、`getAssemblyConfig`、`updateAssemblyConfig`、`previewCompositeTemplate`、`previewSelectiveSegments`、`getCompositeCoverage`、`exportCompositeAsZip`、`exportCompositeConfig`、`importCompositeFromZip`、`migrateToComposite` 函数
+    - _Requirements: 8.5, 8.6_
+  - [x] 21.2 删除段落库 API 模块
+    - 删除 `frontend/src/api/segments.ts`
+    - _Requirements: 7.3_
+
+- [x] 22. 重构前端 Store
+  - [x] 22.1 重构 templateWorkspace Store
+    - 修改 `frontend/src/stores/templateWorkspace.ts`
+    - 移除 `segments` state 和 `refreshSegments` action
+    - 移除对 `getCompositeSegments` API 的调用
+    - 段落数据改为从 `assemblyConfig.segments` 中直接获取
+    - _Requirements: 6.4_
+  - [x] 22.2 删除段落库 Pinia Store
+    - 删除 `frontend/src/stores/segment.ts`
+    - _Requirements: 7.4_
+
+- [x] 23. 重构前端 SegmentArrangementTab 组件
+  - 修改 `frontend/src/views/template-workspace/components/SegmentArrangementTab.vue`
+  - 保留段落排列、拖拽排序、启用/禁用、分页设置、条件表达式、DataScope 等编排功能
+  - 移除 `createSegment` 和 `getSegments` 从 `@/api/segments` 的导入
+  - 移除 `Segment` 类型导入（保留 `AssemblySegmentEntry`）
+  - 将"创建新段落"功能从调用段落库 API (`createSegment`) 改为直接上传 .docx 文件（调用新的 `uploadSegment` API）
+  - 移除"添加已有段落"对话框（搜索段落库中的共享段落）
+  - 段落数据改为从 `assemblyConfig.segments` 中获取
+  - 验证标准：段落编排功能正常工作，可上传 .docx 文件创建新段落
+  - _Requirements: 6.1, 6.2, 6.3_
+
+- [x] 24. 重构前端 Composable
+  - [x] 24.1 重构 useWorkflowSteps composable
+    - 修改 `frontend/src/composables/useWorkflowSteps.ts`
+    - 更新 `hasEnabledSegment()` 函数（逻辑不变，AssemblySegmentEntry 仍有 enabled 字段）
+    - 更新 `allSegmentsEdited()` 函数：不再检查 `lockedVersion`，改为检查 `filePath` 非空
+    - _Requirements: 6.7_
+  - [x] 24.2 删除 useSegmentLock composable
+    - 删除 `frontend/src/composables/useSegmentLock.ts`
+    - _Requirements: 7.5_
+
+- [x] 25. 清理前端组合模板工作区中的段落库引用
+  - [x] 25.1 清理 VisualEditorTab.vue
+    - 修改 `frontend/src/views/template-workspace/components/VisualEditorTab.vue`
+    - 移除对段落库锁定功能（segment locks）的引用（移除 `getSegmentLockInfo` 导入和 `LockInfo` 类型）
+    - 保留 `switchToSegments` 事件
+    - _Requirements: 9.2_
+  - [x] 25.2 清理 TestingTab.vue
+    - 修改 `frontend/src/views/template-workspace/components/TestingTab.vue`
+    - 移除 `segmentResults` 和 `segmentCoverages` 中依赖段落库的数据展示
+    - 覆盖率数据改为基于内联段落
+    - _Requirements: 9.3_
+  - [x] 25.3 清理 VersionHistoryPanel.vue
+    - 修改 `frontend/src/views/template-workspace/components/VersionHistoryPanel.vue`
+    - 移除对 `refreshSegments()` 的调用
+    - _Requirements: 9.4_
+  - [x] 25.4 清理 template-workspace Index.vue
+    - 修改 `frontend/src/views/template-workspace/Index.vue`
+    - 保留 segments tab pane 和 SegmentArrangementTab 组件
+    - 移除对已删除 store action 或 API 的引用
+    - _Requirements: 9.1_
+  - [x] 25.5 清理 composite-templates Detail.vue
+    - 修改 `frontend/src/views/composite-templates/Detail.vue`
+    - 移除 `getCompositeSegments` 导入和 `Segment` 类型导入
+    - 移除 `SegmentReviewPanel` 组件引用
+    - 段落数据改为从 assemblyConfig 中获取
+    - _Requirements: 9.2_
+  - [x] 25.6 清理 composite-templates AssemblyEditor.vue
+    - 修改 `frontend/src/views/composite-templates/AssemblyEditor.vue`
+    - 移除 `getCompositeSegments` 导入和 `Segment` 类型导入
+    - 移除 `SegmentSearchPanel` 和 `SegmentRecommendPanel` 组件引用
+    - 段落数据改为从 assemblyConfig 中获取
+    - _Requirements: 9.2_
+  - [x] 25.7 删除 composite-templates 段落库依赖组件
+    - 删除 `frontend/src/views/composite-templates/components/SegmentReviewPanel.vue`
+    - 删除 `frontend/src/views/composite-templates/components/SegmentSearchPanel.vue`
+    - 删除 `frontend/src/views/composite-templates/components/SegmentRecommendPanel.vue`
+    - _Requirements: 7.2_
+  - [x] 25.8 清理 components/Index.vue（组件模板页面）
+    - 修改 `frontend/src/views/components/Index.vue`
+    - 移除对 `@/api/segments` 的导入（`getSegments`, `demoteFromComponent`）
+    - 移除对 `Segment` 和 `SegmentQuery` 类型的导入
+    - 由于组件模板概念随段落库一起移除，此页面可能需要整体移除或重构
+    - _Requirements: 7.2, 13.5_
+
+- [x] 26. 移除前端段落库独立管理页面
+  - [x] 26.1 删除段落库页面和组件
+    - 删除 `frontend/src/views/segments/Index.vue`
+    - 删除 `frontend/src/views/segments/Detail.vue`
+    - 删除 `frontend/src/views/segments/Editor.vue`
+    - 删除 `frontend/src/views/segments/components/SegmentFormDialog.vue`
+    - 删除 `frontend/src/views/segments/components/SegmentPermissionDialog.vue`
+    - 删除 `frontend/src/views/segments/components/SegmentVariableList.vue`
+    - 删除 `frontend/src/views/segments/components/SegmentVersionList.vue`
+    - _Requirements: 7.1, 7.2_
+  - [x] 26.2 移除段落库路由
+    - 修改 `frontend/src/router/index.ts`（或路由配置文件）
+    - 移除 `/segments`、`/segments/:id`、`/segments/:id/editor` 路由条目
+    - _Requirements: 7.6_
+  - [x] 26.3 清理前端导航菜单
+    - 移除侧边栏/导航中的段落库入口
+    - _Requirements: 7.6_
+
+- [x] 27. 清理前端 i18n 国际化文件
+  - 修改 `frontend/src/i18n/en-US.json`、`zh-CN.json`、`zh-TW.json`
+  - 移除 `nav.segments`、`nav.segmentLibrary`、`segment.*` 命名空间的 i18n keys
+  - 保留 `workspace.segment.*` 和 `assembly.*` 等属于组合模板自身段落编排的 i18n keys
+  - _Requirements: 7.7_
+
+- [x] 28. Checkpoint - 前端重构验证
+  - 确保前端编译通过（`npx vite build`）
+  - 确保无 broken imports 或 unresolved references
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 29. 移除前端段落库测试文件
+  - [x] 29.1 删除段落库测试文件
+    - 删除 `frontend/src/__tests__/SegmentIndex.test.ts`
+    - 删除 `frontend/src/__tests__/useSegmentLock.test.ts`
+    - _Requirements: 11.1, 11.2_
+  - [x] 29.2 更新 SegmentArrangementTab.test.ts
+    - 修改 `frontend/src/__tests__/SegmentArrangementTab.test.ts`
+    - 移除对段落库 API 的 mock
+    - 更新测试用例为基于内联段落的创建和编排
+    - _Requirements: 11.5_
+  - [x] 29.3 更新 workspace-segments-property.test.ts
+    - 修改 `frontend/src/__tests__/workspace-segments-property.test.ts`
+    - 更新 Arbitrary 生成器：生成包含 `filePath`/`name`/`segmentType` 的 `AssemblySegmentEntry`（而非 `segmentId`）
+    - 更新断言以验证内联模式的 mergeSegments 函数
+    - **Property 6: useAssemblyConfig 操作不变量**
+    - **Validates: Requirements 6.5**
+    - _Requirements: 11.4_
+  - [x] 29.4 更新 useWorkflowSteps.property.test.ts
+    - 修改 `frontend/src/__tests__/composables/useWorkflowSteps.property.test.ts`
+    - 更新 Arbitrary 生成器：生成包含 `filePath`/`name` 的 `AssemblySegmentEntry`
+    - 更新 `hasEnabledSegment()` 和 `allSegmentsEdited()` 的断言以适配内联段落数据结构
+    - **Property 7: useWorkflowSteps 内联段落适配**
+    - **Validates: Requirements 6.7**
+    - _Requirements: 11.6_
+  - [x] 29.5 更新 useAssemblyConfig.test.ts
+    - 修改 `frontend/src/__tests__/useAssemblyConfig.test.ts`
+    - 确保测试用例使用新的 `AssemblySegmentEntry` 结构（filePath/name/segmentType 而非 segmentId）
+    - _Requirements: 11.7_
+
+- [x] 30. Checkpoint - 前端测试验证
+  - 确保前端所有剩余测试通过（`npx vitest --run`）
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 31. 最终编译和完整性验证
+  - [x] 31.1 后端完整构建验证
+    - 执行 `mvn clean compile -pl backend` 确保编译通过
+    - 执行 `mvn test -pl backend` 确保所有测试通过
+    - _Requirements: 13.1, 13.2_
+  - [x] 31.2 前端完整构建验证
+    - 执行 `npx vite build` 确保构建通过
+    - 执行 `npx vitest --run` 确保所有测试通过
+    - 确认无 broken imports 或 unresolved references
+    - _Requirements: 13.1, 13.5_
+  - [x] 31.3 功能完整性验证
+    - 确认组合模板创建、段落编排、预览、渲染、导出/导入工作流在新的内联段落模型下功能正确
+    - 确认段落库相关的所有 Controller、Service、Entity、Repository、DTO 文件已删除
+    - 确认段落库相关的所有前端页面、组件、API、Store、Composable 文件已删除
+    - _Requirements: 13.3, 13.6_
+
+## Notes
+
+- 所有任务均为必须任务，不可跳过
+- 任务按依赖顺序排列：先重构 DTO → 重构核心服务 → 数据迁移 → 删除段落库代码 → 前端重构 → 测试更新 → 最终验证
+- 每个 Checkpoint 任务确保增量验证，避免错误累积
+- 后端使用 Java 17 + Spring Boot 3.2，前端使用 Vue 3 + TypeScript
+- Property-Based 测试后端使用 jqwik，前端使用 fast-check
+- Flyway 迁移脚本版本号为 V36（V35 是当前最大版本）
