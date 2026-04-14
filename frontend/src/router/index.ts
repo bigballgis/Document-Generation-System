@@ -45,16 +45,21 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Templates' },
       },
       {
-        path: 'templates/:id',
-        name: 'TemplateDetail',
-        component: () => import('@/views/templates/Detail.vue'),
-        meta: { title: 'Template Detail' },
+        path: 'templates/:id/workspace',
+        name: 'TemplateWorkspace',
+        component: () => import('@/views/template-workspace/Index.vue'),
+        meta: { title: 'Template Workspace' },
       },
       {
         path: 'templates/:id/editor',
         name: 'TemplateEditor',
         component: () => import('@/views/templates/Editor.vue'),
         meta: { title: 'Template Editor' },
+      },
+      {
+        path: 'templates/:id',
+        name: 'TemplateDetail',
+        redirect: (to) => `/templates/${to.params.id}/workspace`,
       },
       {
         path: 'data-sources',
@@ -123,16 +128,15 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Composite Templates' },
       },
       {
-        path: 'composite-templates/:id',
-        name: 'CompositeTemplateDetail',
-        component: () => import('@/views/composite-templates/Detail.vue'),
-        meta: { title: 'Composite Template Detail' },
-      },
-      {
         path: 'composite-templates/:id/editor',
         name: 'AssemblyEditor',
         component: () => import('@/views/composite-templates/AssemblyEditor.vue'),
         meta: { title: 'Assembly Editor' },
+      },
+      {
+        path: 'composite-templates/:id',
+        name: 'CompositeTemplateDetail',
+        redirect: (to) => `/templates/${to.params.id}/workspace`,
       },
     ],
   },

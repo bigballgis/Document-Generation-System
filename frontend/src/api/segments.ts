@@ -39,9 +39,11 @@ export function getSegment(id: number) {
   return request.get<any, Segment>(`/segments/${id}`)
 }
 
-export function createSegment(data: CreateSegmentRequest, file: File) {
+export function createSegment(data: CreateSegmentRequest, file?: File) {
   const formData = new FormData()
-  formData.append('file', file)
+  if (file) {
+    formData.append('file', file)
+  }
   formData.append('request', new Blob([JSON.stringify(data)], { type: 'application/json' }))
   return request.post<any, Segment>('/segments', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },

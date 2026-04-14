@@ -6,7 +6,7 @@
         <span v-else>D</span>
       </div>
       <el-menu
-        :default-active="route.path"
+        :default-active="activeMenuIndex"
         :collapse="isCollapsed"
         router
         background-color="#304156"
@@ -17,10 +17,14 @@
           <el-icon><Monitor /></el-icon>
           <template #title>{{ $t('nav.dashboard') }}</template>
         </el-menu-item>
-        <el-menu-item index="/templates">
-          <el-icon><Document /></el-icon>
-          <template #title>{{ $t('nav.templates') }}</template>
-        </el-menu-item>
+        <el-sub-menu index="template-management">
+          <template #title>
+            <el-icon><Document /></el-icon>
+            <span>{{ $t('nav.templateManagement') }}</span>
+          </template>
+          <el-menu-item index="/templates">{{ $t('nav.templateList') }}</el-menu-item>
+          <el-menu-item index="/segments">{{ $t('nav.segmentLibrary') }}</el-menu-item>
+        </el-sub-menu>
         <el-menu-item index="/documents">
           <el-icon><Files /></el-icon>
           <template #title>{{ $t('nav.documents') }}</template>
@@ -28,10 +32,6 @@
         <el-menu-item index="/tasks">
           <el-icon><Clock /></el-icon>
           <template #title>{{ $t('nav.tasks') }}</template>
-        </el-menu-item>
-        <el-menu-item index="/data-sources">
-          <el-icon><Connection /></el-icon>
-          <template #title>{{ $t('nav.dataSources') }}</template>
         </el-menu-item>
         <el-menu-item index="/market">
           <el-icon><Shop /></el-icon>
@@ -45,15 +45,6 @@
           <el-icon><List /></el-icon>
           <template #title>{{ $t('nav.audit') }}</template>
         </el-menu-item>
-        <el-sub-menu index="template-components">
-          <template #title>
-            <el-icon><Grid /></el-icon>
-            <span>{{ $t('nav.templateComponents') }}</span>
-          </template>
-          <el-menu-item index="/segments">{{ $t('nav.segments') }}</el-menu-item>
-          <el-menu-item index="/components">{{ $t('nav.components') }}</el-menu-item>
-          <el-menu-item index="/composite-templates">{{ $t('nav.compositeTemplates') }}</el-menu-item>
-        </el-sub-menu>
       </el-menu>
     </el-aside>
     <el-container>
@@ -114,8 +105,8 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import {
-  Monitor, Document, Connection, Shop, Setting, List,
-  Fold, Expand, UserFilled, Files, Clock, Grid,
+  Monitor, Document, Shop, Setting, List,
+  Fold, Expand, UserFilled, Files, Clock,
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 
@@ -125,6 +116,13 @@ const { locale, t } = useI18n()
 const userStore = useUserStore()
 
 const isCollapsed = ref(false)
+
+const activeMenuIndex = computed(() => {
+  const path = route.path
+  if (path.startsWith('/templates')) return '/templates'
+  if (path.startsWith('/segments')) return '/segments'
+  return path
+})
 
 const localeNames: Record<string, string> = {
   'en-US': 'English',

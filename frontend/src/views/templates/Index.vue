@@ -23,7 +23,7 @@
           style="display: none"
           @change="handleImportConfig"
         />
-        <el-button type="primary" @click="openCreateDialog">
+        <el-button type="primary" @click="wizardVisible = true">
           {{ $t('template.create') }}
         </el-button>
       </div>
@@ -97,7 +97,7 @@
       <el-table :data="templates" v-loading="loading" stripe>
         <el-table-column prop="name" :label="$t('template.name')" min-width="180">
           <template #default="{ row }">
-            <router-link :to="`/templates/${row.id}`" class="template-link">
+            <router-link :to="`/templates/${row.id}/workspace`" class="template-link">
               {{ row.name }}
             </router-link>
           </template>
@@ -128,8 +128,11 @@
           <template #default="{ row }">v{{ row.version }}</template>
         </el-table-column>
         <el-table-column prop="updatedAt" :label="$t('common.updatedAt')" width="170" />
-        <el-table-column :label="$t('common.actions')" width="260" fixed="right">
+        <el-table-column :label="$t('common.actions')" width="300" fixed="right">
           <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="router.push(`/templates/${row.id}/workspace`)">
+              {{ $t('workspace.workspaceAction') }}
+            </el-button>
             <el-button link type="primary" size="small" @click="openEditDialog(row)">
               {{ $t('common.edit') }}
             </el-button>
@@ -178,12 +181,21 @@
       :tags="tagList"
       @saved="onFormSaved"
     />
+
+    <!-- Creation Wizard -->
+    <TemplateCreationWizard
+      v-model:visible="wizardVisible"
+      :categories="categoryTree"
+      :tags="tagList"
+      @created="onWizardCreated"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getTemplates, deleteTemplate, cloneTemplate, activateTemplate, archiveTemplate,
@@ -191,9 +203,11 @@ import {
   type TemplateDTO, type TemplateQuery, type CategoryDTO, type TagDTO,
 } from '@/api/templates'
 import TemplateFormDialog from './components/TemplateFormDialog.vue'
+import TemplateCreationWizard from '@/views/template-workspace/components/TemplateCreationWizard.vue'
 import { importDocx, importConfig } from '@/api/import-export'
 
 const { t } = useI18n()
+const router = useRouter()
 
 const loading = ref(false)
 const templates = ref<TemplateDTO[]>([])
@@ -202,6 +216,7 @@ const categoryTree = ref<CategoryDTO[]>([])
 const tagList = ref<TagDTO[]>([])
 const formDialogVisible = ref(false)
 const editingTemplate = ref<TemplateDTO | null>(null)
+const wizardVisible = ref(false)
 
 const importDocxInput = ref<HTMLInputElement | null>(null)
 const importConfigInput = ref<HTMLInputElement | null>(null)
@@ -271,11 +286,6 @@ function resetFilters() {
   handleSearch()
 }
 
-function openCreateDialog() {
-  editingTemplate.value = null
-  formDialogVisible.value = true
-}
-
 function openEditDialog(row: TemplateDTO) {
   editingTemplate.value = { ...row }
   formDialogVisible.value = true
@@ -284,6 +294,10 @@ function openEditDialog(row: TemplateDTO) {
 function onFormSaved() {
   formDialogVisible.value = false
   fetchTemplates()
+}
+
+function onWizardCreated(template: TemplateDTO) {
+  router.push(`/templates/${template.id}/workspace`)
 }
 
 async function handleClone(row: TemplateDTO) {

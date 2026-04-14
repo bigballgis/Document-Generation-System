@@ -15,6 +15,7 @@ export interface TemplateDTO {
   outputFormat: string
   reviewRequired: boolean
   tenantId: number
+  templateType: 'SINGLE' | 'COMPOSITE'
   createdAt: string
   updatedAt: string
   createdBy?: string
@@ -261,4 +262,9 @@ export function removeTagFromTemplate(tagId: number, templateId: number) {
 
 export function getTemplateTags(templateId: number) {
   return request.get<any, TagDTO[]>(`/tags/templates/${templateId}`)
+}
+
+/** Create a new draft version from an ACTIVE template */
+export function createDraftVersion(templateId: number) {
+  return request.post<any, TemplateDTO>(`/templates/${templateId}/create-draft-version`)
 }
