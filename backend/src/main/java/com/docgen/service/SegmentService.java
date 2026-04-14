@@ -29,9 +29,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.List;
 import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 /**
  * Service handling Segment CRUD, file upload to MinIO, cloning, and component promotion/demotion.
@@ -77,7 +81,12 @@ public class SegmentService {
     public SegmentDTO createSegment(CreateSegmentRequest request, MultipartFile file, Long userId) {
         Long tenantId = TenantContext.getCurrentTenantId();
 
-        String filePath = uploadSegmentFile(file, tenantId);
+        String filePath;
+        if (file != null && !file.isEmpty()) {
+            filePath = uploadSegmentFile(file, tenantId);
+        } else {
+            filePath = createEmptyDocxSegment(tenantId, request.getName());
+        }
 
         Segment segment = new Segment();
         segment.setTenantId(tenantId);
@@ -337,6 +346,66 @@ public class SegmentService {
         return segmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorCode.SEGMENT_NOT_FOUND, "段落不存在"));
+    }
+
+    /**
+     * Create an empty .docx segment file and upload it to MinIO.
+     * Same logic as TemplateService.createEmptyDocxTemplate.
+     */
+    private String createEmptyDocxSegment(Long tenantId, String segmentName) {
+        String safeName = (segmentName != null
+                ? segmentName.replaceAll("[^a-zA-Z0-9_\\-]", "_")
+                : "segment");
+        String objectName = String.format("segments/%d/%s_%s.docx",
+                tenantId, UUID.randomUUID(), safeName);
+
+        try {
+            byte[] docxBytes = generateEmptyDocx();
+            try (InputStream is = new ByteArrayInputStream(docxBytes)) {
+                minioClient.putObject(PutObjectArgs.builder()
+                        .bucket(bucketName)
+                        .object(objectName)
+                        .stream(is, docxBytes.length, -1)
+                        .contentType("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                        .build());
+            }
+            log.info("Created empty docx segment: {}", objectName);
+        } catch (Exception e) {
+            log.error("Failed to create empty docx segment: {}", e.getMessage(), e);
+            throw new BusinessException(ErrorCode.INTERNAL_ERROR,
+                    "创建空片段文件失败", HttpStatus.INTERNAL_SERVER_ERROR, e);
+        }
+        return objectName;
+    }
+
+    private byte[] generateEmptyDocx() throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+            addZipEntry(zos, "[Content_Types].xml",
+                    "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
+                    + "<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\">"
+                    + "<Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/>"
+                    + "<Default Extension=\"xml\" ContentType=\"application/xml\"/>"
+                    + "<Override PartName=\"/word/document.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml\"/>"
+                    + "</Types>");
+            addZipEntry(zos, "_rels/.rels",
+                    "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
+                    + "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">"
+                    + "<Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"word/document.xml\"/>"
+                    + "</Relationships>");
+            addZipEntry(zos, "word/document.xml",
+                    "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
+                    + "<w:document xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\">"
+                    + "<w:body><w:p><w:r><w:t></w:t></w:r></w:p></w:body>"
+                    + "</w:document>");
+        }
+        return baos.toByteArray();
+    }
+
+    private void addZipEntry(ZipOutputStream zos, String name, String content) throws Exception {
+        zos.putNextEntry(new ZipEntry(name));
+        zos.write(content.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        zos.closeEntry();
     }
 
     private String uploadSegmentFile(MultipartFile file, Long tenantId) {

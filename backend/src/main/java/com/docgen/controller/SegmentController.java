@@ -66,7 +66,7 @@ public class SegmentController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<SegmentDTO> createSegment(
             @Valid @RequestPart("request") CreateSegmentRequest request,
-            @RequestPart("file") MultipartFile file,
+            @RequestPart(value = "file", required = false) MultipartFile file,
             @AuthenticationPrincipal UserPrincipal principal) {
         SegmentDTO created = segmentService.createSegment(request, file, principal.getUserId());
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
