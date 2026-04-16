@@ -28,8 +28,7 @@ import java.util.UUID;
 /**
  * Service for migrating traditional single-file templates to Composite_Template format.
  * Handles the full migration workflow: read original .docx → create Segment → create
- * Composite_Template with Assembly_Config → migrate data sources/expressions/variable
- * bindings → archive original template → record audit log.
+ * Composite_Template with Assembly_Config → archive original template → record audit log.
  */
 @Service
 public class MigrationService {
@@ -40,9 +39,6 @@ public class MigrationService {
     private final AssemblyConfigService assemblyConfigService;
     private final AuditLogService auditLogService;
     private final MinioClient minioClient;
-    private final DataSourceRepository dataSourceRepository;
-    private final ExpressionRepository expressionRepository;
-    private final TemplateVariableRepository templateVariableRepository;
 
     @Value("${minio.bucket-name:docgen}")
     private String bucketName;
@@ -50,35 +46,15 @@ public class MigrationService {
     public MigrationService(TemplateRepository templateRepository,
                             AssemblyConfigService assemblyConfigService,
                             AuditLogService auditLogService,
-                            MinioClient minioClient,
-                            DataSourceRepository dataSourceRepository,
-                            ExpressionRepository expressionRepository,
-                            TemplateVariableRepository templateVariableRepository) {
+                            MinioClient minioClient) {
         this.templateRepository = templateRepository;
         this.assemblyConfigService = assemblyConfigService;
         this.auditLogService = auditLogService;
         this.minioClient = minioClient;
-        this.dataSourceRepository = dataSourceRepository;
-        this.expressionRepository = expressionRepository;
-        this.templateVariableRepository = templateVariableRepository;
     }
 
     /**
      * Migrate a traditional single-file template to a Composite_Template.
-     *
-     * <ol>
-     *   <li>Read the original template's .docx file from MinIO</li>
-     *   <li>Create a single Segment with the original .docx content</li>
-     *   <li>Create a new Composite_Template with Assembly_Config referencing the Segment</li>
-     *   <li>Migrate data sources, expressions, and variable bindings to the new template</li>
-     *   <li>Archive the original template</li>
-     *   <li>Record audit log</li>
-     * </ol>
-     *
-     * @param templateId the ID of the single-file template to migrate
-     * @param userId     the ID of the user performing the migration
-     * @return migration result containing IDs and counts
-     * @throws BusinessException if the original .docx file cannot be read
      */
     @Transactional
     public MigrationResultDTO migrateToComposite(Long templateId, Long userId) {
@@ -126,33 +102,26 @@ public class MigrationService {
 
         Template savedComposite = templateRepository.save(composite);
 
-        // 5. Migrate data sources, expressions, and variable bindings
-        int migratedDataSources = migrateDataSources(templateId, savedComposite.getId());
-        int migratedExpressions = migrateExpressions(templateId, savedComposite.getId());
-        int migratedVariableBindings = migrateVariableBindings(templateId, savedComposite.getId());
-
-        // 6. Archive the original template (bypass state machine for migration)
+        // 5. Archive the original template (bypass state machine for migration)
         original.setStatus(TemplateState.ARCHIVED.name());
         templateRepository.save(original);
 
-        // 7. Record audit log
+        // 6. Record audit log
         String details = String.format(
-                "{\"sourceTemplateId\":%d,\"compositeTemplateId\":%d,"
-                        + "\"migratedDataSources\":%d,\"migratedExpressions\":%d,\"migratedVariableBindings\":%d}",
-                templateId, savedComposite.getId(),
-                migratedDataSources, migratedExpressions, migratedVariableBindings);
+                "{\"sourceTemplateId\":%d,\"compositeTemplateId\":%d}",
+                templateId, savedComposite.getId());
         auditLogService.log(tenantId, userId, "TEMPLATE_MIGRATED",
                 "TEMPLATE", savedComposite.getId(), details, null);
 
         log.info("Template migrated: sourceId={}, compositeId={}, tenantId={}",
                 templateId, savedComposite.getId(), tenantId);
 
-        // 8. Build result
+        // 7. Build result
         MigrationResultDTO result = new MigrationResultDTO();
         result.setCompositeTemplateId(savedComposite.getId());
-        result.setMigratedDataSources(migratedDataSources);
-        result.setMigratedExpressions(migratedExpressions);
-        result.setMigratedVariableBindings(migratedVariableBindings);
+        result.setMigratedDataSources(0);
+        result.setMigratedExpressions(0);
+        result.setMigratedVariableBindings(0);
         result.setArchivedOriginalTemplateId(templateId);
         return result;
     }
@@ -191,56 +160,5 @@ public class MigrationService {
                     "Failed to upload segment file during migration",
                     HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
-    }
-
-    private int migrateDataSources(Long sourceTemplateId, Long targetTemplateId) {
-        List<DataSource> sources = dataSourceRepository.findByTemplateIdOrderByPriorityDesc(sourceTemplateId);
-        for (DataSource source : sources) {
-            DataSource copy = new DataSource();
-            copy.setTemplateId(targetTemplateId);
-            copy.setName(source.getName());
-            copy.setType(source.getType());
-            copy.setConfigJson(source.getConfigJson());
-            copy.setCacheEnabled(source.isCacheEnabled());
-            copy.setCacheTtl(source.getCacheTtl());
-            copy.setPriority(source.getPriority());
-            dataSourceRepository.save(copy);
-        }
-        log.debug("Migrated {} data sources from template {} to {}", sources.size(), sourceTemplateId, targetTemplateId);
-        return sources.size();
-    }
-
-    private int migrateExpressions(Long sourceTemplateId, Long targetTemplateId) {
-        List<Expression> expressions = expressionRepository.findByTemplateIdOrderByExecutionOrderAsc(sourceTemplateId);
-        for (Expression expr : expressions) {
-            Expression copy = new Expression();
-            copy.setTemplateId(targetTemplateId);
-            copy.setName(expr.getName());
-            copy.setExpressionType(expr.getExpressionType());
-            copy.setExpressionText(expr.getExpressionText());
-            copy.setDescription(expr.getDescription());
-            copy.setExecutionOrder(expr.getExecutionOrder());
-            expressionRepository.save(copy);
-        }
-        log.debug("Migrated {} expressions from template {} to {}", expressions.size(), sourceTemplateId, targetTemplateId);
-        return expressions.size();
-    }
-
-    private int migrateVariableBindings(Long sourceTemplateId, Long targetTemplateId) {
-        List<TemplateVariable> variables = templateVariableRepository.findByTemplateIdOrderByNameAsc(sourceTemplateId);
-        for (TemplateVariable var : variables) {
-            TemplateVariable copy = new TemplateVariable();
-            copy.setTemplateId(targetTemplateId);
-            copy.setName(var.getName());
-            copy.setVariableType(var.getVariableType());
-            copy.setDefaultValue(var.getDefaultValue());
-            copy.setDescription(var.getDescription());
-            copy.setBindingSource(var.getBindingSource());
-            copy.setBindingField(var.getBindingField());
-            copy.setBound(var.isBound());
-            templateVariableRepository.save(copy);
-        }
-        log.debug("Migrated {} variable bindings from template {} to {}", variables.size(), sourceTemplateId, targetTemplateId);
-        return variables.size();
     }
 }

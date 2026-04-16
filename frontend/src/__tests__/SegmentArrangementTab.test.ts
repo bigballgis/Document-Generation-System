@@ -20,12 +20,8 @@ vi.mock('@/api/templates', () => ({
   getAvailableTransitions: vi.fn().mockResolvedValue([]),
 }))
 
-vi.mock('@/api/data-sources', () => ({
-  getDataSources: vi.fn().mockResolvedValue([]),
-}))
-
-vi.mock('@/api/expressions', () => ({
-  getExpressions: vi.fn().mockResolvedValue([]),
+vi.mock('@/api/parameters', () => ({
+  getParameters: vi.fn().mockResolvedValue([]),
 }))
 
 vi.mock('vue-router', () => ({
@@ -35,7 +31,7 @@ vi.mock('vue-router', () => ({
 }))
 
 // Stub KeyValueEditor to avoid deep rendering
-vi.mock('@/views/data-sources/KeyValueEditor.vue', () => ({
+vi.mock('@/components/KeyValueEditor.vue', () => ({
   default: {
     template: '<div class="stub-kv-editor" />',
     props: ['modelValue'],

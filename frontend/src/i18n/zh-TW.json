@@ -124,7 +124,6 @@
   "nav": {
     "dashboard": "儀表板",
     "templates": "範本管理",
-    "dataSources": "資料來源",
     "market": "範本市場",
     "admin": "系統管理",
     "audit": "稽核日誌",
@@ -233,87 +232,6 @@
     "name": "標籤名稱",
     "addTag": "新增標籤",
     "removeTag": "移除標籤"
-  },
-  "dataSource": {
-    "title": "資料來源設定",
-    "list": "資料來源列表",
-    "create": "建立資料來源",
-    "edit": "編輯資料來源",
-    "name": "資料來源名稱",
-    "type": "類型",
-    "typeHttpApi": "HTTP API",
-    "typeDatabase": "資料庫",
-    "typeInternal": "內部系統",
-    "testConnection": "測試連線",
-    "testSuccess": "連線測試成功",
-    "testFailed": "連線測試失敗",
-    "url": "URL",
-    "method": "HTTP 方法",
-    "headers": "請求標頭",
-    "params": "請求參數",
-    "authType": "驗證方式",
-    "authNone": "無",
-    "authApiKey": "API Key",
-    "authOAuth": "OAuth",
-    "authBasic": "Basic Auth",
-    "timeout": "逾時時間（毫秒）",
-    "retryEnabled": "啟用重試",
-    "retryCount": "重試次數",
-    "retryInterval": "重試間隔（毫秒）",
-    "retryBackoff": "指數退避",
-    "dbType": "資料庫類型",
-    "dbHost": "主機",
-    "dbPort": "連接埠",
-    "dbName": "資料庫名稱",
-    "dbUsername": "使用者名稱",
-    "dbPassword": "密碼",
-    "sqlQuery": "SQL 查詢",
-    "serviceName": "服務名稱",
-    "serviceUrl": "服務位址",
-    "sensitiveHidden": "敏感資訊已隱藏",
-    "cacheEnabled": "啟用快取",
-    "cacheTtl": "快取過期時間（秒）",
-    "clearCache": "清除快取",
-    "clearCacheSuccess": "快取已清除",
-    "priority": "優先順序",
-    "pipeline": "資料管道",
-    "pipelineConfig": "管道設定",
-    "pipelineFetch": "取得",
-    "pipelineTransform": "轉換",
-    "pipelineCompute": "計算",
-    "pipelineValidate": "驗證",
-    "circularDependency": "偵測到循環相依",
-    "dependsOn": "相依於",
-    "parameterized": "參數化查詢",
-    "paramName": "參數名稱",
-    "paramDefault": "預設值",
-    "paramRequired": "必填",
-    "paramOptional": "選填",
-    "responseTransform": "回應轉換",
-    "jsonPath": "JSONPath 運算式",
-    "xPath": "XPath 運算式",
-    "flatten": "扁平化",
-    "groupBy": "分組",
-    "sortBy": "排序"
-  },
-  "expression": {
-    "title": "運算式",
-    "create": "建立運算式",
-    "edit": "編輯運算式",
-    "name": "運算式名稱",
-    "type": "運算式類型",
-    "typeJavaScript": "JavaScript",
-    "typeExcel": "Excel 公式",
-    "content": "運算式內容",
-    "validate": "驗證",
-    "validationSuccess": "運算式有效",
-    "validationFailed": "運算式驗證失敗",
-    "result": "結果",
-    "testExpression": "測試運算式",
-    "executionOrder": "執行順序",
-    "description": "描述",
-    "confirmDelete": "確定要刪除運算式「{name}」嗎？",
-    "errorPosition": "錯誤位置：{pos}"
   },
   "document": {
     "title": "文件",
@@ -443,7 +361,6 @@
     "totalDocuments": "文件總數",
     "apiCallTrend": "API 呼叫趨勢",
     "generateSuccessRate": "產生成功率",
-    "dataSourceHealth": "資料來源健康狀態",
     "systemResources": "系統資源",
     "jvmMemory": "JVM 記憶體",
     "dbConnections": "資料庫連線",
@@ -768,37 +685,8 @@
     "fileSize": "檔案大小超過限制 {size}"
   },
   "workspace": {
-    "step1": "建立範本",
-    "step2": "定義資料",
-    "step3": "編排片段",
-    "step4": "編輯內容",
-    "step5": "測試驗證",
-    "step6": "審核發佈",
-    "step7": "跨環境匯出",
-    "step8": "版本管理",
-    "tabDataStructure": "資料結構",
     "tabSegments": "片段編排",
-    "tabEditor": "編輯",
-    "tabTesting": "測試",
-    "tabReviewPublish": "審核與發佈",
-    "tabExportImport": "匯出/匯入",
     "tabSettings": "設定",
-    "placeholder": {
-      "dataStructure": "資料結構管理將在 Phase 2 實現",
-      "dataStructureDesc": "管理範本的資料來源和運算式",
-      "segments": "片段編排將在 Phase 2 實現",
-      "segmentsDesc": "建立、排列和設定文件片段",
-      "editor": "視覺化編輯器將在 Phase 2 實現",
-      "editorDesc": "透過 OnlyOffice 整合編輯片段內容",
-      "testing": "測試功能將在 Phase 3 實現",
-      "testingDesc": "建立測試資料、執行測試、檢查變數覆蓋率",
-      "reviewPublish": "審核與發佈將在 Phase 3 實現",
-      "reviewPublishDesc": "提交審核、自動啟用、管理 API 端點",
-      "exportImport": "匯出/匯入將在 Phase 4 實現",
-      "exportImportDesc": "匯出完整範本套件用於跨環境部署",
-      "settings": "設定將在 Phase 4 實現",
-      "settingsDesc": "版本歷史、Webhook、浮水印、排程任務和權限管理"
-    },
     "wizard": {
       "title": "建立新範本",
       "step1Title": "基本資訊",
@@ -824,20 +712,53 @@
     "criticalError": "工作台載入失敗",
     "retry": "重試",
     "warningBanner": "部分資料載入失敗",
-    "loading": "正在載入工作台...",
+    "stage": {
+      "design": "設計",
+      "test": "測試",
+      "approval": "審批",
+      "publish": "發布",
+      "notAvailable": "完成前置階段後解鎖",
+      "readonly": "唯讀模式"
+    },
+    "loading": "正在载入工作台...",
     "workspaceAction": "工作台",
     "draftCreated": "草稿版本建立成功",
-    "dataSource": {
-      "title": "資料來源",
-      "add": "新增資料來源",
-      "empty": "尚未設定資料來源。",
-      "testSuccess": "連線測試成功",
-      "testFailed": "連線測試失敗"
+    "coverageBar": {
+      "branch": "分支覆蓋率",
+      "loop": "循環覆蓋率",
+      "param": "參數覆蓋率"
     },
-    "expression": {
-      "title": "運算式",
-      "add": "新增運算式",
-      "empty": "尚未設定運算式。"
+    "approval": {
+      "timeline": {
+        "approved": "通過",
+        "rejected": "拒絕",
+        "conditional": "有條件通過",
+        "pending": "待審核"
+      },
+      "submitReview": "提交審核",
+      "returnToEdit": "返回修改"
+    },
+    "publish": {
+      "summary": {
+        "version": "版本",
+        "params": "參數數量",
+        "coverage": "覆蓋率",
+        "reviewStatus": "審核狀態"
+      },
+      "activate": "啟用",
+      "exportZip": "匯出 ZIP 包",
+      "newVersion": "編輯為新版本"
+    },
+    "testForm": {
+      "viewJson": "查看 JSON",
+      "viewForm": "表單模式"
+    },
+    "api": {
+      "title": "API 管理",
+      "versions": "版本列表",
+      "endpoint": "端點資訊",
+      "keys": "API Key 管理",
+      "stats": "呼叫統計"
     },
     "segment": {
       "title": "片段編排",
@@ -964,6 +885,7 @@
       "importPackage": "匯入完整包",
       "importConfig": "匯入設定",
       "draftExportDisabled": "範本必須處於 PENDING_REVIEW、REVIEWED 或 ACTIVE 狀態才能匯出完整包",
+      "exportNotActive": "僅 ACTIVE 狀態的模板可匯出 ZIP 包",
       "invalidPackage": "無效的包格式",
       "importSuccess": "匯入成功",
       "goToWorkspace": "前往工作台",
@@ -996,6 +918,170 @@
       "granteeType": "被授權方類型",
       "permissionType": "權限類型",
       "selectGrantee": "請選擇被授權方"
+    },
+    "design": {
+      "parameters": "參數",
+      "segmentArrangement": "片段編排",
+      "importZip": "匯入 ZIP",
+      "settings": "設定",
+      "selectSegment": "選擇片段",
+      "noSegments": "暫無可編輯的片段",
+      "editorArea": "編輯器區域"
+    },
+    "coverageBar": {
+      "branch": "分支覆蓋率",
+      "loop": "迴圈覆蓋率",
+      "param": "參數覆蓋率",
+      "allCovered": "全部覆蓋"
+    },
+    "approval": {
+      "timeline": {
+        "approved": "通過",
+        "rejected": "拒絕",
+        "conditional": "有條件通過",
+        "pending": "待審核"
+      },
+      "submitReview": "提交審核",
+      "returnToEdit": "返回修改",
+      "noReviews": "暫無審批記錄",
+      "previewTitle": "範本快照預覽",
+      "allApproved": "所有審核已通過"
+    },
+    "publish": {
+      "summary": {
+        "version": "版本",
+        "params": "參數數量",
+        "coverage": "覆蓋率",
+        "reviewStatus": "審核狀態"
+      },
+      "activate": "啟用",
+      "activateSuccess": "範本啟用成功",
+      "activateFailed": "範本啟用失敗",
+      "exportZip": "匯出 ZIP 包",
+      "newVersion": "編輯為新版本",
+      "summaryTitle": "發布摘要"
+    },
+    "testForm": {
+      "viewJson": "查看 JSON",
+      "viewForm": "表單模式",
+      "addItem": "新增條目",
+      "removeItem": "移除條目",
+      "requiredField": "此欄位為必填",
+      "previewFailed": "預覽失敗",
+      "retryPreview": "重試預覽",
+      "guidance": "智慧引導",
+      "noUncovered": "所有分支已覆蓋",
+      "setValueHint": "將 {param} 設為 {value} 以觸發此分支"
+    },
+    "api": {
+      "title": "API 管理",
+      "backToList": "返回範本列表",
+      "versions": "版本列表",
+      "endpoint": "端點資訊",
+      "keys": "API Key 管理",
+      "stats": "呼叫統計",
+      "noActiveVersions": "暫無 ACTIVE 版本",
+      "apiButton": "API"
+    }
+  },
+  "parameter": {
+    "addParameter": "新增參數",
+    "scanTemplate": "從範本掃描",
+    "jsonImport": "從 JSON 匯入",
+    "expandAll": "全部展開",
+    "collapseAll": "全部摺疊",
+    "selectAll": "全選",
+    "batchDelete": "批次刪除",
+    "batchSetRequired": "批次設定必填",
+    "batchDeleteConfirm": "確定要刪除 {count} 個選取的參數（包括子參數）嗎？",
+    "empty": "尚無參數定義。",
+    "name": "參數名",
+    "parameterType": "參數類型",
+    "dataType": "資料類型",
+    "required": "必填",
+    "defaultValue": "預設值",
+    "description": "描述",
+    "validationRules": "驗證規則",
+    "ruleCount": "{count} 條規則",
+    "addChild": "新增子參數",
+    "changeTypeWarning": "將資料類型從 OBJECT/ARRAY 改為葉子類型將刪除所有子參數。是否繼續？",
+    "contextMenu": {
+      "addSibling": "新增同級參數",
+      "addChild": "新增子參數",
+      "copy": "複製參數",
+      "paste": "貼上參數",
+      "duplicate": "複製參數",
+      "delete": "刪除參數"
+    },
+    "scanDialog": {
+      "title": "範本佔位符掃描",
+      "matched": "已匹配",
+      "unmatched": "未匹配佔位符",
+      "unused": "未使用參數",
+      "autoCreate": "自動建立缺失參數"
+    },
+    "preview": {
+      "jsonSchema": "JSON Schema",
+      "sampleBody": "範例請求體",
+      "placeholderMatch": "佔位符匹配",
+      "placeholderMatchHint": "上傳範本檔案後可查看佔位符匹配狀態。",
+      "createMissing": "一鍵建立缺失參數"
+    },
+    "jsonImport": {
+      "title": "從 JSON 匯入參數",
+      "placeholder": "貼上 JSON 資料...",
+      "import": "匯入",
+      "emptyWarning": "JSON 資料為空，無法產生參數",
+      "depthWarning": "JSON 巢狀超過 5 層，深層資料已扁平化為 STRING",
+      "parseError": "JSON 解析錯誤"
+    },
+    "quickAdd": {
+      "placeholder": "輸入參數名，按 Enter 新增...",
+      "duplicateError": "參數名已存在",
+      "invalidNameError": "參數名格式無效"
+    },
+    "deleteConfirmDetail": {
+      "withChildren": "確定刪除參數 {name} 及其 {count} 個子參數？"
+    },
+    "paste": {
+      "depthExceeded": "貼上後將超過最大巢狀深度（5層）"
+    },
+    "coverage": {
+      "branch": "分支",
+      "loop": "迴圈",
+      "parameter": "參數",
+      "overall": "整體"
+    },
+    "validation": {
+      "title": "驗證規則",
+      "notNull": "非空",
+      "notBlank": "非空白",
+      "minLength": "最小長度",
+      "maxLength": "最大長度",
+      "min": "最小值",
+      "max": "最大值",
+      "pattern": "正規表達式",
+      "enumValues": "列舉值",
+      "minItems": "最少元素數",
+      "maxItems": "最多元素數",
+      "customMessage": "自訂錯誤訊息",
+      "save": "儲存規則"
+    },
+    "expression": {
+      "title": "運算式編輯器",
+      "visualMode": "視覺化模式",
+      "advancedMode": "進階模式",
+      "test": "測試",
+      "selectParameter": "選擇參數",
+      "selectOperator": "選擇運算子",
+      "addStep": "新增步驟",
+      "preview": "產生的運算式",
+      "testResult": "測試結果",
+      "arithmetic": "算術",
+      "comparison": "比較",
+      "string": "字串",
+      "date": "日期",
+      "logical": "邏輯"
     }
   }
 }

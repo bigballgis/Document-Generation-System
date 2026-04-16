@@ -22,14 +22,12 @@ function isExportPackageDisabled(status: string): boolean {
  */
 function computeExportSummary(
   segments: unknown[],
-  dataSources: unknown[],
-  expressions: unknown[],
+  parameters: unknown[],
   testCases: unknown[],
 ) {
   return {
     segmentCount: segments.length,
-    dataSourceCount: dataSources.length,
-    expressionCount: expressions.length,
+    parameterCount: parameters.length,
     testDataCount: testCases.length,
   }
 }
@@ -87,13 +85,11 @@ describe('Property 2: Export summary counts match store state', () => {
       fc.property(
         fc.array(fc.constant({}), { minLength: 0, maxLength: 100 }),
         fc.array(fc.constant({}), { minLength: 0, maxLength: 50 }),
-        fc.array(fc.constant({}), { minLength: 0, maxLength: 50 }),
         fc.array(fc.constant({}), { minLength: 0, maxLength: 200 }),
-        (segments, dataSources, expressions, testCases) => {
-          const summary = computeExportSummary(segments, dataSources, expressions, testCases)
+        (segments, parameters, testCases) => {
+          const summary = computeExportSummary(segments, parameters, testCases)
           expect(summary.segmentCount).toBe(segments.length)
-          expect(summary.dataSourceCount).toBe(dataSources.length)
-          expect(summary.expressionCount).toBe(expressions.length)
+          expect(summary.parameterCount).toBe(parameters.length)
           expect(summary.testDataCount).toBe(testCases.length)
         },
       ),

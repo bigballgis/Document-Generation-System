@@ -139,6 +139,9 @@
             <el-button link type="primary" size="small" @click="handleClone(row)">
               {{ $t('common.clone') }}
             </el-button>
+            <el-button link type="primary" size="small" @click="router.push(`/templates/${row.id}/api`)">
+              {{ $t('workspace.api.apiButton') }}
+            </el-button>
             <el-button
               v-if="row.status === 'DRAFT' || row.status === 'REVIEWED'"
               link type="success" size="small"

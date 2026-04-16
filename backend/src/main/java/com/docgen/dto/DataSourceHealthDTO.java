@@ -1,11 +1,10 @@
 package com.docgen.dto;
 
 /**
- * DTO representing the health status of a single data source.
+ * DTO representing the health status of a data source (DB, Redis, MinIO).
  */
 public class DataSourceHealthDTO {
 
-    private Long id;
     private String name;
     private String type;
     private boolean reachable;
@@ -14,8 +13,13 @@ public class DataSourceHealthDTO {
 
     public DataSourceHealthDTO() {}
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public DataSourceHealthDTO(String name, String type, boolean reachable, double avgResponseTimeMs, String lastError) {
+        this.name = name;
+        this.type = type;
+        this.reachable = reachable;
+        this.avgResponseTimeMs = avgResponseTimeMs;
+        this.lastError = lastError;
+    }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }

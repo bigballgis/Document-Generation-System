@@ -2,14 +2,12 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { getTemplate, getAvailableTransitions, getTemplateVersions } from '@/api/templates'
 import { getAssemblyConfig, getCompositeCoverage } from '@/api/composite-templates'
-import { getDataSources } from '@/api/data-sources'
-import { getExpressions } from '@/api/expressions'
+import { getParameters } from '@/api/parameters'
 import { getTestCases } from '@/api/market'
 import { getTemplateReviews, getTemplatePermissions } from '@/api/admin'
 import type { TemplateDTO, TemplateVersionDTO } from '@/api/templates'
 import type { AssemblyConfig, CompositeCoverageReport } from '@/types/segment'
-import type { DataSourceDTO } from '@/api/data-sources'
-import type { ExpressionDTO } from '@/types/document'
+import type { ParameterDTO } from '@/types/parameter'
 import type { TestCaseDTO } from '@/api/market'
 import type { ReviewDTO, PermissionDTO } from '@/api/admin'
 
@@ -18,8 +16,7 @@ export const useTemplateWorkspaceStore = defineStore('templateWorkspace', () => 
   const templateId = ref<number>(0)
   const template = ref<TemplateDTO | null>(null)
   const assemblyConfig = ref<AssemblyConfig | null>(null)
-  const dataSources = ref<DataSourceDTO[]>([])
-  const expressions = ref<ExpressionDTO[]>([])
+  const parameters = ref<ParameterDTO[]>([])
   const coverage = ref<CompositeCoverageReport | null>(null)
   const availableTransitions = ref<string[]>([])
 
@@ -59,8 +56,7 @@ export const useTemplateWorkspaceStore = defineStore('templateWorkspace', () => 
 
     // Non-critical requests — failure shows warning banner
     const nonCriticalResults = Promise.allSettled([
-      getDataSources(id),
-      getExpressions(id),
+      getParameters(id),
       getCompositeCoverage(id),
       getAvailableTransitions(id),
     ])
@@ -76,14 +72,13 @@ export const useTemplateWorkspaceStore = defineStore('templateWorkspace', () => 
     }
 
     const settled = await nonCriticalResults
-    const sections = ['dataSources', 'expressions', 'coverage', 'transitions'] as const
+    const sections = ['parameters', 'coverage', 'transitions'] as const
     settled.forEach((result, index) => {
       if (result.status === 'fulfilled') {
         switch (index) {
-          case 0: dataSources.value = result.value as DataSourceDTO[]; break
-          case 1: expressions.value = result.value as ExpressionDTO[]; break
-          case 2: coverage.value = result.value as CompositeCoverageReport; break
-          case 3: availableTransitions.value = result.value as string[]; break
+          case 0: parameters.value = result.value as ParameterDTO[]; break
+          case 1: coverage.value = result.value as CompositeCoverageReport; break
+          case 2: availableTransitions.value = result.value as string[]; break
         }
       } else {
         warnings.value[sections[index]] = result.reason?.message || 'Load failed'
@@ -111,23 +106,13 @@ export const useTemplateWorkspaceStore = defineStore('templateWorkspace', () => 
     }
   }
 
-  async function refreshDataSources(): Promise<void> {
+  async function refreshParameters(): Promise<void> {
     if (!templateId.value) return
     try {
-      dataSources.value = await getDataSources(templateId.value)
-      delete warnings.value.dataSources
+      parameters.value = await getParameters(templateId.value)
+      delete warnings.value.parameters
     } catch (e: any) {
-      warnings.value.dataSources = e.message || 'Refresh failed'
-    }
-  }
-
-  async function refreshExpressions(): Promise<void> {
-    if (!templateId.value) return
-    try {
-      expressions.value = await getExpressions(templateId.value)
-      delete warnings.value.expressions
-    } catch (e: any) {
-      warnings.value.expressions = e.message || 'Refresh failed'
+      warnings.value.parameters = e.message || 'Refresh failed'
     }
   }
 
@@ -196,8 +181,7 @@ export const useTemplateWorkspaceStore = defineStore('templateWorkspace', () => 
     templateId.value = 0
     template.value = null
     assemblyConfig.value = null
-    dataSources.value = []
-    expressions.value = []
+    parameters.value = []
     coverage.value = null
     availableTransitions.value = []
     testCases.value = []
@@ -211,12 +195,12 @@ export const useTemplateWorkspaceStore = defineStore('templateWorkspace', () => 
   }
 
   return {
-    templateId, template, assemblyConfig, dataSources, expressions,
+    templateId, template, assemblyConfig, parameters,
     coverage, availableTransitions, loading, criticalError, warnings,
     testCases, testReport, reviews, versions, permissions,
     templateStatus, isActive, isDraft,
     initWorkspace, refreshTemplate, refreshAssemblyConfig,
-    refreshDataSources, refreshExpressions, refreshCoverage,
+    refreshParameters, refreshCoverage,
     refreshTransitions, refreshTestCases, refreshReviews,
     refreshVersions, refreshPermissions, $reset,
   }

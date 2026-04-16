@@ -51,6 +51,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Template Workspace' },
       },
       {
+        path: 'templates/:id/api',
+        name: 'TemplateApiManagement',
+        component: () => import('@/views/template-api/Index.vue'),
+        meta: { title: 'API Management', requiresAuth: true },
+      },
+      {
         path: 'templates/:id/editor',
         name: 'TemplateEditor',
         component: () => import('@/views/templates/Editor.vue'),
@@ -60,12 +66,6 @@ const routes: RouteRecordRaw[] = [
         path: 'templates/:id',
         name: 'TemplateDetail',
         redirect: (to) => `/templates/${to.params.id}/workspace`,
-      },
-      {
-        path: 'data-sources',
-        name: 'DataSources',
-        component: () => import('@/views/data-sources/Index.vue'),
-        meta: { title: 'Data Sources' },
       },
       {
         path: 'market',

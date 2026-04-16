@@ -16,8 +16,8 @@ vi.mock('@/api/composite-templates', () => ({
   getCompositeSegments: vi.fn().mockResolvedValue([]),
 }))
 
-vi.mock('@/api/data-sources', () => ({ getDataSources: vi.fn().mockResolvedValue([]) }))
-vi.mock('@/api/expressions', () => ({ getExpressions: vi.fn().mockResolvedValue([]) }))
+vi.mock('@/api/parameters', () => ({ getParameters: vi.fn().mockResolvedValue([]) }))
+
 vi.mock('@/api/market', () => ({ getTestCases: vi.fn().mockResolvedValue([]) }))
 vi.mock('@/api/admin', () => ({
   getTemplateReviews: vi.fn().mockResolvedValue({ content: [], totalElements: 0 }),

@@ -6,15 +6,14 @@ description: RESTful API 设计规范。在创建或修改 Controller、API 调�
 
 # API 设计规范
 
-## URL 命名
+## URL
 
-- 小写 + 连字符: `/api/composite-templates/{id}/segments`
-- 资源名复数，嵌套最多两层
-- 操作用动词子路径: `/api/templates/{id}/activate`
+- 小写 + 连字符 + 复数: `/api/composite-templates/{id}/segments`
+- 嵌套最多两层，操作用动词子路径: `/api/templates/{id}/activate`
 
-## HTTP 方法
+## HTTP 方法 → 响应码
 
-| 方法 | 用途 | 幂等 | 响应码 |
+| 方法 | 用途 | 幂等 | 成功码 |
 |------|------|------|--------|
 | GET | 查询 | 是 | 200 |
 | POST | 创建 | 否 | 201 |
@@ -24,16 +23,10 @@ description: RESTful API 设计规范。在创建或修改 Controller、API 调�
 
 ## 响应格式
 
-```json
-// 分页
-{ "content": [...], "totalElements": 100, "totalPages": 10, "number": 0, "size": 10 }
-
-// 错误
-{ "code": "RESOURCE_NOT_FOUND", "message": "模板不存在", "timestamp": "2025-01-01T00:00:00Z" }
-```
+- 分页: `{ content, totalElements, totalPages, number, size }` (Spring Page 默认)
+- 错误: `{ code, message, timestamp }` — code 来自 #[[file:backend/src/main/java/com/docgen/exception/ErrorCode.java]]
 
 ## 前端 API 层
 
-- 每模块一个文件: `src/api/segments.ts`
-- 使用 TypeScript 类型定义请求/响应
-- 统一通过 `src/api/request.ts` Axios 实例
+- 每模块一个文件: `frontend/src/api/{module}.ts`
+- 参考: #[[file:frontend/src/api/parameters.ts]]

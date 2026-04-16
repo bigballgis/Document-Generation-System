@@ -1,14 +1,10 @@
 package com.docgen.service;
 
 import com.docgen.dto.*;
-import com.docgen.entity.Expression;
-import com.docgen.entity.ExpressionType;
 import com.docgen.entity.Template;
 import com.docgen.exception.BusinessException;
 import com.docgen.exception.ErrorCode;
-import com.docgen.repository.ExpressionRepository;
 import com.docgen.repository.TemplateRepository;
-import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -19,9 +15,9 @@ import java.util.stream.Collectors;
 
 /**
  * Service that orchestrates the complete composite document generation flow:
- * execute data pipeline → assemble segments via AssemblyEngineService → apply watermark → store document.
+ * validate parameters → evaluate DERIVED parameters → assemble segments via AssemblyEngineService → apply watermark → store document.
  *
- * <p>Reuses existing DataAggregationService, WatermarkService, and DocumentStorageService.</p>
+ * <p>Uses ParameterValidationService for parameter handling.</p>
  *
  * <p>Validates: Requirements 8.1, 8.4, 8.5, 8.9, 8.10, 16.1, 16.2</p>
  */
@@ -31,40 +27,31 @@ public class CompositeGeneratorService {
     private static final Logger log = LoggerFactory.getLogger(CompositeGeneratorService.class);
 
     private final TemplateRepository templateRepository;
-    private final ExpressionRepository expressionRepository;
-    private final DataAggregationService dataAggregationService;
-    private final ExpressionEngine expressionEngine;
+    private final ParameterValidationService parameterValidationService;
     private final AssemblyConfigService assemblyConfigService;
     private final AssemblyEngineService assemblyEngineService;
     private final DocumentStorageService documentStorageService;
     private final WatermarkService watermarkService;
-    private final CircuitBreaker dataSourceCb;
 
     public CompositeGeneratorService(TemplateRepository templateRepository,
-                                     ExpressionRepository expressionRepository,
-                                     DataAggregationService dataAggregationService,
-                                     ExpressionEngine expressionEngine,
+                                     ParameterValidationService parameterValidationService,
                                      AssemblyConfigService assemblyConfigService,
                                      AssemblyEngineService assemblyEngineService,
                                      DocumentStorageService documentStorageService,
-                                     WatermarkService watermarkService,
-                                     CircuitBreaker dataSourceCircuitBreaker) {
+                                     WatermarkService watermarkService) {
         this.templateRepository = templateRepository;
-        this.expressionRepository = expressionRepository;
-        this.dataAggregationService = dataAggregationService;
-        this.expressionEngine = expressionEngine;
+        this.parameterValidationService = parameterValidationService;
         this.assemblyConfigService = assemblyConfigService;
         this.assemblyEngineService = assemblyEngineService;
         this.documentStorageService = documentStorageService;
         this.watermarkService = watermarkService;
-        this.dataSourceCb = dataSourceCircuitBreaker;
     }
 
     /**
      * Generate a composite document for the given template.
      *
      * <ol>
-     *   <li>Execute data pipeline (DataAggregationService + ExpressionEngine)</li>
+     *   <li>Validate parameters and evaluate DERIVED parameters (ParameterValidationService)</li>
      *   <li>Assemble document via AssemblyEngineService</li>
      *   <li>Apply watermark if configured (WatermarkService)</li>
      *   <li>Store document (DocumentStorageService)</li>
@@ -86,7 +73,7 @@ public class CompositeGeneratorService {
         String storageStrategy = request.getStorageStrategy() != null
                 ? request.getStorageStrategy() : template.getStorageStrategy();
 
-        // Step 1: Execute data pipeline (fetch data + expressions)
+        // Step 1: Validate parameters and evaluate DERIVED parameters
         Map<String, Object> data = executePipeline(template, params);
 
         // Step 2: Get assembly config and assemble document
@@ -113,41 +100,19 @@ public class CompositeGeneratorService {
         return response;
     }
 
+    /**
+     * Three-step pipeline: validate parameters → evaluate DERIVED parameters → return data context.
+     */
     private Map<String, Object> executePipeline(Template template, Map<String, Object> params) {
         try {
-            Map<String, Object> data = dataSourceCb.executeSupplier(
-                    () -> dataAggregationService.aggregateData(template.getId(), params));
-
-            Map<String, Object> context = new HashMap<>(data);
-            context.putAll(params);
-
-            Map<String, Object> expressionResults = evaluateExpressions(template.getId(), context);
-            context.putAll(expressionResults);
-
-            return context;
+            return parameterValidationService.validateAndBuildContext(template.getId(), params);
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Data pipeline execution failed for composite template {}: {}", template.getId(), e.getMessage());
+            log.error("Parameter validation pipeline failed for composite template {}: {}", template.getId(), e.getMessage());
             throw new BusinessException(ErrorCode.GENERATE_FAILED,
-                    "数据管道执行失败: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "参数验证管道执行失败: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
-    }
-
-    private Map<String, Object> evaluateExpressions(Long templateId, Map<String, Object> context) {
-        List<Expression> exprEntities = expressionRepository.findByTemplateIdOrderByExecutionOrderAsc(templateId);
-        if (exprEntities.isEmpty()) {
-            return Collections.emptyMap();
-        }
-
-        List<ExpressionEngine.ExpressionConfig> configs = exprEntities.stream()
-                .map(e -> new ExpressionEngine.ExpressionConfig(
-                        e.getName(),
-                        e.getExpressionText(),
-                        ExpressionType.valueOf(e.getExpressionType())))
-                .toList();
-
-        return expressionEngine.evaluateAll(configs, context);
     }
 
     private AssemblyConfigDTO getAssemblyConfig(Template template) {

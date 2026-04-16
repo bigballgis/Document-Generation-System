@@ -1,14 +1,10 @@
 package com.docgen.service;
 
 import com.docgen.dto.*;
-import com.docgen.entity.DataSource;
-import com.docgen.entity.Expression;
 import com.docgen.entity.Template;
 import com.docgen.entity.TestCase;
 import com.docgen.exception.BusinessException;
 import com.docgen.exception.ErrorCode;
-import com.docgen.repository.DataSourceRepository;
-import com.docgen.repository.ExpressionRepository;
 import com.docgen.repository.TemplateRepository;
 import com.docgen.repository.TestCaseRepository;
 import com.docgen.util.TenantContext;
@@ -41,14 +37,11 @@ import java.util.zip.ZipOutputStream;
 public class CompositeImportExportService {
 
     private static final Logger log = LoggerFactory.getLogger(CompositeImportExportService.class);
-    static final String CREDENTIAL_PLACEHOLDER = "__CREDENTIAL_PLACEHOLDER__";
 
     private final TemplateRepository templateRepository;
     private final AssemblyConfigService assemblyConfigService;
     private final MinioClient minioClient;
     private final ObjectMapper objectMapper;
-    private final DataSourceRepository dataSourceRepository;
-    private final ExpressionRepository expressionRepository;
     private final TestCaseRepository testCaseRepository;
     private final CompositeCoverageService compositeCoverageService;
 
@@ -59,16 +52,12 @@ public class CompositeImportExportService {
                                         AssemblyConfigService assemblyConfigService,
                                         MinioClient minioClient,
                                         ObjectMapper objectMapper,
-                                        DataSourceRepository dataSourceRepository,
-                                        ExpressionRepository expressionRepository,
                                         TestCaseRepository testCaseRepository,
                                         CompositeCoverageService compositeCoverageService) {
         this.templateRepository = templateRepository;
         this.assemblyConfigService = assemblyConfigService;
         this.minioClient = minioClient;
         this.objectMapper = objectMapper;
-        this.dataSourceRepository = dataSourceRepository;
-        this.expressionRepository = expressionRepository;
         this.testCaseRepository = testCaseRepository;
         this.compositeCoverageService = compositeCoverageService;
     }
@@ -80,6 +69,14 @@ public class CompositeImportExportService {
     @Transactional(readOnly = true)
     public byte[] exportAsZip(Long compositeTemplateId) {
         Template template = findCompositeTemplateOrThrow(compositeTemplateId);
+
+        if (!"ACTIVE".equals(template.getStatus())) {
+            throw new BusinessException(
+                    ErrorCode.TEMPLATE_EXPORT_NOT_ACTIVE,
+                    "Only ACTIVE templates can be exported as ZIP",
+                    HttpStatus.BAD_REQUEST);
+        }
+
         AssemblyConfigDTO config = assemblyConfigService.deserialize(template.getAssemblyConfig());
 
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -107,24 +104,6 @@ public class CompositeImportExportService {
                     zos.closeEntry();
                 }
             }
-
-            // data-sources.json (credentials masked)
-            List<DataSource> dataSources = dataSourceRepository.findByTemplateIdOrderByPriorityDesc(compositeTemplateId);
-            List<Map<String, Object>> maskedDataSources = dataSources.stream()
-                    .map(this::toMaskedDataSourceMap)
-                    .toList();
-            byte[] dsBytes = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(maskedDataSources);
-            zos.putNextEntry(new ZipEntry("data-sources.json"));
-            zos.write(dsBytes);
-            zos.closeEntry();
-
-            // expressions.json
-            List<Expression> expressions = expressionRepository.findByTemplateIdOrderByExecutionOrderAsc(compositeTemplateId);
-            byte[] exprBytes = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(
-                    expressions.stream().map(this::toExpressionExportMap).toList());
-            zos.putNextEntry(new ZipEntry("expressions.json"));
-            zos.write(exprBytes);
-            zos.closeEntry();
 
             // test-data.json
             List<TestCase> testCases = testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(compositeTemplateId);
@@ -184,8 +163,6 @@ public class CompositeImportExportService {
 
         Map<String, byte[]> segmentFiles = new LinkedHashMap<>();
         CompositeExportConfig exportConfig = null;
-        byte[] dataSourcesBytes = null;
-        byte[] expressionsBytes = null;
         byte[] testDataBytes = null;
 
         // Parse ZIP
@@ -202,10 +179,6 @@ public class CompositeImportExportService {
                     String segmentName = name.substring("segments/".length(),
                             name.length() - ".docx".length());
                     segmentFiles.put(segmentName, content);
-                } else if ("data-sources.json".equals(name)) {
-                    dataSourcesBytes = content;
-                } else if ("expressions.json".equals(name)) {
-                    expressionsBytes = content;
                 } else if ("test-data.json".equals(name)) {
                     testDataBytes = content;
                 }
@@ -263,12 +236,6 @@ public class CompositeImportExportService {
         log.info("Imported composite template: name={}, id={}, segments={}",
                 template.getName(), template.getId(), nameToFilePath.size());
 
-        if (dataSourcesBytes != null) {
-            importDataSources(dataSourcesBytes, template.getId());
-        }
-        if (expressionsBytes != null) {
-            importExpressions(expressionsBytes, template.getId());
-        }
         if (testDataBytes != null) {
             importTestData(testDataBytes, template.getId());
         }
@@ -382,59 +349,6 @@ public class CompositeImportExportService {
         return result;
     }
 
-    // ── Export helper methods ──
-
-    Map<String, Object> toMaskedDataSourceMap(DataSource ds) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put("name", ds.getName());
-        map.put("type", ds.getType());
-        map.put("cacheEnabled", ds.isCacheEnabled());
-        map.put("cacheTtl", ds.getCacheTtl());
-        map.put("priority", ds.getPriority());
-
-        try {
-            Map<String, Object> config = objectMapper.readValue(ds.getConfigJson(),
-                    new TypeReference<Map<String, Object>>() {});
-            maskCredentialFields(config, ds.getType());
-            map.put("config", config);
-        } catch (Exception e) {
-            log.warn("Failed to parse configJson for data source {}, exporting raw", ds.getId());
-            map.put("config", ds.getConfigJson());
-        }
-        return map;
-    }
-
-    void maskCredentialFields(Map<String, Object> config, String type) {
-        if ("DATABASE".equals(type)) {
-            if (config.containsKey("password")) {
-                config.put("password", CREDENTIAL_PLACEHOLDER);
-            }
-        }
-        if (config.containsKey("apiKey")) {
-            config.put("apiKey", CREDENTIAL_PLACEHOLDER);
-        }
-        if (config.containsKey("clientSecret")) {
-            config.put("clientSecret", CREDENTIAL_PLACEHOLDER);
-        }
-        if (config.containsKey("auth") && config.get("auth") instanceof Map) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> auth = (Map<String, Object>) config.get("auth");
-            if (auth.containsKey("apiKey")) auth.put("apiKey", CREDENTIAL_PLACEHOLDER);
-            if (auth.containsKey("clientSecret")) auth.put("clientSecret", CREDENTIAL_PLACEHOLDER);
-            if (auth.containsKey("password")) auth.put("password", CREDENTIAL_PLACEHOLDER);
-        }
-    }
-
-    private Map<String, Object> toExpressionExportMap(Expression expr) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put("name", expr.getName());
-        map.put("expressionType", expr.getExpressionType());
-        map.put("expressionText", expr.getExpressionText());
-        map.put("description", expr.getDescription());
-        map.put("executionOrder", expr.getExecutionOrder());
-        return map;
-    }
-
     private Map<String, Object> toTestCaseExportMap(TestCase tc) {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("name", tc.getName());
@@ -442,51 +356,6 @@ public class CompositeImportExportService {
         map.put("expectedResultJson", tc.getExpectedResultJson());
         map.put("comparisonType", tc.getComparisonType() != null ? tc.getComparisonType().name() : null);
         return map;
-    }
-
-    // ── Import helper methods ──
-
-    private void importDataSources(byte[] bytes, Long templateId) {
-        try {
-            List<Map<String, Object>> dsList = objectMapper.readValue(bytes,
-                    new TypeReference<List<Map<String, Object>>>() {});
-            for (Map<String, Object> dsMap : dsList) {
-                DataSource ds = new DataSource();
-                ds.setTemplateId(templateId);
-                ds.setName((String) dsMap.get("name"));
-                ds.setType((String) dsMap.get("type"));
-                ds.setCacheEnabled(Boolean.TRUE.equals(dsMap.get("cacheEnabled")));
-                ds.setCacheTtl(dsMap.get("cacheTtl") != null ? ((Number) dsMap.get("cacheTtl")).intValue() : 300);
-                ds.setPriority(dsMap.get("priority") != null ? ((Number) dsMap.get("priority")).intValue() : 0);
-                Object config = dsMap.get("config");
-                ds.setConfigJson(config instanceof String ? (String) config : objectMapper.writeValueAsString(config));
-                dataSourceRepository.save(ds);
-            }
-            log.info("Imported {} data sources for template {}", dsList.size(), templateId);
-        } catch (Exception e) {
-            log.warn("Failed to import data sources: {}", e.getMessage());
-        }
-    }
-
-    private void importExpressions(byte[] bytes, Long templateId) {
-        try {
-            List<Map<String, Object>> exprList = objectMapper.readValue(bytes,
-                    new TypeReference<List<Map<String, Object>>>() {});
-            for (Map<String, Object> exprMap : exprList) {
-                Expression expr = new Expression();
-                expr.setTemplateId(templateId);
-                expr.setName((String) exprMap.get("name"));
-                expr.setExpressionType((String) exprMap.get("expressionType"));
-                expr.setExpressionText((String) exprMap.get("expressionText"));
-                expr.setDescription((String) exprMap.get("description"));
-                expr.setExecutionOrder(exprMap.get("executionOrder") != null
-                        ? ((Number) exprMap.get("executionOrder")).intValue() : 0);
-                expressionRepository.save(expr);
-            }
-            log.info("Imported {} expressions for template {}", exprList.size(), templateId);
-        } catch (Exception e) {
-            log.warn("Failed to import expressions: {}", e.getMessage());
-        }
     }
 
     private void importTestData(byte[] bytes, Long templateId) {

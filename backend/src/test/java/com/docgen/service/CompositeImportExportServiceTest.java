@@ -5,13 +5,9 @@ import com.docgen.dto.AssemblySegmentEntry;
 import com.docgen.dto.CompositeCoverageReport;
 import com.docgen.dto.TemplateDTO;
 import com.docgen.entity.ComparisonType;
-import com.docgen.entity.DataSource;
-import com.docgen.entity.Expression;
 import com.docgen.entity.Template;
 import com.docgen.entity.TestCase;
 import com.docgen.exception.BusinessException;
-import com.docgen.repository.DataSourceRepository;
-import com.docgen.repository.ExpressionRepository;
 import com.docgen.repository.TemplateRepository;
 import com.docgen.repository.TestCaseRepository;
 import com.docgen.util.TenantContext;
@@ -48,8 +44,6 @@ class CompositeImportExportServiceTest {
     @Mock private TemplateRepository templateRepository;
     @Mock private AssemblyConfigService assemblyConfigService;
     @Mock private MinioClient minioClient;
-    @Mock private DataSourceRepository dataSourceRepository;
-    @Mock private ExpressionRepository expressionRepository;
     @Mock private TestCaseRepository testCaseRepository;
     @Mock private CompositeCoverageService compositeCoverageService;
 
@@ -61,8 +55,7 @@ class CompositeImportExportServiceTest {
         service = new CompositeImportExportService(
                 templateRepository, assemblyConfigService,
                 minioClient, objectMapper,
-                dataSourceRepository, expressionRepository, testCaseRepository,
-                compositeCoverageService);
+                testCaseRepository, compositeCoverageService);
         Field bucketField = CompositeImportExportService.class.getDeclaredField("bucketName");
         bucketField.setAccessible(true);
         bucketField.set(service, "docgen-test");
@@ -93,13 +86,6 @@ class CompositeImportExportServiceTest {
 
         mockMinioDownload("segments/1/intro.docx", new byte[]{0x50, 0x4B, 0x03, 0x04});
 
-        DataSource ds = createDataSource(100L, "dbSource", "DATABASE",
-                "{\"host\":\"localhost\",\"password\":\"secret123\"}");
-        when(dataSourceRepository.findByTemplateIdOrderByPriorityDesc(1L)).thenReturn(List.of(ds));
-
-        Expression expr = createExpression(200L, "calcTotal", "JAVASCRIPT", "a+b", 1);
-        when(expressionRepository.findByTemplateIdOrderByExecutionOrderAsc(1L)).thenReturn(List.of(expr));
-
         TestCase tc = createTestCase(300L, "TC1", "{\"a\":1}", "{\"result\":2}", ComparisonType.VARIABLE_VALUE);
         when(testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(1L)).thenReturn(List.of(tc));
 
@@ -113,61 +99,8 @@ class CompositeImportExportServiceTest {
         Map<String, byte[]> entries = extractZipEntries(zipBytes);
         assertTrue(entries.containsKey("config.json"), "ZIP must contain config.json");
         assertTrue(entries.containsKey("segments/intro.docx"), "ZIP must contain segment docx");
-        assertTrue(entries.containsKey("data-sources.json"), "ZIP must contain data-sources.json");
-        assertTrue(entries.containsKey("expressions.json"), "ZIP must contain expressions.json");
         assertTrue(entries.containsKey("test-data.json"), "ZIP must contain test-data.json");
         assertTrue(entries.containsKey("coverage-report.json"), "ZIP must contain coverage-report.json");
-    }
-
-    // ── exportAsZip: credential masking for DATABASE password ──
-
-    @Test
-    void exportAsZip_masksDbPassword() throws Exception {
-        Template template = createCompositeTemplate(1L, "TestTemplate");
-        when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
-        mockEmptyAssemblyConfig();
-
-        DataSource ds = createDataSource(100L, "dbSource", "DATABASE",
-                "{\"host\":\"db.example.com\",\"port\":5432,\"password\":\"superSecret\"}");
-        when(dataSourceRepository.findByTemplateIdOrderByPriorityDesc(1L)).thenReturn(List.of(ds));
-        when(expressionRepository.findByTemplateIdOrderByExecutionOrderAsc(1L)).thenReturn(List.of());
-        when(testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(1L)).thenReturn(List.of());
-        mockCoverageSuccess();
-
-        byte[] zipBytes = service.exportAsZip(1L);
-        List<Map<String, Object>> dataSources = parseJsonFromZip(zipBytes, "data-sources.json");
-
-        assertEquals(1, dataSources.size());
-        @SuppressWarnings("unchecked")
-        Map<String, Object> config = (Map<String, Object>) dataSources.get(0).get("config");
-        assertEquals("__CREDENTIAL_PLACEHOLDER__", config.get("password"));
-        assertEquals("db.example.com", config.get("host"));
-        assertEquals(5432, config.get("port"));
-    }
-
-    // ── exportAsZip: credential masking for apiKey and clientSecret ──
-
-    @Test
-    void exportAsZip_masksApiKeyAndClientSecret() throws Exception {
-        Template template = createCompositeTemplate(1L, "TestTemplate");
-        when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
-        mockEmptyAssemblyConfig();
-
-        DataSource ds = createDataSource(101L, "apiSource", "HTTP_API",
-                "{\"url\":\"https://api.example.com\",\"apiKey\":\"key123\",\"clientSecret\":\"secret456\"}");
-        when(dataSourceRepository.findByTemplateIdOrderByPriorityDesc(1L)).thenReturn(List.of(ds));
-        when(expressionRepository.findByTemplateIdOrderByExecutionOrderAsc(1L)).thenReturn(List.of());
-        when(testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(1L)).thenReturn(List.of());
-        mockCoverageSuccess();
-
-        byte[] zipBytes = service.exportAsZip(1L);
-        List<Map<String, Object>> dataSources = parseJsonFromZip(zipBytes, "data-sources.json");
-
-        @SuppressWarnings("unchecked")
-        Map<String, Object> config = (Map<String, Object>) dataSources.get(0).get("config");
-        assertEquals("__CREDENTIAL_PLACEHOLDER__", config.get("apiKey"));
-        assertEquals("__CREDENTIAL_PLACEHOLDER__", config.get("clientSecret"));
-        assertEquals("https://api.example.com", config.get("url"));
     }
 
     // ── exportAsZip: empty arrays when no data ──
@@ -178,19 +111,12 @@ class CompositeImportExportServiceTest {
         when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
         mockEmptyAssemblyConfig();
 
-        when(dataSourceRepository.findByTemplateIdOrderByPriorityDesc(1L)).thenReturn(List.of());
-        when(expressionRepository.findByTemplateIdOrderByExecutionOrderAsc(1L)).thenReturn(List.of());
         when(testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(1L)).thenReturn(List.of());
         mockCoverageSuccess();
 
         byte[] zipBytes = service.exportAsZip(1L);
 
-        List<Map<String, Object>> ds = parseJsonFromZip(zipBytes, "data-sources.json");
-        List<Map<String, Object>> expr = parseJsonFromZip(zipBytes, "expressions.json");
         List<Map<String, Object>> td = parseJsonFromZip(zipBytes, "test-data.json");
-
-        assertTrue(ds.isEmpty());
-        assertTrue(expr.isEmpty());
         assertTrue(td.isEmpty());
     }
 
@@ -202,8 +128,6 @@ class CompositeImportExportServiceTest {
         when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
         mockEmptyAssemblyConfig();
 
-        when(dataSourceRepository.findByTemplateIdOrderByPriorityDesc(1L)).thenReturn(List.of());
-        when(expressionRepository.findByTemplateIdOrderByExecutionOrderAsc(1L)).thenReturn(List.of());
         when(testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(1L)).thenReturn(List.of());
         when(compositeCoverageService.checkCoverage(1L)).thenThrow(new RuntimeException("Coverage service down"));
 
@@ -214,31 +138,27 @@ class CompositeImportExportServiceTest {
         assertFalse(entries.containsKey("coverage-report.json"));
     }
 
-    // ── importFromZip: with extended files ──
+    // ── importFromZip: with test data ──
 
     @Test
-    void importFromZip_withExtendedFiles_createsRecords() throws Exception {
+    void importFromZip_withTestData_createsRecords() throws Exception {
         byte[] zipBytes = buildImportZip(true);
         MockMultipartFile file = new MockMultipartFile("file", "import.zip", "application/zip", zipBytes);
 
         Template saved = createCompositeTemplate(99L, "Imported");
         when(templateRepository.save(any(Template.class))).thenReturn(saved);
-        when(dataSourceRepository.save(any(DataSource.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(expressionRepository.save(any(Expression.class))).thenAnswer(inv -> inv.getArgument(0));
         when(testCaseRepository.save(any(TestCase.class))).thenAnswer(inv -> inv.getArgument(0));
 
         TemplateDTO result = service.importFromZip(file, 1L);
 
         assertNotNull(result);
-        verify(dataSourceRepository, times(1)).save(any(DataSource.class));
-        verify(expressionRepository, times(1)).save(any(Expression.class));
         verify(testCaseRepository, times(1)).save(any(TestCase.class));
     }
 
-    // ── importFromZip: old format ZIP ──
+    // ── importFromZip: minimal ZIP ──
 
     @Test
-    void importFromZip_oldFormat_noExtendedFiles_noError() throws Exception {
+    void importFromZip_minimalZip_noError() throws Exception {
         byte[] zipBytes = buildImportZip(false);
         MockMultipartFile file = new MockMultipartFile("file", "import.zip", "application/zip", zipBytes);
 
@@ -248,82 +168,7 @@ class CompositeImportExportServiceTest {
         TemplateDTO result = service.importFromZip(file, 1L);
 
         assertNotNull(result);
-        verify(dataSourceRepository, never()).save(any(DataSource.class));
-    }
-
-    // ── maskCredentialFields tests ──
-
-    @Test
-    void maskCredentialFields_databasePassword() {
-        Map<String, Object> config = new HashMap<>();
-        config.put("host", "localhost");
-        config.put("password", "mySecret");
-
-        service.maskCredentialFields(config, "DATABASE");
-
-        assertEquals("__CREDENTIAL_PLACEHOLDER__", config.get("password"));
-        assertEquals("localhost", config.get("host"));
-    }
-
-    @Test
-    void maskCredentialFields_httpApiKey() {
-        Map<String, Object> config = new HashMap<>();
-        config.put("url", "https://api.com");
-        config.put("apiKey", "key123");
-
-        service.maskCredentialFields(config, "HTTP_API");
-
-        assertEquals("__CREDENTIAL_PLACEHOLDER__", config.get("apiKey"));
-        assertEquals("https://api.com", config.get("url"));
-    }
-
-    @Test
-    void maskCredentialFields_nestedAuthObject() {
-        Map<String, Object> auth = new HashMap<>();
-        auth.put("apiKey", "nestedKey");
-        auth.put("clientSecret", "nestedSecret");
-        auth.put("password", "nestedPwd");
-
-        Map<String, Object> config = new HashMap<>();
-        config.put("url", "https://api.com");
-        config.put("auth", auth);
-
-        service.maskCredentialFields(config, "HTTP_API");
-
-        @SuppressWarnings("unchecked")
-        Map<String, Object> maskedAuth = (Map<String, Object>) config.get("auth");
-        assertEquals("__CREDENTIAL_PLACEHOLDER__", maskedAuth.get("apiKey"));
-        assertEquals("__CREDENTIAL_PLACEHOLDER__", maskedAuth.get("clientSecret"));
-        assertEquals("__CREDENTIAL_PLACEHOLDER__", maskedAuth.get("password"));
-    }
-
-    @Test
-    void maskCredentialFields_noSensitiveFields() {
-        Map<String, Object> config = new HashMap<>();
-        config.put("url", "https://safe.com");
-        config.put("timeout", 30);
-
-        service.maskCredentialFields(config, "HTTP_API");
-
-        assertEquals("https://safe.com", config.get("url"));
-        assertEquals(30, config.get("timeout"));
-    }
-
-    @Test
-    void toMaskedDataSourceMap_preservesMetadata() {
-        DataSource ds = createDataSource(1L, "testDs", "HTTP_API",
-                "{\"url\":\"https://example.com\"}");
-        ds.setCacheEnabled(true);
-        ds.setCacheTtl(600);
-        ds.setPriority(5);
-
-        Map<String, Object> result = service.toMaskedDataSourceMap(ds);
-
-        assertEquals("testDs", result.get("name"));
-        assertEquals("HTTP_API", result.get("type"));
-        assertEquals(true, result.get("cacheEnabled"));
-        assertEquals(600, result.get("cacheTtl"));
-        assertEquals(5, result.get("priority"));
+        verify(testCaseRepository, never()).save(any(TestCase.class));
     }
 
     // ── Helper methods ──
@@ -342,31 +187,6 @@ class CompositeImportExportServiceTest {
         template.setCreatedAt(Instant.now());
         template.setUpdatedAt(Instant.now());
         return template;
-    }
-
-    private DataSource createDataSource(Long id, String name, String type, String configJson) {
-        DataSource ds = new DataSource();
-        ds.setId(id);
-        ds.setTemplateId(1L);
-        ds.setName(name);
-        ds.setType(type);
-        ds.setConfigJson(configJson);
-        ds.setCacheEnabled(false);
-        ds.setCacheTtl(300);
-        ds.setPriority(0);
-        return ds;
-    }
-
-    private Expression createExpression(Long id, String name, String type, String text, int order) {
-        Expression expr = new Expression();
-        expr.setId(id);
-        expr.setTemplateId(1L);
-        expr.setName(name);
-        expr.setExpressionType(type);
-        expr.setExpressionText(text);
-        expr.setDescription("Test expression");
-        expr.setExecutionOrder(order);
-        return expr;
     }
 
     private TestCase createTestCase(Long id, String name, String testData, String expected, ComparisonType type) {
@@ -421,7 +241,7 @@ class CompositeImportExportServiceTest {
         return objectMapper.readValue(content, new TypeReference<List<Map<String, Object>>>() {});
     }
 
-    private byte[] buildImportZip(boolean includeExtendedFiles) throws Exception {
+    private byte[] buildImportZip(boolean includeTestData) throws Exception {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (ZipOutputStream zos = new ZipOutputStream(baos)) {
             CompositeImportExportService.CompositeExportConfig exportConfig =
@@ -444,22 +264,7 @@ class CompositeImportExportServiceTest {
             zos.write(new byte[]{0x50, 0x4B, 0x03, 0x04});
             zos.closeEntry();
 
-            if (includeExtendedFiles) {
-                List<Map<String, Object>> dsList = List.of(Map.of(
-                        "name", "testDs", "type", "HTTP_API",
-                        "cacheEnabled", false, "cacheTtl", 300, "priority", 0,
-                        "config", Map.of("url", "https://api.com")));
-                zos.putNextEntry(new ZipEntry("data-sources.json"));
-                zos.write(objectMapper.writeValueAsBytes(dsList));
-                zos.closeEntry();
-
-                List<Map<String, Object>> exprList = List.of(Map.of(
-                        "name", "calc", "expressionType", "JAVASCRIPT",
-                        "expressionText", "a+b", "description", "sum", "executionOrder", 1));
-                zos.putNextEntry(new ZipEntry("expressions.json"));
-                zos.write(objectMapper.writeValueAsBytes(exprList));
-                zos.closeEntry();
-
+            if (includeTestData) {
                 List<Map<String, Object>> testList = List.of(Map.of(
                         "name", "TC1", "testDataJson", "{\"a\":1}",
                         "expectedResultJson", "{\"r\":2}", "comparisonType", "VARIABLE_VALUE"));

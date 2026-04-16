@@ -15,7 +15,6 @@ import java.time.Duration;
 public class Resilience4jConfig {
 
     public static final String DOCXTEMPLATER_CB = "docxtemplaterService";
-    public static final String DATASOURCE_CB = "dataSourceService";
 
     @Bean
     public CircuitBreakerRegistry circuitBreakerRegistry() {
@@ -34,10 +33,5 @@ public class Resilience4jConfig {
     @Bean
     public CircuitBreaker docxtemplaterCircuitBreaker(CircuitBreakerRegistry registry) {
         return registry.circuitBreaker(DOCXTEMPLATER_CB);
-    }
-
-    @Bean
-    public CircuitBreaker dataSourceCircuitBreaker(CircuitBreakerRegistry registry) {
-        return registry.circuitBreaker(DATASOURCE_CB);
     }
 }

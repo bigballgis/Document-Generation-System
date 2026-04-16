@@ -5,22 +5,37 @@ import java.util.List;
 
 /**
  * DTO representing the result of a template coverage check.
- * Contains forward coverage (template tags → data bindings) and
- * reverse coverage (data source fields → template usage).
+ * Three-dimensional coverage: Branch / Loop / Parameter.
  */
 public class CoverageReport {
 
     private Long templateId;
     private String templateName;
-    private double coveragePercentage;
-    private int totalTags;
-    private int boundTags;
-    private int unboundTags;
-    private List<String> unboundTagNames;
-    private List<String> unusedDataSourceFields;
+
+    // Three-dimensional coverage
+    private double branchCoverage;
+    private double loopCoverage;
+    private double parameterCoverage;
+    private double overallCoverage;
+
+    // Statistics
+    private int totalBranches;
+    private int coveredBranches;
+    private int totalLoopScenarios;
+    private int coveredLoopScenarios;
+    private int totalParameters;
+    private int coveredParameters;
+
+    // Uncovered items
+    private List<UncoveredItem> uncoveredItems;
+
+    // Threshold
     private boolean belowThreshold;
     private double threshold;
     private Instant checkedAt;
+
+    // Warnings
+    private List<String> warnings;
 
     public CoverageReport() {}
 
@@ -32,23 +47,38 @@ public class CoverageReport {
     public String getTemplateName() { return templateName; }
     public void setTemplateName(String templateName) { this.templateName = templateName; }
 
-    public double getCoveragePercentage() { return coveragePercentage; }
-    public void setCoveragePercentage(double coveragePercentage) { this.coveragePercentage = coveragePercentage; }
+    public double getBranchCoverage() { return branchCoverage; }
+    public void setBranchCoverage(double branchCoverage) { this.branchCoverage = branchCoverage; }
 
-    public int getTotalTags() { return totalTags; }
-    public void setTotalTags(int totalTags) { this.totalTags = totalTags; }
+    public double getLoopCoverage() { return loopCoverage; }
+    public void setLoopCoverage(double loopCoverage) { this.loopCoverage = loopCoverage; }
 
-    public int getBoundTags() { return boundTags; }
-    public void setBoundTags(int boundTags) { this.boundTags = boundTags; }
+    public double getParameterCoverage() { return parameterCoverage; }
+    public void setParameterCoverage(double parameterCoverage) { this.parameterCoverage = parameterCoverage; }
 
-    public int getUnboundTags() { return unboundTags; }
-    public void setUnboundTags(int unboundTags) { this.unboundTags = unboundTags; }
+    public double getOverallCoverage() { return overallCoverage; }
+    public void setOverallCoverage(double overallCoverage) { this.overallCoverage = overallCoverage; }
 
-    public List<String> getUnboundTagNames() { return unboundTagNames; }
-    public void setUnboundTagNames(List<String> unboundTagNames) { this.unboundTagNames = unboundTagNames; }
+    public int getTotalBranches() { return totalBranches; }
+    public void setTotalBranches(int totalBranches) { this.totalBranches = totalBranches; }
 
-    public List<String> getUnusedDataSourceFields() { return unusedDataSourceFields; }
-    public void setUnusedDataSourceFields(List<String> unusedDataSourceFields) { this.unusedDataSourceFields = unusedDataSourceFields; }
+    public int getCoveredBranches() { return coveredBranches; }
+    public void setCoveredBranches(int coveredBranches) { this.coveredBranches = coveredBranches; }
+
+    public int getTotalLoopScenarios() { return totalLoopScenarios; }
+    public void setTotalLoopScenarios(int totalLoopScenarios) { this.totalLoopScenarios = totalLoopScenarios; }
+
+    public int getCoveredLoopScenarios() { return coveredLoopScenarios; }
+    public void setCoveredLoopScenarios(int coveredLoopScenarios) { this.coveredLoopScenarios = coveredLoopScenarios; }
+
+    public int getTotalParameters() { return totalParameters; }
+    public void setTotalParameters(int totalParameters) { this.totalParameters = totalParameters; }
+
+    public int getCoveredParameters() { return coveredParameters; }
+    public void setCoveredParameters(int coveredParameters) { this.coveredParameters = coveredParameters; }
+
+    public List<UncoveredItem> getUncoveredItems() { return uncoveredItems; }
+    public void setUncoveredItems(List<UncoveredItem> uncoveredItems) { this.uncoveredItems = uncoveredItems; }
 
     public boolean isBelowThreshold() { return belowThreshold; }
     public void setBelowThreshold(boolean belowThreshold) { this.belowThreshold = belowThreshold; }
@@ -58,4 +88,7 @@ public class CoverageReport {
 
     public Instant getCheckedAt() { return checkedAt; }
     public void setCheckedAt(Instant checkedAt) { this.checkedAt = checkedAt; }
+
+    public List<String> getWarnings() { return warnings; }
+    public void setWarnings(List<String> warnings) { this.warnings = warnings; }
 }

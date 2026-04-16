@@ -49,9 +49,15 @@ public class AssemblyConfigService {
      * Deserialize a JSON string into an {@link AssemblyConfigDTO}.
      *
      * @param json the JSON string
-     * @return the deserialized assembly configuration DTO
+     * @return the deserialized assembly configuration DTO, or an empty config if json is null/blank
      */
     public AssemblyConfigDTO deserialize(String json) {
+        if (json == null || json.isBlank()) {
+            log.debug("Assembly config JSON is null or blank, returning empty config");
+            AssemblyConfigDTO empty = new AssemblyConfigDTO();
+            empty.setSegments(List.of());
+            return empty;
+        }
         try {
             return objectMapper.readValue(json, AssemblyConfigDTO.class);
         } catch (JsonProcessingException e) {

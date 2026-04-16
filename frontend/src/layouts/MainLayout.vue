@@ -147,7 +147,6 @@ const canAccessAudit = computed(() => {
 const navTitleMap: Record<string, string> = {
   '/dashboard': 'nav.dashboard',
   '/templates': 'nav.templates',
-  '/data-sources': 'nav.dataSources',
   '/market': 'nav.market',
   '/admin': 'nav.admin',
   '/audit': 'nav.audit',

@@ -124,7 +124,6 @@
   "nav": {
     "dashboard": "Dashboard",
     "templates": "Templates",
-    "dataSources": "Data Sources",
     "market": "Template Market",
     "admin": "Administration",
     "audit": "Audit Logs",
@@ -234,87 +233,6 @@
     "name": "Tag Name",
     "addTag": "Add Tag",
     "removeTag": "Remove Tag"
-  },
-  "dataSource": {
-    "title": "Data Source Configuration",
-    "list": "Data Sources",
-    "create": "Create Data Source",
-    "edit": "Edit Data Source",
-    "name": "Data Source Name",
-    "type": "Type",
-    "typeHttpApi": "HTTP API",
-    "typeDatabase": "Database",
-    "typeInternal": "Internal System",
-    "testConnection": "Test Connection",
-    "testSuccess": "Connection test successful",
-    "testFailed": "Connection test failed",
-    "url": "URL",
-    "method": "HTTP Method",
-    "headers": "Request Headers",
-    "params": "Request Parameters",
-    "authType": "Authentication Type",
-    "authNone": "None",
-    "authApiKey": "API Key",
-    "authOAuth": "OAuth",
-    "authBasic": "Basic Auth",
-    "timeout": "Timeout (ms)",
-    "retryEnabled": "Enable Retry",
-    "retryCount": "Retry Count",
-    "retryInterval": "Retry Interval (ms)",
-    "retryBackoff": "Exponential Backoff",
-    "dbType": "Database Type",
-    "dbHost": "Host",
-    "dbPort": "Port",
-    "dbName": "Database Name",
-    "dbUsername": "Username",
-    "dbPassword": "Password",
-    "sqlQuery": "SQL Query",
-    "serviceName": "Service Name",
-    "serviceUrl": "Service URL",
-    "sensitiveHidden": "Sensitive information is hidden",
-    "cacheEnabled": "Enable Cache",
-    "cacheTtl": "Cache TTL (seconds)",
-    "clearCache": "Clear Cache",
-    "clearCacheSuccess": "Cache cleared successfully",
-    "priority": "Priority",
-    "pipeline": "Data Pipeline",
-    "pipelineConfig": "Pipeline Configuration",
-    "pipelineFetch": "Fetch",
-    "pipelineTransform": "Transform",
-    "pipelineCompute": "Compute",
-    "pipelineValidate": "Validate",
-    "circularDependency": "Circular dependency detected",
-    "dependsOn": "Depends On",
-    "parameterized": "Parameterized Query",
-    "paramName": "Parameter Name",
-    "paramDefault": "Default Value",
-    "paramRequired": "Required",
-    "paramOptional": "Optional",
-    "responseTransform": "Response Transform",
-    "jsonPath": "JSONPath Expression",
-    "xPath": "XPath Expression",
-    "flatten": "Flatten",
-    "groupBy": "Group By",
-    "sortBy": "Sort By"
-  },
-  "expression": {
-    "title": "Expressions",
-    "create": "Create Expression",
-    "edit": "Edit Expression",
-    "name": "Expression Name",
-    "type": "Expression Type",
-    "typeJavaScript": "JavaScript",
-    "typeExcel": "Excel Formula",
-    "content": "Expression Content",
-    "validate": "Validate",
-    "validationSuccess": "Expression is valid",
-    "validationFailed": "Expression validation failed",
-    "result": "Result",
-    "testExpression": "Test Expression",
-    "executionOrder": "Execution Order",
-    "description": "Description",
-    "confirmDelete": "Are you sure you want to delete expression \"{name}\"?",
-    "errorPosition": "Error at position {pos}"
   },
   "document": {
     "title": "Documents",
@@ -444,7 +362,6 @@
     "totalDocuments": "Total Documents",
     "apiCallTrend": "API Call Trend",
     "generateSuccessRate": "Generation Success Rate",
-    "dataSourceHealth": "Data Source Health",
     "systemResources": "System Resources",
     "jvmMemory": "JVM Memory",
     "dbConnections": "DB Connections",
@@ -769,37 +686,8 @@
     "fileSize": "File size exceeds the limit of {size}"
   },
   "workspace": {
-    "step1": "Create Template",
-    "step2": "Data Structure",
-    "step3": "Arrange Segments",
-    "step4": "Edit Content",
-    "step5": "Test & Verify",
-    "step6": "Review & Publish",
-    "step7": "Export",
-    "step8": "Version Management",
-    "tabDataStructure": "Data Structure",
     "tabSegments": "Segments",
-    "tabEditor": "Editor",
-    "tabTesting": "Testing",
-    "tabReviewPublish": "Review & Publish",
-    "tabExportImport": "Export/Import",
     "tabSettings": "Settings",
-    "placeholder": {
-      "dataStructure": "Data structure management coming in Phase 2",
-      "dataStructureDesc": "Manage data sources and expressions for your template",
-      "segments": "Segment arrangement coming in Phase 2",
-      "segmentsDesc": "Create, arrange, and configure document segments",
-      "editor": "Visual editor coming in Phase 2",
-      "editorDesc": "Edit segment content with OnlyOffice integration",
-      "testing": "Testing coming in Phase 3",
-      "testingDesc": "Create test data, run tests, and check variable coverage",
-      "reviewPublish": "Review & publish coming in Phase 3",
-      "reviewPublishDesc": "Submit for review, auto-activate, and manage API endpoints",
-      "exportImport": "Export/import coming in Phase 4",
-      "exportImportDesc": "Export complete template packages for cross-environment deployment",
-      "settings": "Settings coming in Phase 4",
-      "settingsDesc": "Version history, webhooks, watermarks, scheduled tasks, and permissions"
-    },
     "wizard": {
       "title": "Create New Template",
       "step1Title": "Basic Info",
@@ -825,20 +713,53 @@
     "criticalError": "Failed to load workspace",
     "retry": "Retry",
     "warningBanner": "Failed to load section",
+    "stage": {
+      "design": "Design",
+      "test": "Test",
+      "approval": "Approval",
+      "publish": "Publish",
+      "notAvailable": "Complete previous stages to unlock",
+      "readonly": "Read-only mode"
+    },
     "loading": "Loading workspace...",
     "workspaceAction": "Workspace",
     "draftCreated": "Draft version created successfully",
-    "dataSource": {
-      "title": "Data Sources",
-      "add": "Add Data Source",
-      "empty": "No data sources configured yet.",
-      "testSuccess": "Connection test successful",
-      "testFailed": "Connection test failed"
+    "coverageBar": {
+      "branch": "Branch Coverage",
+      "loop": "Loop Coverage",
+      "param": "Parameter Coverage"
     },
-    "expression": {
-      "title": "Expressions",
-      "add": "Add Expression",
-      "empty": "No expressions configured yet."
+    "approval": {
+      "timeline": {
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "conditional": "Conditionally Approved",
+        "pending": "Pending"
+      },
+      "submitReview": "Submit for Review",
+      "returnToEdit": "Return to Edit"
+    },
+    "publish": {
+      "summary": {
+        "version": "Version",
+        "params": "Parameters",
+        "coverage": "Coverage",
+        "reviewStatus": "Review Status"
+      },
+      "activate": "Activate",
+      "exportZip": "Export ZIP",
+      "newVersion": "Edit as New Version"
+    },
+    "testForm": {
+      "viewJson": "View JSON",
+      "viewForm": "Form Mode"
+    },
+    "api": {
+      "title": "API Management",
+      "versions": "Version List",
+      "endpoint": "Endpoint Info",
+      "keys": "API Key Management",
+      "stats": "Call Statistics"
     },
     "segment": {
       "title": "Segment Arrangement",
@@ -965,6 +886,7 @@
       "importPackage": "Import Package",
       "importConfig": "Import Config Only",
       "draftExportDisabled": "Template must be in PENDING_REVIEW, REVIEWED, or ACTIVE status to export a complete package",
+      "exportNotActive": "Only ACTIVE templates can be exported as ZIP",
       "invalidPackage": "Invalid package format",
       "importSuccess": "Import Successful",
       "goToWorkspace": "Go to Workspace",
@@ -997,6 +919,170 @@
       "granteeType": "Grantee Type",
       "permissionType": "Permission Type",
       "selectGrantee": "Please select a grantee"
+    },
+    "design": {
+      "parameters": "Parameters",
+      "segmentArrangement": "Segment Arrangement",
+      "importZip": "Import ZIP",
+      "settings": "Settings",
+      "selectSegment": "Select Segment",
+      "noSegments": "No segments to edit",
+      "editorArea": "Editor Area"
+    },
+    "coverageBar": {
+      "branch": "Branch Coverage",
+      "loop": "Loop Coverage",
+      "param": "Parameter Coverage",
+      "allCovered": "All Covered"
+    },
+    "approval": {
+      "timeline": {
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "conditional": "Conditional",
+        "pending": "Pending"
+      },
+      "submitReview": "Submit for Review",
+      "returnToEdit": "Return to Edit",
+      "noReviews": "No review records",
+      "previewTitle": "Template Snapshot Preview",
+      "allApproved": "All reviews approved"
+    },
+    "publish": {
+      "summary": {
+        "version": "Version",
+        "params": "Parameters",
+        "coverage": "Coverage",
+        "reviewStatus": "Review Status"
+      },
+      "activate": "Activate",
+      "activateSuccess": "Template activated successfully",
+      "activateFailed": "Template activation failed",
+      "exportZip": "Export ZIP",
+      "newVersion": "Edit as New Version",
+      "summaryTitle": "Publish Summary"
+    },
+    "testForm": {
+      "viewJson": "View JSON",
+      "viewForm": "Form Mode",
+      "addItem": "Add Item",
+      "removeItem": "Remove Item",
+      "requiredField": "This field is required",
+      "previewFailed": "Preview failed",
+      "retryPreview": "Retry Preview",
+      "guidance": "Smart Guidance",
+      "noUncovered": "All branches covered",
+      "setValueHint": "Set {param} to {value} to trigger this branch"
+    },
+    "api": {
+      "title": "API Management",
+      "backToList": "Back to Template List",
+      "versions": "Version List",
+      "endpoint": "Endpoint Info",
+      "keys": "API Key Management",
+      "stats": "Call Statistics",
+      "noActiveVersions": "No ACTIVE versions",
+      "apiButton": "API"
+    }
+  },
+  "parameter": {
+    "addParameter": "Add Parameter",
+    "scanTemplate": "Scan Template",
+    "jsonImport": "Import from JSON",
+    "expandAll": "Expand All",
+    "collapseAll": "Collapse All",
+    "selectAll": "Select All",
+    "batchDelete": "Batch Delete",
+    "batchSetRequired": "Batch Set Required",
+    "batchDeleteConfirm": "Are you sure you want to delete {count} selected parameters (including descendants)?",
+    "empty": "No parameters defined yet.",
+    "name": "Name",
+    "parameterType": "Type",
+    "dataType": "Data Type",
+    "required": "Required",
+    "defaultValue": "Default Value",
+    "description": "Description",
+    "validationRules": "Validation Rules",
+    "ruleCount": "{count} rules",
+    "addChild": "Add Child",
+    "changeTypeWarning": "Changing data type from OBJECT/ARRAY to a leaf type will delete all child parameters. Continue?",
+    "contextMenu": {
+      "addSibling": "Add Sibling",
+      "addChild": "Add Child",
+      "copy": "Copy Parameter",
+      "paste": "Paste Parameter",
+      "duplicate": "Duplicate Parameter",
+      "delete": "Delete Parameter"
+    },
+    "scanDialog": {
+      "title": "Template Placeholder Scan",
+      "matched": "Matched",
+      "unmatched": "Unmatched Placeholders",
+      "unused": "Unused Parameters",
+      "autoCreate": "Auto Create Missing"
+    },
+    "preview": {
+      "jsonSchema": "JSON Schema",
+      "sampleBody": "Sample Request Body",
+      "placeholderMatch": "Placeholder Match",
+      "placeholderMatchHint": "Upload a template file to see placeholder matching status.",
+      "createMissing": "Create Missing Parameters"
+    },
+    "jsonImport": {
+      "title": "Import Parameters from JSON",
+      "placeholder": "Paste JSON data...",
+      "import": "Import",
+      "emptyWarning": "JSON data is empty, cannot generate parameters",
+      "depthWarning": "JSON nesting exceeds 5 levels, deep data has been flattened to STRING",
+      "parseError": "JSON parse error"
+    },
+    "quickAdd": {
+      "placeholder": "Type parameter name, press Enter to add...",
+      "duplicateError": "Parameter name already exists",
+      "invalidNameError": "Invalid parameter name format"
+    },
+    "deleteConfirmDetail": {
+      "withChildren": "Delete parameter {name} and its {count} child parameters?"
+    },
+    "paste": {
+      "depthExceeded": "Pasting would exceed maximum nesting depth (5 levels)"
+    },
+    "coverage": {
+      "branch": "Branch",
+      "loop": "Loop",
+      "parameter": "Parameter",
+      "overall": "Overall"
+    },
+    "validation": {
+      "title": "Validation Rules",
+      "notNull": "Not Null",
+      "notBlank": "Not Blank",
+      "minLength": "Min Length",
+      "maxLength": "Max Length",
+      "min": "Min Value",
+      "max": "Max Value",
+      "pattern": "Pattern (Regex)",
+      "enumValues": "Enum Values",
+      "minItems": "Min Items",
+      "maxItems": "Max Items",
+      "customMessage": "Custom Error Message",
+      "save": "Save Rules"
+    },
+    "expression": {
+      "title": "Expression Editor",
+      "visualMode": "Visual Mode",
+      "advancedMode": "Advanced Mode",
+      "test": "Test",
+      "selectParameter": "Select Parameter",
+      "selectOperator": "Select Operator",
+      "addStep": "Add Step",
+      "preview": "Generated Expression",
+      "testResult": "Test Result",
+      "arithmetic": "Arithmetic",
+      "comparison": "Comparison",
+      "string": "String",
+      "date": "Date",
+      "logical": "Logical"
     }
   }
 }

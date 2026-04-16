@@ -6,18 +6,17 @@ description: Vue 3 前端开发模式，包括页面组件模式、表格列表�
 
 # 前端开发模式
 
-## 页面组件结构
+## 页面结构
 
 ```
 views/{module}/Index.vue    — 列表页
 views/{module}/Detail.vue   — 详情页
-views/{module}/Editor.vue   — 编辑器页
 views/{module}/components/  — 子组件
 ```
 
-统一结构: 页面头部(标题+操作) → 筛选区(el-form inline) → 数据表格(el-table+v-loading) → 分页(el-pagination) → 对话框(独立子组件)
+页面布局: 头部(标题+操作) → 筛选区(el-form inline) → 表格(el-table+v-loading) → 分页(el-pagination) → 对话框(子组件)
 
-## 表格列表状态模式
+## 表格列表状态
 
 ```typescript
 const loading = ref(false)
@@ -37,13 +36,10 @@ function handleSearch() { query.page = 1; fetchData() }
 onMounted(() => fetchData())
 ```
 
-## 表单对话框模式
+## 表单对话框
 
-```vue
-<FormDialog v-model:visible="dialogVisible" :data="editingItem" @saved="onSaved" />
-```
-
-- `data: null` = 创建模式，非 null = 编辑模式
+- `<FormDialog v-model:visible="dialogVisible" :data="editingItem" @saved="onSaved" />`
+- `data: null` = 创建，非 null = 编辑
 - 提交后 `emit('saved')` + `emit('update:visible', false)`
 
 ## 危险操作
@@ -52,13 +48,8 @@ onMounted(() => fetchData())
 
 ## Composable
 
-- 文件: `composables/use{Feature}.ts`，函数: `use{Feature}`
-- 现有: `useLocale()` (locale, t, setLocale)
-
-## OnlyOffice
-
-- `<OnlyOfficeEditor :document-url :document-key :callback-url :view-only />`
-- 模板变量插入: `TemplateTagToolbar` (insert-variable/insert-loop/insert-condition)
+- 文件: `composables/use{Feature}.ts`
+- 现有: useLocale, useAssemblyConfig, useParameterUtils, useSegmentDrag, useTaskPolling, useWorkflowSteps
 
 ## CSS
 

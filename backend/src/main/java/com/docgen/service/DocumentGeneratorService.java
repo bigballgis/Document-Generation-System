@@ -2,12 +2,9 @@ package com.docgen.service;
 
 import com.docgen.dto.GenerateDocumentRequest;
 import com.docgen.dto.GenerateDocumentResponse;
-import com.docgen.entity.Expression;
-import com.docgen.entity.ExpressionType;
 import com.docgen.entity.Template;
 import com.docgen.exception.BusinessException;
 import com.docgen.exception.ErrorCode;
-import com.docgen.repository.ExpressionRepository;
 import com.docgen.repository.TemplateRepository;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import org.slf4j.Logger;
@@ -22,9 +19,10 @@ import java.util.*;
 
 /**
  * Core service that orchestrates the complete document generation flow:
- * receive request → execute data pipeline → render via Docxtemplater → optional PDF conversion → store.
+ * receive request → validate parameters → evaluate DERIVED parameters → render via Docxtemplater → optional PDF conversion → store.
  * <p>
- * Circuit breakers protect calls to the Docxtemplater service and external data sources.
+ * Three-step pipeline: validate parameters → evaluate DERIVED parameters → render template.
+ * Circuit breakers protect calls to the Docxtemplater service.
  */
 @Service
 public class DocumentGeneratorService {
@@ -32,13 +30,10 @@ public class DocumentGeneratorService {
     private static final Logger log = LoggerFactory.getLogger(DocumentGeneratorService.class);
 
     private final TemplateRepository templateRepository;
-    private final ExpressionRepository expressionRepository;
-    private final DataAggregationService dataAggregationService;
-    private final ExpressionEngine expressionEngine;
+    private final ParameterValidationService parameterValidationService;
     private final RestTemplate restTemplate;
     private final DocumentStorageService documentStorageService;
     private final CircuitBreaker docxtemplaterCb;
-    private final CircuitBreaker dataSourceCb;
     private final CompositeGeneratorService compositeGeneratorService;
 
     @Value("${docxtemplater.service-url:http://localhost:3000}")
@@ -46,22 +41,16 @@ public class DocumentGeneratorService {
 
     public DocumentGeneratorService(
             TemplateRepository templateRepository,
-            ExpressionRepository expressionRepository,
-            DataAggregationService dataAggregationService,
-            ExpressionEngine expressionEngine,
+            ParameterValidationService parameterValidationService,
             RestTemplate restTemplate,
             DocumentStorageService documentStorageService,
             CircuitBreaker docxtemplaterCircuitBreaker,
-            CircuitBreaker dataSourceCircuitBreaker,
             CompositeGeneratorService compositeGeneratorService) {
         this.templateRepository = templateRepository;
-        this.expressionRepository = expressionRepository;
-        this.dataAggregationService = dataAggregationService;
-        this.expressionEngine = expressionEngine;
+        this.parameterValidationService = parameterValidationService;
         this.restTemplate = restTemplate;
         this.documentStorageService = documentStorageService;
         this.docxtemplaterCb = docxtemplaterCircuitBreaker;
-        this.dataSourceCb = dataSourceCircuitBreaker;
         this.compositeGeneratorService = compositeGeneratorService;
     }
 
@@ -106,41 +95,20 @@ public class DocumentGeneratorService {
         }
     }
 
+    /**
+     * Three-step pipeline: validate parameters → evaluate DERIVED parameters → return data context.
+     * Uses ParameterValidationService to handle validation, defaults, and DERIVED evaluation.
+     */
     private Map<String, Object> executePipeline(Template template, Map<String, Object> params) {
         try {
-            Map<String, Object> data = dataSourceCb.executeSupplier(
-                    () -> dataAggregationService.aggregateData(template.getId(), params));
-
-            Map<String, Object> context = new HashMap<>(data);
-            context.putAll(params);
-
-            Map<String, Object> expressionResults = evaluateExpressions(template.getId(), context);
-            context.putAll(expressionResults);
-
-            return context;
+            return parameterValidationService.validateAndBuildContext(template.getId(), params);
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Data pipeline execution failed for template {}: {}", template.getId(), e.getMessage());
+            log.error("Parameter validation pipeline failed for template {}: {}", template.getId(), e.getMessage());
             throw new BusinessException(ErrorCode.GENERATE_FAILED,
-                    "数据管道执行失败: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "参数验证管道执行失败: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
-    }
-
-    private Map<String, Object> evaluateExpressions(Long templateId, Map<String, Object> context) {
-        List<Expression> exprEntities = expressionRepository.findByTemplateIdOrderByExecutionOrderAsc(templateId);
-        if (exprEntities.isEmpty()) {
-            return Collections.emptyMap();
-        }
-
-        List<ExpressionEngine.ExpressionConfig> configs = exprEntities.stream()
-                .map(e -> new ExpressionEngine.ExpressionConfig(
-                        e.getName(),
-                        e.getExpressionText(),
-                        ExpressionType.valueOf(e.getExpressionType())))
-                .toList();
-
-        return expressionEngine.evaluateAll(configs, context);
     }
 
     private byte[] renderDocument(String templateFilePath, Map<String, Object> data) {

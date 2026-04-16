@@ -130,9 +130,6 @@
         <el-tab-pane :label="$t('watermark.title') + ' & ' + $t('security.title')" name="watermark">
           <WatermarkSecurityConfig :template-id="template.id" />
         </el-tab-pane>
-        <el-tab-pane :label="$t('expression.title')" name="expressions">
-          <ExpressionPanel :template-id="template.id" />
-        </el-tab-pane>
         <el-tab-pane :label="$t('webhook.title')" name="webhooks">
           <WebhookPanel :template-id="template.id" />
         </el-tab-pane>
@@ -291,7 +288,6 @@ import TestCaseManagement from './components/TestCaseManagement.vue'
 import ScheduledTaskManagement from './components/ScheduledTaskManagement.vue'
 import WatermarkSecurityConfig from './components/WatermarkSecurityConfig.vue'
 import GenerateDialog from './components/GenerateDialog.vue'
-import ExpressionPanel from './components/ExpressionPanel.vue'
 import WebhookPanel from './components/WebhookPanel.vue'
 import {
   submitForReview, getTemplateReviews, conditionalApproveReview, getReviewEditorUrl,

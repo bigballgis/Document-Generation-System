@@ -1,0 +1,217 @@
+# Implementation Plan: Parameter Settings UX — Frontend UX
+
+## Overview
+
+前端全部 UX 增强：移除 ParameterTemplateMenu、新增 Composables（useParameterNaming、useJsonImport、useUndoRedo、useKeyboardNav）、新增组件（QuickAddBar、JsonImportDialog）、重构 ParameterTreeTable（内联编辑、拖拽排序、校验规则集成、衍生表达式集成）、增强 ParameterPreviewPanel（自动同步）、完善右键菜单复制粘贴、扩展 i18n 和 API 层。
+
+## Tasks
+
+- [x] 1. 前端 API 层和类型扩展
+  - [x] 1.1 在 `frontend/src/types/parameter.ts` 中新增 `BatchUpdateItem` 接口
+    - 字段: id, version, name?, parameterType?, dataType?, required?, defaultValue?, description?, sortOrder?, expressionText?, expressionType?, validationRules?
+    - _Requirements: 9.2_
+  - [x] 1.2 在 `frontend/src/api/parameters.ts` 中新增三个 API 函数
+    - `batchDeleteParameters(templateId, ids)` → POST `/templates/{templateId}/parameters/batch-delete`
+    - `batchUpdateParameters(templateId, items)` → POST `/templates/{templateId}/parameters/batch-update`
+    - `jsonImportParameters(templateId, jsonData, parentId?)` → POST `/templates/{templateId}/parameters/json-import`
+    - _Requirements: 9.1, 9.2, 3.1_
+  - [x] 1.3 安装 `sortablejs` 和 `@types/sortablejs` 依赖
+    - `npm install sortablejs` + `npm install -D @types/sortablejs`
+    - _Requirements: 4.1_
+
+- [x] 2. 实现核心 Composables
+  - [x] 2.1 创建 `frontend/src/composables/useParameterNaming.ts`
+    - 实现 `generateName(parentId, parentDataType, siblings)` 函数
+    - 命名规则: root→`param_N`, OBJECT 子级→`field_N`, ARRAY 子级→`item_N`
+    - 自动递增 N 避免与已有 siblings 重名
+    - _Requirements: 2.1, 2.2, 2.3, 2.4_
+  - [x] 2.2 编写属性测试：智能命名唯一性 (Property 1)
+    - **Property 1: 智能命名唯一性**
+    - **Validates: Requirements 2.1, 2.2, 2.3, 2.4**
+    - 路径: `frontend/src/__tests__/parameterNaming.property.test.ts`
+    - 生成随机已有名称集合和 scope，验证生成名称唯一且符合模式
+  - [x] 2.3 创建 `frontend/src/composables/useJsonImport.ts`
+    - 实现 `validateJson(jsonStr)` 和 `parseAndInfer(jsonStr)` 函数
+    - 类型推断: string→STRING, number→NUMBER, boolean→BOOLEAN, null→STRING(required=false), object→OBJECT, array→ARRAY
+    - 数组含对象元素时取所有元素 keys 并集创建子参数
+    - 数组仅含原始值时创建 ARRAY 无子参数，description 注明元素类型
+    - 嵌套深度超过 5 层时扁平化为 STRING 并附带 warning
+    - 空 JSON `{}` / `[]` 返回 warning
+    - _Requirements: 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9_
+  - [x] 2.4 编写属性测试：JSON 导入类型推断正确性 (Property 3)
+    - **Property 3: JSON 导入类型推断正确性**
+    - **Validates: Requirements 3.3**
+    - 路径: `frontend/src/__tests__/jsonImportType.property.test.ts`
+    - 生成随机 JSON 值，验证类型推断正确
+  - [x] 2.5 编写属性测试：JSON 导入结构正确性 (Property 2)
+    - **Property 2: JSON 导入结构正确性**
+    - **Validates: Requirements 3.2, 3.4, 3.5, 3.7**
+    - 路径: `frontend/src/__tests__/jsonImportStructure.property.test.ts`
+    - 生成随机 JSON 对象，验证参数树结构正确
+  - [x] 2.6 创建 `frontend/src/composables/useUndoRedo.ts`
+    - 实现 push/undo/redo/clear/canUndo/canRedo
+    - 操作类型: add, edit, delete, reorder, batchDelete
+    - 栈容量上限 50，超出丢弃最旧操作
+    - 执行新操作时清空 redo 栈
+    - undo/redo 调用对应的逆操作 API（add→delete, edit→update with oldValue, delete→recreate, reorder→restore old sortOrder）
+    - _Requirements: 8.2, 8.3, 8.6_
+  - [x] 2.7 编写属性测试：Undo/Redo 栈不变量 (Property 7)
+    - **Property 7: Undo/Redo 栈不变量**
+    - **Validates: Requirements 8.2, 8.3, 8.6**
+    - 路径: `frontend/src/__tests__/undoRedo.property.test.ts`
+    - 生成随机操作序列，验证栈状态正确（容量限制、redo 清空、undo/redo 对称性）
+  - [x] 2.8 创建 `frontend/src/composables/useKeyboardNav.ts`
+    - 实现 `handleKeyDown(event)` 处理键盘事件
+    - Up/Down Arrow: 行间焦点移动（非编辑态）
+    - Ctrl+Z: 调用 undoRedo.undo()
+    - Ctrl+Shift+Z: 调用 undoRedo.redo()
+    - Delete: 确认后删除当前焦点行
+    - Ctrl+D: 复制当前焦点行（含子参数）
+    - 暴露 focusedRowId 和 isEditing 状态
+    - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
+
+- [x] 3. Checkpoint — Composables 编译验证
+  - 确保 `npx vue-tsc --noEmit` 类型检查通过，ask the user if questions arise.
+
+- [x] 4. 新增前端组件
+  - [x] 4.1 创建 `frontend/src/views/template-workspace/components/QuickAddBar.vue`
+    - Props: templateId, existingNames
+    - 底部文本输入框，placeholder "输入参数名，按 Enter 添加..."
+    - Enter 创建 root 级 REQUEST 参数（STRING 默认类型）
+    - 支持点号语法 `company.name` 自动创建嵌套结构（中间节点 OBJECT，末端 STRING）
+    - 名称重复显示内联错误 "参数名已存在"
+    - 名称格式无效（不匹配 `^[a-zA-Z_][a-zA-Z0-9_-]*$`）显示内联错误 "参数名格式无效"
+    - 空输入 Enter 不做任何操作
+    - 创建后保持输入框焦点
+    - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7_
+  - [x] 4.2 编写属性测试：点号语法嵌套结构解析 (Property 10)
+    - **Property 10: 点号语法嵌套结构解析**
+    - **Validates: Requirements 10.3**
+    - 路径: `frontend/src/__tests__/quickAddDotSyntax.property.test.ts`
+    - 生成随机点号分隔名称，验证嵌套结构正确
+  - [x] 4.3 编写属性测试：参数名称格式校验 (Property 11)
+    - **Property 11: 参数名称格式校验**
+    - **Validates: Requirements 10.6**
+    - 路径: `frontend/src/__tests__/parameterNameValidation.property.test.ts`
+    - 生成随机字符串，验证校验结果与正则一致
+  - [x] 4.4 创建 `frontend/src/views/template-workspace/components/JsonImportDialog.vue`
+    - Props: visible (v-model), templateId
+    - JSON 文本区 + "导入" 按钮
+    - 无效 JSON 在文本区下方显示红色错误信息（含解析错误位置和原因）
+    - 空 JSON `{}` / `[]` 显示内联 warning "JSON 数据为空，无法生成参数"
+    - 调用 `jsonImportParameters` API 创建参数
+    - 成功后 emit `imported` 事件并关闭对话框
+    - API 失败时保留对话框内容供用户修改
+    - _Requirements: 3.1, 3.6, 3.8_
+
+- [x] 5. 重构 ParameterTreeTable — 内联编辑
+  - [x] 5.1 移除 `ParameterTreeTable.vue` 中的 `el-dialog` 编辑模式
+    - 删除 editDialogVisible、editField、editValue、editRowId、editRowVersion 状态
+    - 删除 startEdit/confirmEdit 函数和 el-dialog 模板
+    - _Requirements: 1.8_
+  - [x] 5.2 实现真正的内联单元格编辑
+    - 新增 InlineEditState 响应式状态（rowId, field, value, originalValue）
+    - name 列：点击显示 el-input，文本预选中
+    - defaultValue 列：根据 dataType 显示类型适配控件（STRING→text input, NUMBER→number spinner, DATE→date picker, BOOLEAN→toggle switch）
+    - description 列：点击显示 el-input，支持 Shift+Enter 多行
+    - Enter: 确认编辑 + 调用 update API + 移动到同行下一个可编辑字段（name→defaultValue→description）
+    - Esc: 取消编辑，恢复原值
+    - Tab: 确认编辑 + 移动到下一行同字段
+    - blur: 确认编辑
+    - API 失败时回滚单元格值并显示 ElMessage.error
+    - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.9_
+
+- [x] 6. 重构 ParameterTreeTable — 拖拽排序和组件集成
+  - [x] 6.1 集成 sortablejs 实现拖拽排序
+    - 每行左侧添加拖拽手柄图标（grip dots），hover 时显示
+    - 使用 Sortable.create 初始化，handle 指向 `.drag-handle`
+    - onMove 回调检查源和目标的 parentId 是否相同，不同则返回 false 阻止
+    - onEnd 回调根据 data-row-key 计算新 sort_order（连续整数 0,1,2,...）
+    - 调用 batchUpdateParameters API 更新 sort_order
+    - API 失败时回滚到拖拽前排序状态
+    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
+  - [x] 6.2 编写属性测试：拖拽排序后 sort_order 连续性 (Property 4)
+    - **Property 4: 拖拽排序后 sort_order 连续性**
+    - **Validates: Requirements 4.3, 4.5**
+    - 路径: `frontend/src/__tests__/dragSortOrder.property.test.ts`
+    - 生成随机 siblings 和 reorder 操作，验证 sort_order 连续
+  - [x] 6.3 集成 ValidationRulesPopover 到校验规则列
+    - 点击 validation_rules badge 或 "—" 占位符时显示 ValidationRulesPopover
+    - Popover 锚定到点击的单元格，预加载当前参数的 validation_rules 和 data_type
+    - 保存时调用 update API 并刷新 badge
+    - 数据类型变更时动态更新可见规则字段
+    - _Requirements: 5.1, 5.2, 5.3, 5.4_
+  - [x] 6.4 编写属性测试：校验规则与数据类型兼容矩阵 (Property 5)
+    - **Property 5: 校验规则与数据类型兼容矩阵**
+    - **Validates: Requirements 5.3**
+    - 路径: `frontend/src/__tests__/validationRulesCompat.property.test.ts`
+    - 生成随机 DataType，验证规则集合正确
+  - [x] 6.5 集成 DerivedExpressionEditor 到 DERIVED 参数行
+    - DERIVED 参数行下方显示可展开的表达式编辑器区域
+    - 参数类型从 REQUEST 切换为 DERIVED 时自动展开并聚焦
+    - 编辑器 blur 或保存快捷键时调用 update API 保存 expression_text 和 expression_type
+    - 参数下拉列表排除当前参数自身
+    - "测试" 按钮使用参数树的 default_value 评估表达式
+    - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
+  - [x] 6.6 编写属性测试：衍生参数表达式编辑器参数排除 (Property 6)
+    - **Property 6: 衍生参数表达式编辑器参数排除**
+    - **Validates: Requirements 6.4**
+    - 路径: `frontend/src/__tests__/derivedExpressionExclude.property.test.ts`
+    - 生成随机参数列表和当前 DERIVED 参数，验证下拉列表排除当前参数
+
+- [x] 7. Checkpoint — ParameterTreeTable 重构验证
+  - 确保类型检查通过，ask the user if questions arise.
+
+- [x] 8. 清理旧组件、更新 i18n、重构 ParameterTableTab 和 ParameterPreviewPanel
+  - [x] 8.1 删除 `ParameterTemplateMenu.vue` 并更新 i18n 三语言文件
+    - 删除 `frontend/src/views/template-workspace/components/ParameterTemplateMenu.vue` 文件
+    - 三语言文件（en-US.json, zh-CN.json, zh-TW.json）中删除 `parameter.insertTemplate` 及相关 template 子 key
+    - 三语言文件中新增: `parameter.jsonImport.*`, `parameter.quickAdd.*`, `parameter.contextMenu.duplicate`, `parameter.deleteConfirm.withChildren`, `parameter.paste.depthExceeded` 等 key
+    - _Requirements: 设计决策（移除参数模板功能）, 3.1, 10.1, 11.4, 11.5_
+  - [x] 8.2 重构 `ParameterTableTab.vue`
+    - 移除 ParameterTemplateMenu 组件引用和 import
+    - 移除 `handleInsertTemplate` 函数
+    - 工具栏新增 "从 JSON 导入" 按钮，打开 JsonImportDialog
+    - 集成 QuickAddBar 到参数表底部
+    - 批量删除改用 `batchDeleteParameters` API 替代逐个 deleteParameter
+    - 集成 useUndoRedo 和 useKeyboardNav composables
+    - 添加参数时使用 useParameterNaming 生成智能名称
+    - 创建参数后自动激活 Inline_Cell_Editor 编辑 name 字段
+    - _Requirements: 1.8, 2.1, 2.2, 2.3, 8.1-8.5, 9.5, 10.1_
+  - [x] 8.3 增强 `ParameterPreviewPanel.vue` 自动同步
+    - JSON Schema 和示例请求体 tab 已通过 computed 自动更新（无需修改）
+    - 新增 debounced scan：参数结构变更后 2 秒自动触发 `scanPlaceholders` API
+    - 如果上一次 scan 请求仍在进行中，取消前一个请求再发起新请求（AbortController）
+    - 占位符匹配 tab 显示 "一键创建缺失参数" 按钮（当有 unmatched 时）
+    - 新增变更高亮：JSON Schema / 示例请求体更新时对变更部分添加短暂高亮动画
+    - _Requirements: 7.1, 7.2, 7.3, 7.4_
+
+- [x] 9. 完善右键菜单复制粘贴功能
+  - [x] 9.1 实现完整的复制粘贴逻辑
+    - "复制参数"：深拷贝当前参数（含所有属性和递归子参数）存入 clipboard 状态
+    - "粘贴参数"：以 sibling 方式创建参数，复制所有属性（data_type, required, default_value, description, validation_rules, expression_text, expression_type），name 追加 `_copy` 后缀，递归创建子参数
+    - clipboard 为空时 "粘贴参数" 选项灰显禁用
+    - "删除参数"：确认对话框显示参数名和后代参数数量
+    - 粘贴后超过最大嵌套深度 5 层时显示 ElMessage.warning
+    - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5_
+  - [x] 9.2 编写属性测试：参数深拷贝完整性 (Property 8)
+    - **Property 8: 参数深拷贝完整性**
+    - **Validates: Requirements 8.5, 11.2**
+    - 路径: `frontend/src/__tests__/parameterDeepCopy.property.test.ts`
+    - 生成随机参数树，验证深拷贝属性一致
+  - [x] 9.3 编写属性测试：粘贴深度检查 (Property 12)
+    - **Property 12: 粘贴深度检查**
+    - **Validates: Requirements 11.5**
+    - 路径: `frontend/src/__tests__/pasteDepthCheck.property.test.ts`
+    - 生成随机深度组合，验证深度检查正确
+
+- [x] 10. Final checkpoint — 前端全部验证
+  - 确保 `npx vue-tsc --noEmit` 类型检查通过
+  - 确保 `npx vitest --run` 所有测试通过
+  - ask the user if questions arise.
+
+## Notes
+
+- 依赖 backend-api 子 Spec 完成后执行（batch API 和 json-import API 需要后端先就绪）
+- 每个属性测试引用设计文档中的 Property 编号和对应需求编号
+- Checkpoints 确保增量验证

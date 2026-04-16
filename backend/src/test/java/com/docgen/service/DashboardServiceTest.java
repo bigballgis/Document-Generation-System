@@ -1,14 +1,10 @@
 package com.docgen.service;
 
 import com.docgen.dto.ApiCallMetricDTO;
-import com.docgen.dto.DataSourceHealthDTO;
 import com.docgen.dto.SystemOverviewDTO;
 import com.docgen.dto.SystemResourceDTO;
-import com.docgen.entity.DataSource;
-import com.docgen.repository.DataSourceRepository;
 import com.docgen.repository.GeneratedDocumentRepository;
 import com.docgen.repository.TemplateRepository;
-import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -33,10 +29,11 @@ class DashboardServiceTest {
 
     @Mock private TemplateRepository templateRepository;
     @Mock private GeneratedDocumentRepository generatedDocumentRepository;
-    @Mock private DataSourceRepository dataSourceRepository;
     @Mock private RedisConnectionFactory redisConnectionFactory;
     @Mock private RedisConnection redisConnection;
     @Mock private RedisServerCommands redisServerCommands;
+    @Mock private javax.sql.DataSource dataSource;
+    @Mock private io.minio.MinioClient minioClient;
 
     private SimpleMeterRegistry meterRegistry;
     private DashboardService dashboardService;
@@ -46,7 +43,7 @@ class DashboardServiceTest {
         meterRegistry = new SimpleMeterRegistry();
         dashboardService = new DashboardService(
                 templateRepository, generatedDocumentRepository,
-                dataSourceRepository, meterRegistry, redisConnectionFactory);
+                meterRegistry, redisConnectionFactory, dataSource, minioClient);
     }
 
     // ── getSystemOverview ──
@@ -110,48 +107,6 @@ class DashboardServiceTest {
         ApiCallMetricDTO last = metrics.get(metrics.size() - 1);
         assertEquals(2, last.getCallCount());
         assertTrue(last.getAvgResponseTimeMs() > 0);
-    }
-
-    // ── getDataSourceHealth ──
-
-    @Test
-    void getDataSourceHealth_returnsHealthForEachDataSource() {
-        DataSource ds1 = new DataSource();
-        ds1.setId(1L);
-        ds1.setName("api-source");
-        ds1.setType("HTTP_API");
-        ds1.setConfigJson("{\"url\":\"http://example.com\"}");
-
-        DataSource ds2 = new DataSource();
-        ds2.setId(2L);
-        ds2.setName("db-source");
-        ds2.setType("DATABASE");
-        ds2.setConfigJson("{\"host\":\"localhost\"}");
-
-        when(dataSourceRepository.findAll()).thenReturn(List.of(ds1, ds2));
-
-        List<DataSourceHealthDTO> health = dashboardService.getDataSourceHealth();
-
-        assertEquals(2, health.size());
-        assertTrue(health.get(0).isReachable());
-        assertTrue(health.get(1).isReachable());
-    }
-
-    @Test
-    void getDataSourceHealth_unknownTypeMarkedUnreachable() {
-        DataSource ds = new DataSource();
-        ds.setId(3L);
-        ds.setName("unknown");
-        ds.setType("UNKNOWN_TYPE");
-        ds.setConfigJson("{}");
-
-        when(dataSourceRepository.findAll()).thenReturn(List.of(ds));
-
-        List<DataSourceHealthDTO> health = dashboardService.getDataSourceHealth();
-
-        assertEquals(1, health.size());
-        assertFalse(health.get(0).isReachable());
-        assertNotNull(health.get(0).getLastError());
     }
 
     // ── getSystemResources ──

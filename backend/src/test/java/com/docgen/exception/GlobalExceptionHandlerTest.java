@@ -40,12 +40,12 @@ class GlobalExceptionHandlerTest {
     @Test
     void handleResourceNotFoundException_returns404() {
         ResourceNotFoundException ex = new ResourceNotFoundException(
-                ErrorCode.DATASOURCE_NOT_FOUND, "数据源不存在");
+                ErrorCode.TEMPLATE_NOT_FOUND, "模板不存在");
 
         ResponseEntity<ErrorResponse> response = handler.handleBusiness(ex);
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        assertEquals(ErrorCode.DATASOURCE_NOT_FOUND, response.getBody().getError().code());
+        assertEquals(ErrorCode.TEMPLATE_NOT_FOUND, response.getBody().getError().code());
     }
 
     @Test

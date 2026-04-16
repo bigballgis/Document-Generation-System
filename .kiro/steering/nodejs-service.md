@@ -8,7 +8,7 @@ description: Docxtemplater Node.js 服务规范，包括项目结构、REST API�
 
 ## 结构
 
-`docxtemplater-service/` — Express 4.x + docxtemplater 3.x + PizZip + isolated-vm + minio SDK + bwip-js + qrcode + LibreOffice Headless
+#[[file:docxtemplater-service/server.js]] — Express 4.x + docxtemplater + PizZip + isolated-vm + minio SDK + bwip-js + qrcode + LibreOffice Headless
 
 ## API
 
@@ -21,13 +21,14 @@ description: Docxtemplater Node.js 服务规范，包括项目结构、REST API�
 
 ## 沙箱
 
-- isolated-vm V8 Isolate，超时 5000ms (`SANDBOX_TIMEOUT`)，内存 64MB (`SANDBOX_MEMORY_LIMIT`)
+- #[[file:docxtemplater-service/src/sandbox.js]] — isolated-vm V8 Isolate
+- 超时 5000ms (`SANDBOX_TIMEOUT`)，内存 64MB (`SANDBOX_MEMORY_LIMIT`)
 - 禁止: fs, path, http, net, child_process, process, eval, Function 构造函数
 
 ## 测试
 
-Jest + fast-check (PBT)，运行: `npm test`
+Jest + fast-check (PBT)，运行: `npm test` (cwd: `docxtemplater-service/`)
 
-## 新端点要求
+## 新端点
 
-遵循现有 Express 路由模式 + 输入验证 + 统一错误格式 + Jest 测试
+遵循 #[[file:docxtemplater-service/src/routes/]] 现有模式 + 输入验证 + 统一错误格式 + Jest 测试

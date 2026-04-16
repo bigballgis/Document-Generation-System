@@ -4,21 +4,21 @@ import com.docgen.dto.ApiCallMetricDTO;
 import com.docgen.dto.DataSourceHealthDTO;
 import com.docgen.dto.SystemOverviewDTO;
 import com.docgen.dto.SystemResourceDTO;
-import com.docgen.entity.DataSource;
-import com.docgen.repository.DataSourceRepository;
 import com.docgen.repository.GeneratedDocumentRepository;
 import com.docgen.repository.TemplateRepository;
+import io.minio.MinioClient;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import io.micrometer.core.instrument.search.Search;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.stereotype.Service;
 
+import javax.sql.DataSource;
+import java.sql.Connection;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Service providing dashboard metrics: system overview, API call trends,
- * data source health, and system resource usage.
+ * and system resource usage.
  */
 @Service
 public class DashboardService {
@@ -37,20 +37,23 @@ public class DashboardService {
 
     private final TemplateRepository templateRepository;
     private final GeneratedDocumentRepository generatedDocumentRepository;
-    private final DataSourceRepository dataSourceRepository;
     private final MeterRegistry meterRegistry;
     private final RedisConnectionFactory redisConnectionFactory;
+    private final DataSource dataSource;
+    private final MinioClient minioClient;
 
     public DashboardService(TemplateRepository templateRepository,
                             GeneratedDocumentRepository generatedDocumentRepository,
-                            DataSourceRepository dataSourceRepository,
                             MeterRegistry meterRegistry,
-                            RedisConnectionFactory redisConnectionFactory) {
+                            RedisConnectionFactory redisConnectionFactory,
+                            DataSource dataSource,
+                            MinioClient minioClient) {
         this.templateRepository = templateRepository;
         this.generatedDocumentRepository = generatedDocumentRepository;
-        this.dataSourceRepository = dataSourceRepository;
         this.meterRegistry = meterRegistry;
         this.redisConnectionFactory = redisConnectionFactory;
+        this.dataSource = dataSource;
+        this.minioClient = minioClient;
     }
 
     // ── System Overview ──
@@ -94,34 +97,6 @@ public class DashboardService {
         return metrics;
     }
 
-    // ── Data Source Health ──
-
-    public List<DataSourceHealthDTO> getDataSourceHealth() {
-        List<DataSource> dataSources = dataSourceRepository.findAll();
-        List<DataSourceHealthDTO> healthList = new ArrayList<>();
-
-        for (DataSource ds : dataSources) {
-            DataSourceHealthDTO dto = new DataSourceHealthDTO();
-            dto.setId(ds.getId());
-            dto.setName(ds.getName());
-            dto.setType(ds.getType());
-
-            boolean reachable = ds.getConfigJson() != null && !ds.getConfigJson().isBlank()
-                    && isKnownType(ds.getType());
-            dto.setReachable(reachable);
-
-            double avgMs = getDataSourceAvgResponseTime(ds.getName());
-            dto.setAvgResponseTimeMs(avgMs);
-
-            if (!reachable) {
-                dto.setLastError("Data source configuration is missing or type is unknown");
-            }
-
-            healthList.add(dto);
-        }
-        return healthList;
-    }
-
     // ── System Resources ──
 
     public SystemResourceDTO getSystemResources() {
@@ -132,6 +107,16 @@ public class DashboardService {
         return dto;
     }
 
+    // ── Data Source Health ──
+
+    public List<DataSourceHealthDTO> getDataSourceHealth() {
+        List<DataSourceHealthDTO> results = new ArrayList<>();
+        results.add(checkPostgresHealth());
+        results.add(checkRedisHealth());
+        results.add(checkMinioHealth());
+        return results;
+    }
+
     // ── Private helpers ──
 
     private long getTotalApiCallCount() {
@@ -140,24 +125,6 @@ public class DashboardService {
             total += counter.count();
         }
         return (long) total;
-    }
-
-    private boolean isKnownType(String type) {
-        if (type == null) return false;
-        return switch (type.toUpperCase()) {
-            case "HTTP_API", "DATABASE", "INTERNAL_SYSTEM" -> true;
-            default -> false;
-        };
-    }
-
-    private double getDataSourceAvgResponseTime(String dataSourceName) {
-        Search search = meterRegistry.find("datasource.request.duration")
-                .tag("datasource", dataSourceName);
-        Timer timer = search.timer();
-        if (timer != null && timer.count() > 0) {
-            return timer.totalTime(TimeUnit.MILLISECONDS) / timer.count();
-        }
-        return 0;
     }
 
     private SystemResourceDTO.JvmMemory collectJvmMemory() {
@@ -223,5 +190,46 @@ public class DashboardService {
         double usagePercent = maxMemory > 0 ? (double) usedMemory / maxMemory * 100 : 0;
         return new SystemResourceDTO.RedisMemory(usedMemory, maxMemory,
                 Math.round(usagePercent * 100.0) / 100.0);
+    }
+
+    private DataSourceHealthDTO checkPostgresHealth() {
+        long start = System.nanoTime();
+        try (Connection conn = dataSource.getConnection()) {
+            conn.createStatement().execute("SELECT 1");
+            double ms = (System.nanoTime() - start) / 1_000_000.0;
+            return new DataSourceHealthDTO("PostgreSQL", "DATABASE", true, Math.round(ms * 10.0) / 10.0, null);
+        } catch (Exception e) {
+            double ms = (System.nanoTime() - start) / 1_000_000.0;
+            log.warn("PostgreSQL health check failed: {}", e.getMessage());
+            return new DataSourceHealthDTO("PostgreSQL", "DATABASE", false, Math.round(ms * 10.0) / 10.0, e.getMessage());
+        }
+    }
+
+    private DataSourceHealthDTO checkRedisHealth() {
+        long start = System.nanoTime();
+        try (RedisConnection connection = redisConnectionFactory.getConnection()) {
+            String pong = connection.ping();
+            double ms = (System.nanoTime() - start) / 1_000_000.0;
+            boolean reachable = "PONG".equalsIgnoreCase(pong);
+            return new DataSourceHealthDTO("Redis", "CACHE", reachable, Math.round(ms * 10.0) / 10.0,
+                    reachable ? null : "Unexpected ping response: " + pong);
+        } catch (Exception e) {
+            double ms = (System.nanoTime() - start) / 1_000_000.0;
+            log.warn("Redis health check failed: {}", e.getMessage());
+            return new DataSourceHealthDTO("Redis", "CACHE", false, Math.round(ms * 10.0) / 10.0, e.getMessage());
+        }
+    }
+
+    private DataSourceHealthDTO checkMinioHealth() {
+        long start = System.nanoTime();
+        try {
+            minioClient.listBuckets();
+            double ms = (System.nanoTime() - start) / 1_000_000.0;
+            return new DataSourceHealthDTO("MinIO", "OBJECT_STORAGE", true, Math.round(ms * 10.0) / 10.0, null);
+        } catch (Exception e) {
+            double ms = (System.nanoTime() - start) / 1_000_000.0;
+            log.warn("MinIO health check failed: {}", e.getMessage());
+            return new DataSourceHealthDTO("MinIO", "OBJECT_STORAGE", false, Math.round(ms * 10.0) / 10.0, e.getMessage());
+        }
     }
 }

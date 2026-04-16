@@ -12,12 +12,8 @@ vi.mock('@/api/composite-templates', () => ({
   getCompositeCoverage: vi.fn().mockResolvedValue({ overallCoveragePercent: 0, segmentCoverages: [] }),
 }))
 
-vi.mock('@/api/data-sources', () => ({
-  getDataSources: vi.fn().mockResolvedValue([]),
-}))
-
-vi.mock('@/api/expressions', () => ({
-  getExpressions: vi.fn().mockResolvedValue([]),
+vi.mock('@/api/parameters', () => ({
+  getParameters: vi.fn().mockResolvedValue([]),
 }))
 
 describe('Template Workspace Integration', () => {
@@ -25,7 +21,7 @@ describe('Template Workspace Integration', () => {
     setActivePinia(createPinia())
   })
 
-  it('loads all 6 APIs in parallel on initWorkspace', async () => {
+  it('loads all APIs in parallel on initWorkspace', async () => {
     const store = useTemplateWorkspaceStore()
     await store.initWorkspace(1)
 
@@ -48,14 +44,14 @@ describe('Template Workspace Integration', () => {
   })
 
   it('sets warnings when non-critical API fails', async () => {
-    const { getDataSources } = await import('@/api/data-sources')
-    vi.mocked(getDataSources).mockRejectedValueOnce(new Error('DS failed'))
+    const { getParameters } = await import('@/api/parameters')
+    vi.mocked(getParameters).mockRejectedValueOnce(new Error('Params failed'))
 
     const store = useTemplateWorkspaceStore()
     await store.initWorkspace(1)
 
     expect(store.criticalError).toBeNull()
-    expect(store.warnings.dataSources).toBe('DS failed')
+    expect(store.warnings.parameters).toBe('Params failed')
     expect(store.template).toBeTruthy()
   })
 

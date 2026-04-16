@@ -44,17 +44,17 @@ public class DashboardController {
         return ResponseEntity.ok(dashboardService.getApiCallMetrics(minutes));
     }
 
-    @GetMapping("/data-source-health")
-    @Operation(summary = "Data source health",
-            description = "Returns connectivity and response time for all registered data sources")
-    public ResponseEntity<List<DataSourceHealthDTO>> getDataSourceHealth() {
-        return ResponseEntity.ok(dashboardService.getDataSourceHealth());
-    }
-
     @GetMapping("/system-resources")
     @Operation(summary = "System resource usage",
             description = "Returns JVM memory, database connection pool, and Redis memory usage")
     public ResponseEntity<SystemResourceDTO> getSystemResources() {
         return ResponseEntity.ok(dashboardService.getSystemResources());
+    }
+
+    @GetMapping("/data-source-health")
+    @Operation(summary = "Data source health",
+            description = "Returns health status of PostgreSQL, Redis, and MinIO")
+    public ResponseEntity<List<DataSourceHealthDTO>> getDataSourceHealth() {
+        return ResponseEntity.ok(dashboardService.getDataSourceHealth());
     }
 }

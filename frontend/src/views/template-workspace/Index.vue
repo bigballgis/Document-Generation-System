@@ -65,126 +65,103 @@
         style="margin-bottom: 8px"
       />
 
-      <!-- Step indicator -->
-      <WorkflowStepIndicator
-        :steps="steps"
-        :current-tab="activeTab"
-        @step-click="handleStepClick"
+      <!-- Stage indicator (replaces WorkflowStepIndicator) -->
+      <StageIndicator
+        :stages="stageAvailability.stages.value"
+        :current-stage="currentStage"
+        @stage-click="handleStageClick"
       />
 
-      <!-- Tabs -->
-      <el-tabs v-model="activeTab" :before-leave="handleBeforeLeave" style="margin-top: 16px">
-        <!-- Real tabs (P2) -->
-        <el-tab-pane :label="$t('workspace.tabDataStructure')" name="dataStructure">
-          <DataStructureTab />
-        </el-tab-pane>
-        <el-tab-pane :label="$t('workspace.tabSegments')" name="segments">
-          <SegmentArrangementTab ref="segmentArrangementRef" />
-        </el-tab-pane>
-        <el-tab-pane :label="$t('workspace.tabEditor')" name="editor">
-          <VisualEditorTab ref="visualEditorRef" @switch-to-segments="activeTab = 'segments'" />
-        </el-tab-pane>
+      <!-- Stage loading skeleton -->
+      <el-skeleton v-if="stageLoading" :rows="8" animated style="margin-top: 16px" />
 
-        <!-- Real tabs (P3) -->
-        <el-tab-pane :label="$t('workspace.tabTesting')" name="testing">
-          <TestingTab />
-        </el-tab-pane>
-        <el-tab-pane :label="$t('workspace.tabReviewPublish')" name="reviewPublish">
-          <ReviewPublishTab />
-        </el-tab-pane>
-
-        <!-- Real tabs (P4) -->
-        <el-tab-pane :label="$t('workspace.tabExportImport')" name="exportImport">
-          <ExportImportTab />
-        </el-tab-pane>
-        <el-tab-pane :label="$t('workspace.tabSettings')" name="settings">
-          <SettingsTab />
-        </el-tab-pane>
-      </el-tabs>
+      <!-- Stage views (replaces el-tabs) -->
+      <KeepAlive v-else>
+        <component
+          :is="currentStageComponent"
+          :readonly="stageAvailability.isReadonly.value"
+          @stage-change="handleStageChange"
+        />
+      </KeepAlive>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
+import { ref, computed, reactive, onMounted, onBeforeUnmount, defineComponent } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { useTemplateWorkspaceStore } from '@/stores/templateWorkspace'
-import { useWorkflowSteps } from '@/composables/useWorkflowSteps'
+import { useStageAvailability } from '@/composables/useStageAvailability'
 import { createDraftVersion } from '@/api/templates'
 import { migrateToComposite } from '@/api/composite-templates'
-import WorkflowStepIndicator from './components/WorkflowStepIndicator.vue'
-import DataStructureTab from './components/DataStructureTab.vue'
-import SegmentArrangementTab from './components/SegmentArrangementTab.vue'
-import VisualEditorTab from './components/VisualEditorTab.vue'
-import TestingTab from './components/TestingTab.vue'
-import ReviewPublishTab from './components/ReviewPublishTab.vue'
-import ExportImportTab from './components/ExportImportTab.vue'
-import SettingsTab from './components/SettingsTab.vue'
-import type { TabName } from '@/types/workspace'
+import StageIndicator from './components/StageIndicator.vue'
+import DesignStage from './components/DesignStage.vue'
+import TestStage from './components/TestStage.vue'
+import ApprovalStage from './components/ApprovalStage.vue'
+import PublishStage from './components/PublishStage.vue'
+import type { StageName } from '@/types/workspace'
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
 const store = useTemplateWorkspaceStore()
-const { steps, stepToTab } = useWorkflowSteps(store)
+const stageAvailability = useStageAvailability(store)
 
-const activeTab = ref<TabName>('dataStructure')
+const currentStage = ref<StageName>('design')
 const creatingDraft = ref(false)
 const migrating = ref(false)
-const segmentArrangementRef = ref<InstanceType<typeof SegmentArrangementTab> | null>(null)
-const visualEditorRef = ref<InstanceType<typeof VisualEditorTab> | null>(null)
+const stageLoading = ref(false)
+const stageDataLoaded = reactive({ test: false, approval: false })
 
 type TagType = 'primary' | 'success' | 'info' | 'warning' | 'danger'
 const statusTagMap: Record<string, TagType> = {
   DRAFT: 'info', PENDING_REVIEW: 'warning', REVIEWED: 'primary', ACTIVE: 'success', ARCHIVED: 'danger',
 }
 
-function handleStepClick(stepKey: string) {
-  const tab = stepToTab[stepKey]
-  if (tab) {
-    handleBeforeLeave(tab as TabName, activeTab.value).then((allowed) => {
-      if (allowed !== false) activeTab.value = tab as TabName
-    })
+const stageComponentMap: Record<StageName, ReturnType<typeof defineComponent>> = {
+  design: DesignStage as any,
+  test: TestStage as any,
+  approval: ApprovalStage as any,
+  publish: PublishStage as any,
+}
+
+const currentStageComponent = computed(() => stageComponentMap[currentStage.value])
+
+async function handleStageClick(stage: StageName) {
+  if (stage === currentStage.value) return
+
+  stageLoading.value = true
+  try {
+    if (stage === 'test' && !stageDataLoaded.test) {
+      await Promise.all([
+        store.refreshTestCases(),
+        store.refreshCoverage(),
+      ])
+      stageDataLoaded.test = true
+    }
+    if (stage === 'approval' && !stageDataLoaded.approval) {
+      await store.refreshReviews()
+      stageDataLoaded.approval = true
+    }
+    currentStage.value = stage
+  } catch {
+    // Load failed — still switch to stage, component shows error + retry
+    currentStage.value = stage
+  } finally {
+    stageLoading.value = false
   }
 }
 
-// ── Tab change with unsaved changes guard ──
-async function handleBeforeLeave(newTab: TabName | string | number, oldTab: TabName | string | number): Promise<boolean> {
-  if (String(oldTab) === 'segments' && segmentArrangementRef.value?.hasUnsavedChanges) {
-    try {
-      await ElMessageBox.confirm(
-        t('workspace.segment.unsavedConfirm'),
-        t('common.confirm'),
-        { type: 'warning' },
-      )
-    } catch {
-      return false // user cancelled — stay on current tab
-    }
+function handleStageChange(stage: StageName) {
+  // Reset data loaded flags when navigating back to design (new version / return to edit)
+  if (stage === 'design') {
+    stageDataLoaded.test = false
+    stageDataLoaded.approval = false
   }
-  if (String(newTab) === 'editor') {
-    // No lock checking needed in inline mode
-  }
-  return true
+  handleStageClick(stage)
 }
-
-// ── Route leave guard ──
-onBeforeRouteLeave(async () => {
-  if (segmentArrangementRef.value?.hasUnsavedChanges) {
-    try {
-      await ElMessageBox.confirm(
-        t('workspace.segment.unsavedConfirm'),
-        t('common.confirm'),
-        { type: 'warning' },
-      )
-      return true
-    } catch {
-      return false
-    }
-  }
-  return true
-})
 
 async function handleCreateDraft() {
   if (!store.templateId) return
@@ -192,6 +169,9 @@ async function handleCreateDraft() {
   try {
     await createDraftVersion(store.templateId)
     await store.refreshTemplate()
+    currentStage.value = 'design'
+    stageDataLoaded.test = false
+    stageDataLoaded.approval = false
     ElMessage.success(t('workspace.draftCreated'))
   } catch (e: any) {
     ElMessage.error(e.response?.data?.message || e.message || 'Failed')

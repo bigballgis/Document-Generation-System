@@ -12,10 +12,10 @@ description: Git 工作流规范，包括分支策略和 Code Review 要求
 |------|------|------|
 | main | 生产 | — |
 | develop | 开发集成 | — |
-| feature/* | 新功能 | feature/template-segmentation |
-| bugfix/* | Bug 修复 | bugfix/segment-render-error |
-| hotfix/* | 紧急修复 | hotfix/auth-token-leak |
-| release/* | 发布准备 | release/v1.2.0 |
+| feature/* | 新功能 | `feature/template-parameters` |
+| bugfix/* | Bug 修复 | `bugfix/parameter-validation` |
+| hotfix/* | 紧急修复 | `hotfix/auth-token-leak` |
+| release/* | 发布准备 | `release/v1.2.0` |
 
 ## Code Review
 

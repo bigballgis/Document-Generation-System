@@ -2,15 +2,9 @@ package com.docgen.service;
 
 import com.docgen.dto.TemplateConfigExport;
 import com.docgen.dto.TemplateDTO;
-import com.docgen.entity.DataSource;
-import com.docgen.entity.Expression;
 import com.docgen.entity.Template;
-import com.docgen.entity.TemplateVariable;
 import com.docgen.exception.BusinessException;
-import com.docgen.repository.DataSourceRepository;
-import com.docgen.repository.ExpressionRepository;
 import com.docgen.repository.TemplateRepository;
-import com.docgen.repository.TemplateVariableRepository;
 import com.docgen.util.TenantContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.minio.GetObjectResponse;
@@ -20,7 +14,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
@@ -39,9 +32,6 @@ import static org.mockito.Mockito.*;
 class TemplateImportExportServiceTest {
 
     @Mock private TemplateRepository templateRepository;
-    @Mock private DataSourceRepository dataSourceRepository;
-    @Mock private ExpressionRepository expressionRepository;
-    @Mock private TemplateVariableRepository templateVariableRepository;
     @Mock private MinioClient minioClient;
 
     private TemplateImportExportService service;
@@ -50,8 +40,7 @@ class TemplateImportExportServiceTest {
     @BeforeEach
     void setUp() throws Exception {
         service = new TemplateImportExportService(
-                templateRepository, dataSourceRepository, expressionRepository,
-                templateVariableRepository, minioClient, objectMapper);
+                templateRepository, minioClient, objectMapper);
         Field bucketField = TemplateImportExportService.class.getDeclaredField("bucketName");
         bucketField.setAccessible(true);
         bucketField.set(service, "docgen-test");
@@ -67,7 +56,6 @@ class TemplateImportExportServiceTest {
 
     @Test
     void importFromDocx_success() throws Exception {
-        // Valid DOCX file (starts with PK\x03\x04 magic bytes)
         byte[] content = createValidDocxBytes();
         MockMultipartFile file = new MockMultipartFile("file", "report.docx",
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document", content);
@@ -151,35 +139,11 @@ class TemplateImportExportServiceTest {
         Template template = createTemplate(1L, "Config Test");
         when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
 
-        DataSource ds = new DataSource();
-        ds.setName("api-source");
-        ds.setType("HTTP");
-        ds.setConfigJson("{\"url\":\"https://api.example.com\"}");
-        ds.setPriority(1);
-        ds.setCacheEnabled(true);
-        ds.setCacheTtl(600);
-        when(dataSourceRepository.findByTemplateIdOrderByPriorityDesc(1L)).thenReturn(List.of(ds));
-
-        Expression expr = new Expression();
-        expr.setName("total");
-        expr.setExpressionType("JAVASCRIPT");
-        expr.setExpressionText("a + b");
-        expr.setDescription("Sum");
-        expr.setExecutionOrder(1);
-        when(expressionRepository.findByTemplateIdOrderByExecutionOrderAsc(1L)).thenReturn(List.of(expr));
-
-        when(templateVariableRepository.findByTemplateIdOrderByNameAsc(1L)).thenReturn(List.of());
-
         byte[] result = service.exportConfig(1L);
 
         assertNotNull(result);
         TemplateConfigExport config = objectMapper.readValue(result, TemplateConfigExport.class);
-        assertEquals("1.0", config.getVersion());
         assertEquals("Config Test", config.getTemplate().getName());
-        assertEquals(1, config.getDataSources().size());
-        assertEquals("api-source", config.getDataSources().get(0).getName());
-        assertEquals(1, config.getExpressions().size());
-        assertEquals("total", config.getExpressions().get(0).getName());
     }
 
     // ── importConfig tests ──
@@ -194,35 +158,17 @@ class TemplateImportExportServiceTest {
         meta.setStorageStrategy("PERSISTENT");
         config.setTemplate(meta);
 
-        TemplateConfigExport.DataSourceExport dsExport = new TemplateConfigExport.DataSourceExport();
-        dsExport.setName("db-source");
-        dsExport.setType("DATABASE");
-        dsExport.setConfigJson("{\"host\":\"localhost\"}");
-        dsExport.setPriority(0);
-        config.setDataSources(List.of(dsExport));
-
-        TemplateConfigExport.ExpressionExport exprExport = new TemplateConfigExport.ExpressionExport();
-        exprExport.setName("calc");
-        exprExport.setExpressionType("EXCEL");
-        exprExport.setExpressionText("SUM(A1:A10)");
-        exprExport.setExecutionOrder(0);
-        config.setExpressions(List.of(exprExport));
-
         byte[] jsonBytes = objectMapper.writeValueAsBytes(config);
         MockMultipartFile file = new MockMultipartFile("file", "config.json",
                 "application/json", jsonBytes);
 
         Template saved = createTemplate(10L, "Imported Template");
         when(templateRepository.save(any(Template.class))).thenReturn(saved);
-        when(dataSourceRepository.save(any(DataSource.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(expressionRepository.save(any(Expression.class))).thenAnswer(inv -> inv.getArgument(0));
 
         TemplateDTO result = service.importConfig(file, 100L);
 
         assertNotNull(result);
         assertEquals("Imported Template", result.getName());
-        verify(dataSourceRepository).save(any(DataSource.class));
-        verify(expressionRepository).save(any(Expression.class));
     }
 
     @Test
@@ -262,8 +208,7 @@ class TemplateImportExportServiceTest {
 
     @Test
     void importConfig_missingTemplateField_throwsException() throws Exception {
-        // Config with no template field at all
-        String json = "{\"version\":\"1.0\",\"dataSources\":[]}";
+        String json = "{\"version\":\"1.0\"}";
         MockMultipartFile file = new MockMultipartFile("file", "config.json",
                 "application/json", json.getBytes());
 
@@ -273,53 +218,9 @@ class TemplateImportExportServiceTest {
         assertTrue(ex.getMessage().contains("template"));
     }
 
-    @Test
-    void importConfig_invalidDataSource_throwsException() throws Exception {
-        TemplateConfigExport config = new TemplateConfigExport();
-        TemplateConfigExport.TemplateMetadata meta = new TemplateConfigExport.TemplateMetadata();
-        meta.setName("Valid Name");
-        config.setTemplate(meta);
-
-        TemplateConfigExport.DataSourceExport ds = new TemplateConfigExport.DataSourceExport();
-        // Missing name and type
-        config.setDataSources(List.of(ds));
-
-        byte[] jsonBytes = objectMapper.writeValueAsBytes(config);
-        MockMultipartFile file = new MockMultipartFile("file", "config.json",
-                "application/json", jsonBytes);
-
-        BusinessException ex = assertThrows(BusinessException.class,
-                () -> service.importConfig(file, 100L));
-        assertEquals("IMPORT_INVALID_CONFIG", ex.getErrorCode());
-        assertTrue(ex.getMessage().contains("dataSources[0].name"));
-        assertTrue(ex.getMessage().contains("dataSources[0].type"));
-    }
-
-    @Test
-    void importConfig_invalidExpression_throwsException() throws Exception {
-        TemplateConfigExport config = new TemplateConfigExport();
-        TemplateConfigExport.TemplateMetadata meta = new TemplateConfigExport.TemplateMetadata();
-        meta.setName("Valid Name");
-        config.setTemplate(meta);
-
-        TemplateConfigExport.ExpressionExport expr = new TemplateConfigExport.ExpressionExport();
-        // Missing name, type, text
-        config.setExpressions(List.of(expr));
-
-        byte[] jsonBytes = objectMapper.writeValueAsBytes(config);
-        MockMultipartFile file = new MockMultipartFile("file", "config.json",
-                "application/json", jsonBytes);
-
-        BusinessException ex = assertThrows(BusinessException.class,
-                () -> service.importConfig(file, 100L));
-        assertEquals("IMPORT_INVALID_CONFIG", ex.getErrorCode());
-        assertTrue(ex.getMessage().contains("expressions[0].name"));
-    }
-
     // ── Helper methods ──
 
     private byte[] createValidDocxBytes() {
-        // Minimal valid ZIP/DOCX header (PK\x03\x04) followed by some data
         return new byte[]{0x50, 0x4B, 0x03, 0x04, 0x14, 0x00, 0x06, 0x00,
                 0x08, 0x00, 0x00, 0x00, 0x21, 0x00, 0x00, 0x00};
     }
