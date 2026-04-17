@@ -71,6 +71,7 @@ public class SecurityConfig {
                 .requestMatchers("/swagger-ui/**", "/api-docs/**", "/v3/api-docs/**").permitAll()
                 // OnlyOffice callback is invoked by Document Server without JWT
                 .requestMatchers("/api/templates/*/onlyoffice-callback").permitAll()
+                .requestMatchers("/api/composite-templates/*/segments/*/onlyoffice-callback").permitAll()
                 .requestMatchers("/api/tenants/**").hasRole("SUPER_ADMIN")
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().authenticated()

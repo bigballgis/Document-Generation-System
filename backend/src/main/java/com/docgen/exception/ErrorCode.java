@@ -86,6 +86,7 @@ public final class ErrorCode {
     // ── ONLYOFFICE (在线编辑) ──
     public static final String ONLYOFFICE_URL_FAILED = "ONLYOFFICE_URL_FAILED";
     public static final String ONLYOFFICE_CALLBACK_FAILED = "ONLYOFFICE_CALLBACK_FAILED";
+    public static final String ONLYOFFICE_CONTENT_ISOLATION_VIOLATION = "ONLYOFFICE_CONTENT_ISOLATION_VIOLATION";
 
     // ── WEBHOOK (Webhook 通知) ──
     public static final String WEBHOOK_NOT_FOUND = "WEBHOOK_NOT_FOUND";
@@ -146,6 +147,7 @@ public final class ErrorCode {
     public static final String PARAMETER_BATCH_VALIDATION_FAILED = "PARAMETER_BATCH_VALIDATION_FAILED";
     public static final String PARAMETER_JSON_IMPORT_FAILED = "PARAMETER_JSON_IMPORT_FAILED";
     public static final String PARAMETER_JSON_IMPORT_DEPTH_EXCEEDED = "PARAMETER_JSON_IMPORT_DEPTH_EXCEEDED";
+    public static final String PARAMETER_EXPRESSION_INVALID_SCOPE = "PARAMETER_EXPRESSION_INVALID_SCOPE";
 
     // ── MIGRATION (迁移工具) ──
     public static final String MIGRATION_FILE_ACCESS_FAILED = "MIGRATION_FILE_ACCESS_FAILED";

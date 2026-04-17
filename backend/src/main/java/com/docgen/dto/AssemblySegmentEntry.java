@@ -18,6 +18,12 @@ public class AssemblySegmentEntry {
     private String conditionExpression;
     private Map<String, String> dataScope;
 
+    // 控制节点扩展字段
+    private String headerFilePath;
+    private String footerFilePath;
+    private String pageNumberFormat;
+    private Integer pageNumberStart;
+
     public AssemblySegmentEntry() {}
 
     public String getFilePath() { return filePath; }
@@ -43,4 +49,16 @@ public class AssemblySegmentEntry {
 
     public Map<String, String> getDataScope() { return dataScope; }
     public void setDataScope(Map<String, String> dataScope) { this.dataScope = dataScope; }
+
+    public String getHeaderFilePath() { return headerFilePath; }
+    public void setHeaderFilePath(String headerFilePath) { this.headerFilePath = headerFilePath; }
+
+    public String getFooterFilePath() { return footerFilePath; }
+    public void setFooterFilePath(String footerFilePath) { this.footerFilePath = footerFilePath; }
+
+    public String getPageNumberFormat() { return pageNumberFormat; }
+    public void setPageNumberFormat(String pageNumberFormat) { this.pageNumberFormat = pageNumberFormat; }
+
+    public Integer getPageNumberStart() { return pageNumberStart; }
+    public void setPageNumberStart(Integer pageNumberStart) { this.pageNumberStart = pageNumberStart; }
 }
