@@ -21,9 +21,6 @@
           <el-icon><Plus /></el-icon>
           {{ t('workspace.design.table.addField') }}
         </el-button>
-        <el-button size="small" type="primary" @click="goNext">
-          {{ t('workspace.design.next') }}
-        </el-button>
       </div>
     </div>
 
@@ -55,9 +52,9 @@
           <div v-if="newFieldError" class="field-error">{{ newFieldError }}</div>
         </el-form-item>
         <el-form-item :label="t('workspace.design.table.fieldType')">
-          <el-select v-model="newField.dataType" style="width: 100%">
+          <el-select v-model="newField.fieldType" style="width: 100%">
             <el-option
-              v-for="dt in allDataTypes"
+              v-for="dt in allFieldTypes"
               :key="dt"
               :label="dataTypeLabel(dt)"
               :value="dt"
@@ -81,14 +78,15 @@ import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { useTemplateWorkspaceStore } from '@/stores/templateWorkspace'
-import { useDesignStep } from '@/composables/useDesignStep'
 import { createParameter } from '@/api/parameters'
 import type { ParameterBreadcrumbItem } from '@/types/workspace'
 import type { ParameterDTO, DataType } from '@/types/parameter'
 import ParameterTableView from './ParameterTableView.vue'
 
 const MAX_DEPTH = 5
-const allDataTypes: DataType[] = ['STRING', 'NUMBER', 'DATE', 'BOOLEAN', 'ARRAY', 'OBJECT']
+// Extended field types: includes data types + virtual "FORMULA" type
+type FieldType = DataType | 'FORMULA'
+const allFieldTypes: FieldType[] = ['STRING', 'NUMBER', 'DATE', 'BOOLEAN', 'ARRAY', 'OBJECT', 'FORMULA']
 const PARAM_NAME_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]*$/
 
 defineProps<{
@@ -97,7 +95,6 @@ defineProps<{
 
 const { t } = useI18n()
 const store = useTemplateWorkspaceStore()
-const { goNext } = useDesignStep()
 const tableViewRef = ref()
 
 // ── Breadcrumb state ──
@@ -148,7 +145,7 @@ async function handleRefresh() {
 
 // ── Add Field Dialog ──
 const addDialogVisible = ref(false)
-const newField = ref({ name: '', dataType: 'STRING' as DataType })
+const newField = ref({ name: '', fieldType: 'STRING' as FieldType })
 const newFieldError = ref('')
 
 watch(() => newField.value.name, (val) => {
@@ -172,14 +169,19 @@ async function submitNewField() {
   const name = newField.value.name.trim()
   if (!name || newFieldError.value) return
   try {
+    const isFormula = newField.value.fieldType === 'FORMULA'
+    const dataType: DataType = isFormula ? 'NUMBER' : newField.value.fieldType as DataType
     await createParameter(store.templateId, {
       name,
-      dataType: newField.value.dataType,
+      dataType,
+      parameterType: isFormula ? 'DERIVED' : 'REQUEST',
+      expressionText: isFormula ? '0' : undefined,
+      expressionType: isFormula ? 'JAVASCRIPT' : undefined,
       parentId: currentParentId.value,
       sortOrder: currentLevelParameters.value.length,
     })
     addDialogVisible.value = false
-    newField.value = { name: '', dataType: 'STRING' }
+    newField.value = { name: '', fieldType: 'STRING' }
     await handleRefresh()
     ElMessage.success(t('message.createSuccess'))
   } catch (e: any) {

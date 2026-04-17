@@ -923,6 +923,7 @@
       "parameters": "参数",
       "segmentArrangement": "片段编排",
       "importZip": "导入 ZIP",
+      "importTemplatePackage": "导入模板包",
       "settings": "设置",
       "selectSegment": "选择片段",
       "noSegments": "暂无可编辑的片段",
@@ -948,13 +949,20 @@
         "nameRequired": "参数名不能为空",
         "nameInvalid": "参数名只能包含英文字母、数字和下划线，且必须以字母或下划线开头",
         "nameDuplicate": "同级已存在同名参数",
+        "advanced": "高级",
+        "formula": "公式",
+        "setFormula": "设置公式",
+        "editFormula": "编辑公式",
+        "formulaType": "公式类型",
+        "formulaExpression": "公式表达式",
         "dataType": {
           "STRING": "文本",
           "NUMBER": "数字",
           "DATE": "日期",
           "BOOLEAN": "布尔",
           "ARRAY": "子表",
-          "OBJECT": "关联表"
+          "OBJECT": "关联表",
+          "FORMULA": "公式"
         }
       },
       "canvas": {
@@ -984,7 +992,10 @@
         "inlineCreate": "+ 新增参数",
         "search": "搜索参数...",
         "noMatch": "无匹配参数",
-        "filterByType": "按类型筛选"
+        "filterByType": "按类型筛选",
+        "aggregationProperties": "聚合属性",
+        "rowExpression": "行级表达式 — 仅可引用当前行字段",
+        "objectExpression": "对象级表达式 — 仅可引用同级字段"
       },
       "overview": {
         "treeView": "树形视图",

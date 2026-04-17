@@ -6,6 +6,7 @@ import type {
   ScanResultDTO,
   ParameterSchemaDTO,
   BatchUpdateItem,
+  AggregationSchemaDTO,
 } from '@/types/parameter'
 
 // ── CRUD ──
@@ -66,4 +67,10 @@ export function jsonImportParameters(templateId: number, jsonData: string, paren
     `/templates/${templateId}/parameters/json-import`,
     { jsonData, parentId },
   )
+}
+
+// ── Aggregation Schema ──
+
+export function getAggregationSchema(templateId: number) {
+  return request.get<any, AggregationSchemaDTO[]>(`/templates/${templateId}/aggregation-schema`)
 }

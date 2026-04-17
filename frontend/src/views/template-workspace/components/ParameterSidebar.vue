@@ -83,6 +83,31 @@
             </div>
           </el-collapse-item>
 
+          <!-- Aggregation Properties Section -->
+          <el-collapse-item name="aggregations" :title="t('workspace.design.sidebar.aggregationProperties')">
+            <div v-if="filteredAggregationGroups.length === 0" class="no-match">
+              {{ t('workspace.design.sidebar.noMatch') }}
+            </div>
+            <div v-else>
+              <div v-for="group in filteredAggregationGroups" :key="group.arrayName" class="aggregation-group">
+                <div class="aggregation-group-label">{{ group.arrayName }}</div>
+                <div class="param-tags">
+                  <el-tag
+                    v-for="tag in group.tags"
+                    :key="tag.placeholderPath"
+                    :class="{ clickable: !readonly }"
+                    size="default"
+                    type="primary"
+                    :effect="readonly ? 'plain' : 'light'"
+                    @click="handleInsertAggregation(tag.placeholderPath)"
+                  >
+                    {{ tag.name }}
+                  </el-tag>
+                </div>
+              </div>
+            </div>
+          </el-collapse-item>
+
           <!-- Condition Block Section -->
           <el-collapse-item name="conditions" :title="t('workspace.design.sidebar.conditionBlock')">
             <div v-if="!readonly" class="condition-input">
@@ -170,7 +195,7 @@ const store = useTemplateWorkspaceStore()
 
 const searchText = ref('')
 const activeTypeFilter = ref<DataType | null>(null)
-const activeSections = ref(['params', 'loops', 'conditions'])
+const activeSections = ref(['params', 'loops', 'aggregations', 'conditions'])
 const conditionExpr = ref('')
 const conditionTags = ref<string[]>([])
 
@@ -218,6 +243,59 @@ const filteredArrayParams = computed(() => {
   return list
 })
 
+// ── Aggregation properties (client-side generated) ──
+
+interface AggregationTag {
+  name: string
+  placeholderPath: string
+}
+
+interface AggregationGroup {
+  arrayName: string
+  tags: AggregationTag[]
+}
+
+const aggregationGroups = computed<AggregationGroup[]>(() => {
+  const arrayParams = flatParams.value.filter(p => p.dataType === 'ARRAY')
+  return arrayParams.map(arr => {
+    const tags: AggregationTag[] = []
+    const path = arr.parameterPath
+
+    // Always: $count, $first, $last
+    tags.push({ name: '$count', placeholderPath: `${path}.$count` })
+    tags.push({ name: '$first', placeholderPath: `${path}.$first` })
+    tags.push({ name: '$last', placeholderPath: `${path}.$last` })
+
+    // Generate per-child aggregation tags
+    const children = arr.children ?? []
+    for (const child of children) {
+      if (child.dataType === 'NUMBER') {
+        tags.push({ name: `$sum_${child.name}`, placeholderPath: `${path}.$sum_${child.name}` })
+        tags.push({ name: `$avg_${child.name}`, placeholderPath: `${path}.$avg_${child.name}` })
+        tags.push({ name: `$min_${child.name}`, placeholderPath: `${path}.$min_${child.name}` })
+        tags.push({ name: `$max_${child.name}`, placeholderPath: `${path}.$max_${child.name}` })
+      } else if (child.dataType === 'STRING') {
+        tags.push({ name: `$join_${child.name}`, placeholderPath: `${path}.$join_${child.name}` })
+      }
+    }
+
+    return { arrayName: arr.name, tags }
+  })
+})
+
+const filteredAggregationGroups = computed<AggregationGroup[]>(() => {
+  const q = searchText.value.trim().toLowerCase()
+  if (!q) return aggregationGroups.value
+  return aggregationGroups.value
+    .map(group => ({
+      ...group,
+      tags: group.tags.filter(
+        tag => tag.name.toLowerCase().includes(q) || tag.placeholderPath.toLowerCase().includes(q),
+      ),
+    }))
+    .filter(group => group.tags.length > 0)
+})
+
 function toggleTypeFilter(dt: DataType) {
   activeTypeFilter.value = activeTypeFilter.value === dt ? null : dt
 }
@@ -242,6 +320,11 @@ function handleInsertVariable(p: ParameterDTO) {
 function handleInsertLoop(p: ParameterDTO) {
   if (props.readonly) return
   emit('insert-loop', p.name)
+}
+
+function handleInsertAggregation(placeholderPath: string) {
+  if (props.readonly) return
+  emit('insert-variable', placeholderPath)
 }
 
 function handleInsertCondition(expr: string) {
@@ -376,6 +459,15 @@ async function handleCreateParameter() {
 .inline-creator {
   padding: 8px 12px;
   border-top: 1px solid var(--el-border-color-lighter);
+}
+.aggregation-group {
+  margin-bottom: 8px;
+}
+.aggregation-group-label {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  margin-bottom: 4px;
+  font-weight: 500;
 }
 .creator-form {
   display: flex;

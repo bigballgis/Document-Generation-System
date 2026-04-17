@@ -7,18 +7,17 @@
       border
       size="default"
       class="field-table"
-      row-key="id"
       :max-height="tableMaxHeight"
       :empty-text="t('parameter.empty')"
     >
       <!-- Drag handle column -->
       <el-table-column v-if="!readonly" width="40" align="center">
         <template #default>
-          <el-icon class="drag-handle" style="cursor: grab"><Rank /></el-icon>
+          <span class="drag-handle">⠿</span>
         </template>
       </el-table-column>
 
-      <!-- Name column (inline editable) + navigate for ARRAY/OBJECT -->
+      <!-- Name column (inline editable) + click-to-navigate for ARRAY/OBJECT -->
       <el-table-column :label="t('workspace.design.table.fieldName')" min-width="140">
         <template #default="{ row }">
           <div class="name-cell">
@@ -42,23 +41,22 @@
               </el-tooltip>
             </div>
             <template v-else>
+              <!-- Navigable rows: click name to drill in -->
               <span
+                v-if="isNavigable(row)"
+                class="editable-cell navigable-name"
+                @click.stop="emit('navigate', row)"
+              >
+                {{ row.name }}
+                <span class="children-count">{{ row.children?.length ?? 0 }} {{ t('workspace.design.table.fieldName') }} ›</span>
+              </span>
+              <!-- Regular rows: click to edit name -->
+              <span
+                v-else
                 class="editable-cell"
                 :class="{ clickable: !readonly }"
                 @click.stop="!readonly && startEdit(row, 'name', row.name)"
               >{{ row.name }}</span>
-              <!-- Navigate arrow for ARRAY/OBJECT -->
-              <el-button
-                v-if="isNavigable(row)"
-                link
-                type="primary"
-                size="small"
-                class="navigate-btn"
-                @click.stop="emit('navigate', row)"
-              >
-                <span class="children-count">{{ row.children?.length ?? 0 }} {{ t('workspace.design.table.fieldName') }}</span>
-                <el-icon><ArrowRight /></el-icon>
-              </el-button>
             </template>
           </div>
         </template>
@@ -104,10 +102,58 @@
         </template>
       </el-table-column>
 
-      <!-- Validation Rules column (popover editor, hidden for ARRAY/OBJECT) -->
-      <el-table-column :label="t('parameter.validationRules')" min-width="200">
+      <!-- Advanced column: validation rules for REQUEST, expression for DERIVED -->
+      <el-table-column :label="t('workspace.design.table.advanced')" min-width="200">
         <template #default="{ row }">
-          <template v-if="!isNavigable(row)">
+          <!-- DERIVED (Formula) fields: show expression editor -->
+          <template v-if="row.parameterType === 'DERIVED'">
+            <div class="expression-cell" @click="!readonly && (expressionEditRowId = row.id)">
+              <el-tag size="small" type="primary" class="formula-tag">
+                <el-icon :size="12"><EditPen /></el-icon>
+                {{ t('workspace.design.table.formula') }}
+              </el-tag>
+              <span v-if="row.expressionText" class="expression-preview">{{ row.expressionText }}</span>
+              <span v-else class="editable-cell add-rule-hint" :class="{ clickable: !readonly }">
+                {{ t('workspace.design.table.setFormula') }}
+              </span>
+            </div>
+            <!-- Inline expression editor dialog -->
+            <el-dialog
+              v-model="expressionDialogVisible"
+              :title="t('workspace.design.table.editFormula')"
+              width="600px"
+              :close-on-click-modal="false"
+            >
+              <div v-if="expressionEditRow" class="expression-dialog-content">
+                <el-form label-position="top">
+                  <el-form-item :label="t('workspace.design.table.formulaType')">
+                    <el-radio-group v-model="expressionEditType" size="small">
+                      <el-radio-button value="JAVASCRIPT">JavaScript</el-radio-button>
+                      <el-radio-button value="EXCEL_FORMULA">Excel</el-radio-button>
+                    </el-radio-group>
+                  </el-form-item>
+                  <el-form-item :label="t('workspace.design.table.formulaExpression')">
+                    <el-input
+                      v-model="expressionEditText"
+                      type="textarea"
+                      :rows="4"
+                      :placeholder="expressionEditType === 'JAVASCRIPT' ? 'e.g. price * quantity' : 'e.g. =A1*B1'"
+                    />
+                  </el-form-item>
+                </el-form>
+              </div>
+              <template #footer>
+                <el-button @click="expressionDialogVisible = false">{{ t('common.cancel') }}</el-button>
+                <el-button type="primary" @click="saveExpression">{{ t('common.confirm') }}</el-button>
+              </template>
+            </el-dialog>
+          </template>
+          <!-- Navigable (ARRAY/OBJECT) fields: show dash -->
+          <template v-else-if="isNavigable(row)">
+            <span class="default-value">—</span>
+          </template>
+          <!-- Regular REQUEST fields: show validation rules -->
+          <template v-else>
             <ValidationRulesPopover
               :visible="validationPopoverRowId === row.id"
               :data-type="row.dataType"
@@ -135,7 +181,6 @@
               </div>
             </ValidationRulesPopover>
           </template>
-          <span v-else class="default-value">—</span>
         </template>
       </el-table-column>
 
@@ -162,7 +207,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
-import { Rank, Delete, ArrowRight, Plus } from '@element-plus/icons-vue'
+import { Delete, Plus, EditPen } from '@element-plus/icons-vue'
 import Sortable from 'sortablejs'
 import { useTemplateWorkspaceStore } from '@/stores/templateWorkspace'
 import {
@@ -344,6 +389,46 @@ async function handleDelete(row: ParameterDTO) {
 // ── Validation rules ──
 const validationPopoverRowId = ref<number | null>(null)
 
+// ── Expression editing (for DERIVED/Formula fields) ──
+const expressionEditRowId = ref<number | null>(null)
+const expressionEditText = ref('')
+const expressionEditType = ref('JAVASCRIPT')
+const expressionDialogVisible = ref(false)
+
+const expressionEditRow = computed(() => {
+  if (!expressionEditRowId.value) return null
+  return props.parameters.find(p => p.id === expressionEditRowId.value) ?? null
+})
+
+watch(expressionEditRowId, (id) => {
+  if (id) {
+    const row = props.parameters.find(p => p.id === id)
+    if (row) {
+      expressionEditText.value = row.expressionText ?? ''
+      expressionEditType.value = row.expressionType ?? 'JAVASCRIPT'
+      expressionDialogVisible.value = true
+    }
+  }
+})
+
+async function saveExpression() {
+  if (!expressionEditRowId.value) return
+  const row = props.parameters.find(p => p.id === expressionEditRowId.value)
+  if (!row) return
+  try {
+    await updateParameter(row.id, {
+      expressionText: expressionEditText.value,
+      expressionType: expressionEditType.value as any,
+      version: row.version,
+    })
+    expressionDialogVisible.value = false
+    expressionEditRowId.value = null
+    emit('refresh')
+  } catch (e: any) {
+    ElMessage.error(e.response?.data?.message || e.message || t('message.saveFailed'))
+  }
+}
+
 interface RuleTag {
   key: string
   label: string
@@ -439,9 +524,16 @@ watch(() => sortedParameters.value.length, () => {
 .drag-handle {
   color: var(--el-text-color-placeholder);
   cursor: grab;
+  font-size: 16px;
+  user-select: none;
+  opacity: 0;
+  transition: opacity 0.15s;
 }
 .drag-handle:active {
   cursor: grabbing;
+}
+.el-table__row:hover .drag-handle {
+  opacity: 1;
 }
 
 .name-cell {
@@ -513,8 +605,59 @@ watch(() => sortedParameters.value.length, () => {
   font-size: 12px;
 }
 
+.navigable-name {
+  cursor: pointer;
+  color: var(--el-color-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.navigable-name:hover {
+  text-decoration: underline;
+  background: var(--el-fill-color-light);
+}
+
+.expression-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 2px 0;
+  border-radius: 4px;
+  min-height: 28px;
+}
+.expression-cell:hover {
+  background: var(--el-fill-color);
+}
+.formula-tag {
+  flex-shrink: 0;
+}
+.expression-preview {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+  font-family: monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+.expression-dialog-content {
+  padding: 0 8px;
+}
+
 :deep(.drag-source-active) {
   opacity: 0.5;
   transition: opacity 0.15s ease;
+}
+
+/* Hide el-table tree expand icons — we use click-to-navigate instead */
+:deep(.el-table__expand-icon) {
+  display: none !important;
+}
+:deep(.el-table__indent) {
+  display: none !important;
+}
+:deep(.el-table__placeholder) {
+  display: none !important;
 }
 </style>

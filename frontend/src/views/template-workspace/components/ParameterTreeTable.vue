@@ -161,6 +161,7 @@
           :expression-text="param.expressionText ?? ''"
           :expression-type="param.expressionType ?? 'JAVASCRIPT'"
           :available-parameters="getAvailableParamsForExpression(param.id)"
+          :scope-level="getScopeLevel(param.id)"
           @update:expression-text="(val) => emit('update', param.id, { expressionText: val, version: param.version })"
           @update:expression-type="(val) => emit('update', param.id, { expressionType: val as any, version: param.version })"
         />
@@ -324,7 +325,25 @@ const flatDerivedParams = computed(() => {
 })
 
 function getAvailableParamsForExpression(currentId: number): ParameterDTO[] {
-  return flattenAll(props.parameters).filter(p => p.id !== currentId)
+  const current = findParameterById(props.parameters, currentId)
+  if (!current || current.parentId === null) {
+    // Root-level: all root params (excluding self) + aggregation properties (handled by parent)
+    return flattenAll(props.parameters).filter(p => p.id !== currentId)
+  }
+  // Non-root: only siblings under the same parent
+  const parent = findParameterById(props.parameters, current.parentId)
+  if (!parent || !parent.children) return []
+  return parent.children.filter(p => p.id !== currentId)
+}
+
+function getScopeLevel(paramId: number): 'root' | 'row' | 'object' {
+  const param = findParameterById(props.parameters, paramId)
+  if (!param || param.parentId === null) return 'root'
+  const parent = findParameterById(props.parameters, param.parentId)
+  if (!parent) return 'root'
+  if (parent.dataType === 'ARRAY') return 'row'
+  if (parent.dataType === 'OBJECT') return 'object'
+  return 'root'
 }
 
 // ── Context menu ──

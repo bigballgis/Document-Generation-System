@@ -923,6 +923,7 @@
       "parameters": "參數",
       "segmentArrangement": "片段編排",
       "importZip": "匯入 ZIP",
+      "importTemplatePackage": "匯入範本包",
       "settings": "設定",
       "selectSegment": "選擇片段",
       "noSegments": "暫無可編輯的片段",
@@ -948,13 +949,20 @@
         "nameRequired": "參數名不能為空",
         "nameInvalid": "參數名只能包含英文字母、數字和底線，且必須以字母或底線開頭",
         "nameDuplicate": "同級已存在同名參數",
+        "advanced": "進階",
+        "formula": "公式",
+        "setFormula": "設定公式",
+        "editFormula": "編輯公式",
+        "formulaType": "公式類型",
+        "formulaExpression": "公式表達式",
         "dataType": {
           "STRING": "文字",
           "NUMBER": "數字",
           "DATE": "日期",
           "BOOLEAN": "布林",
           "ARRAY": "子表",
-          "OBJECT": "關聯表"
+          "OBJECT": "關聯表",
+          "FORMULA": "公式"
         }
       },
       "canvas": {
@@ -984,7 +992,10 @@
         "inlineCreate": "+ 新增參數",
         "search": "搜尋參數...",
         "noMatch": "無符合的參數",
-        "filterByType": "按類型篩選"
+        "filterByType": "按類型篩選",
+        "aggregationProperties": "聚合屬性",
+        "rowExpression": "行級表達式 — 僅可引用當前行欄位",
+        "objectExpression": "物件級表達式 — 僅可引用同級欄位"
       },
       "overview": {
         "treeView": "樹狀檢視",

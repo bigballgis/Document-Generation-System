@@ -924,6 +924,7 @@
       "parameters": "Parameters",
       "segmentArrangement": "Segment Arrangement",
       "importZip": "Import ZIP",
+      "importTemplatePackage": "Import Template Package",
       "settings": "Settings",
       "selectSegment": "Select Segment",
       "noSegments": "No segments to edit",
@@ -949,13 +950,20 @@
         "nameRequired": "Parameter name is required",
         "nameInvalid": "Only letters, digits and underscores allowed, must start with a letter or underscore",
         "nameDuplicate": "A sibling parameter with this name already exists",
+        "advanced": "Advanced",
+        "formula": "Formula",
+        "setFormula": "Set Formula",
+        "editFormula": "Edit Formula",
+        "formulaType": "Formula Type",
+        "formulaExpression": "Formula Expression",
         "dataType": {
           "STRING": "Text",
           "NUMBER": "Number",
           "DATE": "Date",
           "BOOLEAN": "Boolean",
           "ARRAY": "Sub-table",
-          "OBJECT": "Related Table"
+          "OBJECT": "Related Table",
+          "FORMULA": "Formula"
         }
       },
       "canvas": {
@@ -985,7 +993,10 @@
         "inlineCreate": "+ New Parameter",
         "search": "Search parameters...",
         "noMatch": "No matching parameters",
-        "filterByType": "Filter by Type"
+        "filterByType": "Filter by Type",
+        "aggregationProperties": "Aggregation Properties",
+        "rowExpression": "Row-level expression — can only reference current row fields",
+        "objectExpression": "Object-level expression — can only reference sibling fields"
       },
       "overview": {
         "treeView": "Tree View",

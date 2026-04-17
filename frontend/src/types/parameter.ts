@@ -89,7 +89,7 @@ export interface BatchUpdateItem {
 
 // ── Scan Types ──
 
-export type PlaceholderType = 'SIMPLE' | 'OBJECT_PATH' | 'LOOP' | 'CONDITION'
+export type PlaceholderType = 'SIMPLE' | 'OBJECT_PATH' | 'LOOP' | 'CONDITION' | 'AGGREGATION'
 
 export interface PlaceholderInfo {
   name: string
@@ -125,6 +125,21 @@ export interface ParameterSchemaDTO {
   requiredParameterCount: number
   parameters: ParameterSchemaEntry[]
   sampleRequestBody: Record<string, unknown>
+}
+
+// ── Aggregation Schema Types ──
+
+export interface AggregationPropertyDTO {
+  name: string
+  placeholderPath: string
+  resultDataType: DataType | 'OBJECT'
+  description: string
+}
+
+export interface AggregationSchemaDTO {
+  arrayName: string
+  arrayPath: string
+  properties: AggregationPropertyDTO[]
 }
 
 // ── Coverage Types (new three-dimensional) ──

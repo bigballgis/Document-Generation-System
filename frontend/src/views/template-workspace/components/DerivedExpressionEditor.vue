@@ -1,5 +1,22 @@
 <template>
   <div class="derived-expression-editor">
+    <el-tag
+      v-if="scopeLevel === 'row'"
+      type="warning"
+      size="small"
+      class="scope-indicator"
+    >
+      {{ t('workspace.design.sidebar.rowExpression') }}
+    </el-tag>
+    <el-tag
+      v-else-if="scopeLevel === 'object'"
+      type="info"
+      size="small"
+      class="scope-indicator"
+    >
+      {{ t('workspace.design.sidebar.objectExpression') }}
+    </el-tag>
+
     <el-tabs v-model="activeMode" type="border-card" size="small">
       <el-tab-pane :label="t('parameter.expression.visualMode')" name="visual">
         <VisualExpressionBuilder
@@ -47,6 +64,7 @@ const props = defineProps<{
   expressionText: string
   expressionType: string
   availableParameters: ParameterDTO[]
+  scopeLevel?: 'root' | 'row' | 'object'
 }>()
 
 const emit = defineEmits<{
@@ -92,6 +110,9 @@ function handleTest() {
   border-radius: 4px;
   padding: 8px;
   background: var(--el-fill-color-blank);
+}
+.scope-indicator {
+  margin-bottom: 8px;
 }
 .editor-footer {
   display: flex;
