@@ -1,134 +1,201 @@
 <template>
   <div class="design-stage">
-    <!-- Unified Toolbar -->
+    <!-- Single toolbar: design tabs + editor tabs + actions -->
     <div class="design-toolbar">
-      <div class="toolbar-left">
-        <el-button v-if="!readonly && isDraft" @click="handleImportZip">
+      <div class="toolbar-tabs">
+        <div
+          class="tab-item"
+          :class="{ active: activeView === 'parameter-table' }"
+          @click="switchToView('parameter-table')"
+        >{{ t('workspace.design.parameters') }}</div>
+        <div
+          class="tab-item"
+          :class="{ active: activeView === 'segment-canvas' }"
+          @click="switchToView('segment-canvas')"
+        >{{ t('workspace.design.segmentArrangement') }}</div>
+        <!-- Editor tabs from SegmentCanvas -->
+        <div
+          v-for="tab in editorTabs"
+          :key="tab.id"
+          class="tab-item tab-item-editor"
+          :class="{ active: activeView === tab.id }"
+          @click="switchToView(tab.id)"
+        >
+          <span>{{ tab.title }}</span>
+          <el-icon class="tab-close" @click.stop="closeEditorTab(tab.id)"><Close /></el-icon>
+        </div>
+      </div>
+      <div class="toolbar-actions">
+        <el-button v-if="!readonly && isDraft" size="small" @click="handleImportZip">
           {{ t('workspace.design.importZip') }}
         </el-button>
-        <input
-          ref="zipInputRef"
-          type="file"
-          accept=".zip"
-          style="display: none"
-          @change="handleZipFileSelected"
-        />
-      </div>
-      <div class="toolbar-right">
-        <el-button @click="overviewVisible = true">
+        <input ref="zipInputRef" type="file" accept=".zip" style="display: none" @change="handleZipFileSelected" />
+        <el-button size="small" @click="overviewVisible = true">
           {{ t('workspace.design.parameterOverview') }}
         </el-button>
-        <!-- Segment selector: only visible in step 3 -->
-        <el-select
-          v-if="currentStep === 'segment-detail' && enabledSegments.length > 1"
-          v-model="selectedSegmentIndex"
-          size="default"
-          style="width: 200px"
-          :placeholder="t('workspace.design.selectSegment')"
-        >
-          <el-option
-            v-for="(seg, idx) in enabledSegments"
-            :key="idx"
-            :label="`${seg.position + 1}. ${seg.name}`"
-            :value="idx"
-          />
-        </el-select>
-        <el-button circle @click="settingsVisible = true">
+        <el-button size="small" circle @click="settingsVisible = true">
           <el-icon><Setting /></el-icon>
         </el-button>
       </div>
     </div>
 
-    <!-- Step Indicator -->
-    <DesignStepIndicator
-      :current-step="currentStep"
-      :step-statuses="stepStatuses"
-      @update:current-step="goToStep"
-    />
-
-    <!-- Step View Area -->
-    <div class="step-view-area">
-      <ParameterTableDesign v-if="currentStep === 'parameter-table'" :readonly="readonly" />
-      <SegmentCanvas v-else-if="currentStep === 'segment-canvas'" :readonly="readonly" />
-      <SegmentDetailDesign v-else-if="currentStep === 'segment-detail'" :readonly="readonly" />
+    <!-- View area -->
+    <div class="view-area">
+      <ParameterTableDesign v-show="activeView === 'parameter-table'" :readonly="readonly" />
+      <SegmentCanvas
+        v-show="activeView === 'segment-canvas'"
+        ref="segmentCanvasRef"
+        :readonly="readonly"
+        :hide-tabs="true"
+        @open-editor="handleOpenEditor"
+      />
+      <!-- Editor tab content -->
+      <div
+        v-for="tab in editorTabs"
+        :key="tab.id"
+        v-show="activeView === tab.id"
+        class="editor-tab-content"
+      >
+        <div v-if="tab.hint" class="isolation-hint" :class="`isolation-hint--${tab.type}`">
+          <el-icon><WarningFilled /></el-icon>
+          <span>{{ tab.hint }}</span>
+        </div>
+        <div class="editor-with-sidebar">
+          <!-- Parameter sidebar for inserting variables -->
+          <ParameterSidebar
+            v-if="!readonly"
+            :collapsed="sidebarCollapsed"
+            :readonly="readonly"
+            @update:collapsed="sidebarCollapsed = $event"
+            @insert-variable="(name: string) => insertToEditor(tab.id, 'variable', name)"
+            @insert-loop="(name: string) => insertToEditor(tab.id, 'loop', name)"
+            @insert-condition="(expr: string) => insertToEditor(tab.id, 'condition', expr)"
+          />
+          <div class="editor-container">
+            <template v-if="tab.error">
+              <div class="editor-error">
+                <el-empty :description="tab.error">
+                  <el-button type="primary" @click="loadEditorTab(tab)">{{ t('common.refresh') }}</el-button>
+                </el-empty>
+              </div>
+            </template>
+            <template v-else-if="tab.documentUrl">
+              <OnlyOfficeEditor
+                :ref="(el: any) => { if (el) editorRefs[tab.id] = el }"
+                :document-url="tab.documentUrl"
+                :document-key="tab.documentKey"
+                :document-title="tab.title + '.docx'"
+                :callback-url="tab.callbackUrl"
+                :view-only="readonly"
+                @error="(msg: string) => ElMessage.error(msg)"
+              />
+            </template>
+            <template v-else>
+              <div class="editor-loading"><el-skeleton :rows="6" animated /></div>
+            </template>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- Prev / Next Navigation (hidden for parameter-table, it has its own) -->
-    <div v-if="currentStep !== 'parameter-table'" class="step-navigation">
-      <el-button
-        @click="goPrev"
-      >
-        {{ t('workspace.design.prev') }}
-      </el-button>
-      <el-button
-        v-if="currentStep !== 'segment-detail'"
-        type="primary"
-        @click="goNext"
-      >
-        {{ t('workspace.design.next') }}
-      </el-button>
-      <span v-else />
-    </div>
-
-    <!-- Parameter Overview Panel -->
-    <ParameterOverviewPanel
-      :visible="overviewVisible"
-      @update:visible="overviewVisible = $event"
-      @navigate-to-param="handleNavigateToParam"
-    />
-
-    <!-- Settings Popover -->
-    <SettingsPopover
-      :visible="settingsVisible"
-      @update:visible="settingsVisible = $event"
-    />
+    <ParameterOverviewPanel :visible="overviewVisible" @update:visible="overviewVisible = $event" @navigate-to-param="handleNavigateToParam" />
+    <SettingsPopover :visible="settingsVisible" @update:visible="settingsVisible = $event" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
-import { Setting } from '@element-plus/icons-vue'
+import { Setting, Close, WarningFilled } from '@element-plus/icons-vue'
 import { useTemplateWorkspaceStore } from '@/stores/templateWorkspace'
-import { useDesignStep } from '@/composables/useDesignStep'
-import { importCompositeFromZip } from '@/api/composite-templates'
-import DesignStepIndicator from './DesignStepIndicator.vue'
+import { importCompositeFromZip, getSegmentOnlyOfficeUrl } from '@/api/composite-templates'
 import ParameterTableDesign from './ParameterTableDesign.vue'
 import SegmentCanvas from './SegmentCanvas.vue'
-import SegmentDetailDesign from './SegmentDetailDesign.vue'
 import ParameterOverviewPanel from './ParameterOverviewPanel.vue'
 import SettingsPopover from './SettingsPopover.vue'
-import type { AssemblySegmentEntry } from '@/types/segment'
+import ParameterSidebar from './ParameterSidebar.vue'
+import OnlyOfficeEditor from '@/components/OnlyOfficeEditor.vue'
 
-defineProps<{
-  readonly: boolean
-}>()
+defineProps<{ readonly: boolean }>()
 
 const { t } = useI18n()
 const store = useTemplateWorkspaceStore()
-const { currentStep, stepStatuses, goToStep, goNext, goPrev } = useDesignStep()
 
+const activeView = ref('parameter-table')
 const overviewVisible = ref(false)
 const settingsVisible = ref(false)
-const selectedSegmentIndex = ref(0)
 const zipInputRef = ref<HTMLInputElement | null>(null)
+const segmentCanvasRef = ref()
 
 const isDraft = computed(() => store.isDraft)
+const sidebarCollapsed = ref(false)
+const editorRefs: Record<string, any> = {}
 
-const segments = computed<AssemblySegmentEntry[]>(() => {
-  return store.assemblyConfig?.segments ?? []
-})
-
-const enabledSegments = computed(() => {
-  return segments.value.filter(s => s.enabled && s.filePath)
-})
-
-// ── Import ZIP ──
-
-function handleImportZip() {
-  zipInputRef.value?.click()
+// ── Editor tabs (managed here, not in SegmentCanvas) ──
+interface EditorTab {
+  id: string; title: string; type: 'segment' | 'header' | 'footer'
+  segmentIndex: number; filePath: string; documentUrl: string
+  documentKey: string; callbackUrl: string; hint: string
+  loading: boolean; error: string
 }
+
+const editorTabs = reactive<EditorTab[]>([])
+
+function handleOpenEditor(tabInfo: { id: string; title: string; type: string; segmentIndex: number; filePath: string }) {
+  const existing = editorTabs.find(t => t.id === tabInfo.id)
+  if (existing) { activeView.value = tabInfo.id; return }
+
+  const backendUrl = import.meta.env.VITE_BACKEND_INTERNAL_URL || 'http://app:8080'
+  const contentType = tabInfo.type === 'segment' ? 'body' : tabInfo.type
+  const tab: EditorTab = {
+    id: tabInfo.id, title: tabInfo.title, type: tabInfo.type as any,
+    segmentIndex: tabInfo.segmentIndex, filePath: tabInfo.filePath,
+    documentUrl: '', documentKey: `${tabInfo.type}-${store.templateId}-${tabInfo.segmentIndex}-${Date.now()}`,
+    callbackUrl: `${backendUrl}/api/composite-templates/${store.templateId}/segments/${tabInfo.segmentIndex}/onlyoffice-callback?contentType=${contentType}`,
+    hint: tabInfo.type === 'header' ? t('workspace.design.isolation.headerHint')
+        : tabInfo.type === 'footer' ? t('workspace.design.isolation.footerHint')
+        : t('workspace.design.isolation.bodyHint'),
+    loading: false, error: '',
+  }
+  editorTabs.push(tab)
+  activeView.value = tabInfo.id
+  loadEditorTab(tab)
+}
+
+async function loadEditorTab(tab: EditorTab) {
+  const idx = editorTabs.findIndex(t => t.id === tab.id)
+  if (idx < 0) return
+  editorTabs[idx].loading = true; editorTabs[idx].error = ''; editorTabs[idx].documentUrl = ''
+  try {
+    const { url } = await getSegmentOnlyOfficeUrl(store.templateId, editorTabs[idx].segmentIndex)
+    editorTabs[idx].documentUrl = url || ''
+    if (!url) editorTabs[idx].error = 'No document URL returned'
+  } catch (e: any) {
+    editorTabs[idx].error = e.response?.data?.message || e.message || 'Failed to load editor'
+  } finally { editorTabs[idx].loading = false }
+}
+
+function closeEditorTab(id: string) {
+  const idx = editorTabs.findIndex(t => t.id === id)
+  if (idx >= 0) editorTabs.splice(idx, 1)
+  if (activeView.value === id) activeView.value = 'segment-canvas'
+  store.refreshAssemblyConfig()
+}
+
+function switchToView(view: string) { activeView.value = view }
+
+function insertToEditor(tabId: string, type: 'variable' | 'loop' | 'condition', value: string) {
+  const editor = editorRefs[tabId]
+  if (!editor) return
+  if (type === 'variable') editor.insertVariable(value)
+  else if (type === 'loop') editor.insertLoop(value)
+  else if (type === 'condition') editor.insertCondition(value)
+}
+
+function handleNavigateToParam(_paramId: number) { activeView.value = 'parameter-table' }
+
+function handleImportZip() { zipInputRef.value?.click() }
 
 async function handleZipFileSelected(event: Event) {
   const input = event.target as HTMLInputElement
@@ -136,93 +203,65 @@ async function handleZipFileSelected(event: Event) {
   if (!file) return
   try {
     await importCompositeFromZip(file)
-    await store.refreshAssemblyConfig()
-    await store.refreshParameters()
+    await store.refreshAssemblyConfig(); await store.refreshParameters()
     ElMessage.success(t('message.importSuccess'))
-  } catch (e: any) {
-    ElMessage.error(e.response?.data?.message || e.message || t('message.importFailed'))
-  } finally {
-    input.value = ''
-  }
-}
-
-// ── Navigate to param from ParameterOverviewPanel ──
-
-function handleNavigateToParam(_paramId: number) {
-  goToStep('parameter-table')
+  } catch (e: any) { ElMessage.error(e.response?.data?.message || e.message || t('message.importFailed')) }
+  finally { input.value = '' }
 }
 </script>
 
 <style scoped>
-.design-stage {
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - 280px);
-  min-height: 400px;
-}
+.design-stage { display: flex; flex-direction: column; flex: 1; height: 100%; min-height: 0; overflow: hidden; }
 
+/* ── Single toolbar row ── */
 .design-toolbar {
   flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
-  gap: 8px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+  background: var(--el-bg-color);
+  overflow-x: auto;
 }
-
-.toolbar-left,
-.toolbar-right {
+.toolbar-tabs {
   display: flex;
   align-items: center;
-  gap: 8px;
-}
-
-.step-view-area {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  border: 1px solid var(--el-border-color-lighter);
-  border-radius: 4px;
-}
-
-.step-navigation {
+  gap: 0;
   flex-shrink: 0;
+}
+.tab-item {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 12px 0;
+  gap: 6px;
+  padding: 10px 18px;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  color: var(--el-text-color-secondary);
+  transition: all 0.15s;
+  font-weight: 500;
 }
+.tab-item:hover { color: var(--el-color-primary); background: var(--el-fill-color-light); }
+.tab-item.active { color: var(--el-color-primary); border-bottom-color: var(--el-color-primary); }
+.tab-item-editor { font-weight: 400; }
+.tab-close { font-size: 12px; border-radius: 50%; padding: 2px; margin-left: 2px; }
+.tab-close:hover { background: var(--el-fill-color); }
 
-/* ── Global drag CSS classes ── */
-:deep(.drag-source-active) {
-  opacity: 0.5;
-  transition: opacity 0.15s ease;
-}
+.toolbar-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; padding: 0 12px; }
 
-:deep(.drop-indicator) {
-  position: relative;
-}
+/* ── View area ── */
+.view-area { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
 
-:deep(.drop-indicator)::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--el-color-primary);
-  border-radius: 1px;
-  z-index: 10;
-}
+/* ── Editor tab content ── */
+.editor-tab-content { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.isolation-hint { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 6px; font-size: 12px; margin: 4px 8px; flex-shrink: 0; }
+.isolation-hint--segment { background: var(--el-color-info-light-9); color: var(--el-color-info); }
+.isolation-hint--header { background: var(--el-color-primary-light-9); color: var(--el-color-primary); }
+.isolation-hint--footer { background: var(--el-color-success-light-9); color: var(--el-color-success); }
+.editor-with-sidebar { flex: 1; display: flex; min-height: 0; overflow: hidden; }
+.editor-container { flex: 1; min-height: 0; border: 1px solid var(--el-border-color-lighter); border-radius: 4px; overflow: hidden; }
+.editor-loading, .editor-error { display: flex; align-items: center; justify-content: center; height: 100%; padding: 24px; }
 
-:deep(.drop-indicator--top)::before {
-  top: -1px;
-}
-
-:deep(.drop-indicator--bottom)::before {
-  bottom: -1px;
-}
-
-:deep(.drop-forbidden) {
-  cursor: not-allowed;
-}
+:deep(.drag-source-active) { opacity: 0.5; }
 </style>

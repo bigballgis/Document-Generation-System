@@ -16,7 +16,7 @@ export interface StageDefinition {
 
 // ── Design step types (three-step sub-workflow within design stage) ──
 
-export type DesignStepName = 'parameter-table' | 'segment-canvas' | 'segment-detail'
+export type DesignStepName = 'parameter-table' | 'segment-canvas'
 
 export interface ParameterBreadcrumbItem {
   id: number | null

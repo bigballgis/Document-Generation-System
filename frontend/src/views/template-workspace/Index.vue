@@ -209,7 +209,11 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .template-workspace {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 100px);
   padding: 0;
+  overflow: hidden;
 }
 .workspace-header {
   display: flex;

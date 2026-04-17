@@ -1,7 +1,7 @@
 <template>
   <div class="onlyoffice-editor-wrapper">
     <TemplateTagToolbar
-      v-if="!viewOnly"
+      v-if="!viewOnly && showToolbar"
       @insert-variable="insertVariable"
       @insert-loop="insertLoop"
       @insert-condition="insertCondition"
@@ -27,6 +27,8 @@ export interface OnlyOfficeEditorProps {
   callbackUrl?: string
   /** View-only / preview mode */
   viewOnly?: boolean
+  /** Show template tag toolbar (Insert Variable/Loop/Condition) */
+  showToolbar?: boolean
   /** Document type: word, cell, slide */
   documentType?: string
 }
@@ -35,6 +37,7 @@ const props = withDefaults(defineProps<OnlyOfficeEditorProps>(), {
   documentTitle: 'Template.docx',
   callbackUrl: '',
   viewOnly: false,
+  showToolbar: false,
   documentType: 'word',
 })
 
@@ -235,11 +238,17 @@ defineExpose({
   flex-direction: column;
   height: 100%;
   width: 100%;
+  overflow: hidden;
 }
 
 .editor-container {
   flex: 1;
-  min-height: 600px;
+  min-height: 0;
   width: 100%;
+  height: 100%;
+}
+
+.onlyoffice-editor-wrapper :deep(iframe) {
+  height: 100% !important;
 }
 </style>

@@ -49,7 +49,6 @@ const { t } = useI18n()
 const steps = computed(() => [
   { name: 'parameter-table' as DesignStepName, label: t('workspace.design.step.parameterTable') },
   { name: 'segment-canvas' as DesignStepName, label: t('workspace.design.step.segmentCanvas') },
-  { name: 'segment-detail' as DesignStepName, label: t('workspace.design.step.segmentDetail') },
 ])
 </script>
 

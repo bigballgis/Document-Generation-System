@@ -1,38 +1,15 @@
 <template>
   <div class="segment-canvas">
-    <!-- Canvas toolbar -->
+    <!-- Canvas toolbar (Save/Undo/Redo) -->
     <div class="canvas-toolbar">
       <div class="toolbar-left">
-        <el-button
-          v-if="!readonly"
-          type="primary"
-          :loading="saving"
-          @click="handleSave"
-        >
-          {{ t('common.save') }}
-        </el-button>
-        <el-button
-          v-if="!readonly"
-          :disabled="!assemblyConfig.canUndo.value"
-          @click="handleUndo"
-        >
-          {{ t('assembly.undo') }}
-        </el-button>
-        <el-button
-          v-if="!readonly"
-          :disabled="!assemblyConfig.canRedo.value"
-          @click="handleRedo"
-        >
-          {{ t('assembly.redo') }}
-        </el-button>
+        <el-button v-if="!readonly" type="primary" size="small" :loading="saving" @click="handleSave">{{ t('common.save') }}</el-button>
+        <el-button v-if="!readonly" size="small" :disabled="!assemblyConfig.canUndo.value" @click="handleUndo">{{ t('assembly.undo') }}</el-button>
+        <el-button v-if="!readonly" size="small" :disabled="!assemblyConfig.canRedo.value" @click="handleRedo">{{ t('assembly.redo') }}</el-button>
       </div>
     </div>
-
-    <!-- Main layout: ComponentPanel + CanvasArea -->
     <div class="canvas-body">
-      <div class="panel-col">
-        <ComponentPanel :readonly="readonly" />
-      </div>
+      <div class="panel-col"><ComponentPanel :readonly="readonly" /></div>
       <div class="canvas-col">
         <CanvasArea
           :nodes="canvasNodes.nodes.value"
@@ -45,22 +22,11 @@
           @reorder="handleReorder"
           @update-segment="handleUpdateSegment"
           @update-node="handleUpdateNode"
+          @edit-segment="handleEditSegment"
           @edit-header-footer="handleEditHeaderFooter"
         />
       </div>
     </div>
-
-    <!-- ControlNodeEditor dialog -->
-    <ControlNodeEditor
-      :visible="editorVisible"
-      :node-type="editorNodeType"
-      :file-path="editorFilePath"
-      :template-id="store.templateId"
-      :readonly="readonly"
-      :segment-index="editorSegmentIndex"
-      @update:visible="editorVisible = $event"
-      @saved="onEditorSaved"
-    />
   </div>
 </template>
 
@@ -76,148 +42,82 @@ import type { CanvasNode } from '@/composables/useCanvasNodes'
 import type { AssemblySegmentEntry } from '@/types/segment'
 import ComponentPanel from './ComponentPanel.vue'
 import CanvasArea from './CanvasArea.vue'
-import ControlNodeEditor from './ControlNodeEditor.vue'
 
-defineProps<{
-  readonly: boolean
+defineProps<{ readonly: boolean }>()
+
+const emit = defineEmits<{
+  (e: 'open-editor', info: { id: string; title: string; type: string; segmentIndex: number; filePath: string }): void
 }>()
 
 const { t } = useI18n()
 const store = useTemplateWorkspaceStore()
-
 const assemblyConfig = useAssemblyConfig()
 const canvasNodes = useCanvasNodes()
 const saving = ref(false)
 
-// ControlNodeEditor state
-const editorVisible = ref(false)
-const editorNodeType = ref<'header' | 'footer'>('header')
-const editorFilePath = ref('')
-const editorSegmentIndex = ref<number | undefined>(undefined)
-
-// ── Initialize from store ──
-
 function syncFromStore() {
   const segments = store.assemblyConfig?.segments ?? []
   assemblyConfig.deserialize({ segments })
-  const nodes = canvasNodes.fromSegments(segments)
-  canvasNodes.setNodes(nodes)
+  canvasNodes.setNodes(canvasNodes.fromSegments(segments))
 }
-
-onMounted(() => {
-  syncFromStore()
-})
-
-watch(() => store.assemblyConfig, () => {
-  syncFromStore()
-}, { deep: true })
-
-// ── Sync canvas nodes back to segments ──
+onMounted(() => syncFromStore())
+watch(() => store.assemblyConfig, () => syncFromStore(), { deep: true })
 
 function syncNodesToSegments() {
-  const newSegments = canvasNodes.toSegments(canvasNodes.nodes.value, assemblyConfig.segments.value)
-  assemblyConfig.setSegments(newSegments)
+  assemblyConfig.setSegments(canvasNodes.toSegments(canvasNodes.nodes.value, assemblyConfig.segments.value))
 }
 
-// ── Event handlers ──
-
-function handleAddContentNode(entry: AssemblySegmentEntry, _insertIndex: number) {
-  // Add segment to assemblyConfig
+function handleAddContentNode(entry: AssemblySegmentEntry, _idx: number) {
   assemblyConfig.addSegment(entry)
-  // Rebuild canvas nodes from updated segments
-  const nodes = canvasNodes.fromSegments(assemblyConfig.segments.value)
-  canvasNodes.setNodes(nodes)
+  canvasNodes.setNodes(canvasNodes.fromSegments(assemblyConfig.segments.value))
 }
-
 function handleAddControlNode(type: CanvasNode['type'], insertIndex: number) {
-  const nodeId = canvasNodes.generateNodeId()
-  const node: CanvasNode = { id: nodeId, type }
-  if (type === 'page-number') {
-    node.pageNumberFormat = 'ARABIC'
-  }
+  const node: CanvasNode = { id: canvasNodes.generateNodeId(), type }
+  if (type === 'page-number') node.pageNumberFormat = 'ARABIC'
   canvasNodes.addNode(node, insertIndex)
   syncNodesToSegments()
 }
-
-function handleRemoveNode(index: number) {
-  const node = canvasNodes.nodes.value[index]
-  if (!node) return
-
-  // Task 2.6: Control node deletion logic
-  if (node.type === 'page-break') {
-    // Restore pageBreakBefore=false on the next content segment
-    // This is handled automatically by syncNodesToSegments after removal
-  } else if (node.type === 'header' || node.type === 'footer') {
-    // After removal, subsequent segments will inherit from previous same-type node
-    // This is handled automatically by toSegments
-  }
-
-  canvasNodes.removeNode(index)
-  syncNodesToSegments()
-}
-
-function handleReorder(newNodes: CanvasNode[]) {
-  canvasNodes.setNodes(newNodes)
-  syncNodesToSegments()
-}
-
+function handleRemoveNode(index: number) { canvasNodes.removeNode(index); syncNodesToSegments() }
+function handleReorder(newNodes: CanvasNode[]) { canvasNodes.setNodes(newNodes); syncNodesToSegments() }
 function handleUpdateSegment(segmentIndex: number, patch: Partial<AssemblySegmentEntry>) {
   assemblyConfig.updateSegment(segmentIndex, patch)
-  // Rebuild canvas nodes to reflect changes
-  const nodes = canvasNodes.fromSegments(assemblyConfig.segments.value)
-  canvasNodes.setNodes(nodes)
+  canvasNodes.setNodes(canvasNodes.fromSegments(assemblyConfig.segments.value))
 }
-
 function handleUpdateNode(nodeIndex: number, patch: Partial<CanvasNode>) {
   const node = canvasNodes.nodes.value[nodeIndex]
-  if (!node) return
-  Object.assign(node, patch)
-  syncNodesToSegments()
+  if (node) { Object.assign(node, patch); syncNodesToSegments() }
+}
+
+function handleEditSegment(node: CanvasNode) {
+  if (node.segmentIndex == null) return
+  const seg = assemblyConfig.segments.value[node.segmentIndex]
+  if (!seg?.filePath) { ElMessage.warning('No file to edit'); return }
+  emit('open-editor', { id: `segment-${node.segmentIndex}`, title: seg.name, type: 'segment', segmentIndex: node.segmentIndex, filePath: seg.filePath })
 }
 
 async function handleEditHeaderFooter(node: CanvasNode) {
   const nodeType = node.type as 'header' | 'footer'
   let filePath = nodeType === 'header' ? node.headerFilePath : node.footerFilePath
-
-  // If no file path yet, create a blank header/footer
+  const nodeIdx = canvasNodes.nodes.value.indexOf(node)
+  let segIdx = 0
+  for (let i = nodeIdx + 1; i < canvasNodes.nodes.value.length; i++) {
+    const n = canvasNodes.nodes.value[i]
+    if (n.type === 'content' && n.segmentIndex != null) { segIdx = n.segmentIndex; break }
+  }
   if (!filePath) {
     try {
       const result = await createBlankHeaderFooter(store.templateId, nodeType)
       filePath = result.filePath
-      // Update the node with the new file path
-      const idx = canvasNodes.nodes.value.indexOf(node)
-      if (idx >= 0) {
-        if (nodeType === 'header') {
-          canvasNodes.nodes.value[idx].headerFilePath = filePath
-        } else {
-          canvasNodes.nodes.value[idx].footerFilePath = filePath
-        }
+      if (nodeIdx >= 0) {
+        if (nodeType === 'header') canvasNodes.nodes.value[nodeIdx].headerFilePath = filePath
+        else canvasNodes.nodes.value[nodeIdx].footerFilePath = filePath
         syncNodesToSegments()
       }
-    } catch (e: any) {
-      ElMessage.error(e.response?.data?.message || e.message || t('message.operationFailed'))
-      return
-    }
+    } catch (e: any) { ElMessage.error(e.response?.data?.message || e.message); return }
   }
-
-  editorNodeType.value = nodeType
-  editorFilePath.value = filePath || ''
-  // Find the segment index that this header/footer affects
-  const nodeIdx = canvasNodes.nodes.value.indexOf(node)
-  const range = canvasNodes.getAffectedRange(nodeIdx)
-  if (range.start >= 0 && range.start < canvasNodes.nodes.value.length) {
-    const affectedNode = canvasNodes.nodes.value[range.start]
-    editorSegmentIndex.value = affectedNode?.segmentIndex
-  }
-  editorVisible.value = true
+  const title = nodeType === 'header' ? t('workspace.design.canvas.header') : t('workspace.design.canvas.footer')
+  emit('open-editor', { id: `${nodeType}-${segIdx}`, title, type: nodeType, segmentIndex: segIdx, filePath: filePath || '' })
 }
-
-function onEditorSaved() {
-  // Refresh after editor save
-  store.refreshAssemblyConfig()
-}
-
-// ── Save / Undo / Redo ──
 
 async function handleSave() {
   saving.value = true
@@ -225,66 +125,18 @@ async function handleSave() {
     await updateAssemblyConfig(store.templateId, { segments: assemblyConfig.segments.value })
     await store.refreshAssemblyConfig()
     ElMessage.success(t('message.saveSuccess'))
-  } catch (e: any) {
-    ElMessage.error(e.response?.data?.message || e.message || t('message.saveFailed'))
-  } finally {
-    saving.value = false
-  }
+  } catch (e: any) { ElMessage.error(e.response?.data?.message || e.message || t('message.saveFailed')) }
+  finally { saving.value = false }
 }
-
-function handleUndo() {
-  assemblyConfig.undo()
-  const nodes = canvasNodes.fromSegments(assemblyConfig.segments.value)
-  canvasNodes.setNodes(nodes)
-}
-
-function handleRedo() {
-  assemblyConfig.redo()
-  const nodes = canvasNodes.fromSegments(assemblyConfig.segments.value)
-  canvasNodes.setNodes(nodes)
-}
+function handleUndo() { assemblyConfig.undo(); canvasNodes.setNodes(canvasNodes.fromSegments(assemblyConfig.segments.value)) }
+function handleRedo() { assemblyConfig.redo(); canvasNodes.setNodes(canvasNodes.fromSegments(assemblyConfig.segments.value)) }
 </script>
 
 <style scoped>
-.segment-canvas {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.canvas-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
-  background: var(--el-bg-color);
-}
-
-.toolbar-left {
-  display: flex;
-  gap: 8px;
-}
-
-.canvas-body {
-  flex: 1;
-  display: flex;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.panel-col {
-  width: 25%;
-  min-width: 180px;
-  max-width: 280px;
-  flex-shrink: 0;
-}
-
-.canvas-col {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  overflow: hidden;
-}
+.segment-canvas { display: flex; flex-direction: column; height: 100%; }
+.canvas-toolbar { display: flex; align-items: center; padding: 6px 12px; border-bottom: 1px solid var(--el-border-color-lighter); background: var(--el-bg-color); flex-shrink: 0; }
+.toolbar-left { display: flex; gap: 8px; }
+.canvas-body { flex: 1; display: flex; min-height: 0; overflow: hidden; }
+.panel-col { width: 200px; flex-shrink: 0; }
+.canvas-col { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
 </style>

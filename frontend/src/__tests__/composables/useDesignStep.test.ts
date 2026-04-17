@@ -1,7 +1,6 @@
 /**
  * Unit tests for useDesignStep composable.
- * Tests step switching, state persistence (CP-4), and boundary conditions.
- * _Requirements: 1.1, 1.4, 1.5_
+ * Tests step switching, state persistence, and boundary conditions.
  */
 import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
@@ -23,8 +22,6 @@ describe('useDesignStep', () => {
       const { currentStep, goToStep } = useDesignStep()
       goToStep('segment-canvas')
       expect(currentStep.value).toBe('segment-canvas')
-      goToStep('segment-detail')
-      expect(currentStep.value).toBe('segment-detail')
       goToStep('parameter-table')
       expect(currentStep.value).toBe('parameter-table')
     })
@@ -34,22 +31,18 @@ describe('useDesignStep', () => {
       expect(currentStep.value).toBe('parameter-table')
       goNext()
       expect(currentStep.value).toBe('segment-canvas')
-      goNext()
-      expect(currentStep.value).toBe('segment-detail')
     })
 
     it('goNext does nothing at last step', () => {
       const { currentStep, goToStep, goNext } = useDesignStep()
-      goToStep('segment-detail')
+      goToStep('segment-canvas')
       goNext()
-      expect(currentStep.value).toBe('segment-detail')
+      expect(currentStep.value).toBe('segment-canvas')
     })
 
     it('goPrev goes back through steps in order', () => {
       const { currentStep, goToStep, goPrev } = useDesignStep()
-      goToStep('segment-detail')
-      goPrev()
-      expect(currentStep.value).toBe('segment-canvas')
+      goToStep('segment-canvas')
       goPrev()
       expect(currentStep.value).toBe('parameter-table')
     })
@@ -61,37 +54,17 @@ describe('useDesignStep', () => {
     })
   })
 
-
-  describe('state persistence (CP-4)', () => {
+  describe('state persistence', () => {
     it('stepStates preserves breadcrumb path across step switches', () => {
       const { stepStates, goToStep } = useDesignStep()
-
-      // Set breadcrumb in parameter-table step
       stepStates['parameter-table'].breadcrumbPath = [
         { id: null, name: '主表', tableType: 'main' as const },
         { id: 1, name: 'items', tableType: 'sub' as const },
       ]
-
-      // Switch away and back
       goToStep('segment-canvas')
       goToStep('parameter-table')
-
-      // Breadcrumb should be preserved
       expect(stepStates['parameter-table'].breadcrumbPath).toHaveLength(2)
       expect(stepStates['parameter-table'].breadcrumbPath[1].name).toBe('items')
-    })
-
-    it('stepStates preserves selectedSegmentIndex across step switches', () => {
-      const { stepStates, goToStep } = useDesignStep()
-
-      // Set selected segment in detail step
-      stepStates['segment-detail'].selectedSegmentIndex = 3
-
-      // Switch away and back
-      goToStep('parameter-table')
-      goToStep('segment-detail')
-
-      expect(stepStates['segment-detail'].selectedSegmentIndex).toBe(3)
     })
   })
 
@@ -100,7 +73,6 @@ describe('useDesignStep', () => {
       const { stepStatuses } = useDesignStep()
       expect(stepStatuses.value['parameter-table']).toBe('not_started')
       expect(stepStatuses.value['segment-canvas']).toBe('not_started')
-      expect(stepStatuses.value['segment-detail']).toBe('not_started')
     })
 
     it('parameter-table completed when parameters exist', () => {
@@ -118,47 +90,12 @@ describe('useDesignStep', () => {
       const { stepStatuses } = useDesignStep()
       expect(stepStatuses.value['segment-canvas']).toBe('completed')
     })
-
-    it('segment-detail completed when all enabled segments have filePath', () => {
-      const store = useTemplateWorkspaceStore()
-      store.assemblyConfig = {
-        segments: [
-          { filePath: 'a.docx', name: 'a', position: 0, enabled: true } as any,
-          { filePath: 'b.docx', name: 'b', position: 1, enabled: true } as any,
-        ],
-      }
-      const { stepStatuses } = useDesignStep()
-      expect(stepStatuses.value['segment-detail']).toBe('completed')
-    })
-
-    it('segment-detail not_started when some enabled segments lack filePath', () => {
-      const store = useTemplateWorkspaceStore()
-      store.assemblyConfig = {
-        segments: [
-          { filePath: 'a.docx', name: 'a', position: 0, enabled: true } as any,
-          { filePath: null, name: 'b', position: 1, enabled: true } as any,
-        ],
-      }
-      const { stepStatuses } = useDesignStep()
-      expect(stepStatuses.value['segment-detail']).toBe('not_started')
-    })
-
-    it('segment-detail not_started when no enabled segments', () => {
-      const store = useTemplateWorkspaceStore()
-      store.assemblyConfig = {
-        segments: [
-          { filePath: 'a.docx', name: 'a', position: 0, enabled: false } as any,
-        ],
-      }
-      const { stepStatuses } = useDesignStep()
-      expect(stepStatuses.value['segment-detail']).toBe('not_started')
-    })
   })
 
   describe('boundary conditions', () => {
-    it('STEP_ORDER has exactly 3 steps', () => {
+    it('STEP_ORDER has exactly 2 steps', () => {
       const { STEP_ORDER } = useDesignStep()
-      expect(STEP_ORDER).toEqual(['parameter-table', 'segment-canvas', 'segment-detail'])
+      expect(STEP_ORDER).toEqual(['parameter-table', 'segment-canvas'])
     })
 
     it('handles null assemblyConfig gracefully', () => {
@@ -166,7 +103,6 @@ describe('useDesignStep', () => {
       store.assemblyConfig = null
       const { stepStatuses } = useDesignStep()
       expect(stepStatuses.value['segment-canvas']).toBe('not_started')
-      expect(stepStatuses.value['segment-detail']).toBe('not_started')
     })
   })
 })

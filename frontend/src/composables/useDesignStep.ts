@@ -4,7 +4,7 @@ import { useTemplateWorkspaceStore } from '@/stores/templateWorkspace'
 
 type StepStatus = 'not_started' | 'in_progress' | 'completed'
 
-const STEP_ORDER: DesignStepName[] = ['parameter-table', 'segment-canvas', 'segment-detail']
+const STEP_ORDER: DesignStepName[] = ['parameter-table', 'segment-canvas']
 
 export function useDesignStep() {
   const store = useTemplateWorkspaceStore()
@@ -13,19 +13,15 @@ export function useDesignStep() {
   const stepStates = reactive({
     'parameter-table': { breadcrumbPath: [] as ParameterBreadcrumbItem[] },
     'segment-canvas': {},
-    'segment-detail': { selectedSegmentIndex: 0 },
   })
 
   const stepStatuses = computed<Record<DesignStepName, StepStatus>>(() => {
     const params = store.parameters ?? []
     const segments = store.assemblyConfig?.segments ?? []
-    const enabledSegments = segments.filter(s => s.enabled)
-    const allEdited = enabledSegments.length > 0 && enabledSegments.every(s => s.filePath)
 
     return {
       'parameter-table': params.length > 0 ? 'completed' : 'not_started',
       'segment-canvas': segments.length > 0 ? 'completed' : 'not_started',
-      'segment-detail': allEdited ? 'completed' : 'not_started',
     }
   })
 
