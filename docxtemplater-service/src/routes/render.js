@@ -30,6 +30,36 @@ function createImageModule() {
 }
 
 /**
+ * Preprocess render data to convert flat aggregation keys (e.g., "items.$sum_price")
+ * into JavaScript array properties that Docxtemplater can resolve via nested path access.
+ * Recursively processes nested array elements for nested aggregation properties.
+ */
+function injectAggregationProperties(data) {
+  for (const key of Object.keys(data)) {
+    const dotIdx = key.indexOf('.$');
+    if (dotIdx > 0) {
+      const arrayName = key.substring(0, dotIdx);
+      const propName = key.substring(dotIdx + 1);
+      const arrayVal = data[arrayName];
+      if (Array.isArray(arrayVal)) {
+        arrayVal[propName] = data[key];
+      }
+      delete data[key];
+    }
+  }
+  // Recursively process nested array elements
+  for (const val of Object.values(data)) {
+    if (Array.isArray(val)) {
+      for (const elem of val) {
+        if (elem && typeof elem === 'object' && !Array.isArray(elem)) {
+          injectAggregationProperties(elem);
+        }
+      }
+    }
+  }
+}
+
+/**
  * POST /render
  * Body: {
  *   templatePath: string,       // MinIO path to .docx template
@@ -84,6 +114,7 @@ router.post('/', async (req, res) => {
     });
 
     // Render document with data (supports conditions, loops, nested loops, tables)
+    injectAggregationProperties(renderData);
     doc.render(renderData);
 
     let outputBuffer = doc.getZip().generate({ type: 'nodebuffer' });
@@ -125,3 +156,4 @@ router.post('/', async (req, res) => {
 });
 
 module.exports = router;
+module.exports.injectAggregationProperties = injectAggregationProperties;

@@ -173,7 +173,7 @@ class TemplateScanServicePropertyTest {
         TemplateRepository templateRepo = mock(TemplateRepository.class);
         TemplateScanService scanService = mock(TemplateScanService.class);
         ExpressionEngine engine = mock(ExpressionEngine.class);
-        ParameterService paramService = new ParameterService(paramRepo, templateRepo, scanService, engine, objectMapper, mock(AuditLogService.class));
+        ParameterService paramService = new ParameterService(paramRepo, templateRepo, scanService, engine, objectMapper, mock(AuditLogService.class), mock(AggregationResolver.class));
 
         Long templateId = 1L;
 
@@ -406,7 +406,7 @@ class TemplateScanServicePropertyTest {
         TemplateRepository templateRepo = mock(TemplateRepository.class);
         TemplateScanService scanService = mock(TemplateScanService.class);
         ExpressionEngine engine = mock(ExpressionEngine.class);
-        return new ParameterService(repo, templateRepo, scanService, engine, objectMapper, mock(AuditLogService.class));
+        return new ParameterService(repo, templateRepo, scanService, engine, objectMapper, mock(AuditLogService.class), mock(AggregationResolver.class));
     }
 
     private void collectAllNames(List<PlaceholderInfo> placeholders, Set<String> names) {

@@ -28,6 +28,7 @@ class ParameterValidationServicePropertyTest {
     private ParameterValidationService createService(List<ParameterDefinition> params) {
         ParameterRepository repo = mock(ParameterRepository.class);
         ExpressionEngine engine = mock(ExpressionEngine.class);
+        AggregationResolver aggResolver = mock(AggregationResolver.class);
         ObjectMapper mapper = new ObjectMapper();
 
         when(repo.findByTemplateIdOrderBySortOrderAsc(TEMPLATE_ID)).thenReturn(params);
@@ -39,7 +40,7 @@ class ParameterValidationServicePropertyTest {
                     return "derived_from_" + ctx.size();
                 });
 
-        return new ParameterValidationService(repo, engine, mapper);
+        return new ParameterValidationService(repo, engine, mapper, aggResolver);
     }
 
     // ── Helpers ──
@@ -101,7 +102,7 @@ class ParameterValidationServicePropertyTest {
                     return "result_" + ctx.size();
                 });
 
-        ParameterValidationService svc = new ParameterValidationService(repo, engine, new ObjectMapper());
+        ParameterValidationService svc = new ParameterValidationService(repo, engine, new ObjectMapper(), mock(AggregationResolver.class));
         Map<String, Object> input = Map.of("base", "hello");
         Map<String, Object> result = svc.validateAndBuildContext(TEMPLATE_ID, input);
 

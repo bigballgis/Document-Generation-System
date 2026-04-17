@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.Comparator;
 import java.util.stream.Collectors;
 
 /**
@@ -38,13 +39,16 @@ public class ParameterValidationService {
     private final ParameterRepository parameterRepository;
     private final ExpressionEngine expressionEngine;
     private final ObjectMapper objectMapper;
+    private final AggregationResolver aggregationResolver;
 
     public ParameterValidationService(ParameterRepository parameterRepository,
                                       ExpressionEngine expressionEngine,
-                                      ObjectMapper objectMapper) {
+                                      ObjectMapper objectMapper,
+                                      AggregationResolver aggregationResolver) {
         this.parameterRepository = parameterRepository;
         this.expressionEngine = expressionEngine;
         this.objectMapper = objectMapper;
+        this.aggregationResolver = aggregationResolver;
     }
 
     /**
@@ -98,9 +102,16 @@ public class ParameterValidationService {
             throw new BusinessException(ErrorCode.PARAMETER_VALIDATION_FAILED, message, HttpStatus.BAD_REQUEST);
         }
 
-        // Evaluate DERIVED parameters in sort_order
+        // Step 2: Evaluate nested-level DERIVED parameters (Row_Level_Derived + Nested_Derived)
+        evaluateNestedDerivedParameters(context, rootParams, childrenByParentId);
+
+        // Step 3: Compute aggregation properties for each ARRAY
+        aggregationResolver.computeAggregations(context, rootParams, childrenByParentId);
+
+        // Step 4: Evaluate root-level DERIVED parameters
         evaluateDerivedParameters(templateId, context, rootParams, childrenByParentId);
 
+        // Step 5: Return complete context
         return context;
     }
 
@@ -424,6 +435,177 @@ public class ParameterValidationService {
                     applyValidationRules(childDef, element, elementPath, errors);
                 }
                 validatedArray.add(element);
+            }
+        }
+    }
+
+    /**
+     * Recursively evaluate all nested-level DERIVED parameters (Row_Level_Derived within ARRAY rows,
+     * Nested_Derived within OBJECT structures). Inner nesting levels are processed before outer levels.
+     *
+     * @param context            current data context (already validated REQUEST params)
+     * @param rootParams         root-level parameter definitions
+     * @param childrenByParentId parentId → child parameter definitions
+     */
+    void evaluateNestedDerivedParameters(Map<String, Object> context,
+                                          List<ParameterDefinition> rootParams,
+                                          Map<Long, List<ParameterDefinition>> childrenByParentId) {
+        for (ParameterDefinition param : rootParams) {
+            String dataType = param.getDataType();
+            if ("ARRAY".equals(dataType)) {
+                Object value = context.get(param.getName());
+                if (value instanceof List<?> arrayData) {
+                    @SuppressWarnings("unchecked")
+                    List<Object> typedArray = (List<Object>) arrayData;
+                    evaluateNestedDerivedForArray(param.getName(), typedArray,
+                            childrenByParentId.getOrDefault(param.getId(), Collections.emptyList()),
+                            childrenByParentId);
+                }
+            } else if ("OBJECT".equals(dataType)) {
+                Object value = context.get(param.getName());
+                if (value instanceof Map<?, ?> objectData) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> typedObject = (Map<String, Object>) objectData;
+                    evaluateNestedDerivedForObject(param.getName(), typedObject,
+                            childrenByParentId.getOrDefault(param.getId(), Collections.emptyList()),
+                            childrenByParentId);
+                }
+            }
+        }
+    }
+
+    /**
+     * Evaluate DERIVED children within each row of an ARRAY parameter.
+     * Recursively processes inner ARRAY/OBJECT children before evaluating DERIVED at current level.
+     */
+    private void evaluateNestedDerivedForArray(String arrayPath,
+                                                List<Object> arrayData,
+                                                List<ParameterDefinition> children,
+                                                Map<Long, List<ParameterDefinition>> childrenByParentId) {
+        if (arrayData.isEmpty()) {
+            return; // Skip empty arrays without error
+        }
+
+        for (int rowIndex = 0; rowIndex < arrayData.size(); rowIndex++) {
+            Object element = arrayData.get(rowIndex);
+            if (!(element instanceof Map<?, ?>)) {
+                continue;
+            }
+            @SuppressWarnings("unchecked")
+            Map<String, Object> rowMap = (Map<String, Object>) element;
+
+            // First: recurse into nested ARRAY/OBJECT children (inner before outer)
+            for (ParameterDefinition child : children) {
+                if ("ARRAY".equals(child.getDataType())) {
+                    Object nestedValue = rowMap.get(child.getName());
+                    if (nestedValue instanceof List<?> nestedArray) {
+                        @SuppressWarnings("unchecked")
+                        List<Object> typedNested = (List<Object>) nestedArray;
+                        evaluateNestedDerivedForArray(
+                                arrayPath + "[" + rowIndex + "]." + child.getName(),
+                                typedNested,
+                                childrenByParentId.getOrDefault(child.getId(), Collections.emptyList()),
+                                childrenByParentId);
+                    }
+                } else if ("OBJECT".equals(child.getDataType())) {
+                    Object nestedValue = rowMap.get(child.getName());
+                    if (nestedValue instanceof Map<?, ?> nestedObj) {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> typedNested = (Map<String, Object>) nestedObj;
+                        evaluateNestedDerivedForObject(
+                                arrayPath + "[" + rowIndex + "]." + child.getName(),
+                                typedNested,
+                                childrenByParentId.getOrDefault(child.getId(), Collections.emptyList()),
+                                childrenByParentId);
+                    }
+                }
+            }
+
+            // Then: evaluate DERIVED children in sort_order with row-scoped context
+            List<ParameterDefinition> derivedChildren = children.stream()
+                    .filter(c -> "DERIVED".equals(c.getParameterType()))
+                    .sorted(Comparator.comparingInt(ParameterDefinition::getSortOrder))
+                    .toList();
+
+            // Build row-scoped context: only sibling field values from this row
+            Map<String, Object> rowContext = new LinkedHashMap<>(rowMap);
+
+            for (ParameterDefinition derived : derivedChildren) {
+                try {
+                    ExpressionType exprType = ExpressionType.valueOf(derived.getExpressionType());
+                    Object result = expressionEngine.evaluate(
+                            derived.getExpressionText(), exprType, rowContext);
+                    rowMap.put(derived.getName(), result);
+                    rowContext.put(derived.getName(), result);
+                    log.debug("Evaluated Row_Level_Derived '{}' at {}[{}] = {}",
+                            derived.getName(), arrayPath, rowIndex, result);
+                } catch (Exception e) {
+                    throw new BusinessException(ErrorCode.PARAMETER_EXPRESSION_EVALUATION_FAILED,
+                            "行级衍生参数计算失败: " + arrayPath + "[" + rowIndex + "]." + derived.getName()
+                                    + " — " + e.getMessage(),
+                            HttpStatus.BAD_REQUEST, e);
+                }
+            }
+        }
+    }
+
+    /**
+     * Evaluate DERIVED children within an OBJECT parameter.
+     * Recursively processes inner ARRAY/OBJECT children before evaluating DERIVED at current level.
+     */
+    private void evaluateNestedDerivedForObject(String objectPath,
+                                                 Map<String, Object> objectData,
+                                                 List<ParameterDefinition> children,
+                                                 Map<Long, List<ParameterDefinition>> childrenByParentId) {
+        // First: recurse into nested ARRAY/OBJECT children (inner before outer)
+        for (ParameterDefinition child : children) {
+            if ("ARRAY".equals(child.getDataType())) {
+                Object nestedValue = objectData.get(child.getName());
+                if (nestedValue instanceof List<?> nestedArray) {
+                    @SuppressWarnings("unchecked")
+                    List<Object> typedNested = (List<Object>) nestedArray;
+                    evaluateNestedDerivedForArray(
+                            objectPath + "." + child.getName(),
+                            typedNested,
+                            childrenByParentId.getOrDefault(child.getId(), Collections.emptyList()),
+                            childrenByParentId);
+                }
+            } else if ("OBJECT".equals(child.getDataType())) {
+                Object nestedValue = objectData.get(child.getName());
+                if (nestedValue instanceof Map<?, ?> nestedObj) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> typedNested = (Map<String, Object>) nestedObj;
+                    evaluateNestedDerivedForObject(
+                            objectPath + "." + child.getName(),
+                            typedNested,
+                            childrenByParentId.getOrDefault(child.getId(), Collections.emptyList()),
+                            childrenByParentId);
+                }
+            }
+        }
+
+        // Then: evaluate DERIVED children in sort_order with object-scoped context
+        List<ParameterDefinition> derivedChildren = children.stream()
+                .filter(c -> "DERIVED".equals(c.getParameterType()))
+                .sorted(Comparator.comparingInt(ParameterDefinition::getSortOrder))
+                .toList();
+
+        Map<String, Object> scopedContext = new LinkedHashMap<>(objectData);
+
+        for (ParameterDefinition derived : derivedChildren) {
+            try {
+                ExpressionType exprType = ExpressionType.valueOf(derived.getExpressionType());
+                Object result = expressionEngine.evaluate(
+                        derived.getExpressionText(), exprType, scopedContext);
+                objectData.put(derived.getName(), result);
+                scopedContext.put(derived.getName(), result);
+                log.debug("Evaluated Nested_Derived '{}' at {} = {}",
+                        derived.getName(), objectPath, result);
+            } catch (Exception e) {
+                throw new BusinessException(ErrorCode.PARAMETER_EXPRESSION_EVALUATION_FAILED,
+                        "嵌套衍生参数计算失败: " + objectPath + "." + derived.getName()
+                                + " — " + e.getMessage(),
+                        HttpStatus.BAD_REQUEST, e);
             }
         }
     }

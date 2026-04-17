@@ -160,7 +160,8 @@ class TreeStructurePropertyTest {
                 mock(TemplateScanService.class),
                 mock(ExpressionEngine.class),
                 objectMapper,
-                mock(AuditLogService.class)
+                mock(AuditLogService.class),
+                mock(AggregationResolver.class)
         );
     }
 

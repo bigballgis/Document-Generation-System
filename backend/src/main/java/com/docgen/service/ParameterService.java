@@ -1,5 +1,7 @@
 package com.docgen.service;
 
+import com.docgen.dto.AggregationPropertyDTO;
+import com.docgen.dto.AggregationSchemaDTO;
 import com.docgen.dto.BatchUpdateParameterRequest;
 import com.docgen.dto.CreateParameterRequest;
 import com.docgen.dto.ExpressionValidationResult;
@@ -80,19 +82,22 @@ public class ParameterService {
     private final ExpressionEngine expressionEngine;
     private final ObjectMapper objectMapper;
     private final AuditLogService auditLogService;
+    private final AggregationResolver aggregationResolver;
 
     public ParameterService(ParameterRepository parameterRepository,
                             TemplateRepository templateRepository,
                             TemplateScanService templateScanService,
                             ExpressionEngine expressionEngine,
                             ObjectMapper objectMapper,
-                            AuditLogService auditLogService) {
+                            AuditLogService auditLogService,
+                            AggregationResolver aggregationResolver) {
         this.parameterRepository = parameterRepository;
         this.templateRepository = templateRepository;
         this.templateScanService = templateScanService;
         this.expressionEngine = expressionEngine;
         this.objectMapper = objectMapper;
         this.auditLogService = auditLogService;
+        this.aggregationResolver = aggregationResolver;
     }
 
     // ── CRUD Methods ──
@@ -136,7 +141,16 @@ public class ParameterService {
 
         // Detect circular dependency for DERIVED parameters
         if ("DERIVED".equals(parameterType) && req.expressionText() != null) {
-            detectCircularDependency(templateId, req.expressionText(), req.name());
+            if (req.parentId() != null) {
+                detectCircularDependency(templateId, req.parentId(), req.expressionText(), req.name());
+            } else {
+                detectCircularDependency(templateId, req.expressionText(), req.name());
+            }
+        }
+
+        // Validate expression scope for non-root DERIVED parameters
+        if ("DERIVED".equals(parameterType) && req.parentId() != null) {
+            validateExpressionScope(templateId, req.parentId(), req.expressionText(), req.name());
         }
 
         // Validate validation rules compatibility
@@ -242,7 +256,16 @@ public class ParameterService {
 
             // Detect circular dependency for DERIVED parameters
             if ("DERIVED".equals(parameterType) && expressionText != null && !expressionText.isBlank()) {
-                detectCircularDependency(entity.getTemplateId(), expressionText, entity.getName());
+                if (entity.getParentId() != null) {
+                    detectCircularDependency(entity.getTemplateId(), entity.getParentId(), expressionText, entity.getName());
+                } else {
+                    detectCircularDependency(entity.getTemplateId(), expressionText, entity.getName());
+                }
+            }
+
+            // Validate expression scope for non-root DERIVED parameters
+            if ("DERIVED".equals(parameterType) && entity.getParentId() != null) {
+                validateExpressionScope(entity.getTemplateId(), entity.getParentId(), expressionText, entity.getName());
             }
 
             if (req.expressionText() != null) {
@@ -828,6 +851,9 @@ public class ParameterService {
         List<PlaceholderInfo> unmatchedPlaceholders = new ArrayList<>();
         partitionPlaceholders(scannedPlaceholders, "", existingPaths, matched, unmatchedPlaceholders);
 
+        // Handle AGGREGATION type placeholders: match against aggregation schema
+        matchAggregationPlaceholders(templateId, matched, unmatchedPlaceholders);
+
         // Unused parameters: parameter paths not found in any placeholder path
         List<ParameterDTO> unusedParameters = allParams.stream()
                 .map(p -> {
@@ -969,14 +995,52 @@ public class ParameterService {
 
     /**
      * Build the full path for a placeholder considering its parent path.
-     * For OBJECT_PATH types, use the fullPath directly.
+     * For OBJECT_PATH and AGGREGATION types, use the fullPath directly.
      * For SIMPLE/LOOP/CONDITION, prepend parent path.
      */
     private String buildFullPath(String parentPath, PlaceholderInfo ph) {
-        if ("OBJECT_PATH".equals(ph.type())) {
+        if ("OBJECT_PATH".equals(ph.type()) || "AGGREGATION".equals(ph.type())) {
             return parentPath.isEmpty() ? ph.fullPath() : parentPath + "." + ph.fullPath();
         }
         return parentPath.isEmpty() ? ph.name() : parentPath + "." + ph.name();
+    }
+
+    /**
+     * Match AGGREGATION type placeholders against the aggregation schema.
+     * Moves valid aggregation placeholders from unmatched to matched,
+     * and annotates invalid ones with a descriptive reason.
+     */
+    private void matchAggregationPlaceholders(Long templateId,
+                                               List<PlaceholderInfo> matched,
+                                               List<PlaceholderInfo> unmatched) {
+        List<PlaceholderInfo> aggregationPlaceholders = unmatched.stream()
+                .filter(ph -> "AGGREGATION".equals(ph.type()))
+                .toList();
+        if (aggregationPlaceholders.isEmpty()) {
+            return;
+        }
+
+        // Get valid aggregation properties
+        List<AggregationSchemaDTO> schemas = aggregationResolver.getAggregationSchema(templateId);
+        Set<String> validPaths = new HashSet<>();
+        for (AggregationSchemaDTO schema : schemas) {
+            for (AggregationPropertyDTO prop : schema.properties()) {
+                validPaths.add(prop.placeholderPath());
+            }
+        }
+
+        Iterator<PlaceholderInfo> it = unmatched.iterator();
+        while (it.hasNext()) {
+            PlaceholderInfo ph = it.next();
+            if (!"AGGREGATION".equals(ph.type())) {
+                continue;
+            }
+            if (validPaths.contains(ph.fullPath())) {
+                it.remove();
+                matched.add(ph);
+            }
+            // Invalid aggregation placeholders remain in unmatched list as-is
+        }
     }
 
     /**
@@ -1460,6 +1524,151 @@ public class ParameterService {
                     .toList();
             throw new BusinessException(ErrorCode.PARAMETER_CIRCULAR_DEPENDENCY,
                     "衍生参数存在循环依赖: " + String.join(" → ", cycleParticipants),
+                    HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    /**
+     * Detect circular dependencies among DERIVED parameters under the same parent
+     * using topological sort (Kahn's algorithm).
+     * <p>
+     * When parentId is not null, scopes the dependency graph to only DERIVED parameters
+     * under the same parent, rather than all DERIVED parameters in the template.
+     *
+     * @param templateId     the template to check
+     * @param parentId       the parent parameter ID (non-null for scoped check)
+     * @param expressionText the expression text of the parameter being created/updated
+     * @param paramName      the name of the parameter being created/updated
+     */
+    public void detectCircularDependency(Long templateId, Long parentId, String expressionText, String paramName) {
+        if (parentId == null) {
+            // Delegate to existing method for root-level parameters
+            detectCircularDependency(templateId, expressionText, paramName);
+            return;
+        }
+
+        // Scoped check: only DERIVED parameters under the same parent
+        List<ParameterDefinition> siblings = parameterRepository.findByParentIdOrderBySortOrderAsc(parentId);
+
+        Set<String> siblingNames = siblings.stream()
+                .map(ParameterDefinition::getName)
+                .collect(Collectors.toSet());
+        siblingNames.add(paramName);
+
+        Map<String, Set<String>> dependsOn = new HashMap<>();
+
+        for (ParameterDefinition param : siblings) {
+            if ("DERIVED".equals(param.getParameterType()) && param.getExpressionText() != null) {
+                String name = param.getName();
+                String expr = name.equals(paramName) ? expressionText : param.getExpressionText();
+                dependsOn.put(name, extractReferencedNames(expr, siblingNames, name));
+            }
+        }
+
+        if (!dependsOn.containsKey(paramName) && expressionText != null) {
+            dependsOn.put(paramName, extractReferencedNames(expressionText, siblingNames, paramName));
+        }
+
+        // Kahn's algorithm
+        Set<String> derivedNames = dependsOn.keySet();
+        Map<String, Set<String>> adjacency = new HashMap<>();
+        Map<String, Integer> inDegree = new HashMap<>();
+
+        for (String name : derivedNames) {
+            adjacency.putIfAbsent(name, new HashSet<>());
+            inDegree.putIfAbsent(name, 0);
+        }
+
+        for (Map.Entry<String, Set<String>> entry : dependsOn.entrySet()) {
+            String dependent = entry.getKey();
+            for (String dependency : entry.getValue()) {
+                if (derivedNames.contains(dependency)) {
+                    adjacency.computeIfAbsent(dependency, k -> new HashSet<>()).add(dependent);
+                    inDegree.merge(dependent, 1, Integer::sum);
+                }
+            }
+        }
+
+        Queue<String> queue = new LinkedList<>();
+        for (Map.Entry<String, Integer> entry : inDegree.entrySet()) {
+            if (entry.getValue() == 0) {
+                queue.add(entry.getKey());
+            }
+        }
+
+        int processedCount = 0;
+        while (!queue.isEmpty()) {
+            String current = queue.poll();
+            processedCount++;
+            Set<String> neighbors = adjacency.getOrDefault(current, Collections.emptySet());
+            for (String neighbor : neighbors) {
+                int newDegree = inDegree.get(neighbor) - 1;
+                inDegree.put(neighbor, newDegree);
+                if (newDegree == 0) {
+                    queue.add(neighbor);
+                }
+            }
+        }
+
+        if (processedCount < derivedNames.size()) {
+            List<String> cycleParticipants = inDegree.entrySet().stream()
+                    .filter(e -> e.getValue() > 0)
+                    .map(Map.Entry::getKey)
+                    .sorted()
+                    .toList();
+            throw new BusinessException(ErrorCode.PARAMETER_CIRCULAR_DEPENDENCY,
+                    "衍生参数存在循环依赖: " + String.join(" → ", cycleParticipants),
+                    HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    // JavaScript keywords to exclude from expression reference extraction
+    private static final Set<String> JS_KEYWORDS = Set.of(
+            "var", "let", "const", "function", "return", "if", "else",
+            "true", "false", "null", "undefined",
+            "Math", "Number", "String", "parseInt", "parseFloat",
+            "isNaN", "NaN", "Infinity"
+    );
+
+    /**
+     * Validate that a non-root DERIVED parameter's expression only references sibling fields.
+     * Extracts identifiers from the expression, filters out JS keywords, and checks against
+     * sibling parameter names under the same parent.
+     *
+     * @param templateId     the template ID
+     * @param parentId       the parent parameter ID (must be non-null)
+     * @param expressionText the expression text to validate
+     * @param selfName       the name of the parameter being created/updated (excluded from siblings)
+     */
+    public void validateExpressionScope(Long templateId, Long parentId, String expressionText, String selfName) {
+        if (expressionText == null || expressionText.isBlank()) {
+            return;
+        }
+
+        List<ParameterDefinition> siblings = parameterRepository.findByParentIdOrderBySortOrderAsc(parentId);
+        Set<String> siblingNames = siblings.stream()
+                .map(ParameterDefinition::getName)
+                .filter(name -> !name.equals(selfName))
+                .collect(Collectors.toSet());
+
+        // Extract all identifiers from expression
+        Set<String> referencedNames = new HashSet<>();
+        java.util.regex.Matcher matcher = Pattern.compile("\\b([a-zA-Z_][a-zA-Z0-9_]*)\\b").matcher(expressionText);
+        while (matcher.find()) {
+            String token = matcher.group(1);
+            if (!JS_KEYWORDS.contains(token)) {
+                referencedNames.add(token);
+            }
+        }
+
+        // Find references that are not sibling names
+        Set<String> invalidRefs = referencedNames.stream()
+                .filter(name -> !siblingNames.contains(name))
+                .collect(Collectors.toCollection(TreeSet::new));
+
+        if (!invalidRefs.isEmpty()) {
+            throw new BusinessException(ErrorCode.PARAMETER_EXPRESSION_INVALID_SCOPE,
+                    "表达式引用了作用域外的参数: " + invalidRefs + ", 仅可引用同级字段: " + new TreeSet<>(siblingNames),
                     HttpStatus.BAD_REQUEST);
         }
     }

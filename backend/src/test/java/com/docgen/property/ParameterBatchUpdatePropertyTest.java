@@ -6,6 +6,7 @@ import com.docgen.entity.ParameterDefinition;
 import com.docgen.exception.BusinessException;
 import com.docgen.repository.ParameterRepository;
 import com.docgen.repository.TemplateRepository;
+import com.docgen.service.AggregationResolver;
 import com.docgen.service.AuditLogService;
 import com.docgen.service.ExpressionEngine;
 import com.docgen.service.ParameterService;
@@ -65,7 +66,7 @@ class ParameterBatchUpdatePropertyTest {
         ExpressionEngine expressionEngine = mock(ExpressionEngine.class);
         ParameterService service = new ParameterService(
                 repo, mock(TemplateRepository.class), mock(TemplateScanService.class),
-                expressionEngine, OBJECT_MAPPER, auditLogService);
+                expressionEngine, OBJECT_MAPPER, auditLogService, mock(AggregationResolver.class));
 
         // Setup: mock repository to return existing entities
         when(repo.findAllById(any())).thenReturn(scenario.existingEntities);
@@ -100,7 +101,7 @@ class ParameterBatchUpdatePropertyTest {
         ExpressionEngine expressionEngine = mock(ExpressionEngine.class);
         ParameterService service = new ParameterService(
                 repo, mock(TemplateRepository.class), mock(TemplateScanService.class),
-                expressionEngine, OBJECT_MAPPER, auditLogService);
+                expressionEngine, OBJECT_MAPPER, auditLogService, mock(AggregationResolver.class));
 
         when(repo.findAllById(any())).thenReturn(scenario.existingEntities);
         when(repo.findByTemplateIdOrderBySortOrderAsc(TEMPLATE_ID))

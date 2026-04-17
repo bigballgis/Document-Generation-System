@@ -37,7 +37,7 @@ class CascadeDeletePropertyTest {
         ParameterService service = new ParameterService(
                 repo, mock(TemplateRepository.class),
                 mock(TemplateScanService.class), mock(ExpressionEngine.class), objectMapper,
-                mock(AuditLogService.class)
+                mock(AuditLogService.class), mock(AggregationResolver.class)
         );
 
         Long targetId = treeData.targetId;
@@ -92,7 +92,7 @@ class CascadeDeletePropertyTest {
         ParameterService service = new ParameterService(
                 repo, mock(TemplateRepository.class),
                 mock(TemplateScanService.class), mock(ExpressionEngine.class), objectMapper,
-                mock(AuditLogService.class)
+                mock(AuditLogService.class), mock(AggregationResolver.class)
         );
 
         Long leafId = treeData.targetId;

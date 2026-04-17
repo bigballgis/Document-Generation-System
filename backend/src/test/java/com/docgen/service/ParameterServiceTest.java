@@ -61,7 +61,7 @@ class ParameterServiceTest {
     @BeforeEach
     void setUp() {
         objectMapper = new ObjectMapper();
-        parameterService = new ParameterService(parameterRepository, templateRepository, templateScanService, expressionEngine, objectMapper, auditLogService);
+        parameterService = new ParameterService(parameterRepository, templateRepository, templateScanService, expressionEngine, objectMapper, auditLogService, mock(AggregationResolver.class));
     }
 
     // ── 1. createParameter happy path (root) ── Req 2.1

@@ -4,6 +4,7 @@ import com.docgen.entity.ExpressionType;
 import com.docgen.entity.ParameterDefinition;
 import com.docgen.exception.BusinessException;
 import com.docgen.repository.ParameterRepository;
+import com.docgen.service.AggregationResolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,11 +37,14 @@ class ParameterValidationServiceTest {
     @Mock
     private ExpressionEngine expressionEngine;
 
+    @Mock
+    private AggregationResolver aggregationResolver;
+
     private ParameterValidationService service;
 
     @BeforeEach
     void setUp() {
-        service = new ParameterValidationService(parameterRepository, expressionEngine, new ObjectMapper());
+        service = new ParameterValidationService(parameterRepository, expressionEngine, new ObjectMapper(), aggregationResolver);
     }
 
     private ParameterDefinition makeParam(Long id, String name, String paramType, String dataType,

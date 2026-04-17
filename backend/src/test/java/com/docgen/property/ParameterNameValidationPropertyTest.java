@@ -3,6 +3,7 @@ package com.docgen.property;
 import com.docgen.exception.BusinessException;
 import com.docgen.repository.ParameterRepository;
 import com.docgen.repository.TemplateRepository;
+import com.docgen.service.AggregationResolver;
 import com.docgen.service.AuditLogService;
 import com.docgen.service.ExpressionEngine;
 import com.docgen.service.ParameterService;
@@ -35,7 +36,8 @@ class ParameterNameValidationPropertyTest {
             mock(TemplateScanService.class),
             mock(ExpressionEngine.class),
             new ObjectMapper(),
-            mock(AuditLogService.class)
+            mock(AuditLogService.class),
+            mock(AggregationResolver.class)
     );
 
     private final Method validateNameMethod;

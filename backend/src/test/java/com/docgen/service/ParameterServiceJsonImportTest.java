@@ -59,7 +59,7 @@ class ParameterServiceJsonImportTest {
         objectMapper = new ObjectMapper();
         parameterService = new ParameterService(
                 parameterRepository, templateRepository, templateScanService,
-                expressionEngine, objectMapper, auditLogService);
+                expressionEngine, objectMapper, auditLogService, mock(AggregationResolver.class));
         TenantContext.setCurrentTenantId(TENANT_ID);
         idSequence = new AtomicLong(1L);
 

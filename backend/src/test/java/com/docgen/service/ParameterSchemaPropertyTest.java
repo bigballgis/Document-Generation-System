@@ -43,7 +43,7 @@ class ParameterSchemaPropertyTest {
         when(templateRepo.findById(TEMPLATE_ID)).thenReturn(Optional.of(template));
         when(paramRepo.findByTemplateIdOrderBySortOrderAsc(TEMPLATE_ID)).thenReturn(params);
 
-        return new ParameterService(paramRepo, templateRepo, scanService, engine, mapper, mock(AuditLogService.class));
+        return new ParameterService(paramRepo, templateRepo, scanService, engine, mapper, mock(AuditLogService.class), mock(AggregationResolver.class));
     }
 
     private ParameterDefinition makeParam(Long id, String name, String dataType,

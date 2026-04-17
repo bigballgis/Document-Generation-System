@@ -53,6 +53,12 @@ public class CompositeTemplateController {
     @Value("${minio.bucket-name:docgen}")
     private String bucketName;
 
+    @Value("${minio.endpoint:http://localhost:9000}")
+    private String minioEndpoint;
+
+    @Value("${minio.external-endpoint:${minio.endpoint:http://localhost:9000}}")
+    private String minioExternalEndpoint;
+
     public CompositeTemplateController(CompositeTemplateService compositeTemplateService,
                                        CompositeCoverageService compositeCoverageService,
                                        CompositeImportExportService compositeImportExportService,

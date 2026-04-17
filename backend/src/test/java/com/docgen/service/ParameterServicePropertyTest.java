@@ -88,7 +88,7 @@ class ParameterServicePropertyTest {
     ) {
         ParameterRepository repo = mock(ParameterRepository.class);
         ExpressionEngine engine = mock(ExpressionEngine.class);
-        ParameterService service = new ParameterService(repo, mock(TemplateRepository.class), mock(TemplateScanService.class), engine, objectMapper, mock(AuditLogService.class));
+        ParameterService service = new ParameterService(repo, mock(TemplateRepository.class), mock(TemplateScanService.class), engine, objectMapper, mock(AuditLogService.class), mock(AggregationResolver.class));
 
         Long templateId = 1L;
 
@@ -243,7 +243,7 @@ class ParameterServicePropertyTest {
     ) {
         ParameterRepository repo = mock(ParameterRepository.class);
         ExpressionEngine engine = mock(ExpressionEngine.class);
-        ParameterService service = new ParameterService(repo, mock(TemplateRepository.class), mock(TemplateScanService.class), engine, objectMapper, mock(AuditLogService.class));
+        ParameterService service = new ParameterService(repo, mock(TemplateRepository.class), mock(TemplateScanService.class), engine, objectMapper, mock(AuditLogService.class), mock(AggregationResolver.class));
 
         // Build a chain of parents at depth = targetDepth (already 5+)
         // The new child would be at targetDepth + 1 which exceeds MAX_DEPTH=5
@@ -345,7 +345,7 @@ class ParameterServicePropertyTest {
     ) {
         ParameterRepository repo = mock(ParameterRepository.class);
         ExpressionEngine engine = mock(ExpressionEngine.class);
-        ParameterService service = new ParameterService(repo, mock(TemplateRepository.class), mock(TemplateScanService.class), engine, objectMapper, mock(AuditLogService.class));
+        ParameterService service = new ParameterService(repo, mock(TemplateRepository.class), mock(TemplateScanService.class), engine, objectMapper, mock(AuditLogService.class), mock(AggregationResolver.class));
 
         when(repo.findByTemplateIdOrderBySortOrderAsc(1L)).thenReturn(graph.existingParams);
 
@@ -367,7 +367,7 @@ class ParameterServicePropertyTest {
         TemplateRepository templateRepo = mock(TemplateRepository.class);
         TemplateScanService scanService = mock(TemplateScanService.class);
         ExpressionEngine engine = mock(ExpressionEngine.class);
-        return new ParameterService(repo, templateRepo, scanService, engine, objectMapper, mock(AuditLogService.class));
+        return new ParameterService(repo, templateRepo, scanService, engine, objectMapper, mock(AuditLogService.class), mock(AggregationResolver.class));
     }
 
     private static ParameterDefinition makeParam(Long id, Long templateId, Long parentId,

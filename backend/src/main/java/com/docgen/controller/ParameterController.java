@@ -1,6 +1,7 @@
 package com.docgen.controller;
 
 import com.docgen.dto.*;
+import com.docgen.service.AggregationResolver;
 import com.docgen.service.ParameterService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,9 +25,11 @@ public class ParameterController {
     private static final Logger log = LoggerFactory.getLogger(ParameterController.class);
 
     private final ParameterService parameterService;
+    private final AggregationResolver aggregationResolver;
 
-    public ParameterController(ParameterService parameterService) {
+    public ParameterController(ParameterService parameterService, AggregationResolver aggregationResolver) {
         this.parameterService = parameterService;
+        this.aggregationResolver = aggregationResolver;
     }
 
     @PostMapping("/templates/{templateId}/parameters")
@@ -83,6 +86,13 @@ public class ParameterController {
     @Operation(summary = "获取参数 Schema")
     public ResponseEntity<ParameterSchemaDTO> getParameterSchema(@PathVariable Long templateId) {
         ParameterSchemaDTO schema = parameterService.getParameterSchema(templateId);
+        return ResponseEntity.ok(schema);
+    }
+
+    @GetMapping("/templates/{templateId}/aggregation-schema")
+    @Operation(summary = "获取聚合属性 Schema")
+    public ResponseEntity<List<AggregationSchemaDTO>> getAggregationSchema(@PathVariable Long templateId) {
+        List<AggregationSchemaDTO> schema = aggregationResolver.getAggregationSchema(templateId);
         return ResponseEntity.ok(schema);
     }
 

@@ -38,7 +38,7 @@ public class TemplateScanService {
      *   group 3 — optional argument after space (e.g., {#if showTotal} → argument = showTotal)
      */
     static final Pattern PLACEHOLDER_PATTERN = Pattern.compile(
-            "\\{([#/^]?)([a-zA-Z_][a-zA-Z0-9_.]*(?:\\.[a-zA-Z_][a-zA-Z0-9_]*)*)(?:\\s+([a-zA-Z_][a-zA-Z0-9_.]*))?\\}");
+            "\\{([#/^]?)([a-zA-Z_$][a-zA-Z0-9_$]*(?:\\.[a-zA-Z_$][a-zA-Z0-9_$]*)*)(?:\\s+([a-zA-Z_][a-zA-Z0-9_.]*))?\\}");
 
     private final MinioClient minioClient;
 
@@ -243,10 +243,20 @@ public class TemplateScanService {
      * Build a PlaceholderInfo for a simple variable or dot-notation path.
      * - "name" → SIMPLE with segments ["name"]
      * - "company.address.city" → OBJECT_PATH with segments ["company", "address", "city"]
+     * - "items.$sum_price" → AGGREGATION with segments ["items", "$sum_price"]
      */
     private PlaceholderInfo buildSimplePlaceholder(String name) {
         List<String> segments = List.of(name.split("\\."));
-        if (segments.size() > 1) {
+        boolean hasAggregation = segments.stream().anyMatch(s -> s.startsWith("$"));
+        if (hasAggregation) {
+            return new PlaceholderInfo(
+                    segments.get(segments.size() - 1),
+                    name,
+                    "AGGREGATION",
+                    segments,
+                    List.of()
+            );
+        } else if (segments.size() > 1) {
             return new PlaceholderInfo(
                     segments.get(segments.size() - 1),
                     name,
