@@ -927,7 +927,85 @@
       "settings": "Settings",
       "selectSegment": "Select Segment",
       "noSegments": "No segments to edit",
-      "editorArea": "Editor Area"
+      "editorArea": "Editor Area",
+      "step": {
+        "parameterTable": "Parameter Table",
+        "segmentCanvas": "Segment Canvas",
+        "segmentDetail": "Segment Detail"
+      },
+      "parameterOverview": "Parameter Overview",
+      "prev": "Previous",
+      "next": "Next",
+      "table": {
+        "main": "Main Table",
+        "sub": "Sub Table",
+        "related": "Related Table",
+        "addField": "Add Field",
+        "fieldName": "Field Name",
+        "fieldType": "Type",
+        "required": "Required",
+        "defaultValue": "Default Value",
+        "deleteWarning": "Deleting this parameter will also delete all its child parameters. Continue?",
+        "nameRequired": "Parameter name is required",
+        "nameInvalid": "Only letters, digits and underscores allowed, must start with a letter or underscore",
+        "nameDuplicate": "A sibling parameter with this name already exists",
+        "dataType": {
+          "STRING": "Text",
+          "NUMBER": "Number",
+          "DATE": "Date",
+          "BOOLEAN": "Boolean",
+          "ARRAY": "Sub-table",
+          "OBJECT": "Related Table"
+        }
+      },
+      "canvas": {
+        "contentSegments": "Content Segments",
+        "controlNodes": "Control Nodes",
+        "pageBreak": "Page Break",
+        "header": "Header",
+        "footer": "Footer",
+        "pageNumber": "Page Number Rule",
+        "emptyHint": "Drag components from the left panel to start arranging document structure",
+        "segmentNameRequired": "Segment name is required",
+        "segmentNameDuplicate": "Segment name already exists",
+        "pageNumberFormat": {
+          "arabic": "1, 2, 3",
+          "roman": "i, ii, iii",
+          "alpha": "A-1, A-2"
+        },
+        "restartPageNumber": "Restart from 1",
+        "editHeaderFooter": "Edit"
+      },
+      "sidebar": {
+        "parameterList": "Parameter List",
+        "loopBlock": "Loop Block",
+        "conditionBlock": "Condition Block",
+        "addCondition": "Add Condition",
+        "conditionExpr": "Condition Expression",
+        "inlineCreate": "+ New Parameter",
+        "search": "Search parameters...",
+        "noMatch": "No matching parameters",
+        "filterByType": "Filter by Type"
+      },
+      "overview": {
+        "treeView": "Tree View",
+        "jsonSchemaView": "JSON Schema View"
+      },
+      "isolation": {
+        "bodyHint": "This editor is for body content only. Do not add headers or footers here",
+        "headerHint": "This editor is for header content only",
+        "footerHint": "This editor is for footer content only",
+        "violationError": "Content isolation check failed: out-of-bounds content detected"
+      },
+      "segmentType": {
+        "COVER": "Cover",
+        "TOC": "Table of Contents",
+        "CHAPTER": "Chapter",
+        "TABLE": "Table",
+        "SIGNATURE": "Signature",
+        "LEGAL": "Legal Terms",
+        "APPENDIX": "Appendix"
+      }
     },
     "coverageBar": {
       "branch": "Branch Coverage",
@@ -1004,6 +1082,7 @@
     "description": "Description",
     "validationRules": "Validation Rules",
     "ruleCount": "{count} rules",
+    "addRule": "Add Rule",
     "addChild": "Add Child",
     "changeTypeWarning": "Changing data type from OBJECT/ARRAY to a leaf type will delete all child parameters. Continue?",
     "contextMenu": {
@@ -1063,10 +1142,15 @@
       "max": "Max Value",
       "pattern": "Pattern (Regex)",
       "enumValues": "Enum Values",
+      "enumPlaceholder": "Type a value and press Enter",
       "minItems": "Min Items",
       "maxItems": "Max Items",
+      "dateFormat": "Date Format",
+      "dateBefore": "Before",
+      "dateAfter": "After",
       "customMessage": "Custom Error Message",
-      "save": "Save Rules"
+      "save": "Save Rules",
+      "presets": "Quick Presets"
     },
     "expression": {
       "title": "Expression Editor",

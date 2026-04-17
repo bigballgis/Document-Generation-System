@@ -25,7 +25,7 @@
       </el-table-column>
 
       <!-- Name column — inline edit -->
-      <el-table-column :label="t('parameter.name')" min-width="180">
+      <el-table-column :label="t('parameter.name')" min-width="130">
         <template #default="{ row }">
           <div v-if="isEditingCell(row.id, 'name')" class="inline-edit-cell">
             <el-input
@@ -46,7 +46,7 @@
       </el-table-column>
 
       <!-- Parameter type column -->
-      <el-table-column :label="t('parameter.parameterType')" width="110">
+      <el-table-column :label="t('parameter.parameterType')" width="100">
         <template #default="{ row }">
           <el-select
             :model-value="row.parameterType"
@@ -60,7 +60,7 @@
       </el-table-column>
 
       <!-- Data type column -->
-      <el-table-column :label="t('parameter.dataType')" width="130">
+      <el-table-column :label="t('parameter.dataType')" width="110">
         <template #default="{ row }">
           <el-select
             :model-value="row.dataType"
@@ -73,7 +73,7 @@
       </el-table-column>
 
       <!-- Required column -->
-      <el-table-column :label="t('parameter.required')" width="80" align="center">
+      <el-table-column :label="t('parameter.required')" width="60" align="center">
         <template #default="{ row }">
           <el-switch
             :model-value="row.required"
@@ -83,51 +83,8 @@
         </template>
       </el-table-column>
 
-      <!-- Default value column — inline edit with type-appropriate controls -->
-      <el-table-column :label="t('parameter.defaultValue')" min-width="120">
-        <template #default="{ row }">
-          <div v-if="isEditingCell(row.id, 'defaultValue')" class="inline-edit-cell">
-            <el-input-number
-              v-if="row.dataType === 'NUMBER'"
-              v-model="inlineEditNumber"
-              size="small"
-              controls-position="right"
-              @keyup.enter="confirmInlineEdit(row)"
-              @keyup.esc="cancelInlineEdit"
-              @blur="confirmInlineEdit(row)"
-            />
-            <el-date-picker
-              v-else-if="row.dataType === 'DATE'"
-              v-model="inlineEdit.value"
-              type="date"
-              size="small"
-              value-format="YYYY-MM-DD"
-              @change="() => confirmInlineEdit(row)"
-            />
-            <el-switch
-              v-else-if="row.dataType === 'BOOLEAN'"
-              :model-value="inlineEdit.value === 'true'"
-              size="small"
-              @change="(val: boolean | string | number) => { inlineEdit.value = String(!!val); confirmInlineEdit(row) }"
-            />
-            <el-input
-              v-else
-              ref="inlineInputRef"
-              v-model="inlineEdit.value"
-              size="small"
-              @keyup.enter="confirmInlineEdit(row)"
-              @keyup.esc="cancelInlineEdit"
-              @blur="confirmInlineEdit(row)"
-            />
-          </div>
-          <span v-else class="editable-cell" @click="startInlineEdit(row, 'defaultValue')">
-            {{ row.defaultValue ?? '—' }}
-          </span>
-        </template>
-      </el-table-column>
-
       <!-- Description column — inline edit -->
-      <el-table-column :label="t('parameter.description')" min-width="140">
+      <el-table-column :label="t('parameter.description')" min-width="120">
         <template #default="{ row }">
           <div v-if="isEditingCell(row.id, 'description')" class="inline-edit-cell">
             <el-input
@@ -145,8 +102,8 @@
         </template>
       </el-table-column>
 
-      <!-- Validation rules column — integrated popover -->
-      <el-table-column :label="t('parameter.validationRules')" width="110" align="center">
+      <!-- Validation rules column — inline tags + popover editor -->
+      <el-table-column :label="t('parameter.validationRules')" min-width="200">
         <template #default="{ row }">
           <ValidationRulesPopover
             :visible="validationPopoverRowId === row.id"
@@ -155,14 +112,24 @@
             @update:visible="(val: boolean) => { validationPopoverRowId = val ? row.id : null }"
             @save="(rules) => handleValidationSave(row, rules)"
           >
-            <el-badge
-              v-if="countRules(row.validationRules) > 0"
-              :value="t('parameter.ruleCount', { count: countRules(row.validationRules) })"
-              type="info"
-              class="rule-badge"
-              @click="validationPopoverRowId = row.id"
-            />
-            <span v-else class="editable-cell" @click="validationPopoverRowId = row.id">—</span>
+            <div class="validation-tags" @click="validationPopoverRowId = row.id">
+              <template v-if="countRules(row.validationRules) > 0">
+                <el-tag
+                  v-for="tag in getRuleTags(row.validationRules, row.dataType)"
+                  :key="tag.key"
+                  size="small"
+                  :type="tag.type"
+                  class="rule-tag"
+                  disable-transitions
+                >
+                  {{ tag.label }}
+                </el-tag>
+              </template>
+              <span v-else class="editable-cell add-rule-hint">
+                <el-icon :size="14"><Plus /></el-icon>
+                {{ t('parameter.addRule') }}
+              </span>
+            </div>
           </ValidationRulesPopover>
         </template>
       </el-table-column>
@@ -232,8 +199,9 @@ import { ElMessageBox } from 'element-plus'
 import type { ParameterDTO, DataType, ValidationRules, UpdateParameterRequest } from '@/types/parameter'
 import ValidationRulesPopover from './ValidationRulesPopover.vue'
 import DerivedExpressionEditor from './DerivedExpressionEditor.vue'
+import { Plus } from '@element-plus/icons-vue'
 
-type EditableField = 'name' | 'defaultValue' | 'description'
+type EditableField = 'name' | 'description'
 
 const props = defineProps<{
   parameters: ParameterDTO[]
@@ -264,7 +232,6 @@ const inlineEdit = reactive({
   value: '',
   originalValue: '',
 })
-const inlineEditNumber = ref<number>(0)
 
 function isEditingCell(rowId: number, field: EditableField): boolean {
   return inlineEdit.rowId === rowId && inlineEdit.field === field
@@ -283,10 +250,6 @@ function startInlineEdit(row: ParameterDTO, field: EditableField) {
   inlineEdit.value = String(rawValue)
   inlineEdit.originalValue = String(rawValue)
 
-  if (field === 'defaultValue' && row.dataType === 'NUMBER') {
-    inlineEditNumber.value = Number(rawValue) || 0
-  }
-
   nextTick(() => {
     inlineInputRef.value?.focus?.()
     inlineInputRef.value?.select?.()
@@ -297,9 +260,6 @@ function confirmInlineEdit(row: ParameterDTO) {
   if (inlineEdit.rowId === null || inlineEdit.field === null) return
 
   let finalValue = inlineEdit.value
-  if (inlineEdit.field === 'defaultValue' && row.dataType === 'NUMBER') {
-    finalValue = String(inlineEditNumber.value)
-  }
 
   // Only emit update if value changed
   if (finalValue !== inlineEdit.originalValue) {
@@ -453,6 +413,32 @@ function countRules(rules: ValidationRules | null): number {
   return Object.keys(rules).filter(k => k !== 'custom_message' && (rules as any)[k] != null).length
 }
 
+interface RuleTag {
+  key: string
+  label: string
+  type: 'primary' | 'success' | 'warning' | 'danger' | 'info'
+}
+
+function getRuleTags(rules: ValidationRules | null, _dataType: DataType): RuleTag[] {
+  if (!rules) return []
+  const tags: RuleTag[] = []
+
+  if (rules.not_blank) tags.push({ key: 'not_blank', label: t('parameter.validation.notBlank'), type: 'danger' })
+  if (rules.min_length != null) tags.push({ key: 'min_length', label: `${t('parameter.validation.minLength')}: ${rules.min_length}`, type: 'warning' })
+  if (rules.max_length != null) tags.push({ key: 'max_length', label: `${t('parameter.validation.maxLength')}: ${rules.max_length}`, type: 'warning' })
+  if (rules.min != null) tags.push({ key: 'min', label: `${t('parameter.validation.min')}: ${rules.min}`, type: 'warning' })
+  if (rules.max != null) tags.push({ key: 'max', label: `${t('parameter.validation.max')}: ${rules.max}`, type: 'warning' })
+  if (rules.pattern) tags.push({ key: 'pattern', label: `${t('parameter.validation.pattern')}: ${rules.pattern}`, type: 'info' })
+  if (rules.enum_values?.length) tags.push({ key: 'enum_values', label: `${t('parameter.validation.enumValues')}(${rules.enum_values.length})`, type: 'info' })
+  if (rules.min_items != null) tags.push({ key: 'min_items', label: `${t('parameter.validation.minItems')}: ${rules.min_items}`, type: 'warning' })
+  if (rules.max_items != null) tags.push({ key: 'max_items', label: `${t('parameter.validation.maxItems')}: ${rules.max_items}`, type: 'warning' })
+  if (rules.date_format) tags.push({ key: 'date_format', label: `${t('parameter.validation.dateFormat')}: ${rules.date_format}`, type: 'info' })
+  if (rules.date_before) tags.push({ key: 'date_before', label: `${t('parameter.validation.dateBefore')}: ${rules.date_before}`, type: 'warning' })
+  if (rules.date_after) tags.push({ key: 'date_after', label: `${t('parameter.validation.dateAfter')}: ${rules.date_after}`, type: 'warning' })
+
+  return tags
+}
+
 function flattenAll(params: ParameterDTO[]): ParameterDTO[] {
   const result: ParameterDTO[] = []
   for (const p of params) {
@@ -511,8 +497,28 @@ defineExpose({ expandAll, collapseAll, activateInlineEdit, setCopiedParameter, g
 .inline-edit-cell {
   width: 100%;
 }
-.rule-badge {
+.rule-tag {
+  margin: 2px 3px 2px 0;
   cursor: pointer;
+}
+.validation-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: 28px;
+  cursor: pointer;
+  padding: 2px 0;
+  border-radius: 4px;
+}
+.validation-tags:hover {
+  background: var(--el-fill-color);
+}
+.add-rule-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--el-text-color-placeholder);
+  font-size: 12px;
 }
 .derived-expression-row {
   padding: 8px 16px 8px 60px;

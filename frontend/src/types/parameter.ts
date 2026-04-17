@@ -15,6 +15,9 @@ export interface ValidationRules {
   enum_values?: string[]
   min_items?: number
   max_items?: number
+  date_format?: string
+  date_before?: string
+  date_after?: string
   custom_message?: string
 }
 

@@ -926,7 +926,85 @@
       "settings": "设置",
       "selectSegment": "选择片段",
       "noSegments": "暂无可编辑的片段",
-      "editorArea": "编辑器区域"
+      "editorArea": "编辑器区域",
+      "step": {
+        "parameterTable": "参数表设计",
+        "segmentCanvas": "片段编排",
+        "segmentDetail": "片段详细设计"
+      },
+      "parameterOverview": "参数总览",
+      "prev": "上一步",
+      "next": "下一步",
+      "table": {
+        "main": "主表",
+        "sub": "子表",
+        "related": "关联表",
+        "addField": "添加字段",
+        "fieldName": "字段名",
+        "fieldType": "类型",
+        "required": "必填",
+        "defaultValue": "默认值",
+        "deleteWarning": "删除此参数将同时删除其所有子参数，确定继续？",
+        "nameRequired": "参数名不能为空",
+        "nameInvalid": "参数名只能包含英文字母、数字和下划线，且必须以字母或下划线开头",
+        "nameDuplicate": "同级已存在同名参数",
+        "dataType": {
+          "STRING": "文本",
+          "NUMBER": "数字",
+          "DATE": "日期",
+          "BOOLEAN": "布尔",
+          "ARRAY": "子表",
+          "OBJECT": "关联表"
+        }
+      },
+      "canvas": {
+        "contentSegments": "内容片段",
+        "controlNodes": "控制节点",
+        "pageBreak": "分页符",
+        "header": "页眉",
+        "footer": "页脚",
+        "pageNumber": "页码规则",
+        "emptyHint": "从左侧拖拽组件到此处开始编排文档结构",
+        "segmentNameRequired": "片段名称不能为空",
+        "segmentNameDuplicate": "片段名称已存在",
+        "pageNumberFormat": {
+          "arabic": "1, 2, 3",
+          "roman": "i, ii, iii",
+          "alpha": "A-1, A-2"
+        },
+        "restartPageNumber": "重新从 1 开始",
+        "editHeaderFooter": "编辑"
+      },
+      "sidebar": {
+        "parameterList": "参数列表",
+        "loopBlock": "循环块",
+        "conditionBlock": "条件块",
+        "addCondition": "添加条件",
+        "conditionExpr": "条件表达式",
+        "inlineCreate": "+ 新增参数",
+        "search": "搜索参数...",
+        "noMatch": "无匹配参数",
+        "filterByType": "按类型筛选"
+      },
+      "overview": {
+        "treeView": "树形视图",
+        "jsonSchemaView": "JSON Schema 视图"
+      },
+      "isolation": {
+        "bodyHint": "此编辑器仅用于编辑正文内容，请勿在此处添加页眉或页脚",
+        "headerHint": "此编辑器仅用于编辑页眉内容",
+        "footerHint": "此编辑器仅用于编辑页脚内容",
+        "violationError": "内容隔离校验失败：检测到越界内容"
+      },
+      "segmentType": {
+        "COVER": "封面",
+        "TOC": "目录",
+        "CHAPTER": "章节",
+        "TABLE": "表格",
+        "SIGNATURE": "签名",
+        "LEGAL": "法律条款",
+        "APPENDIX": "附录"
+      }
     },
     "coverageBar": {
       "branch": "分支覆盖率",
@@ -1003,6 +1081,7 @@
     "description": "描述",
     "validationRules": "校验规则",
     "ruleCount": "{count} 条规则",
+    "addRule": "添加规则",
     "addChild": "添加子参数",
     "changeTypeWarning": "将数据类型从 OBJECT/ARRAY 改为叶子类型将删除所有子参数。是否继续？",
     "contextMenu": {
@@ -1062,10 +1141,15 @@
       "max": "最大值",
       "pattern": "正则表达式",
       "enumValues": "枚举值",
+      "enumPlaceholder": "输入值后按 Enter 添加",
       "minItems": "最少元素数",
       "maxItems": "最多元素数",
+      "dateFormat": "日期格式",
+      "dateBefore": "早于",
+      "dateAfter": "晚于",
       "customMessage": "自定义错误消息",
-      "save": "保存规则"
+      "save": "保存规则",
+      "presets": "快捷预设"
     },
     "expression": {
       "title": "表达式编辑器",

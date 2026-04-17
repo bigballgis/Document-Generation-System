@@ -926,7 +926,85 @@
       "settings": "設定",
       "selectSegment": "選擇片段",
       "noSegments": "暫無可編輯的片段",
-      "editorArea": "編輯器區域"
+      "editorArea": "編輯器區域",
+      "step": {
+        "parameterTable": "參數表設計",
+        "segmentCanvas": "片段編排",
+        "segmentDetail": "片段詳細設計"
+      },
+      "parameterOverview": "參數總覽",
+      "prev": "上一步",
+      "next": "下一步",
+      "table": {
+        "main": "主表",
+        "sub": "子表",
+        "related": "關聯表",
+        "addField": "新增欄位",
+        "fieldName": "欄位名",
+        "fieldType": "類型",
+        "required": "必填",
+        "defaultValue": "預設值",
+        "deleteWarning": "刪除此參數將同時刪除其所有子參數，確定繼續？",
+        "nameRequired": "參數名不能為空",
+        "nameInvalid": "參數名只能包含英文字母、數字和底線，且必須以字母或底線開頭",
+        "nameDuplicate": "同級已存在同名參數",
+        "dataType": {
+          "STRING": "文字",
+          "NUMBER": "數字",
+          "DATE": "日期",
+          "BOOLEAN": "布林",
+          "ARRAY": "子表",
+          "OBJECT": "關聯表"
+        }
+      },
+      "canvas": {
+        "contentSegments": "內容片段",
+        "controlNodes": "控制節點",
+        "pageBreak": "分頁符",
+        "header": "頁首",
+        "footer": "頁尾",
+        "pageNumber": "頁碼規則",
+        "emptyHint": "從左側拖曳元件到此處開始編排文件結構",
+        "segmentNameRequired": "片段名稱不能為空",
+        "segmentNameDuplicate": "片段名稱已存在",
+        "pageNumberFormat": {
+          "arabic": "1, 2, 3",
+          "roman": "i, ii, iii",
+          "alpha": "A-1, A-2"
+        },
+        "restartPageNumber": "重新從 1 開始",
+        "editHeaderFooter": "編輯"
+      },
+      "sidebar": {
+        "parameterList": "參數列表",
+        "loopBlock": "迴圈區塊",
+        "conditionBlock": "條件區塊",
+        "addCondition": "新增條件",
+        "conditionExpr": "條件運算式",
+        "inlineCreate": "+ 新增參數",
+        "search": "搜尋參數...",
+        "noMatch": "無符合的參數",
+        "filterByType": "按類型篩選"
+      },
+      "overview": {
+        "treeView": "樹狀檢視",
+        "jsonSchemaView": "JSON Schema 檢視"
+      },
+      "isolation": {
+        "bodyHint": "此編輯器僅用於編輯正文內容，請勿在此處新增頁首或頁尾",
+        "headerHint": "此編輯器僅用於編輯頁首內容",
+        "footerHint": "此編輯器僅用於編輯頁尾內容",
+        "violationError": "內容隔離校驗失敗：偵測到越界內容"
+      },
+      "segmentType": {
+        "COVER": "封面",
+        "TOC": "目錄",
+        "CHAPTER": "章節",
+        "TABLE": "表格",
+        "SIGNATURE": "簽名",
+        "LEGAL": "法律條款",
+        "APPENDIX": "附錄"
+      }
     },
     "coverageBar": {
       "branch": "分支覆蓋率",
@@ -1003,6 +1081,7 @@
     "description": "描述",
     "validationRules": "驗證規則",
     "ruleCount": "{count} 條規則",
+    "addRule": "新增規則",
     "addChild": "新增子參數",
     "changeTypeWarning": "將資料類型從 OBJECT/ARRAY 改為葉子類型將刪除所有子參數。是否繼續？",
     "contextMenu": {
@@ -1062,10 +1141,15 @@
       "max": "最大值",
       "pattern": "正規表達式",
       "enumValues": "列舉值",
+      "enumPlaceholder": "輸入值後按 Enter 新增",
       "minItems": "最少元素數",
       "maxItems": "最多元素數",
+      "dateFormat": "日期格式",
+      "dateBefore": "早於",
+      "dateAfter": "晚於",
       "customMessage": "自訂錯誤訊息",
-      "save": "儲存規則"
+      "save": "儲存規則",
+      "presets": "快捷預設"
     },
     "expression": {
       "title": "運算式編輯器",

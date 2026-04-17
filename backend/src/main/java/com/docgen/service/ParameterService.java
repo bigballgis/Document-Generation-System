@@ -52,21 +52,26 @@ public class ParameterService {
     private static final Set<String> RECOGNIZED_RULE_KEYS = Set.of(
             "not_null", "not_blank", "min_length", "max_length",
             "min", "max", "pattern", "enum_values",
-            "min_items", "max_items", "custom_message"
+            "min_items", "max_items", "date_format", "date_before", "date_after",
+            "custom_message"
     );
 
     // Compatibility matrix: which rules are allowed for which data types
-    private static final Map<String, Set<String>> RULE_COMPATIBILITY = Map.of(
-            "not_null", Set.of("STRING", "NUMBER", "DATE", "BOOLEAN", "ARRAY", "OBJECT"),
-            "not_blank", Set.of("STRING"),
-            "min_length", Set.of("STRING"),
-            "max_length", Set.of("STRING"),
-            "min", Set.of("NUMBER"),
-            "max", Set.of("NUMBER"),
-            "pattern", Set.of("STRING"),
-            "enum_values", Set.of("STRING", "NUMBER"),
-            "min_items", Set.of("ARRAY"),
-            "max_items", Set.of("ARRAY")
+    // Using Map.ofEntries because Map.of only supports up to 10 entries
+    private static final Map<String, Set<String>> RULE_COMPATIBILITY = Map.ofEntries(
+            Map.entry("not_null", Set.of("STRING", "NUMBER", "DATE", "BOOLEAN", "ARRAY", "OBJECT")),
+            Map.entry("not_blank", Set.of("STRING")),
+            Map.entry("min_length", Set.of("STRING")),
+            Map.entry("max_length", Set.of("STRING")),
+            Map.entry("min", Set.of("NUMBER")),
+            Map.entry("max", Set.of("NUMBER")),
+            Map.entry("pattern", Set.of("STRING")),
+            Map.entry("enum_values", Set.of("STRING", "NUMBER")),
+            Map.entry("min_items", Set.of("ARRAY")),
+            Map.entry("max_items", Set.of("ARRAY")),
+            Map.entry("date_format", Set.of("DATE")),
+            Map.entry("date_before", Set.of("DATE")),
+            Map.entry("date_after", Set.of("DATE"))
     );
 
     private final ParameterRepository parameterRepository;
@@ -1316,6 +1321,18 @@ public class ParameterService {
         validateRangeConsistency(rules, "min_length", "max_length");
         validateRangeConsistency(rules, "min", "max");
         validateRangeConsistency(rules, "min_items", "max_items");
+
+        // Date range consistency: date_after must be before date_before
+        if (rules.containsKey("date_after") && rules.containsKey("date_before")) {
+            Object afterVal = rules.get("date_after");
+            Object beforeVal = rules.get("date_before");
+            if (afterVal instanceof String afterStr && beforeVal instanceof String beforeStr) {
+                if (afterStr.compareTo(beforeStr) >= 0) {
+                    throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                            "date_after 必须早于 date_before", HttpStatus.BAD_REQUEST);
+                }
+            }
+        }
 
         // Pattern syntax validation
         if (rules.containsKey("pattern")) {
