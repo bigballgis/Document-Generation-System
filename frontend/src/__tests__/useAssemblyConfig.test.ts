@@ -21,6 +21,10 @@ function makeEntry(filePath: string, name: string, position: number, enabled = t
     pageBreakBefore: false,
     conditionExpression: null,
     dataScope: null,
+    headerFilePath: null,
+    footerFilePath: null,
+    pageNumberFormat: null,
+    pageNumberStart: null,
   }
 }
 
@@ -158,6 +162,10 @@ describe('useAssemblyConfig', () => {
             pageBreakBefore: true,
             conditionExpression: 'data.show === true',
             dataScope: { name: 'global.company.name' },
+            headerFilePath: null,
+            footerFilePath: null,
+            pageNumberFormat: null,
+            pageNumberStart: null,
           },
           {
             filePath: 'segments/1/ch1.docx',
@@ -168,6 +176,10 @@ describe('useAssemblyConfig', () => {
             pageBreakBefore: false,
             conditionExpression: null,
             dataScope: null,
+            headerFilePath: null,
+            footerFilePath: null,
+            pageNumberFormat: null,
+            pageNumberStart: null,
           },
         ],
       }

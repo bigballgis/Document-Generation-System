@@ -12,6 +12,10 @@ function makeEntry(name: string, position: number): AssemblySegmentEntry {
     pageBreakBefore: false,
     conditionExpression: null,
     dataScope: null,
+    headerFilePath: null,
+    footerFilePath: null,
+    pageNumberFormat: null,
+    pageNumberStart: null,
   }
 }
 

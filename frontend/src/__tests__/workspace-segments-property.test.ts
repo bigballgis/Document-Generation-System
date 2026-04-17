@@ -27,6 +27,10 @@ const arbAssemblySegmentEntry: fc.Arbitrary<AssemblySegmentEntry> = fc.record({
     ),
     { nil: null },
   ),
+  headerFilePath: fc.option(fc.stringMatching(/^segments\/\d+\/headers\/[a-z]+\.docx$/), { nil: null }),
+  footerFilePath: fc.option(fc.stringMatching(/^segments\/\d+\/footers\/[a-z]+\.docx$/), { nil: null }),
+  pageNumberFormat: fc.option(fc.constantFrom('ARABIC', 'ROMAN', 'ALPHA'), { nil: null }),
+  pageNumberStart: fc.option(fc.integer({ min: 1, max: 100 }), { nil: null }),
 })
 
 type Operation =
