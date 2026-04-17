@@ -82,23 +82,25 @@
           <el-tag
             v-else
             size="small"
-            :type="dataTypeTagType(row.dataType)"
+            :type="row.parameterType === 'DERIVED' ? 'primary' : dataTypeTagType(row.dataType)"
             class="editable-cell"
-            :class="{ clickable: !readonly }"
-            @click="!readonly && startEdit(row, 'dataType', row.dataType)"
-          >{{ dataTypeLabel(row.dataType) }}</el-tag>
+            :class="{ clickable: !readonly && row.parameterType !== 'DERIVED' }"
+            @click="!readonly && row.parameterType !== 'DERIVED' && startEdit(row, 'dataType', row.dataType)"
+          >{{ row.parameterType === 'DERIVED' ? 'Formula' : dataTypeLabel(row.dataType) }}</el-tag>
         </template>
       </el-table-column>
 
-      <!-- Required column (switch) -->
+      <!-- Required column (switch, hidden for DERIVED/Formula) -->
       <el-table-column :label="t('workspace.design.table.required')" width="70" align="center">
         <template #default="{ row }">
           <el-switch
+            v-if="row.parameterType !== 'DERIVED'"
             :model-value="row.required"
             :disabled="readonly"
             size="small"
             @change="(val: string | number | boolean) => handleToggleRequired(row, val as boolean)"
           />
+          <span v-else class="default-value">—</span>
         </template>
       </el-table-column>
 
@@ -107,7 +109,7 @@
         <template #default="{ row }">
           <!-- DERIVED (Formula) fields: show expression editor -->
           <template v-if="row.parameterType === 'DERIVED'">
-            <div class="expression-cell" @click="!readonly && (expressionEditRowId = row.id)">
+            <div class="expression-cell" @click="!readonly && openExpressionEditor(row)">
               <el-tag size="small" type="primary" class="formula-tag">
                 <el-icon :size="12"><EditPen /></el-icon>
                 {{ t('workspace.design.table.formula') }}
@@ -117,36 +119,6 @@
                 {{ t('workspace.design.table.setFormula') }}
               </span>
             </div>
-            <!-- Inline expression editor dialog -->
-            <el-dialog
-              v-model="expressionDialogVisible"
-              :title="t('workspace.design.table.editFormula')"
-              width="600px"
-              :close-on-click-modal="false"
-            >
-              <div v-if="expressionEditRow" class="expression-dialog-content">
-                <el-form label-position="top">
-                  <el-form-item :label="t('workspace.design.table.formulaType')">
-                    <el-radio-group v-model="expressionEditType" size="small">
-                      <el-radio-button value="JAVASCRIPT">JavaScript</el-radio-button>
-                      <el-radio-button value="EXCEL_FORMULA">Excel</el-radio-button>
-                    </el-radio-group>
-                  </el-form-item>
-                  <el-form-item :label="t('workspace.design.table.formulaExpression')">
-                    <el-input
-                      v-model="expressionEditText"
-                      type="textarea"
-                      :rows="4"
-                      :placeholder="expressionEditType === 'JAVASCRIPT' ? 'e.g. price * quantity' : 'e.g. =A1*B1'"
-                    />
-                  </el-form-item>
-                </el-form>
-              </div>
-              <template #footer>
-                <el-button @click="expressionDialogVisible = false">{{ t('common.cancel') }}</el-button>
-                <el-button type="primary" @click="saveExpression">{{ t('common.confirm') }}</el-button>
-              </template>
-            </el-dialog>
           </template>
           <!-- Navigable (ARRAY/OBJECT) fields: show dash -->
           <template v-else-if="isNavigable(row)">
@@ -200,6 +172,37 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <!-- Expression editor dialog (outside table to avoid v-for conflicts) -->
+    <el-dialog
+      v-model="expressionDialogVisible"
+      :title="t('workspace.design.table.editFormula')"
+      width="600px"
+      :close-on-click-modal="false"
+    >
+      <div v-if="expressionEditRow" class="expression-dialog-content">
+        <el-form label-position="top">
+          <el-form-item :label="t('workspace.design.table.formulaType')">
+            <el-radio-group v-model="expressionEditType" size="small">
+              <el-radio-button value="JAVASCRIPT">JavaScript</el-radio-button>
+              <el-radio-button value="EXCEL_FORMULA">Excel</el-radio-button>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item :label="t('workspace.design.table.formulaExpression')">
+            <el-input
+              v-model="expressionEditText"
+              type="textarea"
+              :rows="4"
+              :placeholder="expressionEditType === 'JAVASCRIPT' ? 'e.g. price * quantity' : 'e.g. =A1*B1'"
+            />
+          </el-form-item>
+        </el-form>
+      </div>
+      <template #footer>
+        <el-button @click="expressionDialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="saveExpression">{{ t('common.confirm') }}</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -400,16 +403,12 @@ const expressionEditRow = computed(() => {
   return props.parameters.find(p => p.id === expressionEditRowId.value) ?? null
 })
 
-watch(expressionEditRowId, (id) => {
-  if (id) {
-    const row = props.parameters.find(p => p.id === id)
-    if (row) {
-      expressionEditText.value = row.expressionText ?? ''
-      expressionEditType.value = row.expressionType ?? 'JAVASCRIPT'
-      expressionDialogVisible.value = true
-    }
-  }
-})
+function openExpressionEditor(row: ParameterDTO) {
+  expressionEditRowId.value = row.id
+  expressionEditText.value = row.expressionText ?? ''
+  expressionEditType.value = row.expressionType ?? 'JAVASCRIPT'
+  expressionDialogVisible.value = true
+}
 
 async function saveExpression() {
   if (!expressionEditRowId.value) return
@@ -483,6 +482,16 @@ function initSortable() {
     onEnd: async (evt: Sortable.SortableEvent) => {
       const { oldIndex, newIndex } = evt
       if (oldIndex == null || newIndex == null || oldIndex === newIndex) return
+
+      // Revert DOM manipulation — let Vue re-render from data
+      const parent = evt.from
+      const movedEl = evt.item
+      if (oldIndex < newIndex) {
+        parent.insertBefore(movedEl, parent.children[oldIndex])
+      } else {
+        parent.insertBefore(movedEl, parent.children[oldIndex + 1])
+      }
+
       const rows = [...sortedParameters.value]
       const [moved] = rows.splice(oldIndex, 1)
       rows.splice(newIndex, 0, moved)

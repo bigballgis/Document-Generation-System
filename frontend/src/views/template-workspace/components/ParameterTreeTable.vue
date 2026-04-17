@@ -45,20 +45,6 @@
         </template>
       </el-table-column>
 
-      <!-- Parameter type column -->
-      <el-table-column :label="t('parameter.parameterType')" width="100">
-        <template #default="{ row }">
-          <el-select
-            :model-value="row.parameterType"
-            size="small"
-            @change="(val: string) => handleParameterTypeChange(row, val)"
-          >
-            <el-option label="REQUEST" value="REQUEST" />
-            <el-option label="DERIVED" value="DERIVED" />
-          </el-select>
-        </template>
-      </el-table-column>
-
       <!-- Data type column -->
       <el-table-column :label="t('parameter.dataType')" width="110">
         <template #default="{ row }">
@@ -283,14 +269,6 @@ function cancelInlineEdit() {
 function activateInlineEdit(rowId: number, field: EditableField) {
   const row = findParameterById(props.parameters, rowId)
   if (row) startInlineEdit(row, field)
-}
-
-// ── Parameter type change ──
-function handleParameterTypeChange(row: ParameterDTO, newType: string) {
-  emit('update', row.id, { parameterType: newType as any, version: row.version })
-  if (newType === 'DERIVED') {
-    expandedExpressionIds.value.add(row.id)
-  }
 }
 
 // ── Data type change with child deletion warning ──

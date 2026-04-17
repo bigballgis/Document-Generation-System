@@ -1,5 +1,15 @@
 <template>
   <div class="component-panel">
+    <!-- Undo/Redo buttons -->
+    <div v-if="!readonly && (canUndo !== undefined)" class="undo-redo-bar">
+      <el-button size="small" :disabled="!canUndo" circle @click="$emit('undo')">
+        <el-icon><RefreshLeft /></el-icon>
+      </el-button>
+      <el-button size="small" :disabled="!canRedo" circle @click="$emit('redo')">
+        <el-icon><RefreshRight /></el-icon>
+      </el-button>
+    </div>
+
     <!-- Content Segments -->
     <div class="panel-section">
       <div class="section-title">{{ t('workspace.design.canvas.contentSegments') }}</div>
@@ -42,10 +52,11 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Document, Postcard, Tickets, Odometer } from '@element-plus/icons-vue'
+import { Document, Postcard, Tickets, Odometer, RefreshLeft, RefreshRight } from '@element-plus/icons-vue'
 import Sortable from 'sortablejs'
 
-const props = defineProps<{ readonly?: boolean }>()
+const props = defineProps<{ readonly?: boolean; canUndo?: boolean; canRedo?: boolean }>()
+defineEmits<{ (e: 'undo'): void; (e: 'redo'): void }>()
 const { t } = useI18n()
 const segmentListRef = ref<HTMLElement | null>(null)
 const controlListRef = ref<HTMLElement | null>(null)
@@ -89,6 +100,7 @@ onBeforeUnmount(() => { segmentSortable?.destroy(); controlSortable?.destroy() }
 
 <style scoped>
 .component-panel { height: 100%; overflow-y: auto; padding: 12px; background: var(--el-bg-color-page); border-right: 1px solid var(--el-border-color-lighter); }
+.undo-redo-bar { display: flex; gap: 6px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--el-border-color-lighter); }
 .panel-section { margin-bottom: 4px; }
 .section-title { font-size: 12px; font-weight: 600; color: var(--el-text-color-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
 .component-list { display: flex; flex-direction: column; gap: 6px; }

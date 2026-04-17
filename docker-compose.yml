@@ -85,20 +85,21 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  # OnlyOffice Document Server
+  # Euro-Office Document Server (FOSS fork of OnlyOffice)
   onlyoffice:
-    image: onlyoffice/documentserver:latest
-    pull_policy: never
+    image: ghcr.io/euro-office/documentserver:latest
     ports:
       - "8443:443"
       - "8088:80"
     environment:
       - JWT_ENABLED=false
-      # Allow OnlyOffice to download from Docker internal network (MinIO/backend private IPs)
+      - JWT_SECRET=my_jwt_secret
       - ALLOW_PRIVATE_IP_ADDRESS=true
       - ALLOW_META_IP_ADDRESS=true
     volumes:
       - onlyoffice_data:/var/www/onlyoffice/Data
+      - ./onlyoffice-plugins/insert-text:/var/www/onlyoffice/documentserver/sdkjs-plugins/insert-text
+      - ./onlyoffice-plugins/v1:/var/www/onlyoffice/documentserver/sdkjs-plugins/v1
     depends_on:
       - app
       - minio

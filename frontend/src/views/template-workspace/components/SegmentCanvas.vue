@@ -1,15 +1,7 @@
 <template>
   <div class="segment-canvas">
-    <!-- Canvas toolbar (Save/Undo/Redo) -->
-    <div class="canvas-toolbar">
-      <div class="toolbar-left">
-        <el-button v-if="!readonly" type="primary" size="small" :loading="saving" @click="handleSave">{{ t('common.save') }}</el-button>
-        <el-button v-if="!readonly" size="small" :disabled="!assemblyConfig.canUndo.value" @click="handleUndo">{{ t('assembly.undo') }}</el-button>
-        <el-button v-if="!readonly" size="small" :disabled="!assemblyConfig.canRedo.value" @click="handleRedo">{{ t('assembly.redo') }}</el-button>
-      </div>
-    </div>
     <div class="canvas-body">
-      <div class="panel-col"><ComponentPanel :readonly="readonly" /></div>
+      <div class="panel-col"><ComponentPanel :readonly="readonly" :can-undo="assemblyConfig.canUndo.value" :can-redo="assemblyConfig.canRedo.value" @undo="handleUndo" @redo="handleRedo" /></div>
       <div class="canvas-col">
         <CanvasArea
           :nodes="canvasNodes.nodes.value"
@@ -31,7 +23,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { useTemplateWorkspaceStore } from '@/stores/templateWorkspace'
@@ -70,22 +62,25 @@ function syncNodesToSegments() {
 function handleAddContentNode(entry: AssemblySegmentEntry, _idx: number) {
   assemblyConfig.addSegment(entry)
   canvasNodes.setNodes(canvasNodes.fromSegments(assemblyConfig.segments.value))
+  scheduleAutoSave()
 }
 function handleAddControlNode(type: CanvasNode['type'], insertIndex: number) {
   const node: CanvasNode = { id: canvasNodes.generateNodeId(), type }
   if (type === 'page-number') node.pageNumberFormat = 'ARABIC'
   canvasNodes.addNode(node, insertIndex)
   syncNodesToSegments()
+  scheduleAutoSave()
 }
-function handleRemoveNode(index: number) { canvasNodes.removeNode(index); syncNodesToSegments() }
-function handleReorder(newNodes: CanvasNode[]) { canvasNodes.setNodes(newNodes); syncNodesToSegments() }
+function handleRemoveNode(index: number) { canvasNodes.removeNode(index); syncNodesToSegments(); scheduleAutoSave() }
+function handleReorder(newNodes: CanvasNode[]) { canvasNodes.setNodes(newNodes); syncNodesToSegments(); scheduleAutoSave() }
 function handleUpdateSegment(segmentIndex: number, patch: Partial<AssemblySegmentEntry>) {
   assemblyConfig.updateSegment(segmentIndex, patch)
   canvasNodes.setNodes(canvasNodes.fromSegments(assemblyConfig.segments.value))
+  scheduleAutoSave()
 }
 function handleUpdateNode(nodeIndex: number, patch: Partial<CanvasNode>) {
   const node = canvasNodes.nodes.value[nodeIndex]
-  if (node) { Object.assign(node, patch); syncNodesToSegments() }
+  if (node) { Object.assign(node, patch); syncNodesToSegments(); scheduleAutoSave() }
 }
 
 function handleEditSegment(node: CanvasNode) {
@@ -119,23 +114,38 @@ async function handleEditHeaderFooter(node: CanvasNode) {
   emit('open-editor', { id: `${nodeType}-${segIdx}`, title, type: nodeType, segmentIndex: segIdx, filePath: filePath || '' })
 }
 
-async function handleSave() {
+// ── Auto-save with debounce ──
+let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
+const dirty = ref(false)
+
+function scheduleAutoSave() {
+  dirty.value = true
+  if (autoSaveTimer) clearTimeout(autoSaveTimer)
+  autoSaveTimer = setTimeout(() => doAutoSave(), 2000)
+}
+
+async function doAutoSave() {
+  if (!dirty.value || saving.value) return
   saving.value = true
   try {
     await updateAssemblyConfig(store.templateId, { segments: assemblyConfig.segments.value })
-    await store.refreshAssemblyConfig()
-    ElMessage.success(t('message.saveSuccess'))
-  } catch (e: any) { ElMessage.error(e.response?.data?.message || e.message || t('message.saveFailed')) }
-  finally { saving.value = false }
+    dirty.value = false
+  } catch (e: any) {
+    ElMessage.error(e.response?.data?.message || e.message || t('message.saveFailed'))
+  } finally { saving.value = false }
 }
-function handleUndo() { assemblyConfig.undo(); canvasNodes.setNodes(canvasNodes.fromSegments(assemblyConfig.segments.value)) }
-function handleRedo() { assemblyConfig.redo(); canvasNodes.setNodes(canvasNodes.fromSegments(assemblyConfig.segments.value)) }
+
+onBeforeUnmount(() => {
+  if (autoSaveTimer) clearTimeout(autoSaveTimer)
+  if (dirty.value) doAutoSave()
+})
+
+function handleUndo() { assemblyConfig.undo(); canvasNodes.setNodes(canvasNodes.fromSegments(assemblyConfig.segments.value)); scheduleAutoSave() }
+function handleRedo() { assemblyConfig.redo(); canvasNodes.setNodes(canvasNodes.fromSegments(assemblyConfig.segments.value)); scheduleAutoSave() }
 </script>
 
 <style scoped>
 .segment-canvas { display: flex; flex-direction: column; height: 100%; }
-.canvas-toolbar { display: flex; align-items: center; padding: 6px 12px; border-bottom: 1px solid var(--el-border-color-lighter); background: var(--el-bg-color); flex-shrink: 0; }
-.toolbar-left { display: flex; gap: 8px; }
 .canvas-body { flex: 1; display: flex; min-height: 0; overflow: hidden; }
 .panel-col { width: 200px; flex-shrink: 0; }
 .canvas-col { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }

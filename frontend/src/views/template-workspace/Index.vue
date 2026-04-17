@@ -15,12 +15,19 @@
 
     <!-- Workspace content -->
     <template v-else-if="store.template">
-      <!-- Page header -->
+      <!-- Page header with inline stage indicator -->
       <div class="workspace-header">
         <div class="header-left">
           <h2 class="template-name">{{ store.template.name }}</h2>
           <el-tag :type="statusTagMap[store.template.status] || 'info'" size="small">{{ store.template.status }}</el-tag>
           <span class="version-badge">v{{ store.template.version }}</span>
+        </div>
+        <div class="header-center">
+          <StageIndicator
+            :stages="stageAvailability.stages.value"
+            :current-stage="currentStage"
+            @stage-click="handleStageClick"
+          />
         </div>
         <el-button @click="router.push('/templates')">{{ $t('workspace.backToList') }}</el-button>
       </div>
@@ -63,13 +70,6 @@
         show-icon
         closable
         style="margin-bottom: 8px"
-      />
-
-      <!-- Stage indicator (replaces WorkflowStepIndicator) -->
-      <StageIndicator
-        :stages="stageAvailability.stages.value"
-        :current-stage="currentStage"
-        @stage-click="handleStageClick"
       />
 
       <!-- Stage loading skeleton -->
@@ -216,15 +216,21 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 .workspace-header {
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 .header-left {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+.header-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
 }
 .template-name {
   margin: 0;

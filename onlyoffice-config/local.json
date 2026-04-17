@@ -1,0 +1,25 @@
+{
+  "services": {
+    "CoAuthoring": {
+      "token": {
+        "enable": {
+          "request": {
+            "inbox": false,
+            "outbox": false
+          },
+          "browser": false
+        }
+      },
+      "secret": {
+        "browser": { "string": "" },
+        "inbox": { "string": "" },
+        "outbox": { "string": "" },
+        "session": { "string": "" }
+      },
+      "request-filtering-agent": {
+        "allowPrivateIPAddress": true,
+        "allowMetaIPAddress": true
+      }
+    }
+  }
+}

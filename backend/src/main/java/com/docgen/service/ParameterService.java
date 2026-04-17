@@ -1318,6 +1318,11 @@ public class ParameterService {
                         "衍生参数必须指定有效的表达式类型 (JAVASCRIPT 或 EXCEL_FORMULA)",
                         HttpStatus.BAD_REQUEST);
             }
+            // Skip validation for simple placeholder expressions (literals, basic arithmetic)
+            String trimmed = expressionText.trim();
+            if (trimmed.matches("^[0-9+\\-*/ .]+$") || trimmed.equals("\"\"") || trimmed.equals("''")) {
+                return;
+            }
             // Validate expression syntax via ExpressionEngine
             ExpressionType exprType = ExpressionType.valueOf(expressionType);
             ExpressionValidationResult result = expressionEngine.validateExpression(expressionText, exprType);

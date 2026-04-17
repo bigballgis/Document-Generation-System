@@ -52,7 +52,7 @@ const userStore = useUserStore()
 const { locale } = useLocale()
 
 const editorContainerId = `onlyoffice-editor-${Date.now()}`
-let editorInstance: any = null
+const editorInstanceRef = ref<any>(null)
 const scriptLoaded = ref(false)
 
 const onlyofficeUrl = computed(() => {
@@ -107,11 +107,12 @@ function buildConfig() {
         edit: !props.viewOnly,
         download: true,
         print: true,
-        // Disable review/comment — template editing doesn't need these
         review: false,
         comment: false,
-        // Allow copy/paste for template tag insertion
         copy: true,
+        // Enable connector for programmatic text insertion
+        modifyContentControl: true,
+        modifyFilter: true,
       },
     },
     documentType: props.documentType,
@@ -126,18 +127,22 @@ function buildConfig() {
       customization: {
         autosave: true,
         forcesave: true,
-        // Keep full toolbar with buttons visible (compactToolbar hides them)
         compactToolbar: false,
         compactHeader: false,
-        // Hide right panel on initial load for more editing space
         hideRightMenu: true,
-        // Hide rulers for cleaner look
         hideRulers: true,
-        // Disable comments — not needed for template editing
         comments: false,
         help: false,
         chat: false,
         feedback: false,
+        macros: true,
+        plugins: true,
+      },
+      plugins: {
+        autostart: ['asc.{A8705DEE-7544-4C33-B3D5-168406D92F72}'],
+        pluginsData: [
+          onlyofficeUrl.value + '/sdkjs-plugins/insert-text/config.json',
+        ],
       },
     },
     events: {
@@ -168,28 +173,49 @@ function createEditor() {
   destroyEditor()
 
   const config = buildConfig()
-  editorInstance = new (window as any).DocsAPI.DocEditor(editorContainerId, config)
+  editorInstanceRef.value = new (window as any).DocsAPI.DocEditor(editorContainerId, config)
 }
 
 function destroyEditor() {
-  if (editorInstance) {
+  if (editorInstanceRef.value) {
     try {
-      editorInstance.destroyEditor()
+      editorInstanceRef.value.destroyEditor()
     } catch {
       // ignore cleanup errors
     }
-    editorInstance = null
+    editorInstanceRef.value = null
   }
 }
 
-/** Insert text at cursor position via the OnlyOffice command API */
+/** Insert text at cursor position */
 function insertTextAtCursor(text: string) {
-  if (!editorInstance) return
-  // Use the connector to execute commands in the editor
-  const connector = editorInstance.createConnector?.()
-  if (connector) {
-    connector.executeMethod('PasteText', [text])
-  }
+  const instance = editorInstanceRef.value
+  if (!instance) return
+
+  // Method 1: Connector API (if Euro-Office unlocks it in future)
+  try {
+    const connector = instance.createConnector?.()
+    if (connector) {
+      connector.executeMethod('PasteText', [text])
+      return
+    }
+  } catch { /* not available */ }
+
+  // Method 2: Clipboard + auto-focus (current best approach for Euro-Office CE)
+  const iframe = document.querySelector('iframe[name="frameEditor"]') as HTMLIFrameElement | null
+    ?? document.getElementById(editorContainerId)?.querySelector('iframe') as HTMLIFrameElement | null
+
+  navigator.clipboard.writeText(text).then(() => {
+    if (iframe) {
+      iframe.focus()
+      iframe.contentWindow?.focus()
+    }
+    import('element-plus').then(({ ElMessage }) => {
+      ElMessage.success({ message: `已复制 ${text}，请按 Ctrl+V 粘贴`, duration: 2000 })
+    })
+  }).catch(() => {
+    window.prompt('请复制以下文本并粘贴到编辑器中:', text)
+  })
 }
 
 function insertVariable(name: string) {

@@ -186,8 +186,13 @@ function closeEditorTab(id: string) {
 function switchToView(view: string) { activeView.value = view }
 
 function insertToEditor(tabId: string, type: 'variable' | 'loop' | 'condition', value: string) {
+  console.log('[DesignStage] insertToEditor called:', { tabId, type, value, availableRefs: Object.keys(editorRefs) })
   const editor = editorRefs[tabId]
-  if (!editor) return
+  if (!editor) {
+    console.warn('[DesignStage] No editor ref found for tab:', tabId)
+    return
+  }
+  console.log('[DesignStage] Editor ref found, type:', typeof editor, 'has insertVariable:', typeof editor.insertVariable)
   if (type === 'variable') editor.insertVariable(value)
   else if (type === 'loop') editor.insertLoop(value)
   else if (type === 'condition') editor.insertCondition(value)

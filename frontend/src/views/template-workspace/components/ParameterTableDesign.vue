@@ -170,12 +170,12 @@ async function submitNewField() {
   if (!name || newFieldError.value) return
   try {
     const isFormula = newField.value.fieldType === 'FORMULA'
-    const dataType: DataType = isFormula ? 'NUMBER' : newField.value.fieldType as DataType
+    const dataType: DataType = isFormula ? 'STRING' : newField.value.fieldType as DataType
     await createParameter(store.templateId, {
       name,
       dataType,
       parameterType: isFormula ? 'DERIVED' : 'REQUEST',
-      expressionText: isFormula ? '0' : undefined,
+      expressionText: isFormula ? '""' : undefined,
       expressionType: isFormula ? 'JAVASCRIPT' : undefined,
       parentId: currentParentId.value,
       sortOrder: currentLevelParameters.value.length,
