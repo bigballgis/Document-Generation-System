@@ -14,4 +14,12 @@ export interface StageDefinition {
   clickable: boolean
 }
 
+// ── Design step types (three-step sub-workflow within design stage) ──
 
+export type DesignStepName = 'parameter-table' | 'segment-canvas' | 'segment-detail'
+
+export interface ParameterBreadcrumbItem {
+  id: number | null
+  name: string
+  tableType: 'main' | 'sub' | 'related'
+}

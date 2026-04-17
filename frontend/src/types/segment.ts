@@ -2,6 +2,8 @@
 
 export type SegmentType = 'COVER' | 'TOC' | 'CHAPTER' | 'TABLE' | 'SIGNATURE' | 'LEGAL' | 'APPENDIX'
 
+export type PageNumberFormat = 'ARABIC' | 'ROMAN' | 'ALPHA'
+
 // ── Assembly / Composite Types ──
 
 export interface AssemblySegmentEntry {
@@ -13,6 +15,10 @@ export interface AssemblySegmentEntry {
   pageBreakBefore: boolean
   conditionExpression: string | null
   dataScope: Record<string, string> | null
+  headerFilePath: string | null
+  footerFilePath: string | null
+  pageNumberFormat: PageNumberFormat | null
+  pageNumberStart: number | null
 }
 
 export interface AssemblyConfig {

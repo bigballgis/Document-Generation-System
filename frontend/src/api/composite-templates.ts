@@ -83,3 +83,25 @@ export function importCompositeFromZip(file: File) {
 export function migrateToComposite(templateId: number) {
   return request.post<any, MigrationResult>(`/templates/${templateId}/migrate-to-composite`)
 }
+
+// ── Blank Segment / Header-Footer / OnlyOffice URL ──
+
+export function createBlankSegment(templateId: number, name: string, segmentType?: string) {
+  return request.post<any, AssemblySegmentEntry>(
+    `/composite-templates/${templateId}/create-blank-segment`,
+    { name, segmentType },
+  )
+}
+
+export function createBlankHeaderFooter(templateId: number, type: 'header' | 'footer') {
+  return request.post<any, { filePath: string }>(
+    `/composite-templates/${templateId}/create-blank-header-footer`,
+    { type },
+  )
+}
+
+export function getSegmentOnlyOfficeUrl(templateId: number, segmentIndex: number) {
+  return request.get<any, { url: string }>(
+    `/composite-templates/${templateId}/segments/${segmentIndex}/onlyoffice-url`,
+  )
+}
