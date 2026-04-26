@@ -16,10 +16,15 @@ import io.minio.MinioClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
+import java.sql.SQLException;
 import java.util.*;
 
 /**
@@ -31,11 +36,15 @@ public class SegmentVersionService {
 
     private static final Logger log = LoggerFactory.getLogger(SegmentVersionService.class);
 
+    /** Retries when two publishers read the same max version before either commits (unique constraint). */
+    private static final int PUBLISH_MAX_ATTEMPTS = 5;
+
     private final SegmentVersionRepository segmentVersionRepository;
     private final TemplateRepository templateRepository;
     private final AssemblyConfigService assemblyConfigService;
     private final MinioClient minioClient;
     private final ContentDiffService contentDiffService;
+    private final TransactionTemplate publishTransactionTemplate;
 
     @Value("${minio.bucket-name:docgen}")
     private String bucketName;
@@ -44,18 +53,22 @@ public class SegmentVersionService {
                                  TemplateRepository templateRepository,
                                  AssemblyConfigService assemblyConfigService,
                                  MinioClient minioClient,
-                                 ContentDiffService contentDiffService) {
+                                 ContentDiffService contentDiffService,
+                                 PlatformTransactionManager transactionManager) {
         this.segmentVersionRepository = segmentVersionRepository;
         this.templateRepository = templateRepository;
         this.assemblyConfigService = assemblyConfigService;
         this.minioClient = minioClient;
         this.contentDiffService = contentDiffService;
+        this.publishTransactionTemplate = new TransactionTemplate(transactionManager);
+        this.publishTransactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
     /**
      * Publish (snapshot) a segment: copies the current file in MinIO and records a new version.
+     * Uses a short REQUIRES_NEW retry loop so concurrent publishers that pick the same next version
+     * do not leave the API as an uncaught {@link DataIntegrityViolationException}.
      */
-    @Transactional
     public SegmentVersionDTO publishSegment(Long templateId, PublishSegmentRequest request, Long userId) {
         Long tenantId = TenantContext.getCurrentTenantId();
         Template template = findCompositeTemplateOrThrow(templateId);
@@ -65,18 +78,45 @@ public class SegmentVersionService {
 
         if (segment.getFilePath() == null || segment.getFilePath().isBlank()) {
             throw new BusinessException(ErrorCode.SEGMENT_FILE_NOT_FOUND,
-                    "片段文件路径为空，无法发布", HttpStatus.BAD_REQUEST);
+                    "Segment file path is empty; cannot publish", HttpStatus.BAD_REQUEST);
         }
 
+        DataIntegrityViolationException lastConflict = null;
+        for (int attempt = 1; attempt <= PUBLISH_MAX_ATTEMPTS; attempt++) {
+            try {
+                return publishTransactionTemplate.execute(status ->
+                        publishSegmentSnapshot(tenantId, templateId, request, userId, segment));
+            } catch (DataIntegrityViolationException e) {
+                lastConflict = e;
+                if (!isSegmentVersionUniqueConstraintViolation(e)) {
+                    throw e;
+                }
+                if (attempt >= PUBLISH_MAX_ATTEMPTS) {
+                    break;
+                }
+                log.warn("Concurrent segment publish conflict for templateId={} segment={} (attempt {}/{})",
+                        templateId, request.getSegmentName(), attempt, PUBLISH_MAX_ATTEMPTS);
+            }
+        }
+        throw new BusinessException(ErrorCode.SEGMENT_VERSION_PUBLISH_CONFLICT,
+                "Could not assign a unique segment version after concurrent publishes; please retry.",
+                HttpStatus.CONFLICT, lastConflict);
+    }
+
+    /**
+     * One publish attempt in its own transaction (allocates version, copies MinIO object, persists row).
+     */
+    private SegmentVersionDTO publishSegmentSnapshot(Long tenantId,
+                                                     Long templateId,
+                                                     PublishSegmentRequest request,
+                                                     Long userId,
+                                                     AssemblySegmentEntry segment) {
         int nextVersion = segmentVersionRepository
                 .findMaxVersionNumber(templateId, request.getSegmentName())
                 .map(max -> max + 1)
                 .orElse(1);
 
-        // Copy the current segment file to a versioned path in MinIO
         String versionedPath = copySegmentFile(segment.getFilePath(), templateId, request.getSegmentName(), nextVersion);
-
-        // Build config snapshot
         String configSnapshot = buildConfigSnapshot(segment);
 
         SegmentVersion version = new SegmentVersion();
@@ -93,8 +133,35 @@ public class SegmentVersionService {
         SegmentVersion saved = segmentVersionRepository.save(version);
         log.info("Segment published: templateId={}, segment={}, version={}",
                 templateId, request.getSegmentName(), nextVersion);
-
         return toDTO(saved);
+    }
+
+    /**
+     * Visible for tests. Detects unique constraint on (template_id, segment_name, version_number).
+     */
+    public static boolean isSegmentVersionUniqueConstraintViolation(DataIntegrityViolationException ex) {
+        String combined = collectMessages(ex).toLowerCase(Locale.ROOT);
+        if (combined.contains("uq_segment_versions_template_name_version")) {
+            return true;
+        }
+        Throwable root = ex.getRootCause();
+        if (root instanceof SQLException sqlEx && "23505".equals(sqlEx.getSQLState())) {
+            return combined.contains("segment_versions") || combined.contains("uq_segment_versions");
+        }
+        return false;
+    }
+
+    private static String collectMessages(Throwable ex) {
+        StringBuilder sb = new StringBuilder();
+        Throwable t = ex;
+        int depth = 0;
+        while (t != null && depth++ < 12) {
+            if (t.getMessage() != null) {
+                sb.append(t.getMessage()).append(' ');
+            }
+            t = t.getCause();
+        }
+        return sb.toString();
     }
 
     /**

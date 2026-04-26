@@ -331,6 +331,21 @@ Validation commands:
 Validation result: BUILD SUCCESS (10 tests).  
 Notes: full `mvn test` not run. Next: **WS-04-T06** (concurrent segment publish).
 
+## 2026-04-26: WS-04-T06 Completed
+
+Task ID: WS-04-T06  
+Summary: **`publishSegment`** now runs each allocate+copy+**persist** attempt in **`PROPAGATION_REQUIRES_NEW`** via `TransactionTemplate`, with up to **5 retries** on **`DataIntegrityViolationException`** when the failure matches **`uq_segment_versions_template_name_version`** (or PostgreSQL **23505** on `segment_versions`). Exhausted retries yield **`BusinessException`** **`SEGMENT_VERSION_PUBLISH_CONFLICT`** (**409 CONFLICT**). Non-version unique violations propagate unchanged. Added **`SegmentVersionServiceTest`** (constraint detection, first publish, retry success, unrelated DIV, exhaustion). Empty segment path publish message translated to English.  
+Files changed:
+- `backend/src/main/java/com/docgen/service/SegmentVersionService.java`
+- `backend/src/main/java/com/docgen/exception/ErrorCode.java`
+- `backend/src/test/java/com/docgen/service/SegmentVersionServiceTest.java`
+- `docs/audits/full-project-review-2026-04-26/05-traceability-matrix.md`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+Validation commands:
+- `mvn -Dtest=SegmentVersionServiceTest test` (from `backend/`)
+Validation result: BUILD SUCCESS (7 tests).  
+Notes: full `mvn test` not run. Next: **WS-04-T07** (segment version API documentation).
+
 ## 2026-04-26: WS-03-T01 Completed
 
 Task ID: WS-03-T01  
@@ -421,6 +436,21 @@ Validation: `rg "[\\p{Han}]" docs/versioned-template-generation-contract.md` —
 
 Summary: Implemented **WS-05-T05** per WS-05-T04 (historical **file** rendering still **not** supported). Added `DocumentGeneratorService.generateDocument(templateId, request, syncValidatedTemplateVersion)` with two-arg delegating to `null` third parameter; `DynamicApiService` passes validated `version` (or `null`); async, batch, and scheduled paths call `generateDocument(..., null)` explicitly so mocks match runtime. Logging when third argument non-null. Tests: extended `DynamicApiServiceVersionParameterTest`, new `DocumentGeneratorServiceSyncVersionRenderPathTest`, updated `ScheduledTaskServiceTest` and `BatchGenerationCompletenessPropertyTest`. Updated `docs/versioned-template-generation-contract.md` implementation section.  
 Validation: `mvn -q test "-Dtest=DynamicApiServiceVersionParameterTest,DocumentGeneratorServiceSyncVersionRenderPathTest,DocumentGeneratorServiceGenerationEligibilityTest,ScheduledTaskServiceTest,BatchGenerationCompletenessPropertyTest,TemplateTestServiceTest"` (from `backend/`) — BUILD SUCCESS.
+
+## 2026-04-26: WS-05-T06 Composite activation via state machine
+
+Summary: Completed **WS-05-T06**. `CompositeTemplateService.activateCompositeTemplate` no longer sets `ACTIVE` directly; after existing assembly validation it calls `TemplateStateMachineService.transition(templateId, ACTIVE)` (with idempotent return when already `ACTIVE`). Injected `TemplateStateMachineService` into `CompositeTemplateService`. Added `CompositeTemplateServiceActivateTest` (draft/reviewed paths, already-active skip, review-required error propagation, empty segments). `TemplateStateMachineService` Javadoc cross-link.  
+Validation: `mvn -q test "-Dtest=CompositeTemplateServiceActivateTest"` and `mvn -q test-compile` (from `backend/`) — BUILD SUCCESS.
+
+## 2026-04-26: WS-06-T01 Workspace route reuse characterization
+
+Summary: Completed **WS-06-T01**. `TemplateWorkspaceIndex.test.ts` uses a hoisted `mockRouteState` for `useRoute()` (later made `reactive` in WS-06-T02 so the route watcher fires under Vitest). T01 originally characterized mount-only init; **WS-06-T02** implemented reload on `params.id` change and replaced the assertion with a re-init expectation.  
+Validation (after T02): `npx vitest run src/__tests__/views/TemplateWorkspaceIndex.test.ts` (from `frontend/`) — 5 tests passed.
+
+## 2026-04-26: WS-06-T02 Workspace reload on route change
+
+Summary: Completed **WS-06-T02**. `Index.vue` watches `route.params.id`; on change (finite positive id) resets stage UI to design and calls `store.initWorkspace(id)`. Extracted `workspaceIdFromRoute()` for mount, retry, and consistent parsing. Tests: WS-06-T01 characterization block replaced with WS-06-T02 assertion that `initWorkspace` is invoked with the new id without remount.  
+Validation: `npx vitest run src/__tests__/views/TemplateWorkspaceIndex.test.ts` (from `frontend/`) — 5 tests passed.
 
 ## Entry Template
 

@@ -125,6 +125,8 @@ public final class ErrorCode {
     public static final String GENERATE_ALL_SEGMENTS_SKIPPED = "GENERATE_ALL_SEGMENTS_SKIPPED";
     public static final String ASSEMBLY_CONFIG_INVALID = "ASSEMBLY_CONFIG_INVALID";
     public static final String SEGMENT_FILE_NOT_FOUND = "SEGMENT_FILE_NOT_FOUND";
+    /** Concurrent segment publishes raced on version allocation; retries exhausted. */
+    public static final String SEGMENT_VERSION_PUBLISH_CONFLICT = "SEGMENT_VERSION_PUBLISH_CONFLICT";
     public static final String CONTENT_DIFF_EXTRACTION_FAILED = "CONTENT_DIFF_EXTRACTION_FAILED";
 
     // ── PARAMETER (参数表) ──
