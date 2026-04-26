@@ -12,6 +12,16 @@
         <el-icon><VideoPlay /></el-icon> {{ $t('test.runAll') }}
       </el-button>
     </div>
+    <div class="toolbar toolbar-row2">
+      <el-input
+        v-model="searchText"
+        clearable
+        :placeholder="$t('test.searchPlaceholder')"
+        style="max-width: 280px"
+        @keyup.enter="handleSearch"
+      />
+      <el-button @click="handleSearch">{{ $t('common.search') }}</el-button>
+    </div>
 
     <!-- Test Report Summary -->
     <el-card v-if="report" shadow="never" style="margin-bottom: 16px">
@@ -47,6 +57,11 @@
           {{ formatInstant(row.createdAt) }}
         </template>
       </el-table-column>
+      <el-table-column :label="$t('test.lastRunAt')" width="180">
+        <template #default="{ row }">
+          {{ formatInstant(row.lastRun?.executedAt) }}
+        </template>
+      </el-table-column>
       <el-table-column :label="$t('test.report')" width="110">
         <template #default="{ row }">
           <template v-if="resultMap[row.id]">
@@ -75,6 +90,18 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <div v-if="totalElements > 0" class="pager">
+      <el-pagination
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :total="totalElements"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next"
+        @current-change="fetchTestCases"
+        @size-change="onPageSizeChange"
+      />
+    </div>
 
     <!-- Create/Edit Dialog -->
     <el-dialog v-model="dialogVisible" :title="editingCase ? $t('test.edit') : $t('test.create')" width="720px">
@@ -155,6 +182,10 @@ const { t } = useI18n()
 
 const loading = ref(false)
 const testCases = ref<TestCaseDTO[]>([])
+const searchText = ref('')
+const currentPage = ref(1)
+const pageSize = ref(20)
+const totalElements = ref(0)
 const report = ref<TestReportDTO | null>(null)
 const resultMap = ref<Record<number, TestResultDTO>>({})
 const runAllLoading = ref(false)
@@ -211,13 +242,33 @@ function validateJsonOrAlert(raw: string, label: string): boolean {
   }
 }
 
+function handleSearch() {
+  currentPage.value = 1
+  fetchTestCases()
+}
+
+function onPageSizeChange() {
+  currentPage.value = 1
+  fetchTestCases()
+}
+
 async function fetchTestCases() {
   loading.value = true
   try {
-    const rows = await getTestCases(props.templateId)
-    testCases.value = rows
+    const page = await getTestCases(props.templateId, {
+      page: currentPage.value - 1,
+      size: pageSize.value,
+      q: searchText.value.trim() || undefined,
+    })
+    testCases.value = page.content
+    totalElements.value = page.totalElements
+    if (page.content.length === 0 && currentPage.value > 1 && page.totalElements > 0) {
+      currentPage.value -= 1
+      await fetchTestCases()
+      return
+    }
     const merged: Record<number, TestResultDTO> = { ...resultMap.value }
-    for (const tc of rows) {
+    for (const tc of page.content) {
       if (tc.lastRun) merged[tc.id] = tc.lastRun
     }
     resultMap.value = merged
@@ -300,6 +351,7 @@ async function handleRunSingle(row: TestCaseDTO) {
     ElMessage[isTestPassed(result) ? 'success' : 'warning'](
       isTestPassed(result) ? t('test.passed') : t('test.failed'),
     )
+    await fetchTestCases()
   } catch { /* interceptor */ } finally {
     runningId.value = null
   }
@@ -314,6 +366,7 @@ async function handleRunAll() {
     rpt.results.forEach((r) => { map[r.testCaseId] = r })
     resultMap.value = map
     ElMessage.success(`${rpt.passedCount}/${rpt.totalCount} ${t('test.passed')}`)
+    await fetchTestCases()
   } catch { /* interceptor */ } finally {
     runAllLoading.value = false
   }
@@ -327,6 +380,17 @@ onMounted(fetchTestCases)
   display: flex;
   gap: 8px;
   margin-bottom: 16px;
+  margin-top: 12px;
+}
+.toolbar-row2 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.pager {
+  display: flex;
+  justify-content: flex-end;
   margin-top: 12px;
 }
 .hint-alert {

@@ -136,8 +136,21 @@ export function shareToMarket(templateId: number, data: ShareRequest) {
 
 // --- Test Case API ---
 
-export function getTestCases(templateId: number) {
-  return request.get<any, TestCaseDTO[]>(`/templates/${templateId}/test-cases`)
+export interface ListTestCasesQuery {
+  page?: number
+  size?: number
+  /** Case-insensitive name contains filter */
+  q?: string
+}
+
+export function getTestCases(templateId: number, opts?: ListTestCasesQuery) {
+  return request.get<any, PageResult<TestCaseDTO>>(`/templates/${templateId}/test-cases`, {
+    params: {
+      page: opts?.page ?? 0,
+      size: opts?.size ?? 20,
+      q: opts?.q?.trim() || undefined,
+    },
+  })
 }
 
 export function createTestCase(templateId: number, data: CreateTestCaseRequest) {

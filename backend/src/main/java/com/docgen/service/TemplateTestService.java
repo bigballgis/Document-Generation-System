@@ -12,9 +12,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
@@ -67,16 +71,33 @@ public class TemplateTestService {
     }
 
     @Transactional(readOnly = true)
-    public List<TestCaseDTO> listTestCases(Long templateId) {
-        return testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(templateId)
-                .stream()
+    public Page<TestCaseDTO> listTestCases(Long templateId, String nameQuery, Pageable pageable) {
+        Page<TestCase> page = StringUtils.hasText(nameQuery)
+                ? testCaseRepository.findByTemplateIdAndNameContainingIgnoreCaseOrderByCreatedAtDesc(
+                        templateId, nameQuery.trim(), pageable)
+                : testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(templateId, pageable);
+        List<Long> ids = page.getContent().stream().map(TestCase::getId).toList();
+        Map<Long, TestResult> latestByCaseId = loadLatestResultsMap(ids);
+        List<TestCaseDTO> content = page.getContent().stream()
                 .map(tc -> {
-                    TestResultDTO last = testResultRepository.findFirstByTestCaseIdOrderByExecutedAtDesc(tc.getId())
-                            .map(r -> toTestResultDTO(r, tc.getName()))
-                            .orElse(null);
+                    TestResult row = latestByCaseId.get(tc.getId());
+                    TestResultDTO last = row != null ? toTestResultDTO(row, tc.getName()) : null;
                     return toTestCaseDTO(tc, last);
                 })
                 .toList();
+        return new PageImpl<>(content, pageable, page.getTotalElements());
+    }
+
+    private Map<Long, TestResult> loadLatestResultsMap(List<Long> testCaseIds) {
+        if (testCaseIds == null || testCaseIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<TestResult> rows = testResultRepository.findLatestResultsForTestCaseIds(testCaseIds);
+        Map<Long, TestResult> map = new HashMap<>(rows.size());
+        for (TestResult r : rows) {
+            map.put(r.getTestCaseId(), r);
+        }
+        return map;
     }
 
     @Transactional

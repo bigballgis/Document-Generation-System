@@ -38,6 +38,14 @@
       <span>{{ t('workspace.testForm.noUncovered') }}</span>
     </div>
 
+    <el-collapse v-if="store.templateId" class="saved-tests-collapse">
+      <el-collapse-item :title="t('workspace.testing.savedTestCasesTitle')" name="saved">
+        <div class="saved-tests-body">
+          <TestCaseManagement :template-id="store.templateId" />
+        </div>
+      </el-collapse-item>
+    </el-collapse>
+
     <!-- Split layout: Form (40%) + Preview (60%) -->
     <div class="test-split">
       <div class="test-form-panel">
@@ -79,6 +87,7 @@ import { previewCompositeTemplate } from '@/api/composite-templates'
 import type { UncoveredItem } from '@/types/parameter'
 import CoverageBar from './CoverageBar.vue'
 import TestDataForm from './TestDataForm.vue'
+import TestCaseManagement from '@/views/templates/components/TestCaseManagement.vue'
 
 defineProps<{
   readonly: boolean
@@ -166,6 +175,13 @@ async function triggerPreview() {
   gap: 12px;
   height: calc(100vh - 200px);
   min-height: 500px;
+}
+.saved-tests-collapse {
+  flex-shrink: 0;
+}
+.saved-tests-body {
+  max-height: min(480px, 45vh);
+  overflow: auto;
 }
 .guidance-section {
   flex-shrink: 0;

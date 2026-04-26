@@ -546,7 +546,9 @@
     "resultDrawerTitle": "Test run details",
     "diffDetails": "Diff / error detail",
     "actualSummary": "Actual summary (JSON)",
-    "invalidJson": "Invalid JSON in {label}."
+    "invalidJson": "Invalid JSON in {label}.",
+    "searchPlaceholder": "Filter by test case name…",
+    "lastRunAt": "Last run"
   },
   "watermark": {
     "title": "Watermark Settings",
@@ -856,6 +858,7 @@
       "segments": "Failed to load segment details"
     },
     "testing": {
+      "savedTestCasesTitle": "Saved test cases",
       "testData": "Test Data",
       "addTestCase": "Add Test Case",
       "emptyTestData": "No test cases yet. Add your first test case to get started.",

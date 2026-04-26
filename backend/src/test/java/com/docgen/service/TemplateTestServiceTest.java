@@ -12,9 +12,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -45,8 +48,8 @@ class TemplateTestServiceTest {
     void setUp() {
         service = new TemplateTestService(testCaseRepository, testResultRepository, objectMapper,
                 documentGeneratorService, docxTextExtractor);
-        lenient().when(testResultRepository.findFirstByTestCaseIdOrderByExecutedAtDesc(anyLong()))
-                .thenReturn(Optional.empty());
+        lenient().when(testResultRepository.findLatestResultsForTestCaseIds(anyList()))
+                .thenReturn(Collections.emptyList());
     }
 
     // ── createTestCase ──
@@ -100,12 +103,27 @@ class TemplateTestServiceTest {
     void listTestCases_returnsAll() {
         TestCase tc1 = createSampleTestCase(1L, 100L, "TC1");
         TestCase tc2 = createSampleTestCase(2L, 100L, "TC2");
-        when(testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(100L))
-                .thenReturn(List.of(tc1, tc2));
+        var pageable = PageRequest.of(0, 20);
+        when(testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(eq(100L), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(tc1, tc2), pageable, 2));
 
-        List<TestCaseDTO> result = service.listTestCases(100L);
-        assertEquals(2, result.size());
-        assertEquals("TC1", result.get(0).getName());
+        var result = service.listTestCases(100L, null, pageable);
+        assertEquals(2, result.getContent().size());
+        assertEquals("TC1", result.getContent().get(0).getName());
+        assertEquals(2, result.getTotalElements());
+    }
+
+    @Test
+    void listTestCases_filtersByName() {
+        TestCase tc1 = createSampleTestCase(1L, 100L, "Alpha");
+        var pageable = PageRequest.of(0, 20);
+        when(testCaseRepository.findByTemplateIdAndNameContainingIgnoreCaseOrderByCreatedAtDesc(
+                eq(100L), eq("alp"), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(tc1), pageable, 1));
+
+        var result = service.listTestCases(100L, "alp", pageable);
+        assertEquals(1, result.getContent().size());
+        assertEquals("Alpha", result.getContent().get(0).getName());
     }
 
     // ── updateTestCase ──

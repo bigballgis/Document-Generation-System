@@ -545,7 +545,9 @@
     "resultDrawerTitle": "測試執行詳情",
     "diffDetails": "差異 / 錯誤資訊",
     "actualSummary": "實際摘要（JSON）",
-    "invalidJson": "{label} 的 JSON 格式無效。"
+    "invalidJson": "{label} 的 JSON 格式無效。",
+    "searchPlaceholder": "依案例名稱篩選…",
+    "lastRunAt": "上次執行"
   },
   "watermark": {
     "title": "浮水印設定",
@@ -855,6 +857,7 @@
       "segments": "片段詳情載入失敗"
     },
     "testing": {
+      "savedTestCasesTitle": "已儲存的測試案例",
       "testData": "測試資料",
       "addTestCase": "新增測試案例",
       "emptyTestData": "暫無測試案例，新增第一個測試案例開始測試。",

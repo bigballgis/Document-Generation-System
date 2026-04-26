@@ -545,7 +545,9 @@
     "resultDrawerTitle": "测试运行详情",
     "diffDetails": "差异 / 错误信息",
     "actualSummary": "实际摘要（JSON）",
-    "invalidJson": "{label} 的 JSON 格式无效。"
+    "invalidJson": "{label} 的 JSON 格式无效。",
+    "searchPlaceholder": "按用例名称筛选…",
+    "lastRunAt": "上次运行"
   },
   "watermark": {
     "title": "水印设置",
@@ -855,6 +857,7 @@
       "segments": "片段详情加载失败"
     },
     "testing": {
+      "savedTestCasesTitle": "已保存的测试用例",
       "testData": "测试数据",
       "addTestCase": "添加测试用例",
       "emptyTestData": "暂无测试用例，添加第一个测试用例开始测试。",

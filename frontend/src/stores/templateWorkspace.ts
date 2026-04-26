@@ -139,7 +139,8 @@ export const useTemplateWorkspaceStore = defineStore('templateWorkspace', () => 
   async function refreshTestCases(): Promise<void> {
     if (!templateId.value) return
     try {
-      testCases.value = await getTestCases(templateId.value)
+      const page = await getTestCases(templateId.value, { page: 0, size: 500 })
+      testCases.value = page.content
       delete warnings.value.testCases
     } catch (e: any) {
       warnings.value.testCases = e.message || 'Refresh failed'
