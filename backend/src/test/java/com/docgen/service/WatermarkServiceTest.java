@@ -238,6 +238,15 @@ class WatermarkServiceTest {
     }
 
     @Test
+    void applyImageWatermark_httpUrl_throws() {
+        ImageWatermarkConfig config = new ImageWatermarkConfig("https://example.com/logo.png");
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> service.applyImageWatermark(SAMPLE_DOC, config));
+        assertEquals("WATERMARK_INVALID_CONFIG", ex.getErrorCode());
+        assertTrue(ex.getMessage().contains("Remote image URLs"));
+    }
+
+    @Test
     void applyImageWatermark_invalidPosition_throws() {
         ImageWatermarkConfig config = new ImageWatermarkConfig("img-data");
         config.setPosition("INVALID");

@@ -46,6 +46,8 @@ class CompositeImportExportServiceTest {
     @Mock private MinioClient minioClient;
     @Mock private TestCaseRepository testCaseRepository;
     @Mock private CompositeCoverageService compositeCoverageService;
+    @Mock private ParameterService parameterService;
+    @Mock private com.docgen.repository.ParameterRepository parameterRepository;
 
     private CompositeImportExportService service;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -55,7 +57,8 @@ class CompositeImportExportServiceTest {
         service = new CompositeImportExportService(
                 templateRepository, assemblyConfigService,
                 minioClient, objectMapper,
-                testCaseRepository, compositeCoverageService);
+                testCaseRepository, compositeCoverageService,
+                parameterService, parameterRepository);
         Field bucketField = CompositeImportExportService.class.getDeclaredField("bucketName");
         bucketField.setAccessible(true);
         bucketField.set(service, "docgen-test");

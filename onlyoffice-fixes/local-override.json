@@ -1,0 +1,11 @@
+{
+  "services": {
+    "CoAuthoring": {
+      "token": {
+        "outbox": {
+          "urlExclusionRegex": "minio"
+        }
+      }
+    }
+  }
+}

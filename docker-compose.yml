@@ -32,11 +32,12 @@ services:
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - MINIO_ENDPOINT=http://minio:9000
-      - MINIO_EXTERNAL_ENDPOINT=http://localhost:9000
+      - MINIO_EXTERNAL_ENDPOINT=http://minio:9000
       - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
       - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
       - DOCXTEMPLATER_SERVICE_URL=http://docxtemplater:3000
       - ONLYOFFICE_URL=http://onlyoffice
+      - ONLYOFFICE_JWT_SECRET=${ONLYOFFICE_JWT_SECRET}
       - JWT_SECRET=${JWT_SECRET}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - MAIL_HOST=${MAIL_HOST:-smtp.example.com}
@@ -92,14 +93,16 @@ services:
       - "8443:443"
       - "8088:80"
     environment:
-      - JWT_ENABLED=false
-      - JWT_SECRET=my_jwt_secret
+      - JWT_ENABLED=true
+      - JWT_SECRET=${ONLYOFFICE_JWT_SECRET}
       - ALLOW_PRIVATE_IP_ADDRESS=true
       - ALLOW_META_IP_ADDRESS=true
     volumes:
       - onlyoffice_data:/var/www/onlyoffice/Data
       - ./onlyoffice-plugins/insert-text:/var/www/onlyoffice/documentserver/sdkjs-plugins/insert-text
       - ./onlyoffice-plugins/v1:/var/www/onlyoffice/documentserver/sdkjs-plugins/v1
+      - ./onlyoffice-fixes/device_scale.js:/var/www/onlyoffice/documentserver/sdkjs/common/device_scale.js
+      - ./onlyoffice-fixes/local-override.json:/etc/onlyoffice/documentserver/local-development-linux.json
     depends_on:
       - app
       - minio

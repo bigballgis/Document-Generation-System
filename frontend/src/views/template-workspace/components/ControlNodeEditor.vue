@@ -22,6 +22,7 @@
         :document-title="documentTitle"
         :callback-url="callbackUrl"
         :view-only="readonly"
+        :token="documentToken"
         @ready="onEditorReady"
         @error="onEditorError"
       />
@@ -62,6 +63,7 @@ defineEmits<{
 const { t } = useI18n()
 
 const documentUrl = ref('')
+const documentToken = ref('')
 const loading = ref(false)
 const error = ref('')
 
@@ -119,6 +121,7 @@ watch(() => props.visible, (val) => {
     loadDocument()
   } else {
     documentUrl.value = ''
+    documentToken.value = ''
     error.value = ''
   }
 })

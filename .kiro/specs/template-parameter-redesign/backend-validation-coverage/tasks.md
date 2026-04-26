@@ -6,7 +6,7 @@
 
 ## Tasks
 
-- [ ] 1. ParameterValidationService — 参数验证与衍生参数计算
+- [x] 1. ParameterValidationService — 参数验证与衍生参数计算
   - [x] 1.1 Create ParameterValidationService
     - validateAndBuildContext: validate all REQUEST params against Parameter_Table, apply defaults, evaluate DERIVED params, return complete data context
     - validateParameterValue: check data_type match, required/default handling
@@ -33,7 +33,7 @@
 - [x] 2. Checkpoint — Ensure ParameterValidationService tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 3. DocumentGeneratorService simplification
+- [x] 3. DocumentGeneratorService simplification
   - [x] 3.1 Refactor DocumentGeneratorService.executePipeline to three-step pipeline
     - Replace DataAggregationService call with ParameterValidationService.validateAndBuildContext
     - Pipeline: validate parameters → evaluate DERIVED parameters → render template
@@ -47,7 +47,7 @@
     - Remove DataAggregationService dependency, use parameter-based data context
     - _Requirements: 10.8_
 
-- [ ] 4. CoverageCheckService refactor — three-dimensional coverage
+- [x] 4. CoverageCheckService refactor — three-dimensional coverage
   - [x] 4.1 Refactor CoverageCheckService to compute Branch/Loop/Parameter coverage
     - Inject TemplateScanService and ParameterRepository (replace DataSourceRepository, ExpressionRepository, TemplateVariableRepository)
     - computeBranchCoverage: scan conditions from template, check test cases for true/false paths
@@ -68,7 +68,7 @@
     - Test zero branches/loops scenario, expression dependency warnings, threshold gating
     - _Requirements: 8.7, 8.8, 8.9_
 
-- [ ] 5. Parameter Schema endpoint
+- [x] 5. Parameter Schema endpoint
   - [x] 5.1 Implement getParameterSchema in ParameterService
     - Build nested tree structure with "properties" for OBJECT, "items" for ARRAY (JSON Schema conventions)
     - Include name, data_type, required, default_value, description, validation_rules constraints
@@ -81,7 +81,7 @@
     - **Property 26: Sample request body generation** — jqwik test verifying nested JSON with example values
     - **Validates: Requirements 7.1, 7.2, 7.4, 7.5, 7.6, 7.7**
 
-- [ ] 6. Data migration property test
+- [x] 6. Data migration property test
   - [x] 6.1 Write DataMigrationPropertyTest
     - **Property 32: Data migration correctness** — jqwik test verifying TemplateVariable → REQUEST/DERIVED mapping, standalone Expression → DERIVED
     - **Validates: Requirements 9.2, 9.3, 9.9**

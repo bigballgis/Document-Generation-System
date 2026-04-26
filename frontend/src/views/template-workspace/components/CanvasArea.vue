@@ -25,6 +25,12 @@
               <span class="segment-name">{{ getSegment(node)?.name || '—' }}</span>
             </div>
             <div v-if="!readonly" class="card-actions">
+              <el-button size="small" type="success" plain @click.stop="$emit('publish-segment', node)">
+                {{ t('workspace.segment.publish') }}
+              </el-button>
+              <el-button size="small" plain @click.stop="$emit('show-segment-versions', node)">
+                {{ t('workspace.segment.versions') }}
+              </el-button>
               <el-button size="small" type="primary" @click.stop="$emit('edit-segment', node)">
                 {{ t('common.edit') }}
               </el-button>
@@ -33,6 +39,11 @@
                   <el-button size="small" type="danger" plain @click.stop>{{ t('common.delete') }}</el-button>
                 </template>
               </el-popconfirm>
+            </div>
+            <div v-else class="card-actions">
+              <el-button size="small" plain @click.stop="$emit('show-segment-versions', node)">
+                {{ t('workspace.segment.versions') }}
+              </el-button>
             </div>
           </div>
 
@@ -136,6 +147,8 @@ const emit = defineEmits<{
   (e: 'update-node', nodeIndex: number, patch: Partial<CanvasNode>): void
   (e: 'edit-segment', node: CanvasNode): void
   (e: 'edit-header-footer', node: CanvasNode): void
+  (e: 'publish-segment', node: CanvasNode): void
+  (e: 'show-segment-versions', node: CanvasNode): void
 }>()
 
 const { t } = useI18n()

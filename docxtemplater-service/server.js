@@ -4,6 +4,7 @@ const renderRouter = require('./src/routes/render');
 const evaluateRouter = require('./src/routes/evaluate');
 const convertPdfRouter = require('./src/routes/convert-pdf');
 const mergeSegmentsRouter = require('./src/routes/merge-segments');
+const watermarkRouter = require('./src/routes/watermark');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -29,6 +30,8 @@ app.use('/evaluate', evaluateRouter);
 app.use('/convert-pdf', convertPdfRouter);
 // Backend document merge calls POST /merge-segments (see DocumentMergeService in Java).
 app.use('/merge-segments', mergeSegmentsRouter);
+// Standalone watermark on an existing .docx (see WatermarkService in Java).
+app.use('/watermark', watermarkRouter);
 
 // Global error handler
 app.use((err, _req, res, _next) => {

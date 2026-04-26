@@ -1,11 +1,5 @@
 <template>
   <div class="onlyoffice-editor-wrapper">
-    <TemplateTagToolbar
-      v-if="!viewOnly && showToolbar"
-      @insert-variable="insertVariable"
-      @insert-loop="insertLoop"
-      @insert-condition="insertCondition"
-    />
     <div :id="editorContainerId" class="editor-container" />
   </div>
 </template>
@@ -14,7 +8,7 @@
 import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useLocale } from '@/composables/useLocale'
-import TemplateTagToolbar from './TemplateTagToolbar.vue'
+import { signOnlyOfficeConfig } from '@/api/composite-templates'
 
 export interface OnlyOfficeEditorProps {
   /** URL of the document to edit (from MinIO / backend) */
@@ -27,18 +21,18 @@ export interface OnlyOfficeEditorProps {
   callbackUrl?: string
   /** View-only / preview mode */
   viewOnly?: boolean
-  /** Show template tag toolbar (Insert Variable/Loop/Condition) */
-  showToolbar?: boolean
   /** Document type: word, cell, slide */
   documentType?: string
+  /** JWT token for OnlyOffice Document Server authentication */
+  token?: string
 }
 
 const props = withDefaults(defineProps<OnlyOfficeEditorProps>(), {
   documentTitle: 'Template.docx',
   callbackUrl: '',
   viewOnly: false,
-  showToolbar: false,
   documentType: 'word',
+  token: '',
 })
 
 const emit = defineEmits<{
@@ -161,10 +155,12 @@ function buildConfig() {
     },
   }
 
+  // Add JWT token for OnlyOffice Document Server authentication
+  // Token is set dynamically in createEditor() after signing
   return config
 }
 
-function createEditor() {
+async function createEditor() {
   if (!(window as any).DocsAPI) {
     emit('error', 'OnlyOffice API not loaded')
     return
@@ -173,6 +169,15 @@ function createEditor() {
   destroyEditor()
 
   const config = buildConfig()
+
+  // Sign the full config with the backend JWT secret
+  try {
+    const { token } = await signOnlyOfficeConfig(config)
+    config.token = token
+  } catch (err: any) {
+    console.warn('Failed to sign OnlyOffice config, proceeding without token:', err.message)
+  }
+
   editorInstanceRef.value = new (window as any).DocsAPI.DocEditor(editorContainerId, config)
 }
 
@@ -222,8 +227,8 @@ function insertVariable(name: string) {
   insertTextAtCursor(`{${name}}`)
 }
 
-function insertLoop(arrayName: string) {
-  insertTextAtCursor(`{#${arrayName}}\n\n{/${arrayName}}`)
+function insertLoop(loopText: string) {
+  insertTextAtCursor(loopText)
 }
 
 function insertCondition(conditionExpr: string) {

@@ -23,6 +23,16 @@
           style="display: none"
           @change="handleImportConfig"
         />
+        <el-button type="success" @click="importZipInput?.click()">
+          {{ $t('template.importCompositePackage') }}
+        </el-button>
+        <input
+          ref="importZipInput"
+          type="file"
+          accept=".zip"
+          style="display: none"
+          @change="handleImportZip"
+        />
         <el-button type="primary" @click="wizardVisible = true">
           {{ $t('template.create') }}
         </el-button>
@@ -208,6 +218,7 @@ import {
 import TemplateFormDialog from './components/TemplateFormDialog.vue'
 import TemplateCreationWizard from '@/views/template-workspace/components/TemplateCreationWizard.vue'
 import { importDocx, importConfig } from '@/api/import-export'
+import { importCompositeFromZip } from '@/api/composite-templates'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -223,6 +234,7 @@ const wizardVisible = ref(false)
 
 const importDocxInput = ref<HTMLInputElement | null>(null)
 const importConfigInput = ref<HTMLInputElement | null>(null)
+const importZipInput = ref<HTMLInputElement | null>(null)
 
 const query = reactive<TemplateQuery>({
   keyword: '',
@@ -361,6 +373,19 @@ async function handleImportConfig(event: Event) {
   if (!file) return
   try {
     await importConfig(file)
+    ElMessage.success(t('message.importSuccess'))
+    fetchTemplates()
+  } catch { /* handled */ } finally {
+    input.value = ''
+  }
+}
+
+async function handleImportZip(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  try {
+    await importCompositeFromZip(file)
     ElMessage.success(t('message.importSuccess'))
     fetchTemplates()
   } catch { /* handled */ } finally {

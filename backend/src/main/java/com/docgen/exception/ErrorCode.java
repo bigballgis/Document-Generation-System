@@ -125,6 +125,7 @@ public final class ErrorCode {
     public static final String GENERATE_ALL_SEGMENTS_SKIPPED = "GENERATE_ALL_SEGMENTS_SKIPPED";
     public static final String ASSEMBLY_CONFIG_INVALID = "ASSEMBLY_CONFIG_INVALID";
     public static final String SEGMENT_FILE_NOT_FOUND = "SEGMENT_FILE_NOT_FOUND";
+    public static final String CONTENT_DIFF_EXTRACTION_FAILED = "CONTENT_DIFF_EXTRACTION_FAILED";
 
     // ── PARAMETER (参数表) ──
     public static final String PARAMETER_NOT_FOUND = "PARAMETER_NOT_FOUND";

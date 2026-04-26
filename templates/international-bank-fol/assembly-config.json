@@ -1,0 +1,238 @@
+{
+  "description": "FOL 组合模板装配配置 - 18 个 Segment",
+  "segments": [
+    {
+      "name": "Cover Page",
+      "filePath": "segments/fol/01-cover-page.docx",
+      "segmentType": "BODY",
+      "position": 1,
+      "enabled": true,
+      "pageBreakBefore": false,
+      "conditionExpression": null,
+      "dataScope": null,
+      "headerFilePath": "segments/fol/headers/cover-header.docx",
+      "footerFilePath": "segments/fol/footers/cover-footer.docx",
+      "pageNumberFormat": null,
+      "pageNumberStart": null
+    },
+    {
+      "name": "Table of Contents",
+      "filePath": "segments/fol/02-table-of-contents.docx",
+      "segmentType": "BODY",
+      "position": 2,
+      "enabled": true,
+      "pageBreakBefore": true,
+      "conditionExpression": null,
+      "dataScope": null,
+      "headerFilePath": "segments/fol/headers/standard-header.docx",
+      "footerFilePath": "segments/fol/footers/standard-footer.docx",
+      "pageNumberFormat": "roman_lower",
+      "pageNumberStart": 1
+    },
+    {
+      "name": "Part A - Definitions & Interpretation",
+      "filePath": "segments/fol/03-definitions.docx",
+      "segmentType": "BODY",
+      "position": 3,
+      "enabled": true,
+      "pageBreakBefore": true,
+      "conditionExpression": null,
+      "dataScope": null,
+      "headerFilePath": "segments/fol/headers/standard-header.docx",
+      "footerFilePath": "segments/fol/footers/standard-footer.docx",
+      "pageNumberFormat": "decimal",
+      "pageNumberStart": 1
+    },
+    {
+      "name": "Part B - Facility Details",
+      "filePath": "segments/fol/04-facility-details.docx",
+      "segmentType": "BODY",
+      "position": 4,
+      "enabled": true,
+      "pageBreakBefore": true,
+      "conditionExpression": null,
+      "dataScope": null
+    },
+    {
+      "name": "Part C - Interest & Fees",
+      "filePath": "segments/fol/05-interest-fees.docx",
+      "segmentType": "BODY",
+      "position": 5,
+      "enabled": true,
+      "pageBreakBefore": true,
+      "conditionExpression": null,
+      "dataScope": null
+    },
+    {
+      "name": "Part D - Repayment Schedule",
+      "filePath": "segments/fol/06-repayment-schedule.docx",
+      "segmentType": "BODY",
+      "position": 6,
+      "enabled": true,
+      "pageBreakBefore": true,
+      "conditionExpression": null,
+      "dataScope": {
+        "facilities": "facilities",
+        "base_currency": "base_currency"
+      }
+    },
+    {
+      "name": "Part E - Conditions Precedent",
+      "filePath": "segments/fol/07-conditions-precedent.docx",
+      "segmentType": "BODY",
+      "position": 7,
+      "enabled": true,
+      "pageBreakBefore": true,
+      "conditionExpression": null,
+      "dataScope": {
+        "conditions_precedent": "conditions_precedent",
+        "borrower": "borrower",
+        "effective_date": "effective_date"
+      }
+    },
+    {
+      "name": "Part F - Representations & Warranties",
+      "filePath": "segments/fol/08-representations.docx",
+      "segmentType": "BODY",
+      "position": 8,
+      "enabled": true,
+      "pageBreakBefore": true,
+      "conditionExpression": null,
+      "dataScope": {
+        "representations": "representations",
+        "borrower": "borrower"
+      }
+    },
+    {
+      "name": "Part G - Covenants",
+      "filePath": "segments/fol/09-covenants.docx",
+      "segmentType": "BODY",
+      "position": 9,
+      "enabled": true,
+      "pageBreakBefore": true,
+      "conditionExpression": null,
+      "dataScope": {
+        "covenants": "covenants",
+        "financial_statements": "financial_statements",
+        "insurance_requirements": "insurance_requirements"
+      }
+    },
+    {
+      "name": "Part H - Security & Collateral",
+      "filePath": "segments/fol/10-security-collateral.docx",
+      "segmentType": "BODY",
+      "position": 10,
+      "enabled": true,
+      "pageBreakBefore": true,
+      "conditionExpression": "data.has_security === true",
+      "dataScope": {
+        "security_items": "security_items",
+        "total_security_value": "total_security_value",
+        "overall_ltv": "overall_ltv",
+        "total_facility_amount": "total_facility_amount"
+      }
+    },
+    {
+      "name": "Part I - Guarantee",
+      "filePath": "segments/fol/11-guarantee.docx",
+      "segmentType": "BODY",
+      "position": 11,
+      "enabled": true,
+      "pageBreakBefore": true,
+      "conditionExpression": "data.has_guarantor === true",
+      "dataScope": {
+        "guarantors": "guarantors",
+        "borrower": "borrower",
+        "total_facility_amount": "total_facility_amount"
+      }
+    },
+    {
+      "name": "Part J - Events of Default",
+      "filePath": "segments/fol/12-events-of-default.docx",
+      "segmentType": "BODY",
+      "position": 12,
+      "enabled": true,
+      "pageBreakBefore": true,
+      "conditionExpression": null,
+      "dataScope": {
+        "events_of_default": "events_of_default",
+        "cross_default_threshold": "cross_default_threshold",
+        "default_interest_margin": "default_interest_margin"
+      }
+    },
+    {
+      "name": "Part K - Governing Law & Jurisdiction",
+      "filePath": "segments/fol/13-governing-law.docx",
+      "segmentType": "BODY",
+      "position": 13,
+      "enabled": true,
+      "pageBreakBefore": true,
+      "conditionExpression": null,
+      "dataScope": {
+        "governing_law": "governing_law"
+      }
+    },
+    {
+      "name": "Part L - Miscellaneous",
+      "filePath": "segments/fol/14-miscellaneous.docx",
+      "segmentType": "BODY",
+      "position": 14,
+      "enabled": true,
+      "pageBreakBefore": true,
+      "conditionExpression": null,
+      "dataScope": null
+    },
+    {
+      "name": "Appendix A - Compliance Certificate",
+      "filePath": "segments/fol/15-appendix-compliance.docx",
+      "segmentType": "BODY",
+      "position": 15,
+      "enabled": true,
+      "pageBreakBefore": true,
+      "conditionExpression": null,
+      "dataScope": {
+        "covenants": "covenants",
+        "borrower": "borrower"
+      }
+    },
+    {
+      "name": "Appendix B - Drawdown Notice",
+      "filePath": "segments/fol/16-appendix-drawdown.docx",
+      "segmentType": "BODY",
+      "position": 16,
+      "enabled": true,
+      "pageBreakBefore": true,
+      "conditionExpression": null,
+      "dataScope": {
+        "facilities": "facilities",
+        "borrower": "borrower",
+        "bank": "bank"
+      }
+    },
+    {
+      "name": "Appendix C - Fee Schedule",
+      "filePath": "segments/fol/17-appendix-fee-schedule.docx",
+      "segmentType": "BODY",
+      "position": 17,
+      "enabled": true,
+      "pageBreakBefore": true,
+      "conditionExpression": null,
+      "dataScope": {
+        "fees": "fees",
+        "total_fee_amount": "total_fee_amount"
+      }
+    },
+    {
+      "name": "Signature Page",
+      "filePath": "segments/fol/18-signature-page.docx",
+      "segmentType": "BODY",
+      "position": 18,
+      "enabled": true,
+      "pageBreakBefore": true,
+      "conditionExpression": null,
+      "dataScope": null,
+      "headerFilePath": null,
+      "footerFilePath": "segments/fol/footers/signature-footer.docx"
+    }
+  ]
+}

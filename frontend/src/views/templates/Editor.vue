@@ -53,6 +53,7 @@
         :document-title="documentTitle"
         :callback-url="callbackUrl"
         :view-only="isPreview"
+        :token="onlyOfficeToken"
         @ready="onEditorReady"
         @error="onEditorError"
         @close="goBack"
@@ -105,6 +106,8 @@ const monacoContent = ref('')
 
 /** Presigned MinIO URL for OnlyOffice to download the document */
 const onlyOfficeDocUrl = ref('')
+/** JWT token for OnlyOffice Document Server authentication */
+const onlyOfficeToken = ref('')
 
 const templateId = computed(() => Number(route.params.id))
 

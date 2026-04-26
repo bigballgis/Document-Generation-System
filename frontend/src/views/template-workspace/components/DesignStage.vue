@@ -87,6 +87,7 @@
                 :document-title="tab.title + '.docx'"
                 :callback-url="tab.callbackUrl"
                 :view-only="readonly"
+                :token="tab.token"
                 @error="(msg: string) => ElMessage.error(msg)"
               />
             </template>
@@ -137,7 +138,7 @@ interface EditorTab {
   id: string; title: string; type: 'segment' | 'header' | 'footer'
   segmentIndex: number; filePath: string; documentUrl: string
   documentKey: string; callbackUrl: string; hint: string
-  loading: boolean; error: string
+  loading: boolean; error: string; token: string
 }
 
 const editorTabs = reactive<EditorTab[]>([])
@@ -156,7 +157,7 @@ function handleOpenEditor(tabInfo: { id: string; title: string; type: string; se
     hint: tabInfo.type === 'header' ? t('workspace.design.isolation.headerHint')
         : tabInfo.type === 'footer' ? t('workspace.design.isolation.footerHint')
         : t('workspace.design.isolation.bodyHint'),
-    loading: false, error: '',
+    loading: false, error: '', token: '',
   }
   editorTabs.push(tab)
   activeView.value = tabInfo.id
@@ -166,7 +167,7 @@ function handleOpenEditor(tabInfo: { id: string; title: string; type: string; se
 async function loadEditorTab(tab: EditorTab) {
   const idx = editorTabs.findIndex(t => t.id === tab.id)
   if (idx < 0) return
-  editorTabs[idx].loading = true; editorTabs[idx].error = ''; editorTabs[idx].documentUrl = ''
+  editorTabs[idx].loading = true; editorTabs[idx].error = ''; editorTabs[idx].documentUrl = ''; editorTabs[idx].token = ''
   try {
     const { url } = await getSegmentOnlyOfficeUrl(store.templateId, editorTabs[idx].segmentIndex)
     editorTabs[idx].documentUrl = url || ''

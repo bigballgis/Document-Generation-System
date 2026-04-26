@@ -1,7 +1,7 @@
 /**
  * Integration tests for Docxtemplater Service
  *
- * Tests the HTTP endpoints: /health, /evaluate, /render, /convert-pdf
+ * Tests the HTTP endpoints: /health, /evaluate, /watermark, /render, /convert-pdf
  *
  * **Validates: Requirements 6, 11, 21, 51**
  */
@@ -485,6 +485,83 @@ describe('POST /evaluate', () => {
   });
 });
 
+describe('POST /watermark', () => {
+  const ONE_PX_PNG_B64 =
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
+  it('returns 400 when document is missing', async () => {
+    const res = await request('POST', '/watermark', { type: 'text', text: 'X' });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('MISSING_DOCUMENT');
+  });
+
+  it('returns 400 for invalid watermark type', async () => {
+    const buf = createTestDocx('hi');
+    const res = await request('POST', '/watermark', {
+      document: buf.toString('base64'),
+      type: 'vector',
+      text: 'x',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('INVALID_WATERMARK_TYPE');
+  });
+
+  it('applies text watermark and returns a docx buffer', async () => {
+    const buf = createTestDocx('body');
+    const res = await request('POST', '/watermark', {
+      document: buf.toString('base64'),
+      type: 'text',
+      text: 'CONFIDENTIAL',
+      fontSize: 36,
+      color: '#CCCCCC',
+      opacity: 0.3,
+      rotation: -45,
+    });
+    expect(res.status).toBe(200);
+    expect(String(res.headers['content-type'] || '')).toMatch(/wordprocessingml/);
+    const out = Buffer.isBuffer(res.body) ? res.body : res.rawBody;
+    expect(Buffer.isBuffer(out)).toBe(true);
+    expect(out.length).toBeGreaterThan(200);
+    const zip = new PizZip(out);
+    expect(zip.files['word/document.xml']).toBeDefined();
+  });
+
+  it('applies image watermark with raw base64 imageSource', async () => {
+    const buf = createTestDocx('x');
+    const res = await request('POST', '/watermark', {
+      document: buf.toString('base64'),
+      type: 'image',
+      imageSource: ONE_PX_PNG_B64,
+      opacity: 0.3,
+      position: 'CENTER',
+    });
+    expect(res.status).toBe(200);
+    const out = Buffer.isBuffer(res.body) ? res.body : res.rawBody;
+    expect(out.length).toBeGreaterThan(200);
+  });
+
+  it('accepts data URI in imageSource', async () => {
+    const buf = createTestDocx('x');
+    const dataUri = `data:image/png;base64,${ONE_PX_PNG_B64}`;
+    const res = await request('POST', '/watermark', {
+      document: buf.toString('base64'),
+      type: 'image',
+      imageSource: dataUri,
+    });
+    expect(res.status).toBe(200);
+  });
+
+  it('rejects remote image URLs', async () => {
+    const buf = createTestDocx('x');
+    const res = await request('POST', '/watermark', {
+      document: buf.toString('base64'),
+      type: 'image',
+      imageSource: 'https://example.com/logo.png',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('WATERMARK_IMAGE_URL_REJECTED');
+  });
+});
 
 describe('POST /render', () => {
   describe('simple variable substitution', () => {

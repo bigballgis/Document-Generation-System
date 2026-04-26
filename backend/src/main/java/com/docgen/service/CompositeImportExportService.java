@@ -3,6 +3,8 @@ package com.docgen.service;
 import com.docgen.dto.*;
 import com.docgen.entity.Template;
 import com.docgen.entity.TestCase;
+import com.docgen.entity.ParameterDefinition;
+import com.docgen.repository.ParameterRepository;
 import com.docgen.exception.BusinessException;
 import com.docgen.exception.ErrorCode;
 import com.docgen.repository.TemplateRepository;
@@ -44,6 +46,8 @@ public class CompositeImportExportService {
     private final ObjectMapper objectMapper;
     private final TestCaseRepository testCaseRepository;
     private final CompositeCoverageService compositeCoverageService;
+    private final ParameterService parameterService;
+    private final ParameterRepository parameterRepository;
 
     @Value("${minio.bucket-name:docgen}")
     private String bucketName;
@@ -53,13 +57,17 @@ public class CompositeImportExportService {
                                         MinioClient minioClient,
                                         ObjectMapper objectMapper,
                                         TestCaseRepository testCaseRepository,
-                                        CompositeCoverageService compositeCoverageService) {
+                                        CompositeCoverageService compositeCoverageService,
+                                        ParameterService parameterService,
+                                        ParameterRepository parameterRepository) {
         this.templateRepository = templateRepository;
         this.assemblyConfigService = assemblyConfigService;
         this.minioClient = minioClient;
         this.objectMapper = objectMapper;
         this.testCaseRepository = testCaseRepository;
         this.compositeCoverageService = compositeCoverageService;
+        this.parameterService = parameterService;
+        this.parameterRepository = parameterRepository;
     }
 
     /**
@@ -70,10 +78,10 @@ public class CompositeImportExportService {
     public byte[] exportAsZip(Long compositeTemplateId) {
         Template template = findCompositeTemplateOrThrow(compositeTemplateId);
 
-        if (!"ACTIVE".equals(template.getStatus())) {
+        if (!"ACTIVE".equals(template.getStatus()) && !"DRAFT".equals(template.getStatus())) {
             throw new BusinessException(
                     ErrorCode.TEMPLATE_EXPORT_NOT_ACTIVE,
-                    "Only ACTIVE templates can be exported as ZIP",
+                    "Only ACTIVE or DRAFT templates can be exported as ZIP",
                     HttpStatus.BAD_REQUEST);
         }
 
@@ -103,6 +111,25 @@ public class CompositeImportExportService {
                     zos.write(docxBytes);
                     zos.closeEntry();
                 }
+
+                // Write header/footer .docx files
+                Set<String> exportedHeaderFooters = new HashSet<>();
+                for (AssemblySegmentEntry entry : config.getSegments()) {
+                    exportHeaderFooterFile(zos, entry.getHeaderFilePath(), "headers/", exportedHeaderFooters);
+                    exportHeaderFooterFile(zos, entry.getFooterFilePath(), "footers/", exportedHeaderFooters);
+                }
+            }
+
+            // parameters.json
+            try {
+                List<ParameterDTO> paramTree = parameterService.getParameterTree(compositeTemplateId);
+                List<ParameterExportEntry> paramExport = convertParameterTree(paramTree);
+                byte[] paramBytes = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(paramExport);
+                zos.putNextEntry(new ZipEntry("parameters.json"));
+                zos.write(paramBytes);
+                zos.closeEntry();
+            } catch (Exception e) {
+                log.warn("Failed to export parameters, skipping: {}", e.getMessage());
             }
 
             // test-data.json
@@ -162,8 +189,11 @@ public class CompositeImportExportService {
         Long tenantId = TenantContext.getCurrentTenantId();
 
         Map<String, byte[]> segmentFiles = new LinkedHashMap<>();
+        Map<String, byte[]> headerFiles = new LinkedHashMap<>();
+        Map<String, byte[]> footerFiles = new LinkedHashMap<>();
         CompositeExportConfig exportConfig = null;
         byte[] testDataBytes = null;
+        byte[] parametersBytes = null;
 
         // Parse ZIP
         try (ZipInputStream zis = new ZipInputStream(zipFile.getInputStream())) {
@@ -179,8 +209,18 @@ public class CompositeImportExportService {
                     String segmentName = name.substring("segments/".length(),
                             name.length() - ".docx".length());
                     segmentFiles.put(segmentName, content);
+                } else if (name.startsWith("headers/") && name.endsWith(".docx")) {
+                    String headerName = name.substring("headers/".length(),
+                            name.length() - ".docx".length());
+                    headerFiles.put(headerName, content);
+                } else if (name.startsWith("footers/") && name.endsWith(".docx")) {
+                    String footerName = name.substring("footers/".length(),
+                            name.length() - ".docx".length());
+                    footerFiles.put(footerName, content);
                 } else if ("test-data.json".equals(name)) {
                     testDataBytes = content;
+                } else if ("parameters.json".equals(name)) {
+                    parametersBytes = content;
                 }
                 zis.closeEntry();
             }
@@ -209,8 +249,23 @@ public class CompositeImportExportService {
             nameToFilePath.put(segmentName, filePath);
         }
 
+        // Upload header/footer files to MinIO
+        Map<String, String> headerNameToPath = new LinkedHashMap<>();
+        for (Map.Entry<String, byte[]> fileEntry : headerFiles.entrySet()) {
+            String headerName = fileEntry.getKey();
+            String filePath = uploadHeaderFooterToMinio(fileEntry.getValue(), headerName, tenantId, "headers");
+            headerNameToPath.put(headerName, filePath);
+        }
+        Map<String, String> footerNameToPath = new LinkedHashMap<>();
+        for (Map.Entry<String, byte[]> fileEntry : footerFiles.entrySet()) {
+            String footerName = fileEntry.getKey();
+            String filePath = uploadHeaderFooterToMinio(fileEntry.getValue(), footerName, tenantId, "footers");
+            footerNameToPath.put(footerName, filePath);
+        }
+
         // Build assembly config with inline filePath
-        AssemblyConfigDTO assemblyConfig = rebuildAssemblyConfig(exportConfig, nameToFilePath);
+        AssemblyConfigDTO assemblyConfig = rebuildAssemblyConfig(exportConfig, nameToFilePath,
+                headerNameToPath, footerNameToPath);
         String assemblyConfigJson;
         try {
             assemblyConfigJson = objectMapper.writeValueAsString(assemblyConfig);
@@ -231,16 +286,113 @@ public class CompositeImportExportService {
         template.setAssemblyConfig(assemblyConfigJson);
         template.setCreatedBy(userId);
         template.setStatus("DRAFT");
+        // Restore template properties from config
+        if (exportConfig.getOutputFormat() != null) {
+            template.setOutputFormat(exportConfig.getOutputFormat());
+        }
+        if (exportConfig.getStorageStrategy() != null) {
+            template.setStorageStrategy(exportConfig.getStorageStrategy());
+        }
+        template.setAsync(exportConfig.isAsync());
+        template.setReviewRequired(exportConfig.isReviewRequired());
+
         template = templateRepository.save(template);
 
         log.info("Imported composite template: name={}, id={}, segments={}",
                 template.getName(), template.getId(), nameToFilePath.size());
+
+        // Import parameters
+        if (parametersBytes != null) {
+            importParametersFromBytes(parametersBytes, template.getId());
+        }
 
         if (testDataBytes != null) {
             importTestData(testDataBytes, template.getId());
         }
 
         return toTemplateDTO(template);
+    }
+
+    // ── Parameter tree conversion helpers ──
+
+    private List<ParameterExportEntry> convertParameterTree(List<ParameterDTO> params) {
+        if (params == null || params.isEmpty()) return List.of();
+        List<ParameterExportEntry> result = new ArrayList<>();
+        for (ParameterDTO p : params) {
+            ParameterExportEntry entry = new ParameterExportEntry();
+            entry.setName(p.getName());
+            entry.setParameterType(p.getParameterType());
+            entry.setDataType(p.getDataType());
+            entry.setRequired(p.isRequired());
+            entry.setDefaultValue(p.getDefaultValue());
+            entry.setDescription(p.getDescription());
+            entry.setSortOrder(p.getSortOrder());
+            entry.setExpressionText(p.getExpressionText());
+            entry.setExpressionType(p.getExpressionType());
+            entry.setValidationRules(p.getValidationRules());
+            entry.setChildren(convertParameterTree(p.getChildren()));
+            result.add(entry);
+        }
+        return result;
+    }
+
+    private void importParameterTree(Long templateId, List<ParameterExportEntry> entries, Long parentId) {
+        if (entries == null || entries.isEmpty()) return;
+        for (ParameterExportEntry entry : entries) {
+            ParameterDefinition entity = new ParameterDefinition();
+            entity.setTemplateId(templateId);
+            entity.setParentId(parentId);
+            entity.setName(entry.getName());
+            entity.setParameterType(entry.getParameterType() != null ? entry.getParameterType() : "REQUEST");
+            entity.setDataType(entry.getDataType() != null ? entry.getDataType() : "STRING");
+            entity.setRequired(entry.isRequired());
+            entity.setDefaultValue(entry.getDefaultValue());
+            entity.setDescription(entry.getDescription());
+            entity.setSortOrder(entry.getSortOrder());
+            entity.setExpressionText(entry.getExpressionText());
+            entity.setExpressionType(entry.getExpressionType());
+            if (entry.getValidationRules() != null) {
+                try {
+                    entity.setValidationRules(objectMapper.writeValueAsString(entry.getValidationRules()));
+                } catch (JsonProcessingException e) {
+                    log.warn("Failed to serialize validationRules for parameter '{}', skipping", entry.getName());
+                }
+            }
+            ParameterDefinition saved = parameterRepository.save(entity);
+            importParameterTree(templateId, entry.getChildren(), saved.getId());
+        }
+    }
+
+    // ── Header/Footer export helpers ──
+
+    private void exportHeaderFooterFile(ZipOutputStream zos, String filePath, String zipDir,
+                                         Set<String> exported) {
+        if (filePath == null || filePath.isBlank()) return;
+        String baseName = extractFileBaseName(filePath);
+        if (baseName == null || exported.contains(zipDir + baseName)) return;
+        try {
+            byte[] bytes = downloadFromMinio(filePath);
+            zos.putNextEntry(new ZipEntry(zipDir + baseName + ".docx"));
+            zos.write(bytes);
+            zos.closeEntry();
+            exported.add(zipDir + baseName);
+        } catch (Exception e) {
+            log.warn("Failed to export header/footer file '{}', skipping: {}", filePath, e.getMessage());
+        }
+    }
+
+    private String extractFileBaseName(String filePath) {
+        if (filePath == null || filePath.isBlank()) return null;
+        int lastSlash = filePath.lastIndexOf('/');
+        String fileName = lastSlash >= 0 ? filePath.substring(lastSlash + 1) : filePath;
+        int underscoreIdx = fileName.indexOf('_');
+        if (underscoreIdx > 0 && underscoreIdx < fileName.length() - 1) {
+            fileName = fileName.substring(underscoreIdx + 1);
+        }
+        if (fileName.toLowerCase().endsWith(".docx")) {
+            fileName = fileName.substring(0, fileName.length() - 5);
+        }
+        return fileName.isBlank() ? null : fileName;
     }
 
     // ── Private helpers ──
@@ -260,6 +412,11 @@ public class CompositeImportExportService {
         CompositeExportConfig export = new CompositeExportConfig();
         export.setTemplateName(template.getName());
         export.setTemplateDescription(template.getDescription());
+        export.setOutputFormat(template.getOutputFormat());
+        export.setStorageStrategy(template.getStorageStrategy());
+        export.setAsync(template.isAsync());
+        export.setReviewRequired(template.isReviewRequired());
+        export.setSourceStatus(template.getStatus());
 
         List<CompositeExportConfig.SegmentExportEntry> entries = new ArrayList<>();
         if (config.getSegments() != null) {
@@ -273,6 +430,10 @@ public class CompositeImportExportService {
                 exportEntry.setPageBreakBefore(entry.isPageBreakBefore());
                 exportEntry.setConditionExpression(entry.getConditionExpression());
                 exportEntry.setDataScope(entry.getDataScope());
+                exportEntry.setHeaderFileName(extractFileBaseName(entry.getHeaderFilePath()));
+                exportEntry.setFooterFileName(extractFileBaseName(entry.getFooterFilePath()));
+                exportEntry.setPageNumberFormat(entry.getPageNumberFormat());
+                exportEntry.setPageNumberStart(entry.getPageNumberStart());
                 entries.add(exportEntry);
             }
         }
@@ -281,7 +442,9 @@ public class CompositeImportExportService {
     }
 
     private AssemblyConfigDTO rebuildAssemblyConfig(CompositeExportConfig exportConfig,
-                                                     Map<String, String> nameToFilePath) {
+                                                     Map<String, String> nameToFilePath,
+                                                     Map<String, String> headerNameToPath,
+                                                     Map<String, String> footerNameToPath) {
         AssemblyConfigDTO config = new AssemblyConfigDTO();
         List<AssemblySegmentEntry> entries = new ArrayList<>();
 
@@ -299,6 +462,19 @@ public class CompositeImportExportService {
                 entry.setPageBreakBefore(exportEntry.isPageBreakBefore());
                 entry.setConditionExpression(exportEntry.getConditionExpression());
                 entry.setDataScope(exportEntry.getDataScope());
+                entry.setPageNumberFormat(exportEntry.getPageNumberFormat());
+                entry.setPageNumberStart(exportEntry.getPageNumberStart());
+
+                // Resolve header/footer file paths
+                if (exportEntry.getHeaderFileName() != null) {
+                    String headerPath = headerNameToPath.get(exportEntry.getHeaderFileName());
+                    entry.setHeaderFilePath(headerPath);
+                }
+                if (exportEntry.getFooterFileName() != null) {
+                    String footerPath = footerNameToPath.get(exportEntry.getFooterFileName());
+                    entry.setFooterFilePath(footerPath);
+                }
+
                 entries.add(entry);
             }
         }
@@ -347,6 +523,36 @@ public class CompositeImportExportService {
         }
         usedNames.add(result);
         return result;
+    }
+
+    private String uploadHeaderFooterToMinio(byte[] content, String name, Long tenantId, String subDir) {
+        String uuid = UUID.randomUUID().toString();
+        String objectPath = "segments/" + tenantId + "/" + subDir + "/" + uuid + "_" + name + ".docx";
+        try {
+            minioClient.putObject(PutObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(objectPath)
+                    .stream(new ByteArrayInputStream(content), content.length, -1)
+                    .contentType("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                    .build());
+            return objectPath;
+        } catch (Exception e) {
+            log.error("Failed to upload header/footer file to MinIO: {}", objectPath, e);
+            throw new BusinessException(ErrorCode.INTERNAL_ERROR,
+                    "Failed to upload header/footer file", HttpStatus.INTERNAL_SERVER_ERROR, e);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void importParametersFromBytes(byte[] bytes, Long templateId) {
+        try {
+            List<ParameterExportEntry> entries = objectMapper.readValue(bytes,
+                    objectMapper.getTypeFactory().constructCollectionType(List.class, ParameterExportEntry.class));
+            importParameterTree(templateId, entries, null);
+            log.info("Imported {} top-level parameters for template {}", entries.size(), templateId);
+        } catch (Exception e) {
+            log.warn("Failed to import parameters: {}", e.getMessage());
+        }
     }
 
     private Map<String, Object> toTestCaseExportMap(TestCase tc) {
@@ -406,6 +612,11 @@ public class CompositeImportExportService {
     public static class CompositeExportConfig {
         private String templateName;
         private String templateDescription;
+        private String outputFormat;
+        private String storageStrategy;
+        private boolean async;
+        private boolean reviewRequired;
+        private String sourceStatus;
         private List<SegmentExportEntry> segments;
 
         public String getTemplateName() { return templateName; }
@@ -413,6 +624,21 @@ public class CompositeImportExportService {
 
         public String getTemplateDescription() { return templateDescription; }
         public void setTemplateDescription(String templateDescription) { this.templateDescription = templateDescription; }
+
+        public String getOutputFormat() { return outputFormat; }
+        public void setOutputFormat(String outputFormat) { this.outputFormat = outputFormat; }
+
+        public String getStorageStrategy() { return storageStrategy; }
+        public void setStorageStrategy(String storageStrategy) { this.storageStrategy = storageStrategy; }
+
+        public boolean isAsync() { return async; }
+        public void setAsync(boolean async) { this.async = async; }
+
+        public boolean isReviewRequired() { return reviewRequired; }
+        public void setReviewRequired(boolean reviewRequired) { this.reviewRequired = reviewRequired; }
+
+        public String getSourceStatus() { return sourceStatus; }
+        public void setSourceStatus(String sourceStatus) { this.sourceStatus = sourceStatus; }
 
         public List<SegmentExportEntry> getSegments() { return segments; }
         public void setSegments(List<SegmentExportEntry> segments) { this.segments = segments; }
@@ -426,6 +652,10 @@ public class CompositeImportExportService {
             private boolean pageBreakBefore = false;
             private String conditionExpression;
             private Map<String, String> dataScope;
+            private String headerFileName;
+            private String footerFileName;
+            private String pageNumberFormat;
+            private Integer pageNumberStart;
 
             public String getSegmentName() { return segmentName; }
             public void setSegmentName(String segmentName) { this.segmentName = segmentName; }
@@ -443,6 +673,55 @@ public class CompositeImportExportService {
             public void setConditionExpression(String conditionExpression) { this.conditionExpression = conditionExpression; }
             public Map<String, String> getDataScope() { return dataScope; }
             public void setDataScope(Map<String, String> dataScope) { this.dataScope = dataScope; }
+            public String getHeaderFileName() { return headerFileName; }
+            public void setHeaderFileName(String headerFileName) { this.headerFileName = headerFileName; }
+            public String getFooterFileName() { return footerFileName; }
+            public void setFooterFileName(String footerFileName) { this.footerFileName = footerFileName; }
+            public String getPageNumberFormat() { return pageNumberFormat; }
+            public void setPageNumberFormat(String pageNumberFormat) { this.pageNumberFormat = pageNumberFormat; }
+            public Integer getPageNumberStart() { return pageNumberStart; }
+            public void setPageNumberStart(Integer pageNumberStart) { this.pageNumberStart = pageNumberStart; }
         }
+    }
+
+    /**
+     * Parameter definition export entry for parameters.json in the ZIP.
+     * Mirrors ParameterDefinition fields without runtime IDs.
+     */
+    public static class ParameterExportEntry {
+        private String name;
+        private String parameterType;
+        private String dataType;
+        private boolean required;
+        private String defaultValue;
+        private String description;
+        private int sortOrder;
+        private String expressionText;
+        private String expressionType;
+        private Map<String, Object> validationRules;
+        private List<ParameterExportEntry> children;
+
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
+        public String getParameterType() { return parameterType; }
+        public void setParameterType(String parameterType) { this.parameterType = parameterType; }
+        public String getDataType() { return dataType; }
+        public void setDataType(String dataType) { this.dataType = dataType; }
+        public boolean isRequired() { return required; }
+        public void setRequired(boolean required) { this.required = required; }
+        public String getDefaultValue() { return defaultValue; }
+        public void setDefaultValue(String defaultValue) { this.defaultValue = defaultValue; }
+        public String getDescription() { return description; }
+        public void setDescription(String description) { this.description = description; }
+        public int getSortOrder() { return sortOrder; }
+        public void setSortOrder(int sortOrder) { this.sortOrder = sortOrder; }
+        public String getExpressionText() { return expressionText; }
+        public void setExpressionText(String expressionText) { this.expressionText = expressionText; }
+        public String getExpressionType() { return expressionType; }
+        public void setExpressionType(String expressionType) { this.expressionType = expressionType; }
+        public Map<String, Object> getValidationRules() { return validationRules; }
+        public void setValidationRules(Map<String, Object> validationRules) { this.validationRules = validationRules; }
+        public List<ParameterExportEntry> getChildren() { return children; }
+        public void setChildren(List<ParameterExportEntry> children) { this.children = children; }
     }
 }

@@ -168,6 +168,7 @@ public class AggregationResolver {
 
     /**
      * Compute $join_ for a STRING field.
+     * Generates default join (", ") and common separator variants.
      */
     void computeStringJoin(String arrayName, String fieldName,
                             List<Object> values,
@@ -178,8 +179,20 @@ public class AggregationResolver {
                 nonNullStrings.add(String.valueOf(val));
             }
         }
-        String joined = String.join(", ", nonNullStrings);
-        parentContext.put(arrayName + ".$join_" + fieldName, joined);
+        // Default separator: ", "
+        parentContext.put(arrayName + ".$join_" + fieldName, String.join(", ", nonNullStrings));
+        // Common separator variants
+        Map<String, String> separators = Map.of(
+                ";", "; ",
+                "、", "、",
+                "|", " | ",
+                "/", "/",
+                "\\n", "\n"
+        );
+        for (var entry : separators.entrySet()) {
+            String key = arrayName + ".$join(" + entry.getKey() + ")_" + fieldName;
+            parentContext.put(key, String.join(entry.getValue(), nonNullStrings));
+        }
     }
 
     /**
@@ -264,7 +277,17 @@ public class AggregationResolver {
                         arrayPath + ".$max_" + fieldName, "NUMBER", fieldName + " 最大值"));
             } else if ("STRING".equals(dataType)) {
                 props.add(new AggregationPropertyDTO("$join_" + fieldName,
-                        arrayPath + ".$join_" + fieldName, "STRING", fieldName + " 拼接"));
+                        arrayPath + ".$join_" + fieldName, "STRING", fieldName + " 拼接 (逗号)"));
+                props.add(new AggregationPropertyDTO("$join(;)_" + fieldName,
+                        arrayPath + ".$join(;)_" + fieldName, "STRING", fieldName + " 拼接 (分号)"));
+                props.add(new AggregationPropertyDTO("$join(、)_" + fieldName,
+                        arrayPath + ".$join(、)_" + fieldName, "STRING", fieldName + " 拼接 (顿号)"));
+                props.add(new AggregationPropertyDTO("$join(|)_" + fieldName,
+                        arrayPath + ".$join(|)_" + fieldName, "STRING", fieldName + " 拼接 (竖线)"));
+                props.add(new AggregationPropertyDTO("$join(/)_" + fieldName,
+                        arrayPath + ".$join(/)_" + fieldName, "STRING", fieldName + " 拼接 (斜线)"));
+                props.add(new AggregationPropertyDTO("$join(\\n)_" + fieldName,
+                        arrayPath + ".$join(\\n)_" + fieldName, "STRING", fieldName + " 拼接 (换行)"));
             }
         }
 

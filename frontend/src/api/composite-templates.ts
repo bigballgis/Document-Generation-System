@@ -105,3 +105,88 @@ export function getSegmentOnlyOfficeUrl(templateId: number, segmentIndex: number
     `/composite-templates/${templateId}/segments/${segmentIndex}/onlyoffice-url`,
   )
 }
+
+/** Sign an OnlyOffice editor config with the server-side JWT secret */
+export function signOnlyOfficeConfig(config: Record<string, any>): Promise<{ token: string }> {
+  return request.post<any, { token: string }>('/templates/onlyoffice/sign', config)
+}
+
+// ── Segment Version Management ──
+
+export interface SegmentVersionDTO {
+  id: number
+  templateId: number
+  segmentName: string
+  versionNumber: number
+  filePath: string
+  segmentType: string | null
+  configSnapshot: string | null
+  comment: string | null
+  createdBy: number
+  createdAt: string
+}
+
+export interface SegmentVersionDiffResult {
+  templateId: number
+  segmentName: string
+  versionA: number
+  versionB: number
+  diffs: SegmentDiffEntry[]
+  filePathChanged: boolean
+  oldFilePath: string | null
+  newFilePath: string | null
+  contentDiffs: ContentDiffLine[]
+  contentChanged: boolean
+  truncated: boolean
+}
+
+export interface SegmentDiffEntry {
+  field: string
+  changeType: 'ADDED' | 'REMOVED' | 'MODIFIED'
+  oldValue: string | null
+  newValue: string | null
+}
+
+export interface ContentDiffLine {
+  type: 'EQUAL' | 'ADDED' | 'REMOVED' | 'MODIFIED'
+  oldLineNumber: number | null
+  newLineNumber: number | null
+  oldText: string | null
+  newText: string | null
+}
+
+export function publishSegment(templateId: number, segmentName: string, comment?: string) {
+  return request.post<any, SegmentVersionDTO>(
+    `/composite-templates/${templateId}/segments/publish`,
+    { segmentName, comment },
+  )
+}
+
+export function getSegmentVersions(templateId: number, segmentName: string) {
+  return request.get<any, SegmentVersionDTO[]>(
+    `/composite-templates/${templateId}/segments/${encodeURIComponent(segmentName)}/versions`,
+  )
+}
+
+export function compareSegmentVersions(
+  templateId: number,
+  segmentName: string,
+  versionA: number,
+  versionB: number,
+  includeContentDiff = false,
+) {
+  return request.get<any, SegmentVersionDiffResult>(
+    `/composite-templates/${templateId}/segments/${encodeURIComponent(segmentName)}/versions/diff`,
+    { params: { versionA, versionB, includeContentDiff } },
+  )
+}
+
+export function rollbackSegmentVersion(
+  templateId: number,
+  segmentName: string,
+  targetVersion: number,
+) {
+  return request.post<any, SegmentVersionDTO>(
+    `/composite-templates/${templateId}/segments/${encodeURIComponent(segmentName)}/rollback/${targetVersion}`,
+  )
+}

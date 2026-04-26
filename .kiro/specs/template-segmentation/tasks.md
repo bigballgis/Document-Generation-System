@@ -6,7 +6,7 @@
 
 ## 任务
 
-- [ ] 1. 数据库迁移与核心实体
+- [x] 1. 数据库迁移与核心实体
   - [x] 1.1 创建 Flyway 迁移脚本 V29-V35
     - 创建 `V29__create_segments_and_extend_templates.sql`: 扩展 templates 表添加 `template_type` 和 `assembly_config` 列，创建 `segments` 表及索引
     - 创建 `V30__create_segment_versions.sql`: 创建 `segment_versions` 表及唯一约束
@@ -43,7 +43,7 @@
     - 验证 Hibernate tenantFilter 对 Segment 的租户隔离
     - _需求: 1.3, 2.10_
 
-- [ ] 2. 创建核心 DTO 和 ErrorCode 扩展
+- [x] 2. 创建核心 DTO 和 ErrorCode 扩展
   - [x] 2.1 创建段落相关 DTO
     - 创建 `SegmentDTO`、`CreateSegmentRequest`（含 `@NotBlank`、`@Size` 校验）、`UpdateSegmentRequest`
     - 创建 `SegmentVersionDTO`、`VersionDiffResult`
@@ -68,7 +68,7 @@
     - 新增 `GENERATE_ALL_SEGMENTS_SKIPPED`（200）、`IMPORT_INVALID_FILE`
     - _需求: 1.7, 2.8, 2.9, 3.8, 4.8, 8.8, 9.8, 12.4_
 
-- [ ] 3. 段落 CRUD 核心服务
+- [x] 3. 段落 CRUD 核心服务
   - [x] 3.1 实现 SegmentService
     - 实现 `createSegment`: 上传 .docx 到 MinIO（路径 `segments/{tenantId}/{uuid}_{filename}`），持久化元数据，记录审计日志
     - 实现 `updateSegment`: 更新文件和元数据，调用 SegmentVersionService 创建新版本
@@ -102,7 +102,7 @@
     - 验证租户隔离
     - _需求: 1.1-1.11_
 
-- [ ] 4. 段落版本管理服务
+- [x] 4. 段落版本管理服务
   - [x] 4.1 实现 SegmentVersionService
     - 实现 `createVersion`: 版本号严格递增，复制文件到 `segment-versions/{tenantId}/{segmentId}/{versionNumber}_{uuid}.docx`
     - 实现 `listVersions`: 按版本号降序分页查询
@@ -125,7 +125,7 @@
 - [x] 5. 检查点 — 确保所有测试通过
   - 确保所有测试通过，如有问题请询问用户。
 
-- [ ] 6. 引用关系与编辑锁服务
+- [x] 6. 引用关系与编辑锁服务
   - [x] 6.1 实现 DependencyGraphService
     - 实现 `getReferencingTemplates`: 查询 assembly_config JSONB 中引用了指定 segmentId 的所有 Composite_Template
     - 实现 `getReferenceCount`、`isReferenced`
@@ -149,7 +149,7 @@
     - POST `/api/segments/{id}/lock/renew`、GET `/api/segments/{id}/lock`
     - _需求: 22.3, 22.4_
 
-- [ ] 7. 组合模板管理服务
+- [x] 7. 组合模板管理服务
   - [x] 7.1 实现 AssemblyConfigService
     - 实现 Assembly_Config JSONB 的序列化/反序列化
     - 实现验证逻辑: 至少一个启用的 Segment、所有 Segment ID 存在
@@ -183,7 +183,7 @@
 - [x] 8. 检查点 — 确保所有测试通过
   - 确保所有测试通过，如有问题请询问用户。
 
-- [ ] 9. 段落变量扫描与覆盖率服务
+- [x] 9. 段落变量扫描与覆盖率服务
   - [x] 9.1 实现 SegmentVariableService
     - 实现 `scanVariables`: 复用 TemplateVariableService.extractVariableNames 逻辑，从 .docx ZIP 中提取 word/*.xml 并匹配 Docxtemplater 变量模式
     - 实现 `listVariables`: 返回段落变量列表
@@ -204,7 +204,7 @@
     - GET `/api/composite-templates/{id}/coverage`
     - _需求: 6.2, 6.4_
 
-- [ ] 10. 段落数据作用域服务
+- [x] 10. 段落数据作用域服务
   - [x] 10.1 实现 SegmentDataScopeService
     - 实现数据作用域映射逻辑: 从全局数据上下文中按 DataScope 配置提取子集
     - 未配置 DataScope 时传递完整数据上下文（向后兼容）
@@ -216,7 +216,7 @@
     - 生成随机全局数据和 DataScope 映射，验证渲染时传入的数据仅包含映射的子集
     - **验证: 需求 5.3, 5.4**
 
-- [ ] 11. 段落渲染与组装引擎
+- [x] 11. 段落渲染与组装引擎
   - [x] 11.1 实现 SegmentRendererService
     - 实现 `renderSegment`: 通过 CircuitBreaker 调用 Docxtemplater `/render` 端点渲染单个 Segment
     - 实现 `renderSegmentSafe`: 捕获异常，返回包含错误信息的 SegmentRenderResult（部分失败模式）
@@ -240,7 +240,7 @@
     - 生成随机条件表达式和数据，验证合并文档中的段落与条件计算结果一致
     - **验证: 需求 2.5, 7.6, 8.8**
 
-- [ ] 12. Docxtemplater 服务扩展 — /merge-segments 端点
+- [x] 12. Docxtemplater 服务扩展 — /merge-segments 端点
   - [x] 12.1 实现 /merge-segments 端点
     - 在 `docxtemplater-service/` 中新增 `POST /merge-segments` 端点
     - 接收 segments 数组（每项含 base64 buffer 和 pageBreakBefore 标志）
@@ -252,7 +252,7 @@
     - 使用 Jest 验证多段落合并、分页符插入、空段落处理
     - _需求: 8.2, 8.3_
 
-- [ ] 13. 组合文档生成服务
+- [x] 13. 组合文档生成服务
   - [x] 13.1 实现 CompositeGeneratorService
     - 实现 `generateCompositeDocument`: 执行数据管道 → 调用 AssemblyEngineService → 应用水印 → 存储文档
     - 复用 DataAggregationService、WatermarkService、DocumentStorageService
@@ -271,7 +271,7 @@
 - [x] 14. 检查点 — 确保所有测试通过
   - 确保所有测试通过，如有问题请询问用户。
 
-- [ ] 15. 迁移工具服务
+- [x] 15. 迁移工具服务
   - [x] 15.1 实现 MigrationService
     - 实现 `migrateToComposite`: 读取原始 .docx → 创建单个 Segment → 创建 Composite_Template + Assembly_Config → 迁移数据源/表达式/变量绑定 → 归档原始模板 → 记录审计日志
     - 原始模板 .docx 无法读取时返回 `MIGRATION_FILE_ACCESS_FAILED`
@@ -286,7 +286,7 @@
     - POST `/api/templates/{id}/migrate-to-composite`
     - _需求: 9.3_
 
-- [ ] 16. 段落权限与审查服务
+- [x] 16. 段落权限与审查服务
   - [x] 16.1 实现 SegmentPermissionService
     - 复用 PermissionService，通过 `resource_type = 'SEGMENT'` 和 `resource_id = segmentId` 实现段落级权限
     - 实现权限查询、分配、撤销
@@ -305,7 +305,7 @@
     - PUT `/api/segment-reviews/{id}/approve`、PUT `/api/segment-reviews/{id}/reject`
     - _需求: 10.6, 11.1-11.5_
 
-- [ ] 17. 导入导出与测试服务
+- [x] 17. 导入导出与测试服务
   - [x] 17.1 实现 CompositeImportExportService
     - 实现 `exportAsZip`: 打包所有 Segment .docx + config.json 为 ZIP
     - 实现 `exportConfig`: 仅导出 JSON 配置
@@ -324,7 +324,7 @@
     - POST/GET/DELETE `/api/segments/{id}/test-data`
     - _需求: 12.1-12.5, 14.1-14.7_
 
-- [ ] 18. 扩展服务（仪表板、推荐、市场）
+- [x] 18. 扩展服务（仪表板、推荐、市场）
   - [x] 18.1 扩展 DashboardService
     - 扩展 SystemOverviewDTO 新增 segmentCount、componentCount、compositeTemplateCount 字段
     - 新增 `/api/dashboard/segment-stats` 和 `/api/dashboard/component-ranking` 端点
@@ -349,7 +349,7 @@
 - [x] 19. 检查点 — 确保所有测试通过
   - 确保所有测试通过，如有问题请询问用户。
 
-- [ ] 20. 前端 — TypeScript 类型定义与 API 层
+- [x] 20. 前端 — TypeScript 类型定义与 API 层
   - [x] 20.1 创建前端 TypeScript 类型定义
     - 创建 `frontend/src/types/segment.ts`: Segment、SegmentVersion、AssemblyConfig、AssemblySegmentEntry、SegmentReview、SegmentTestData、LockInfo、CompositeCoverageReport 等类型
     - _需求: 1.1, 2.3, 4.1, 5.1, 22.3_
@@ -360,7 +360,7 @@
     - 使用现有 `request.ts` 封装的 Axios 实例
     - _需求: 1.1-1.11, 2.1-2.13_
 
-- [ ] 21. 前端 — 段落管理页面
+- [x] 21. 前端 — 段落管理页面
   - [x] 21.1 创建段落列表页 (views/segments/Index.vue)
     - 实现段落列表表格（分页、名称搜索、标签筛选、分类筛选、类型筛选）
     - 实现创建/编辑段落对话框 (SegmentFormDialog.vue)
@@ -393,7 +393,7 @@
     - 测试编辑锁心跳续期逻辑 (useSegmentLock.ts)
     - _需求: 1.5, 22.3_
 
-- [ ] 22. 前端 — 组合模板管理页面
+- [x] 22. 前端 — 组合模板管理页面
   - [x] 22.1 创建组合模板列表页 (views/composite-templates/Index.vue)
     - 实现组合模板列表表格（分页、搜索、段落数量/组件数量统计）
     - 实现创建组合模板功能
@@ -428,7 +428,7 @@
     - 测试 Assembly_Config 序列化/反序列化
     - _需求: 2.2, 20.8_
 
-- [ ] 23. 前端 — i18n 与路由配置
+- [x] 23. 前端 — i18n 与路由配置
   - [x] 23.1 扩展 i18n 翻译文件
     - 在 en-US.json、zh-CN.json、zh-TW.json 中新增 `segment.*`、`component.*`、`composite.*`、`assembly.*`、`migration.*` 前缀的翻译 key
     - _需求: 全部前端需求_

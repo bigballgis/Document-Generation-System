@@ -45,10 +45,13 @@ class ExportConstraintPropertyTest {
                                                        TestCaseRepository testCaseRepository) throws Exception {
         MinioClient minioClient = mock(MinioClient.class);
         ObjectMapper objectMapper = new ObjectMapper();
+        com.docgen.service.ParameterService parameterService = mock(com.docgen.service.ParameterService.class);
+        com.docgen.repository.ParameterRepository parameterRepository = mock(com.docgen.repository.ParameterRepository.class);
         CompositeImportExportService service = new CompositeImportExportService(
                 templateRepository, assemblyConfigService,
                 minioClient, objectMapper,
-                testCaseRepository, compositeCoverageService);
+                testCaseRepository, compositeCoverageService,
+                parameterService, parameterRepository);
         Field bucketField = CompositeImportExportService.class.getDeclaredField("bucketName");
         bucketField.setAccessible(true);
         bucketField.set(service, "docgen-test");

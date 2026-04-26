@@ -13,15 +13,18 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * Service responsible for applying text and image watermarks to generated documents.
  * <p>
- * Watermark rendering is delegated to the Docxtemplater Node.js service which handles
- * the actual document manipulation. This service handles configuration validation,
- * dynamic content resolution, and orchestration of the remote call.
+ * Delegates to the Docxtemplater service {@code POST /watermark} (standalone .docx bytes),
+ * which reuses the same watermark utilities as {@code POST /render}. Request contract:
+ * base64 {@code document}, {@code type} {@code text} or {@code image}, plus type-specific
+ * fields. Image data must be inline base64 or a {@code data:image/...;base64,...} URI;
+ * remote HTTP(S) image URLs are rejected here and on the Node service.
  */
 @Service
 public class WatermarkService {
@@ -134,6 +137,13 @@ public class WatermarkService {
         if (config.getImageSource() == null || config.getImageSource().isBlank()) {
             throw new BusinessException(ErrorCode.WATERMARK_INVALID_CONFIG,
                     "水印图片来源不能为空", HttpStatus.BAD_REQUEST);
+        }
+        String src = config.getImageSource().trim();
+        String lower = src.toLowerCase(Locale.ROOT);
+        if (lower.startsWith("http://") || lower.startsWith("https://")) {
+            throw new BusinessException(ErrorCode.WATERMARK_INVALID_CONFIG,
+                    "Remote image URLs are not supported; use inline base64 or a data: URI",
+                    HttpStatus.BAD_REQUEST);
         }
         if (!VALID_POSITIONS.contains(config.getPosition())) {
             throw new BusinessException(ErrorCode.WATERMARK_INVALID_CONFIG,

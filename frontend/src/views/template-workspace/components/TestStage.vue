@@ -8,15 +8,29 @@
       <div class="guidance-header">
         <el-icon><InfoFilled /></el-icon>
         <span>{{ t('workspace.testForm.guidance') }}</span>
+        <el-tag size="small" type="danger" round>{{ uncoveredItems.length }}</el-tag>
       </div>
-      <div
-        v-for="item in uncoveredItems"
-        :key="item.missingPath"
-        class="guidance-item"
-        @click="highlightParam(item)"
-      >
-        <el-tag size="small" :type="item.type === 'BRANCH' ? 'warning' : 'info'">{{ item.type }}</el-tag>
-        <span>{{ item.name }} — {{ item.missingPath }}</span>
+
+      <!-- Grouped by type -->
+      <div v-for="group in groupedUncovered" :key="group.type" class="guidance-group">
+        <div class="guidance-group-header" @click="toggleGroup(group.type)">
+          <el-icon class="group-arrow" :class="{ expanded: expandedGroups[group.type] }"><ArrowRight /></el-icon>
+          <el-tag size="small" :type="groupTagType(group.type)">{{ group.type }}</el-tag>
+          <span class="group-summary">{{ group.items.length }} {{ t('workspace.testForm.uncoveredCount') }}</span>
+        </div>
+        <transition name="collapse">
+          <div v-show="expandedGroups[group.type]" class="guidance-group-body">
+            <div
+              v-for="item in group.items"
+              :key="item.missingPath"
+              class="guidance-item"
+              @click="highlightParam(item)"
+            >
+              <span class="item-name">{{ item.name }}</span>
+              <span class="item-path">{{ item.missingPath }}</span>
+            </div>
+          </div>
+        </transition>
       </div>
     </div>
     <div v-else-if="coverageBarRef?.coverageData" class="guidance-section guidance-success">
@@ -57,9 +71,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { InfoFilled, CircleCheckFilled } from '@element-plus/icons-vue'
+import { InfoFilled, CircleCheckFilled, ArrowRight } from '@element-plus/icons-vue'
 import { useTemplateWorkspaceStore } from '@/stores/templateWorkspace'
 import { previewCompositeTemplate } from '@/api/composite-templates'
 import type { UncoveredItem } from '@/types/parameter'
@@ -83,6 +97,37 @@ let debounceTimer: ReturnType<typeof setTimeout> | null = null
 const uncoveredItems = computed<UncoveredItem[]>(() => {
   return coverageBarRef.value?.coverageData?.uncoveredItems ?? []
 })
+
+interface UncoveredGroup {
+  type: string
+  items: UncoveredItem[]
+}
+
+const groupedUncovered = computed<UncoveredGroup[]>(() => {
+  const map = new Map<string, UncoveredItem[]>()
+  for (const item of uncoveredItems.value) {
+    const list = map.get(item.type) || []
+    list.push(item)
+    map.set(item.type, list)
+  }
+  // Order: BRANCH → LOOP → PARAMETER
+  const order = ['BRANCH', 'LOOP', 'PARAMETER']
+  return order
+    .filter(t => map.has(t))
+    .map(t => ({ type: t, items: map.get(t)! }))
+})
+
+const expandedGroups = reactive<Record<string, boolean>>({})
+
+function toggleGroup(type: string) {
+  expandedGroups[type] = !expandedGroups[type]
+}
+
+function groupTagType(type: string): 'warning' | 'success' | 'info' {
+  if (type === 'BRANCH') return 'warning'
+  if (type === 'LOOP') return 'success'
+  return 'info'
+}
 
 function highlightParam(item: UncoveredItem) {
   highlightedPaths.value = [item.missingPath]
@@ -123,37 +168,108 @@ async function triggerPreview() {
   min-height: 500px;
 }
 .guidance-section {
+  flex-shrink: 0;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 14px;
   background: var(--el-color-warning-light-9);
   border-radius: 6px;
   font-size: 13px;
+  max-height: 240px;
+  overflow-y: auto;
 }
 .guidance-section.guidance-success {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
   background: var(--el-color-success-light-9);
+  max-height: none;
+  overflow: visible;
 }
 .guidance-header {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   font-weight: 600;
-  width: 100%;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
+}
+.guidance-group {
+  border-radius: 4px;
+  overflow: hidden;
+}
+.guidance-group-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  cursor: pointer;
+  border-radius: 4px;
+  user-select: none;
+  transition: background 0.15s;
+}
+.guidance-group-header:hover {
+  background: var(--el-color-warning-light-7);
+}
+.group-arrow {
+  transition: transform 0.2s;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+.group-arrow.expanded {
+  transform: rotate(90deg);
+}
+.group-summary {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+.guidance-group-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 4px;
+  padding: 4px 0 4px 22px;
 }
 .guidance-item {
   display: flex;
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  padding: 2px 8px;
+  padding: 3px 8px;
   border-radius: 4px;
-  transition: background 0.2s;
+  transition: background 0.15s;
+  overflow: hidden;
+  font-size: 12px;
 }
 .guidance-item:hover {
   background: var(--el-color-warning-light-7);
+}
+.item-name {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+.item-path {
+  color: var(--el-text-color-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.collapse-enter-active,
+.collapse-leave-active {
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+.collapse-enter-from,
+.collapse-leave-to {
+  opacity: 0;
+  max-height: 0;
+}
+.collapse-enter-to,
+.collapse-leave-from {
+  opacity: 1;
+  max-height: 500px;
 }
 .test-split {
   flex: 1;

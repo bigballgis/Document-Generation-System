@@ -43,6 +43,7 @@
               :document-title="documentTitle"
               :callback-url="callbackUrl"
               :view-only="readonly"
+              :token="onlyOfficeToken"
               @ready="onEditorReady"
               @error="onEditorError"
             />
@@ -99,6 +100,7 @@ const editorReady = ref(false)
 const editorLoading = ref(false)
 const editorError = ref('')
 const onlyOfficeDocUrl = ref('')
+const onlyOfficeToken = ref('')
 
 const segments = computed<AssemblySegmentEntry[]>(() => {
   return store.assemblyConfig?.segments ?? []
@@ -165,8 +167,8 @@ function handleInsertVariable(paramPath: string) {
   editorRef.value?.insertVariable(paramPath)
 }
 
-function handleInsertLoop(arrayName: string) {
-  editorRef.value?.insertLoop(arrayName)
+function handleInsertLoop(loopText: string) {
+  editorRef.value?.insertLoop(loopText)
 }
 
 function handleInsertCondition(expr: string) {

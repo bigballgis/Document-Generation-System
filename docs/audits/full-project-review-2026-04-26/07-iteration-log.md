@@ -186,6 +186,25 @@ Validation commands:
 Validation result: BUILD SUCCESS.  
 Notes: full `mvn test` not run in this pass.
 
+## 2026-04-26: WS-02-T05 Completed
+
+Task ID: WS-02-T05  
+Summary: Chose dedicated **`POST /watermark`** on the Docxtemplater service (reuses `utils/watermark.js`, same as optional watermark on `/render`). Implemented `src/routes/watermark.js`, mounted in `server.js`. Node rejects remote image URLs; strips `data:image/...;base64,` prefix for `applyImageWatermark`. Java `WatermarkService` documents contract and rejects `http(s)` image sources before outbound call. Added integration tests and audit doc `15-watermark-api-contract.md`.  
+Files changed:
+- `docxtemplater-service/src/routes/watermark.js`
+- `docxtemplater-service/src/routes/render.js`
+- `docxtemplater-service/server.js`
+- `docxtemplater-service/src/__tests__/integration.test.js`
+- `backend/src/main/java/com/docgen/service/WatermarkService.java`
+- `backend/src/main/java/com/docgen/dto/ImageWatermarkConfig.java`
+- `backend/src/test/java/com/docgen/service/WatermarkServiceTest.java`
+- `docs/audits/full-project-review-2026-04-26/15-watermark-api-contract.md`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+Validation commands:
+- `npm test` (from `docxtemplater-service/`)
+- `mvn "-Dtest=WatermarkServiceTest" test` (from `backend/`)
+Validation result: BUILD SUCCESS (80 Jest tests; WatermarkServiceTest).
+
 ## 2026-04-26: WS-02-T04 Completed
 
 Task ID: WS-02-T04  

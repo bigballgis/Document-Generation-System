@@ -8,17 +8,28 @@
           :segments="assemblyConfig.segments.value"
           :template-id="store.templateId"
           :readonly="readonly"
-          @add-content-node="handleAddContentNode"
-          @add-control-node="handleAddControlNode"
-          @remove-node="handleRemoveNode"
-          @reorder="handleReorder"
-          @update-segment="handleUpdateSegment"
-          @update-node="handleUpdateNode"
-          @edit-segment="handleEditSegment"
-          @edit-header-footer="handleEditHeaderFooter"
+          @add-content-node="(...args: any[]) => handleAddContentNode(args[0], args[1])"
+          @add-control-node="(...args: any[]) => handleAddControlNode(args[0], args[1])"
+          @remove-node="(...args: any[]) => handleRemoveNode(args[0])"
+          @reorder="(...args: any[]) => handleReorder(args[0])"
+          @update-segment="(...args: any[]) => handleUpdateSegment(args[0], args[1])"
+          @update-node="(...args: any[]) => handleUpdateNode(args[0], args[1])"
+          @edit-segment="(...args: any[]) => handleEditSegment(args[0])"
+          @edit-header-footer="(...args: any[]) => handleEditHeaderFooter(args[0])"
+          @publish-segment="(...args: any[]) => handlePublishSegment(args[0])"
+          @show-segment-versions="(...args: any[]) => handleShowSegmentVersions(args[0])"
         />
       </div>
     </div>
+
+    <!-- Segment Version Dialog -->
+    <SegmentVersionDialog
+      v-model="versionDialogVisible"
+      :template-id="store.templateId"
+      :segment-name="activeSegmentName"
+      @published="handleVersionPublished"
+      @rolled-back="handleVersionRolledBack"
+    />
   </div>
 </template>
 
@@ -29,11 +40,12 @@ import { ElMessage } from 'element-plus'
 import { useTemplateWorkspaceStore } from '@/stores/templateWorkspace'
 import { useAssemblyConfig } from '@/composables/useAssemblyConfig'
 import { useCanvasNodes } from '@/composables/useCanvasNodes'
-import { updateAssemblyConfig, createBlankHeaderFooter } from '@/api/composite-templates'
+import { updateAssemblyConfig, createBlankHeaderFooter, publishSegment } from '@/api/composite-templates'
 import type { CanvasNode } from '@/composables/useCanvasNodes'
 import type { AssemblySegmentEntry } from '@/types/segment'
 import ComponentPanel from './ComponentPanel.vue'
 import CanvasArea from './CanvasArea.vue'
+import SegmentVersionDialog from './SegmentVersionDialog.vue'
 
 defineProps<{ readonly: boolean }>()
 
@@ -46,6 +58,8 @@ const store = useTemplateWorkspaceStore()
 const assemblyConfig = useAssemblyConfig()
 const canvasNodes = useCanvasNodes()
 const saving = ref(false)
+const versionDialogVisible = ref(false)
+const activeSegmentName = ref('')
 
 function syncFromStore() {
   const segments = store.assemblyConfig?.segments ?? []
@@ -112,6 +126,34 @@ async function handleEditHeaderFooter(node: CanvasNode) {
   }
   const title = nodeType === 'header' ? t('workspace.design.canvas.header') : t('workspace.design.canvas.footer')
   emit('open-editor', { id: `${nodeType}-${segIdx}`, title, type: nodeType, segmentIndex: segIdx, filePath: filePath || '' })
+}
+
+function handlePublishSegment(node: CanvasNode) {
+  if (node.segmentIndex == null) return
+  const seg = assemblyConfig.segments.value[node.segmentIndex]
+  if (!seg?.name) return
+  activeSegmentName.value = seg.name
+  // Quick publish without opening dialog
+  publishSegment(store.templateId, seg.name)
+    .then(() => ElMessage.success(t('workspace.segment.publishSuccess')))
+    .catch((e: any) => ElMessage.error(e.response?.data?.message || e.message))
+}
+
+function handleShowSegmentVersions(node: CanvasNode) {
+  if (node.segmentIndex == null) return
+  const seg = assemblyConfig.segments.value[node.segmentIndex]
+  if (!seg?.name) return
+  activeSegmentName.value = seg.name
+  versionDialogVisible.value = true
+}
+
+function handleVersionPublished() {
+  // Refresh after publish
+}
+
+function handleVersionRolledBack() {
+  // Refresh assembly config after rollback
+  store.refreshAssemblyConfig()
 }
 
 // ── Auto-save with debounce ──

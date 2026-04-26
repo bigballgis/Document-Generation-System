@@ -25,15 +25,23 @@
         <el-tag type="warning" style="margin-left: 8px">~{{ diffResult.summary.modified }}</el-tag>
       </div>
 
-      <el-table v-if="diffResult.textDiffs.length > 0" :data="diffResult.textDiffs" border stripe style="margin-top: 12px">
+      <el-table v-if="diffResult.textDiffs.length > 0" :data="allDiffs" border stripe style="margin-top: 12px">
         <el-table-column prop="field" label="Field" width="200" />
         <el-table-column label="Type" width="120">
           <template #default="{ row }">
             <el-tag :type="diffTypeTag(row.type)" size="small">{{ row.type }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="oldValue" label="Old Value" />
-        <el-table-column prop="newValue" label="New Value" />
+        <el-table-column label="Old Value">
+          <template #default="{ row }">
+            <div class="diff-cell diff-cell-old">{{ row.oldValue ?? '—' }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column label="New Value">
+          <template #default="{ row }">
+            <div class="diff-cell diff-cell-new">{{ row.newValue ?? '—' }}</div>
+          </template>
+        </el-table-column>
       </el-table>
     </template>
   </div>
@@ -58,6 +66,16 @@ const comparing = ref(false)
 const isCompareDisabled = computed(() =>
   versionA.value === null || versionB.value === null || versionA.value === versionB.value,
 )
+
+const allDiffs = computed(() => {
+  if (!diffResult.value) return []
+  return [
+    ...diffResult.value.textDiffs,
+    ...diffResult.value.variableDiffs,
+    ...diffResult.value.dataSourceDiffs,
+    ...diffResult.value.expressionDiffs,
+  ]
+})
 
 async function handleCompare() {
   if (versionA.value === null || versionB.value === null) return
@@ -85,4 +103,7 @@ function diffTypeTag(type: string): 'primary' | 'success' | 'danger' | 'warning'
 .version-diff-panel {
   padding: 8px 0;
 }
+.diff-cell { font-size: 12px; white-space: pre-wrap; word-break: break-all; max-height: 120px; overflow-y: auto; padding: 4px 6px; border-radius: 2px; }
+.diff-cell-old { background: var(--el-color-danger-light-9); }
+.diff-cell-new { background: var(--el-color-success-light-9); }
 </style>
