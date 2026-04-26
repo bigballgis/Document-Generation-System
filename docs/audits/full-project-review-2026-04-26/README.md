@@ -39,7 +39,10 @@ This directory is the durable working package for a staged, full-project review 
 - [16-template-test-execution-semantics.md](16-template-test-execution-semantics.md): characterized behavior of `TemplateTestService` (real render pipeline vs JSON-only).
 - [17-composite-r7-render-config-scope.md](17-composite-r7-render-config-scope.md): WS-03-T04 decision to defer `render-config.json` in composite ZIP (R7).
 - [18-generate-api-version-parameter-behavior.md](18-generate-api-version-parameter-behavior.md): WS-05-T03 observed behavior of `?version=` on document generation API.
+- [Normative contract: versioned generation](../../versioned-template-generation-contract.md) (WS-05-T04; file under repository `docs/`).
 - [19-docx-identical-diff-contract.md](19-docx-identical-diff-contract.md): WS-04-T03 canonical contract for identical DOCX body text (`contentDiffs` empty, `contentChanged=false`).
+- [20-composite-coverage-variable-scan-contract.md](20-composite-coverage-variable-scan-contract.md): WS-02-T06 normative contract for composite segment variable scanning (`POST /scan-variables`; Java must not use `/evaluate` for this).
+- [20-composite-coverage-variable-scan-contract.md](20-composite-coverage-variable-scan-contract.md): WS-02-T06 normative contract for composite coverage variable scanning (`POST /scan-variables`); implementation WS-02-T07.
 
 ## Current Top Priorities
 

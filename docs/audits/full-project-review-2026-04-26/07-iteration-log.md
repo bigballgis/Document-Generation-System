@@ -495,6 +495,45 @@ Summary: Completed **WS-06-T05**. Removed two `console.log` calls and one `conso
 Removed: `[DesignStage] insertToEditor called: …`, `[DesignStage] No editor ref found for tab: …`, `[DesignStage] Editor ref found, type: …`.  
 Validation: `npx vitest run src/__tests__/views/TemplateWorkspaceIndex.test.ts` (from `frontend/`) — 5 tests passed. Full `npm test` not re-run.
 
+## 2026-04-26: WS-06-T06 VersionDiffPanel non-text diff display
+
+Summary: Completed **WS-06-T06**. The details `el-table` used `v-if="diffResult.textDiffs.length > 0"` while `:data="allDiffs"` already merged text, variable, data-source, and expression entries — so variable-only (or other non-text-only) responses hid the table. Condition changed to **`v-if="allDiffs.length > 0"`**. Added Vitest case with empty `textDiffs` and non-empty `variableDiffs`. Traceability `FRONT-DIFF-001` → Verified.  
+Validation: `npx vitest run src/__tests__/VersionDiffPanel.test.ts` (from `frontend/`) — 5 tests passed.
+
+## 2026-04-26: WS-06-T07 Frontend i18n for reviewed components
+
+Summary: Completed **WS-06-T07**. Replaced user-facing hardcoded strings with `t()` / `i18n.global.t()`: `OnlyOfficeEditor.vue` (clipboard/prompt, API/load/init errors); `VersionDiffPanel.vue` (table column labels, empty cells); `SegmentVersionDialog.vue` (fixed invalid `t(key, default)` for same-version warning; empty placeholders; content-diff “more lines” line). `request.ts` uses `i18n.global.t('message.forbidden'|'message.tooManyRequests')` for 403/429. Added keys in `en-US.json`, `zh-CN.json`, `zh-TW.json` (`common.emptyValue`, `message.tooManyRequests`, `workspace.settings.versionDiff*`, `workspace.editor.insertText*`, `apiNotLoaded`, `initFailed`, `loadScriptFailed`, `workspace.segment.sameVersionWarning`, `workspace.segment.contentDiff.moreLinesRemaining`).  
+Validation: `npx vitest run src/__tests__/components/OnlyOfficeEditor.test.ts src/__tests__/VersionDiffPanel.test.ts src/__tests__/views/TemplateWorkspaceIndex.test.ts` (from `frontend/`) — 14 tests passed. Full `npm test` not re-run.
+
+## 2026-04-26: WS-07-T02 Backend CI (GitHub Actions)
+
+Summary: Completed **WS-07-T02**. Added `.github/workflows/backend-ci.yml`: **GitHub Actions** on `push` / `pull_request` / `workflow_dispatch` when `backend/**` or the workflow file changes; **Temurin JDK 17** (matches `pom.xml`); **Maven cache** via `actions/setup-java`; **Redis 7.2** service for `application-test` profile; `mvn -B -ntp test` in `backend/`. Concurrency cancels redundant runs. Traceability `INFRA-CI-001` → In Progress (frontend/docxtemplater stages still TBD).  
+Validation: `mvn -B -ntp test -Dtest=DocgenApplicationTests` (from `backend/`) — BUILD SUCCESS in this environment. Full `mvn test` not re-run here (long / environment-specific). Workflow YAML syntax reviewed locally.
+
+## 2026-04-26: WS-05-T01 Generation eligibility characterization (closure)
+
+Task ID: WS-05-T01  
+Summary: Closed the task card gap for **synchronous dynamic API** eligibility. `DocumentGeneratorServiceGenerationEligibilityTest`, `AsyncDocumentServiceSubmitEligibilityTest`, and `BatchDocumentServiceSubmitEligibilityTest` already characterized non-`ACTIVE` rejection for core sync/async/batch submit paths (from WS-05-T02 work). Added `DynamicApiServiceGenerationEligibilityTest` so `DynamicApiService.generateViaApi` is explicitly covered: non-`ACTIVE` fails before `TemplateVersionRepository` or `DocumentGeneratorService`; `ACTIVE` with `version == null` delegates with a null sync version. No production behavior changes.  
+Files changed:
+- `backend/src/test/java/com/docgen/service/DynamicApiServiceGenerationEligibilityTest.java`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+Validation commands:
+- `mvn -q test "-Dtest=DynamicApiServiceGenerationEligibilityTest,DocumentGeneratorServiceGenerationEligibilityTest,AsyncDocumentServiceSubmitEligibilityTest,BatchDocumentServiceSubmitEligibilityTest"` (from `backend/`)
+Validation result: BUILD SUCCESS.
+
+## 2026-04-26: WS-02-T06 Composite coverage variable scan contract
+
+Task ID: WS-02-T06  
+Summary: Documented the **current mismatch** (`CompositeCoverageService` posts `{ templatePath }` to `/evaluate` expecting `variables`, while Node `/evaluate` is expression-only) and adopted a **normative target**: dedicated **`POST /scan-variables`** returning `{ variables: string[] }` (lexicographically sorted unique tag roots), same Docxtemplater stack as `/render`, read-only, no client-supplied expressions. Added test requirements for **WS-02-T07**. Updated **C-004** in `14-java-node-contract-mismatch-inventory.md` to point at the new contract.  
+Files changed:
+- `docs/audits/full-project-review-2026-04-26/20-composite-coverage-variable-scan-contract.md`
+- `docs/audits/full-project-review-2026-04-26/14-java-node-contract-mismatch-inventory.md`
+- `docs/audits/full-project-review-2026-04-26/README.md`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+Validation commands:
+- `rg "[\\p{Han}]" docs/audits/full-project-review-2026-04-26/20-composite-coverage-variable-scan-contract.md docs/audits/full-project-review-2026-04-26/14-java-node-contract-mismatch-inventory.md docs/audits/full-project-review-2026-04-26/README.md`
+Validation result: No Han/CJK matches in `20-composite-coverage-variable-scan-contract.md` (workspace search); README link line is ASCII-only.
+
 ## Entry Template
 
 ```text

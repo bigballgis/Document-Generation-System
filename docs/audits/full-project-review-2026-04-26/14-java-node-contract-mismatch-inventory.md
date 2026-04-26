@@ -194,13 +194,15 @@ Decision drivers:
 
 ### Suggested Target Contract (for WS-02-T06 and WS-02-T07)
 
-Define and implement a dedicated variable scanning contract:
+**Adopted (WS-02-T06):** normative contract is documented in [20-composite-coverage-variable-scan-contract.md](20-composite-coverage-variable-scan-contract.md) — dedicated **`POST /scan-variables`** on Node (read-only DOCX inspection, no reuse of `/evaluate`).
 
-- Option A: implement `POST /scan-variables` on Node:
+Historical options retained for archive context:
+
+- Option A (adopted): implement `POST /scan-variables` on Node:
   - Input: `{ templatePath }`
   - Output: `{ variables: string[] }`
   - Must not execute untrusted expressions.
-- Option B: implement variable scanning in Java by parsing DOCX text parts for `{...}` tags with a constrained grammar.
+- Option B (not selected): implement variable scanning in Java by parsing DOCX text parts for `{...}` tags with a constrained grammar.
 
 ## Additional Observations (Not Contract Breakers)
 
