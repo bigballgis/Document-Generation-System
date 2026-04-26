@@ -277,7 +277,21 @@ Validation commands:
 - `mvn "-Dtest=CompositeImportExportServiceTest,CompositeImportExportServiceExportTest,ExportConstraintPropertyTest" test` (from `backend/`)
 - `mvn -Dtest=DocgenApplicationTests test` (from `backend/`)
 Validation result: BUILD SUCCESS (full `mvn test` not run).  
-Remaining risks: object key sanitization for segment/header/footer names is `WS-03-T03`; compression ratio check is skipped when ZIP headers omit sizes (`-1`).
+Remaining risks: compression ratio check is skipped when ZIP headers omit sizes (`-1`). MinIO object name sanitization completed in `WS-03-T03`.
+
+## 2026-04-26: WS-03-T03 Completed
+
+Task ID: WS-03-T03  
+Summary: MinIO object keys for composite ZIP import no longer embed raw segment/header/footer logical names: `sanitizeMinioObjectNameComponent` normalizes to the same allowed character class as export-side `uniqueFileName` (letters, digits, CJK BMP, `_`, `-`), replaces `..` defensively, collapses underscores, trims, caps length at 120, and falls back to `unnamed`. Assembly segment display names remain from `config.json` / export entries; only the stored object path suffix changes. Upload failure logs use `tenantId` and sanitized component instead of full object paths.  
+Files changed:
+- `backend/src/main/java/com/docgen/service/CompositeImportExportService.java`
+- `backend/src/test/java/com/docgen/service/CompositeImportExportServiceTest.java`
+- `docs/audits/full-project-review-2026-04-26/05-traceability-matrix.md`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+Validation commands:
+- `mvn -Dtest=CompositeImportExportServiceTest test` (from `backend/`)
+Validation result: BUILD SUCCESS.  
+Notes: full `mvn test` not run.
 
 ## 2026-04-26: Template testing hardening (ad-hoc)
 
@@ -297,6 +311,11 @@ Validation: `npx vitest run src/__tests__/api/market-extensions.test.ts src/__te
 ## 2026-04-26: Test case list page cap and UX (ad-hoc)
 
 Summary: `TemplateTestService.listTestCases` caps `page`/`size` via `capPageable` (max page size 500, minimum effective size 20 when requested size is below 1). `TestCaseManagement` resets to page 1 after creating a test case and after Run All so the refreshed list shows the newest ordering. Added unit tests for oversized requests, zero-size `Pageable`, and unchanged pass-through.  
+Validation: `mvn "-Dtest=TemplateTestServiceTest" test` (from `backend/`) — BUILD SUCCESS.
+
+## 2026-04-26: WS-05-T07 Template test service semantics
+
+Summary: Completed task card **WS-05-T07**. Added characterization tests in `TemplateTestServiceTest` (`characterization_*`) proving `runTestCase` calls `renderForTemplateTest` with parsed `testDataJson`, `TEXT_CONTENT` invokes `DocxTextExtractor` on rendered DOCX bytes, `runAllTests` renders once per loaded case, and `listTestCases` does not touch the generator. Added audit note [16-template-test-execution-semantics.md](16-template-test-execution-semantics.md) and README link; traceability row `REQ-TEST-PIPELINE-001` set to Verified.  
 Validation: `mvn "-Dtest=TemplateTestServiceTest" test` (from `backend/`) — BUILD SUCCESS.
 
 ## Entry Template

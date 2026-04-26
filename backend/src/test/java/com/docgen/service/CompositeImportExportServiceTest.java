@@ -17,12 +17,14 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.minio.GetObjectResponse;
 import io.minio.MinioClient;
+import io.minio.PutObjectArgs;
 import okhttp3.Headers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
@@ -373,6 +375,56 @@ class CompositeImportExportServiceTest {
         assertEquals(ErrorCode.IMPORT_INVALID_FILE, ex.getErrorCode());
     }
 
+    // ── importFromZip: MinIO object name sanitization (WS-03-T03) ──
+
+    @Test
+    void importFromZip_segmentNameWithPunctuation_usesSanitizedMinioObjectKey() throws Exception {
+        byte[] zipBytes = buildImportZipWithLogicalSegmentName("part!x@y", false);
+        Template saved = createCompositeTemplate(501L, "SanitizedSeg");
+        when(templateRepository.save(any(Template.class))).thenReturn(saved);
+
+        service.importFromZip(new MockMultipartFile("file", "p.zip", "application/zip", zipBytes), 1L);
+
+        ArgumentCaptor<PutObjectArgs> cap = ArgumentCaptor.forClass(PutObjectArgs.class);
+        verify(minioClient, atLeastOnce()).putObject(cap.capture());
+        assertTrue(cap.getAllValues().stream().map(PutObjectArgs::object).anyMatch(o ->
+                        !o.contains("!")
+                                && !o.contains("@")
+                                && o.matches("segments/1/[0-9a-fA-F-]{36}_part_x_y\\.docx")),
+                () -> cap.getAllValues().stream().map(PutObjectArgs::object).toList().toString());
+    }
+
+    @Test
+    void importFromZip_introSegment_keepsReadableStorageSuffix() throws Exception {
+        byte[] zipBytes = buildImportZip(false);
+        Template saved = createCompositeTemplate(502L, "Intro");
+        when(templateRepository.save(any(Template.class))).thenReturn(saved);
+
+        service.importFromZip(new MockMultipartFile("file", "i.zip", "application/zip", zipBytes), 1L);
+
+        ArgumentCaptor<PutObjectArgs> cap = ArgumentCaptor.forClass(PutObjectArgs.class);
+        verify(minioClient, atLeastOnce()).putObject(cap.capture());
+        assertTrue(cap.getAllValues().stream().map(PutObjectArgs::object)
+                .anyMatch(o -> o.matches("segments/1/[0-9a-fA-F-]{36}_intro\\.docx")));
+    }
+
+    @Test
+    void importFromZip_headerNameWithPunctuation_usesSanitizedMinioObjectKey() throws Exception {
+        byte[] zipBytes = buildImportZipWithHeader("intro", "x@hdr!");
+        Template saved = createCompositeTemplate(503L, "Hdr");
+        when(templateRepository.save(any(Template.class))).thenReturn(saved);
+
+        service.importFromZip(new MockMultipartFile("file", "h.zip", "application/zip", zipBytes), 1L);
+
+        ArgumentCaptor<PutObjectArgs> cap = ArgumentCaptor.forClass(PutObjectArgs.class);
+        verify(minioClient, atLeastOnce()).putObject(cap.capture());
+        assertTrue(cap.getAllValues().stream().map(PutObjectArgs::object).anyMatch(o ->
+                o.contains("/headers/")
+                        && !o.contains("@")
+                        && !o.contains("!")
+                        && o.matches(".*headers/[0-9a-fA-F-]{36}_x_hdr\\.docx")));
+    }
+
     // ── Helper methods ──
 
     private Template createCompositeTemplate(Long id, String name) {
@@ -443,7 +495,7 @@ class CompositeImportExportServiceTest {
         return objectMapper.readValue(content, new TypeReference<List<Map<String, Object>>>() {});
     }
 
-    private byte[] buildImportZip(boolean includeTestData) throws Exception {
+    private byte[] buildImportZipWithLogicalSegmentName(String logicalSegmentName, boolean includeTestData) throws Exception {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (ZipOutputStream zos = new ZipOutputStream(baos)) {
             CompositeImportExportService.CompositeExportConfig exportConfig =
@@ -452,7 +504,7 @@ class CompositeImportExportServiceTest {
             exportConfig.setTemplateDescription("Test import");
             CompositeImportExportService.CompositeExportConfig.SegmentExportEntry seg =
                     new CompositeImportExportService.CompositeExportConfig.SegmentExportEntry();
-            seg.setSegmentName("intro");
+            seg.setSegmentName(logicalSegmentName);
             seg.setPosition(0);
             seg.setEnabled(true);
             exportConfig.setSegments(List.of(seg));
@@ -462,22 +514,60 @@ class CompositeImportExportServiceTest {
             zos.write(configBytes);
             zos.closeEntry();
 
-            zos.putNextEntry(new ZipEntry("segments/intro.docx"));
+            zos.putNextEntry(new ZipEntry("segments/" + logicalSegmentName + ".docx"));
             zos.write(new byte[]{0x50, 0x4B, 0x03, 0x04});
             zos.closeEntry();
 
-            if (includeTestData) {
-                List<Map<String, Object>> testList = List.of(Map.of(
-                        "name", "TC1", "testDataJson", "{\"a\":1}",
-                        "expectedResultJson", "{\"r\":2}", "comparisonType", "VARIABLE_VALUE"));
-                zos.putNextEntry(new ZipEntry("test-data.json"));
-                zos.write(objectMapper.writeValueAsBytes(testList));
-                zos.closeEntry();
-            }
-
+            appendOptionalTestData(zos, includeTestData);
             zos.finish();
         }
         return baos.toByteArray();
+    }
+
+    private byte[] buildImportZipWithHeader(String segmentLogical, String headerLogical) throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+            CompositeImportExportService.CompositeExportConfig exportConfig =
+                    new CompositeImportExportService.CompositeExportConfig();
+            exportConfig.setTemplateName("Imported");
+            exportConfig.setTemplateDescription("Header import");
+            CompositeImportExportService.CompositeExportConfig.SegmentExportEntry seg =
+                    new CompositeImportExportService.CompositeExportConfig.SegmentExportEntry();
+            seg.setSegmentName(segmentLogical);
+            seg.setPosition(0);
+            seg.setEnabled(true);
+            seg.setHeaderFileName(headerLogical);
+            exportConfig.setSegments(List.of(seg));
+
+            zos.putNextEntry(new ZipEntry("config.json"));
+            zos.write(objectMapper.writeValueAsBytes(exportConfig));
+            zos.closeEntry();
+
+            zos.putNextEntry(new ZipEntry("segments/" + segmentLogical + ".docx"));
+            zos.write(new byte[]{0x50, 0x4B, 0x03, 0x04});
+            zos.closeEntry();
+
+            zos.putNextEntry(new ZipEntry("headers/" + headerLogical + ".docx"));
+            zos.write(new byte[]{0x50, 0x4B, 0x03, 0x04});
+            zos.closeEntry();
+            zos.finish();
+        }
+        return baos.toByteArray();
+    }
+
+    private byte[] buildImportZip(boolean includeTestData) throws Exception {
+        return buildImportZipWithLogicalSegmentName("intro", includeTestData);
+    }
+
+    private void appendOptionalTestData(ZipOutputStream zos, boolean includeTestData) throws Exception {
+        if (includeTestData) {
+            List<Map<String, Object>> testList = List.of(Map.of(
+                    "name", "TC1", "testDataJson", "{\"a\":1}",
+                    "expectedResultJson", "{\"r\":2}", "comparisonType", "VARIABLE_VALUE"));
+            zos.putNextEntry(new ZipEntry("test-data.json"));
+            zos.write(objectMapper.writeValueAsBytes(testList));
+            zos.closeEntry();
+        }
     }
 
     private CompositeImportExportService.CompositeExportConfig minimalExportConfig() {

@@ -20,13 +20,14 @@ This file tracks requirements, implementation, tests, and documentation. Every f
 | CONTRACT-NODE-002 | Java `/watermark` and Node watermark behavior must align | TBD API contract | `WatermarkService`, `render.js` | TBD | TBD | Open |
 | CONTRACT-EXPR-001 | `ExpressionType` and Node evaluate `type` mapping must align | TBD API contract | `ExpressionEngineImpl`, `evaluate.js` | TBD | `docs/template-expression-filters.md` to verify | Open |
 | CONTRACT-COV-001 | Coverage scanning must not misuse `/evaluate` | TBD API contract | `CompositeCoverageService`, Node route TBD | TBD | TBD | Open |
-| IMPORT-ZIP-001 | ZIP imports need size, count, ratio, and path limits | Composite import/export spec to update | `CompositeImportExportService`, `CompositeZipImportProperties`, `application.yml` (`composite-import.zip`) | `CompositeImportExportServiceTest` (WS-03-T01/T02 limits and allowlist) | TBD | Implemented (limits + allowlist); storage key normalization remains WS-03-T03 |
+| IMPORT-ZIP-001 | ZIP imports need size, count, ratio, and path limits | Composite import/export spec to update | `CompositeImportExportService`, `CompositeZipImportProperties`, `application.yml` (`composite-import.zip`) | `CompositeImportExportServiceTest` (WS-03-T01/T02/T03 limits, allowlist, MinIO name sanitization) | TBD | Implemented (limits + allowlist + storage component sanitization) |
 | REQ-R7-001 | Composite import/export R7: `render-config.json` | `.kiro/specs/composite-template-full-import/requirements.md` | `CompositeImportExportService` | TBD | TBD | Open |
 | DIFF-TEST-001 | docx content diff checked tasks need real tests | `.kiro/specs/docx-content-diff/tasks.md` | `ContentDiffService`, `DocxTextExtractor`, `SegmentVersionService` | TBD | `docs/segment-version-api.md` to update | Open |
 | MIGRATION-SEG-001 | V30/V36/V39 `segment_versions` upgrade strategy | `.kiro/specs/template-segmentation` to revise | `V30`, `V36`, `V39` | TBD migration tests | TBD runbook | Open |
 | FRONT-OO-001 | OnlyOfficeEditor prop changes and multi-instance behavior | TBD frontend design | `OnlyOfficeEditor.vue`, `DesignStage.vue` | TBD | TBD | Open |
 | FRONT-DIFF-001 | VersionDiffPanel must show non-text-only diffs | TBD | `VersionDiffPanel.vue` | TBD | TBD | Open |
 | INFRA-CI-001 | Add CI/CD and quality gates | TBD | `.github/workflows/*` or equivalent CI | CI self-validation | TBD | Open |
+| REQ-TEST-PIPELINE-001 | Template test execution uses `DocumentGeneratorService.renderForTemplateTest` (not JSON-only compare) | WS-05-T07 | `TemplateTestService` | `TemplateTestServiceTest` (`characterization_*`) | [16-template-test-execution-semantics.md](16-template-test-execution-semantics.md) | Verified |
 
 ## Update Rules
 

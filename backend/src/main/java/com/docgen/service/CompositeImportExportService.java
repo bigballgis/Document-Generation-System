@@ -561,7 +561,8 @@ public class CompositeImportExportService {
 
     private String uploadToMinio(byte[] content, String segmentName, Long tenantId) {
         String uuid = UUID.randomUUID().toString();
-        String objectPath = "segments/" + tenantId + "/" + uuid + "_" + segmentName + ".docx";
+        String safeName = sanitizeMinioObjectNameComponent(segmentName);
+        String objectPath = "segments/" + tenantId + "/" + uuid + "_" + safeName + ".docx";
         try {
             minioClient.putObject(PutObjectArgs.builder()
                     .bucket(bucketName)
@@ -571,10 +572,33 @@ public class CompositeImportExportService {
                     .build());
             return objectPath;
         } catch (Exception e) {
-            log.error("Failed to upload segment file to MinIO: {}", objectPath, e);
+            log.error("Failed to upload segment file to MinIO: tenantId={}, sanitizedNameComponent={}",
+                    tenantId, safeName, e);
             throw new BusinessException(ErrorCode.INTERNAL_ERROR,
                     "Failed to upload segment file", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
+    }
+
+    /**
+     * Derives a single path-safe component for MinIO object keys. Must not be used for user-visible
+     * assembly segment names ({@link AssemblySegmentEntry#setName} stays tied to export config / ZIP logic names).
+     */
+    private static String sanitizeMinioObjectNameComponent(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return "unnamed";
+        }
+        String s = raw.replaceAll("[^a-zA-Z0-9\\u4e00-\\u9fff_-]", "_");
+        s = s.replace("..", "_");
+        s = s.replaceAll("_+", "_");
+        s = s.replaceAll("^_+|_+$", "");
+        if (s.isBlank()) {
+            return "unnamed";
+        }
+        final int maxLen = 120;
+        if (s.length() > maxLen) {
+            s = s.substring(0, maxLen);
+        }
+        return s;
     }
 
     private String uniqueFileName(String name, Set<String> usedNames) {
@@ -590,7 +614,8 @@ public class CompositeImportExportService {
 
     private String uploadHeaderFooterToMinio(byte[] content, String name, Long tenantId, String subDir) {
         String uuid = UUID.randomUUID().toString();
-        String objectPath = "segments/" + tenantId + "/" + subDir + "/" + uuid + "_" + name + ".docx";
+        String safeName = sanitizeMinioObjectNameComponent(name);
+        String objectPath = "segments/" + tenantId + "/" + subDir + "/" + uuid + "_" + safeName + ".docx";
         try {
             minioClient.putObject(PutObjectArgs.builder()
                     .bucket(bucketName)
@@ -600,7 +625,8 @@ public class CompositeImportExportService {
                     .build());
             return objectPath;
         } catch (Exception e) {
-            log.error("Failed to upload header/footer file to MinIO: {}", objectPath, e);
+            log.error("Failed to upload header/footer file to MinIO: tenantId={}, subDir={}, sanitizedNameComponent={}",
+                    tenantId, subDir, safeName, e);
             throw new BusinessException(ErrorCode.INTERNAL_ERROR,
                     "Failed to upload header/footer file", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
