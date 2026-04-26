@@ -274,7 +274,20 @@ Files changed:
 Validation commands:
 - `mvn -Dtest=ContentDiffServiceTest test` (from `backend/`)
 Validation result: BUILD SUCCESS.  
-Notes: full `mvn test` not run. Next: **WS-04-T02** (`DocxTextExtractor` unit tests).
+Notes: full `mvn test` not run. Followed by **WS-04-T02** (`DocxTextExtractorTest`).
+
+## 2026-04-26: WS-04-T02 Completed
+
+Task ID: WS-04-T02  
+Summary: Added `DocxTextExtractorTest` using in-memory ZIP docx payloads: single-paragraph extraction, multi-paragraph text joined with newlines, `w:tab` inside a run, missing `word/document.xml` (`BusinessException` / `CONTENT_DIFF_EXTRACTION_FAILED`), invalid ZIP bytes, UTF-8 truncation with `ExtractedText.truncated` and marker suffix, and `extractTextFromMinio` via mocked `MinioClient.getObject`. Namespace for OOXML is declared on `w:document` only; multi-paragraph case must call the static `body(...)` wrapper (local variable must not shadow it).  
+Files changed:
+- `backend/src/test/java/com/docgen/service/DocxTextExtractorTest.java`
+- `docs/audits/full-project-review-2026-04-26/05-traceability-matrix.md`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+Validation commands:
+- `mvn -Dtest=DocxTextExtractorTest test` (from `backend/`)
+Validation result: BUILD SUCCESS.  
+Notes: full `mvn test` (task card default) not run. Next: **WS-04-T03** (identical diff contract documentation).
 
 ## 2026-04-26: WS-03-T01 Completed
 
@@ -346,6 +359,16 @@ Validation: `mvn "-Dtest=TemplateTestServiceTest" test` (from `backend/`) — BU
 
 Summary: Completed task card **WS-05-T07**. Added characterization tests in `TemplateTestServiceTest` (`characterization_*`) proving `runTestCase` calls `renderForTemplateTest` with parsed `testDataJson`, `TEXT_CONTENT` invokes `DocxTextExtractor` on rendered DOCX bytes, `runAllTests` renders once per loaded case, and `listTestCases` does not touch the generator. Added audit note [16-template-test-execution-semantics.md](16-template-test-execution-semantics.md) and README link; traceability row `REQ-TEST-PIPELINE-001` set to Verified.  
 Validation: `mvn "-Dtest=TemplateTestServiceTest" test` (from `backend/`) — BUILD SUCCESS.
+
+## 2026-04-26: WS-05-T02 Centralized generation ACTIVE eligibility
+
+Summary: Implemented **WS-05-T02**. Added `TemplateGenerationEligibilityService.requireActiveForDocumentGeneration` and applied it in `DocumentGeneratorService.generateDocument` (covers sync API via `DynamicApiService`, async worker, batch items, scheduled tasks), `DynamicApiService.generateViaApi` (replacing inline check), `AsyncDocumentService.submitAsyncGeneration`, and `BatchDocumentService` (submit + fail-fast in `processBatchGeneration`). `DocumentGeneratorService.renderForTemplateTest` intentionally skips the check so template tests still run on non-`ACTIVE` templates. Added unit tests; fixed `BatchGenerationCompletenessPropertyTest` constructor and set template status `ACTIVE` for batch processing.  
+Validation: `mvn -q compile test "-Dtest=TemplateGenerationEligibilityServiceTest,DocumentGeneratorServiceGenerationEligibilityTest,AsyncDocumentServiceSubmitEligibilityTest,BatchDocumentServiceSubmitEligibilityTest,TemplateTestServiceTest,BatchGenerationCompletenessPropertyTest"` and `mvn -q test-compile` (from `backend/`) — BUILD SUCCESS. Full `mvn test` not re-run (known Docker / unrelated failures in this environment).
+
+## 2026-04-26: WS-05-T03 Generate API version parameter characterization
+
+Summary: Completed **WS-05-T03**. Added `DynamicApiServiceVersionParameterTest` covering null `version` (no `TemplateVersionRepository` calls), history disallowed + non-latest (`GENERATE_VERSION_NOT_ALLOWED`), latest-only success, history-allowed success, missing version (`TEMPLATE_VERSION_NOT_FOUND`), and proof that `GenerateDocumentRequest` is passed through unchanged (no version field). Documented observed behavior: `?version=n` does not alter the render file path — `DocumentGeneratorService` always uses `Template.templateFilePath`; version rows are validation-only. Audit note: [18-generate-api-version-parameter-behavior.md](18-generate-api-version-parameter-behavior.md); traceability `REQ-GEN-VERSION-CHAR-001`.  
+Validation: `mvn -q test "-Dtest=DynamicApiServiceVersionParameterTest"` (from `backend/`) — BUILD SUCCESS.
 
 ## Entry Template
 
