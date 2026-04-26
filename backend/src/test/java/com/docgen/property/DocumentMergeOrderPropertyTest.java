@@ -24,15 +24,15 @@ import static org.mockito.Mockito.*;
 /**
  * Property 19: 文档合并顺序正确性
  *
- * For any document ID list [A, B, C], the base64-encoded documents sent to the
- * Node.js merge endpoint must be in the same order as the input document ID list.
+ * For any document ID list [A, B, C], the base64 segment buffers sent to the
+ * Node.js {@code /merge-segments} endpoint must be in the same order as the input document ID list.
  *
  * **Validates: Requirements 40.1, 40.3, 40.4**
  */
 class DocumentMergeOrderPropertyTest {
 
     /**
-     * Property: The order of base64 documents sent to the merge endpoint matches
+     * Property: The order of segment buffers sent to {@code /merge-segments} matches
      * the order of document IDs in the request.
      *
      * **Validates: Requirements 40.1, 40.3, 40.4**
@@ -128,7 +128,7 @@ class DocumentMergeOrderPropertyTest {
         // Capture the request sent to the Node.js merge endpoint
         ArgumentCaptor<HttpEntity<Map<String, Object>>> captor = ArgumentCaptor.forClass(HttpEntity.class);
         verify(restTemplate).exchange(
-                eq("http://localhost:3000/merge"),
+                eq("http://localhost:3000/merge-segments"),
                 eq(HttpMethod.POST),
                 captor.capture(),
                 eq(byte[].class));
@@ -136,18 +136,18 @@ class DocumentMergeOrderPropertyTest {
         Map<String, Object> body = captor.getValue().getBody();
         assertNotNull(body, "Request body must not be null");
 
-        List<String> sentDocuments = (List<String>) body.get("documents");
-        assertNotNull(sentDocuments, "documents list must not be null");
-        assertEquals(documentIds.size(), sentDocuments.size(),
-                "Number of documents sent must match number of input IDs");
+        List<Map<String, Object>> segments = (List<Map<String, Object>>) body.get("segments");
+        assertNotNull(segments, "segments list must not be null");
+        assertEquals(documentIds.size(), segments.size(),
+                "Number of segments sent must match number of input IDs");
 
-        // Verify order: the i-th base64 document corresponds to the i-th document ID
+        // Verify order: the i-th segment buffer corresponds to the i-th document ID
         for (int i = 0; i < documentIds.size(); i++) {
             Long expectedId = documentIds.get(i);
             String expectedBase64 = Base64.getEncoder()
                     .encodeToString(contentByDocId.get(expectedId).getBytes());
-            assertEquals(expectedBase64, sentDocuments.get(i),
-                    "Document at position " + i + " should be content of doc ID " + expectedId);
+            assertEquals(expectedBase64, segments.get(i).get("buffer"),
+                    "Segment at position " + i + " should be content of doc ID " + expectedId);
         }
     }
 

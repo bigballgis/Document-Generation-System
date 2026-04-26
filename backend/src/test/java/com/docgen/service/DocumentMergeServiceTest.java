@@ -50,6 +50,17 @@ class DocumentMergeServiceTest {
         f.set(service, value);
     }
 
+    @Test
+    void buildMergeSegmentsPayload_mapsPageBreakFlag() {
+        List<String> buffers = List.of("YQ==", "Yg==");
+        List<Map<String, Object>> segments = DocumentMergeService.buildMergeSegmentsPayload(buffers, false);
+        assertEquals(2, segments.size());
+        assertEquals("YQ==", segments.get(0).get("buffer"));
+        assertFalse(segments.get(0).containsKey("pageBreakBefore"));
+        assertEquals("Yg==", segments.get(1).get("buffer"));
+        assertEquals(false, segments.get(1).get("pageBreakBefore"));
+    }
+
     // ── Validation tests ──
 
     @Test
@@ -163,17 +174,21 @@ class DocumentMergeServiceTest {
         assertTrue(result.getFilePath().startsWith("merged/"));
         assertTrue(result.getFilePath().endsWith(".docx"));
 
-        // Verify Node.js service was called with correct params
+        // Verify Node.js merge-segments contract
         ArgumentCaptor<HttpEntity<Map<String, Object>>> captor = ArgumentCaptor.forClass(HttpEntity.class);
-        verify(restTemplate).exchange(eq("http://localhost:3000/merge"),
+        verify(restTemplate).exchange(eq("http://localhost:3000/merge-segments"),
                 eq(HttpMethod.POST), captor.capture(), eq(byte[].class));
 
         Map<String, Object> body = captor.getValue().getBody();
         assertNotNull(body);
-        assertEquals(2, ((List<?>) body.get("documents")).size());
-        assertEquals(true, body.get("insertPageBreaks"));
-        assertEquals(false, body.get("generateToc"));
-        assertEquals("DOCX", body.get("outputFormat"));
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> segments = (List<Map<String, Object>>) body.get("segments");
+        assertNotNull(segments);
+        assertEquals(2, segments.size());
+        assertEquals(Base64.getEncoder().encodeToString(content1), segments.get(0).get("buffer"));
+        assertFalse(segments.get(0).containsKey("pageBreakBefore"));
+        assertEquals(Base64.getEncoder().encodeToString(content2), segments.get(1).get("buffer"));
+        assertEquals(true, segments.get(1).get("pageBreakBefore"));
     }
 
     @Test
@@ -288,11 +303,12 @@ class DocumentMergeServiceTest {
         verify(restTemplate).exchange(anyString(), eq(HttpMethod.POST), captor.capture(), eq(byte[].class));
 
         Map<String, Object> body = captor.getValue().getBody();
-        List<String> docs = (List<String>) body.get("documents");
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> segments = (List<Map<String, Object>>) body.get("segments");
         // Verify order: doc3, doc1, doc2
-        assertEquals(Base64.getEncoder().encodeToString("content-3".getBytes()), docs.get(0));
-        assertEquals(Base64.getEncoder().encodeToString("content-1".getBytes()), docs.get(1));
-        assertEquals(Base64.getEncoder().encodeToString("content-2".getBytes()), docs.get(2));
+        assertEquals(Base64.getEncoder().encodeToString("content-3".getBytes()), segments.get(0).get("buffer"));
+        assertEquals(Base64.getEncoder().encodeToString("content-1".getBytes()), segments.get(1).get("buffer"));
+        assertEquals(Base64.getEncoder().encodeToString("content-2".getBytes()), segments.get(2).get("buffer"));
     }
 
     // ── Helpers ──

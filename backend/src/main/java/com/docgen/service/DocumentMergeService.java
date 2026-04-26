@@ -26,8 +26,8 @@ import java.util.stream.Collectors;
  * Service for merging multiple generated Word documents into a single document.
  * <p>
  * The actual document merging is delegated to the Docxtemplater Node.js service
- * via its {@code POST /merge} endpoint. This service handles validation, document
- * retrieval from MinIO, and storage of the merged result.
+ * via its {@code POST /merge-segments} endpoint (base64 segment buffers).
+ * This service handles validation, document retrieval from MinIO, and storage of the merged result.
  */
 @Service
 public class DocumentMergeService {
@@ -172,13 +172,32 @@ public class DocumentMergeService {
 
     // ── Node.js service call ──
 
+    /**
+     * Builds the {@code segments} array expected by {@code POST /merge-segments}.
+     */
+    static List<Map<String, Object>> buildMergeSegmentsPayload(List<String> base64Documents,
+                                                               boolean insertPageBreaks) {
+        List<Map<String, Object>> segments = new ArrayList<>();
+        for (int i = 0; i < base64Documents.size(); i++) {
+            Map<String, Object> seg = new LinkedHashMap<>();
+            seg.put("buffer", base64Documents.get(i));
+            if (i > 0) {
+                seg.put("pageBreakBefore", insertPageBreaks);
+            }
+            segments.add(seg);
+        }
+        return segments;
+    }
+
+    /**
+     * @param generateToc reserved for product metadata; not sent to merge-segments
+     * @param outputFormat  reserved for persisted format; merge-segments always returns DOCX bytes
+     */
+    @SuppressWarnings("unused")
     byte[] callMergeEndpoint(List<String> base64Documents, boolean insertPageBreaks,
                              boolean generateToc, String outputFormat) {
         Map<String, Object> body = new HashMap<>();
-        body.put("documents", base64Documents);
-        body.put("insertPageBreaks", insertPageBreaks);
-        body.put("generateToc", generateToc);
-        body.put("outputFormat", outputFormat != null ? outputFormat : "DOCX");
+        body.put("segments", buildMergeSegmentsPayload(base64Documents, insertPageBreaks));
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -186,7 +205,7 @@ public class DocumentMergeService {
 
         try {
             ResponseEntity<byte[]> response = restTemplate.exchange(
-                    docxtemplaterServiceUrl + "/merge",
+                    docxtemplaterServiceUrl + "/merge-segments",
                     HttpMethod.POST, entity, byte[].class);
 
             if (response.getBody() == null || response.getBody().length == 0) {

@@ -186,6 +186,21 @@ Validation commands:
 Validation result: BUILD SUCCESS.  
 Notes: full `mvn test` not run in this pass.
 
+## 2026-04-26: WS-02-T04 Completed
+
+Task ID: WS-02-T04  
+Summary: `DocumentMergeService` now calls `POST /merge-segments` with a `segments` array (`buffer` per doc, `pageBreakBefore` on each segment after the first when `insertPageBreaks` is true) instead of the non-existent `/merge` contract. Added `buildMergeSegmentsPayload` helper; `generateToc` / `outputFormat` remain Java-side metadata only (merge route always returns DOCX bytes). Updated unit and property tests; noted route in `server.js`.  
+Files changed:
+- `backend/src/main/java/com/docgen/service/DocumentMergeService.java`
+- `backend/src/test/java/com/docgen/service/DocumentMergeServiceTest.java`
+- `backend/src/test/java/com/docgen/property/DocumentMergeOrderPropertyTest.java`
+- `docxtemplater-service/server.js`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+Validation commands:
+- `mvn "-Dtest=DocumentMergeServiceTest,DocumentMergeOrderPropertyTest" test` (from `backend/`)
+Validation result: BUILD SUCCESS.  
+Notes: `npm test` not re-run (no Node route logic change).
+
 ## 2026-04-26: WS-02-T02 Completed
 
 Task ID: WS-02-T02  

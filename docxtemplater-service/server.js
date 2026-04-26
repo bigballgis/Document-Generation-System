@@ -27,6 +27,7 @@ app.get('/health', async (_req, res) => {
 app.use('/render', renderRouter);
 app.use('/evaluate', evaluateRouter);
 app.use('/convert-pdf', convertPdfRouter);
+// Backend document merge calls POST /merge-segments (see DocumentMergeService in Java).
 app.use('/merge-segments', mergeSegmentsRouter);
 
 // Global error handler
