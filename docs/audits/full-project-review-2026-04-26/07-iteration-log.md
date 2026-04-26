@@ -608,6 +608,49 @@ Validation commands:
 - `docker build -f frontend/Dockerfile -t docgen-frontend:test frontend` (from repo root)
 Validation result: **Not completed** — Docker Hub pull timed out in this environment (network). Dockerfile reviewed for lockfile presence and `npm ci` / `npm run build` consistency with `package-lock.json`.
 
+## 2026-04-26: WS-08-T03 validation follow-up (Compose build frontend)
+
+Task ID: WS-08-T03 (validation only)  
+Summary: **`docker compose build frontend`** succeeded on 2026-04-26 after WS-08-T04 nginx stage fixes (same build path as Compose: **`Dockerfile.local`**). Confirms **`dist/`** context and Nginx stage build for local workflow.  
+Files changed: none (log only).  
+Validation commands: `docker compose build frontend` (repo root).  
+Validation result: **Exit code 0**.
+
+## 2026-04-26: DIFF-TEST-001 closure (content diff test evidence)
+
+Task ID: DIFF-TEST-001 (traceability; no single WS task card)  
+Summary: Ran the **scoped backend** suite for docx content diff (`ContentDiffServiceTest`, `DocxTextExtractorTest`, `SegmentVersionServiceTest`) and the **frontend** `SegmentVersionDialog` Vitest file. Marked **`05-traceability-matrix.md`** row **`DIFF-TEST-001`** as **Verified** with concrete command evidence.  
+Files changed:
+- `docs/audits/full-project-review-2026-04-26/05-traceability-matrix.md`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`  
+Validation commands:
+- `mvn "-Dtest=ContentDiffServiceTest,DocxTextExtractorTest,SegmentVersionServiceTest" test` (from `backend/`) — **BUILD SUCCESS**.
+- `npx vitest run src/__tests__/views/SegmentVersionDialog.test.ts` (from `frontend/`) — **5 tests passed**.  
+Not run: full `mvn test` / full frontend suite (out of scope for this closure pass).  
+Remaining risks: integration tests with real MinIO + multi-tenant flows not re-run here.
+
+## 2026-04-26: WS-08-T04 Non-root Docker runtime users
+
+Task ID: WS-08-T04  
+Summary: **Backend** images run as **`app` (UID 10001)** with owned `app.jar`. **Frontend** images run as **`nginx`** with **`cap_net_bind_service`** on the nginx binary so **listen 80** works without changing Compose `ports`; build-time **`libcap`** removed after `setcap`; **`/etc/nginx/templates`** created when missing on base image. **Docxtemplater** runs as **`node`** with **`chown -R node:node /app`** and **`HOME=/app`**. Audit **[25-docker-non-root-runtime-ws-08-t04.md](25-docker-non-root-runtime-ws-08-t04.md)**; **`README.md`** index; **`05-traceability-matrix.md`** `INFRA-DOCKER-NONROOT-001` evidence column.  
+Files changed:
+- `backend/Dockerfile`
+- `backend/Dockerfile.local`
+- `frontend/Dockerfile`
+- `frontend/Dockerfile.local`
+- `docxtemplater-service/Dockerfile`
+- `docs/audits/full-project-review-2026-04-26/25-docker-non-root-runtime-ws-08-t04.md`
+- `docs/audits/full-project-review-2026-04-26/README.md`
+- `docs/audits/full-project-review-2026-04-26/05-traceability-matrix.md`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`  
+Validation commands:
+- `docker compose build` (repo root) — **exit code 0**.
+- `docker run --rm --entrypoint id docgen-frontend:latest` → **uid=101(nginx)**.
+- `docker run --rm --entrypoint id docgen-app:latest` → **uid=10001(app)**.
+- `docker run --rm --entrypoint id docgen-docxtemplater:latest` → **uid=1000(node)**.  
+Stop conditions: none (LibreOffice and Nginx paths validated at image build; full document conversion smoke not in task scope).  
+Remaining risks: policies that forbid **file capabilities** on nginx; rare LibreOffice edge cases under `node` may need extra writable paths.
+
 ## 2026-04-26: WS-08-T01 Pin floating Docker image tags
 
 Task ID: WS-08-T01  
@@ -637,6 +680,33 @@ Files changed:
 Validation commands:
 - `docker compose config` (from repo root) — exit code 0.
 Validation result: Compose merge valid.
+
+## 2026-04-26: WS-08-T04 Non-root runtime users in Dockerfiles
+
+Task ID: WS-08-T04  
+Summary: **Backend** production and local images: Alpine user **`app`** (uid **10001**), `chown` on the fat JAR, **`USER app`**. **Frontend** production image: **`nginx:1.25-alpine`** with **`cap_net_bind_service`** on `/usr/sbin/nginx`, writable cache/log/template paths **`chown`’d to `nginx`**, **`USER nginx`** (port **80** unchanged for Compose/K8s). **Docxtemplater**: **`chown -R node:node /app`**, **`USER node`** (official `node:18-slim` user); removed redundant **`HOME=/app`** so the default **`/home/node`** applies. **`backend/Dockerfile.local`** header comments converted to **English**.  
+Files changed:
+- `backend/Dockerfile` (non-root `app` uid 10001; already aligned)
+- `backend/Dockerfile.local` (English header comments; non-root `app`)
+- `frontend/Dockerfile` (`mkdir -p /etc/nginx/templates` before `chown`; `apk del libcap` after `setcap`; non-root `nginx`)
+- `frontend/Dockerfile.local` (same Nginx hardening for Compose `Dockerfile.local`; `mkdir` + `apk del libcap`)
+- `docxtemplater-service/Dockerfile` (non-root `node`; drop redundant `HOME=/app`)
+- `docs/audits/full-project-review-2026-04-26/05-traceability-matrix.md`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+Validation commands:
+- `docker compose build` (from repo root)
+Validation result: **Exit code 0** — `docgen-app`, `docgen-frontend`, and `docgen-docxtemplater` images built successfully.  
+Stop conditions: none (Nginx non-root uses `cap_net_bind_service` on `/usr/sbin/nginx`; Docxtemplater runs as `node` with `/app` owned by `node`).
+
+## 2026-04-26: Batch 9 traceability refresh (post WS-08)
+
+Workstream: governance (execution sequence Batch 9)  
+Summary: After **Batch 8** (`WS-08-T01`–`T04`) completion, aligned **`05-traceability-matrix.md`** high-priority rows with implemented work already recorded in **`07-iteration-log.md`**: **`SEC-OO-001`** and **`SEC-SSRF-001`** → **Verified** (WS-01 OnlyOffice JWT + `OutboundUrlPolicy` + `CallbackDocumentDownloadHelper` + tests); **`CONTRACT-NODE-001`**, **`CONTRACT-NODE-002`**, **`CONTRACT-EXPR-001`** → **Verified** (WS-02-T02–T05 + listed Java/Jest tests and contract inventory link). No production code changes.  
+Files changed:
+- `docs/audits/full-project-review-2026-04-26/05-traceability-matrix.md`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+Validation commands: none required (documentation-only).  
+Remaining risks: **`SEC-OO-001`** still lacks network-level caller provenance (reverse-proxy IP binding); full **`mvn test`** may fail in environments without Docker/H2 per prior logs — scoped tests cited in the matrix remain the evidence baseline.
 
 ## Entry Template
 

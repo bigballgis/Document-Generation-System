@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,8 @@ public class TemplateTestService {
     private static final Logger log = LoggerFactory.getLogger(TemplateTestService.class);
     private static final int MAX_ACTUAL_JSON_CHARS = 50_000;
     private static final int MAX_DOCX_EXTRACT_BYTES = 512_000;
+    /** Maximum page size for listing test cases (abuse prevention). */
+    private static final int MAX_TEST_CASE_PAGE_SIZE = 500;
 
     private final TestCaseRepository testCaseRepository;
     private final TestResultRepository testResultRepository;
@@ -72,10 +75,11 @@ public class TemplateTestService {
 
     @Transactional(readOnly = true)
     public Page<TestCaseDTO> listTestCases(Long templateId, String nameQuery, Pageable pageable) {
+        Pageable safePageable = capPageable(pageable);
         Page<TestCase> page = StringUtils.hasText(nameQuery)
                 ? testCaseRepository.findByTemplateIdAndNameContainingIgnoreCaseOrderByCreatedAtDesc(
-                        templateId, nameQuery.trim(), pageable)
-                : testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(templateId, pageable);
+                        templateId, nameQuery.trim(), safePageable)
+                : testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(templateId, safePageable);
         List<Long> ids = page.getContent().stream().map(TestCase::getId).toList();
         Map<Long, TestResult> latestByCaseId = loadLatestResultsMap(ids);
         List<TestCaseDTO> content = page.getContent().stream()
@@ -85,7 +89,22 @@ public class TemplateTestService {
                     return toTestCaseDTO(tc, last);
                 })
                 .toList();
-        return new PageImpl<>(content, pageable, page.getTotalElements());
+        return new PageImpl<>(content, safePageable, page.getTotalElements());
+    }
+
+    /** Visible for unit tests in the same package. */
+    static Pageable capPageable(Pageable pageable) {
+        int page = Math.max(0, pageable.getPageNumber());
+        int size = pageable.getPageSize();
+        if (size < 1) {
+            size = 20;
+        } else if (size > MAX_TEST_CASE_PAGE_SIZE) {
+            size = MAX_TEST_CASE_PAGE_SIZE;
+        }
+        if (page == pageable.getPageNumber() && size == pageable.getPageSize()) {
+            return pageable;
+        }
+        return PageRequest.of(page, size, pageable.getSort());
     }
 
     private Map<Long, TestResult> loadLatestResultsMap(List<Long> testCaseIds) {

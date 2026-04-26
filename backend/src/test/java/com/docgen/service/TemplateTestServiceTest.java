@@ -10,11 +10,15 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
+import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Collections;
@@ -124,6 +128,135 @@ class TemplateTestServiceTest {
         var result = service.listTestCases(100L, "alp", pageable);
         assertEquals(1, result.getContent().size());
         assertEquals("Alpha", result.getContent().get(0).getName());
+    }
+
+    @Test
+    void listTestCases_capsOversizedPage() {
+        TestCase tc1 = createSampleTestCase(1L, 100L, "TC1");
+        var oversized = PageRequest.of(0, 10_000);
+        var capped = PageRequest.of(0, 500);
+        when(testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(eq(100L), eq(capped)))
+                .thenReturn(new PageImpl<>(List.of(tc1), capped, 1));
+
+        var result = service.listTestCases(100L, null, oversized);
+
+        assertEquals(1, result.getContent().size());
+        assertEquals(500, result.getPageable().getPageSize());
+        verify(testCaseRepository).findByTemplateIdOrderByCreatedAtDesc(eq(100L), eq(capped));
+    }
+
+    @Test
+    void capPageable_replacesZeroSizeWithDefault() {
+        Pageable bad = mock(Pageable.class);
+        when(bad.getPageNumber()).thenReturn(0);
+        when(bad.getPageSize()).thenReturn(0);
+        when(bad.getSort()).thenReturn(Sort.unsorted());
+
+        Pageable p = TemplateTestService.capPageable(bad);
+
+        assertEquals(20, p.getPageSize());
+        assertEquals(0, p.getPageNumber());
+    }
+
+    @Test
+    void capPageable_preservesUnchangedPageable() {
+        Pageable orig = PageRequest.of(2, 50);
+        assertSame(orig, TemplateTestService.capPageable(orig));
+    }
+
+    // ── WS-05-T07: execution semantics characterization ──
+
+    @Test
+    void characterization_runTestCase_invokesRenderForTemplateTestWithParsedParameters() {
+        TestCase tc = createSampleTestCase(1L, 100L, "TC");
+        tc.setTestDataJson("{\"name\":\"John\"}");
+        tc.setExpectedResultJson("{\"name\":\"John\"}");
+        tc.setComparisonType(ComparisonType.VARIABLE_VALUE);
+        when(testCaseRepository.findById(1L)).thenReturn(Optional.of(tc));
+        when(documentGeneratorService.renderForTemplateTest(eq(100L), any()))
+                .thenReturn(new TemplateTestRenderOutcome(Map.of("name", "John"), new byte[]{1}));
+        when(testResultRepository.save(any(TestResult.class))).thenAnswer(inv -> {
+            TestResult r = inv.getArgument(0);
+            r.setId(10L);
+            return r;
+        });
+
+        service.runTestCase(1L);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, Object>> params = ArgumentCaptor.forClass(Map.class);
+        verify(documentGeneratorService, times(1)).renderForTemplateTest(eq(100L), params.capture());
+        assertEquals("John", params.getValue().get("name"));
+    }
+
+    @Test
+    void characterization_runTestCase_textMode_invokesDocxTextExtractorOnRenderedDocx() {
+        TestCase tc = createSampleTestCase(1L, 100L, "TC");
+        tc.setTestDataJson("{}");
+        tc.setExpectedResultJson("{\"_textContent\":\"Hello\"}");
+        tc.setComparisonType(ComparisonType.TEXT_CONTENT);
+        when(testCaseRepository.findById(1L)).thenReturn(Optional.of(tc));
+        when(documentGeneratorService.renderForTemplateTest(eq(100L), any()))
+                .thenReturn(new TemplateTestRenderOutcome(Map.of(), new byte[]{9, 9}));
+        when(docxTextExtractor.extractText(any(ByteArrayInputStream.class), anyInt()))
+                .thenReturn(new ExtractedText("Hello", false));
+        when(testResultRepository.save(any(TestResult.class))).thenAnswer(inv -> {
+            TestResult r = inv.getArgument(0);
+            r.setId(11L);
+            return r;
+        });
+
+        service.runTestCase(1L);
+
+        // Once for comparison, once for persisted actual-result summary
+        verify(docxTextExtractor, times(2)).extractText(any(ByteArrayInputStream.class), anyInt());
+    }
+
+    @Test
+    void characterization_runAllTests_invokesRenderOncePerLoadedTestCase() {
+        TestCase tc1 = createSampleTestCase(1L, 100L, "TC1");
+        tc1.setTestDataJson("{\"name\":\"John\"}");
+        tc1.setExpectedResultJson("{\"name\":\"John\"}");
+        tc1.setComparisonType(ComparisonType.VARIABLE_VALUE);
+        TestCase tc2 = createSampleTestCase(2L, 100L, "TC2");
+        tc2.setTestDataJson("{\"name\":\"Jane\"}");
+        tc2.setExpectedResultJson("{\"name\":\"Jane\"}");
+        tc2.setComparisonType(ComparisonType.VARIABLE_VALUE);
+
+        when(testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(100L)).thenReturn(List.of(tc1, tc2));
+        when(testCaseRepository.findById(1L)).thenReturn(Optional.of(tc1));
+        when(testCaseRepository.findById(2L)).thenReturn(Optional.of(tc2));
+        when(documentGeneratorService.renderForTemplateTest(eq(100L), any()))
+                .thenAnswer(inv -> {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> p = inv.getArgument(1);
+                    if ("John".equals(String.valueOf(p.get("name")))) {
+                        return new TemplateTestRenderOutcome(Map.of("name", "John"), new byte[]{1});
+                    }
+                    return new TemplateTestRenderOutcome(Map.of("name", "Jane"), new byte[]{1});
+                });
+        when(testResultRepository.save(any(TestResult.class))).thenAnswer(inv -> {
+            TestResult r = inv.getArgument(0);
+            r.setId(r.getTestCaseId() * 10);
+            return r;
+        });
+
+        TestReportDTO report = service.runAllTests(100L);
+
+        assertEquals(2, report.getTotalCount());
+        verify(documentGeneratorService, times(2)).renderForTemplateTest(eq(100L), any());
+    }
+
+    @Test
+    void characterization_listTestCases_doesNotInvokeDocumentGenerator() {
+        var pageable = PageRequest.of(0, 20);
+        when(testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(eq(100L), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(), pageable, 0));
+
+        service.listTestCases(100L, null, pageable);
+
+        verifyNoInteractions(documentGeneratorService);
+        verifyNoInteractions(docxTextExtractor);
     }
 
     // ── updateTestCase ──

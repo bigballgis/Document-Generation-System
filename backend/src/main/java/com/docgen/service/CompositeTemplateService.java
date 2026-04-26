@@ -7,6 +7,7 @@ import com.docgen.dto.CreateCompositeTemplateRequest;
 import com.docgen.dto.TemplateDTO;
 import com.docgen.dto.UpdateAssemblyConfigRequest;
 import com.docgen.entity.Template;
+import com.docgen.entity.TemplateState;
 import com.docgen.exception.BusinessException;
 import com.docgen.exception.ErrorCode;
 import com.docgen.exception.ResourceNotFoundException;
@@ -35,11 +36,14 @@ public class CompositeTemplateService {
 
     private final TemplateRepository templateRepository;
     private final AssemblyConfigService assemblyConfigService;
+    private final TemplateStateMachineService templateStateMachineService;
 
     public CompositeTemplateService(TemplateRepository templateRepository,
-                                    AssemblyConfigService assemblyConfigService) {
+                                    AssemblyConfigService assemblyConfigService,
+                                    TemplateStateMachineService templateStateMachineService) {
         this.templateRepository = templateRepository;
         this.assemblyConfigService = assemblyConfigService;
+        this.templateStateMachineService = templateStateMachineService;
     }
 
     // ── Create ──
@@ -98,6 +102,12 @@ public class CompositeTemplateService {
 
     /**
      * Activate a Composite_Template after verifying all inline segments have valid filePaths.
+     * <p>
+     * State changes go through {@link TemplateStateMachineService} (same rules as single templates):
+     * {@code DRAFT → ACTIVE} only when {@code reviewRequired} is false; {@code REVIEWED → ACTIVE} is allowed;
+     * illegal transitions yield {@link ErrorCode#TEMPLATE_INVALID_STATE_TRANSITION} or
+     * {@link ErrorCode#TEMPLATE_REVIEW_REQUIRED}. If the template is already {@code ACTIVE}, this method returns
+     * after validation without calling the state machine again.
      */
     @Transactional
     public TemplateDTO activateCompositeTemplate(Long templateId) {
@@ -128,8 +138,12 @@ public class CompositeTemplateService {
             }
         }
 
-        template.setStatus("ACTIVE");
-        Template saved = templateRepository.save(template);
+        if (TemplateState.ACTIVE.name().equals(template.getStatus())) {
+            log.info("Composite template already ACTIVE: id={}", templateId);
+            return toTemplateDTO(template);
+        }
+
+        Template saved = templateStateMachineService.transition(templateId, TemplateState.ACTIVE);
 
         log.info("Composite template activated: id={}", templateId);
         return toTemplateDTO(saved);

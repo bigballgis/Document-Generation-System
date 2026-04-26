@@ -17,6 +17,8 @@ import java.util.*;
 /**
  * Service managing template lifecycle state transitions.
  * Validates transitions against the allowed state machine and records audit logs.
+ * Composite template activation ({@link CompositeTemplateService#activateCompositeTemplate}) uses this service
+ * after assembly completeness checks.
  */
 @Service
 public class TemplateStateMachineService {

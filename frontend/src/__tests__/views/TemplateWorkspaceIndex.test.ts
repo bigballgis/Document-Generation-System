@@ -1,13 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
+import { mockRouteState, mockRouterPush } from '@/__tests__/helpers/templateWorkspaceRouteMock'
 
-const mockRouterPush = vi.fn()
-
-vi.mock('vue-router', () => ({
-  useRoute: () => ({ params: { id: '1' } }),
-  useRouter: () => ({ push: mockRouterPush }),
-}))
+vi.mock('vue-router', async () => {
+  const mod = await import('@/__tests__/helpers/templateWorkspaceRouteMock')
+  return {
+    useRoute: () => mod.mockRouteState,
+    useRouter: () => ({ push: mod.mockRouterPush }),
+  }
+})
 
 vi.mock('@/api/templates', () => ({
   getTemplate: vi.fn().mockResolvedValue({ id: 1, name: 'Test', status: 'DRAFT', templateType: 'COMPOSITE', version: 1 }),
@@ -105,6 +107,7 @@ describe('TemplateWorkspace Index', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     mockRouterPush.mockReset()
+    mockRouteState.params.id = '1'
   })
 
   it('can be imported without errors', async () => {
@@ -132,6 +135,27 @@ describe('TemplateWorkspace Index', () => {
       const wrapper = mountIndex()
       await flushPromises()
       expect(wrapper.find('.el-tabs').exists()).toBe(false)
+    })
+  })
+
+  /** WS-06-T02: Router reuse — `params.id` change must re-run `initWorkspace` without remounting. */
+  describe('WS-06-T02 route parameter change reloads workspace', () => {
+    it('calls initWorkspace again with the new template id when route id changes without remount', async () => {
+      const store = useTemplateWorkspaceStore()
+      const spy = vi.spyOn(store, 'initWorkspace')
+
+      const wrapper = mountIndex()
+      await flushPromises()
+
+      expect(spy.mock.calls.length).toBeGreaterThanOrEqual(1)
+      expect(spy).toHaveBeenCalledWith(1)
+
+      mockRouteState.params.id = '2'
+      await wrapper.vm.$nextTick()
+      await flushPromises()
+
+      expect(spy).toHaveBeenCalledWith(2)
+      expect(spy.mock.calls.length).toBeGreaterThanOrEqual(2)
     })
   })
 })

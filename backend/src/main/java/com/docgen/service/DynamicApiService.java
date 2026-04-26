@@ -28,13 +28,16 @@ public class DynamicApiService {
 
     private final TemplateRepository templateRepository;
     private final TemplateVersionRepository templateVersionRepository;
+    private final TemplateGenerationEligibilityService templateGenerationEligibilityService;
     private final DocumentGeneratorService documentGeneratorService;
 
     public DynamicApiService(TemplateRepository templateRepository,
                              TemplateVersionRepository templateVersionRepository,
+                             TemplateGenerationEligibilityService templateGenerationEligibilityService,
                              DocumentGeneratorService documentGeneratorService) {
         this.templateRepository = templateRepository;
         this.templateVersionRepository = templateVersionRepository;
+        this.templateGenerationEligibilityService = templateGenerationEligibilityService;
         this.documentGeneratorService = documentGeneratorService;
     }
 
@@ -53,11 +56,7 @@ public class DynamicApiService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.TEMPLATE_NOT_FOUND,
                         "模板不存在: " + templateId, HttpStatus.NOT_FOUND));
 
-        // Only ACTIVE templates expose API endpoints
-        if (!"ACTIVE".equals(template.getStatus())) {
-            throw new BusinessException(ErrorCode.TEMPLATE_NOT_FOUND,
-                    "模板未激活，无法通过 API 调用: " + templateId, HttpStatus.NOT_FOUND);
-        }
+        templateGenerationEligibilityService.requireActiveForDocumentGeneration(template, templateId);
 
         if (version != null) {
             // Check if history versions are allowed
@@ -82,6 +81,6 @@ public class DynamicApiService {
             log.info("Generating document via API for template {} (latest version)", templateId);
         }
 
-        return documentGeneratorService.generateDocument(templateId, request);
+        return documentGeneratorService.generateDocument(templateId, request, version);
     }
 }

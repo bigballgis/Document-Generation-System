@@ -42,6 +42,7 @@ public class BatchDocumentService {
 
     private final AsyncTaskRepository asyncTaskRepository;
     private final TemplateRepository templateRepository;
+    private final TemplateGenerationEligibilityService templateGenerationEligibilityService;
     private final GeneratedDocumentRepository documentRepository;
     private final DocumentGeneratorService documentGeneratorService;
     private final DocumentStorageService documentStorageService;
@@ -52,12 +53,14 @@ public class BatchDocumentService {
 
     public BatchDocumentService(AsyncTaskRepository asyncTaskRepository,
                                 TemplateRepository templateRepository,
+                                TemplateGenerationEligibilityService templateGenerationEligibilityService,
                                 GeneratedDocumentRepository documentRepository,
                                 DocumentGeneratorService documentGeneratorService,
                                 DocumentStorageService documentStorageService,
                                 MinioClient minioClient) {
         this.asyncTaskRepository = asyncTaskRepository;
         this.templateRepository = templateRepository;
+        this.templateGenerationEligibilityService = templateGenerationEligibilityService;
         this.documentRepository = documentRepository;
         this.documentGeneratorService = documentGeneratorService;
         this.documentStorageService = documentStorageService;
@@ -72,6 +75,8 @@ public class BatchDocumentService {
         Template template = templateRepository.findById(templateId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TEMPLATE_NOT_FOUND,
                         "模板不存在: " + templateId, HttpStatus.NOT_FOUND));
+
+        templateGenerationEligibilityService.requireActiveForDocumentGeneration(template, templateId);
 
         if (request.getDataSets() == null || request.getDataSets().isEmpty()) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
@@ -120,6 +125,16 @@ public class BatchDocumentService {
                 return;
             }
 
+            try {
+                templateGenerationEligibilityService.requireActiveForDocumentGeneration(template, templateId);
+            } catch (BusinessException e) {
+                task.setStatus("FAILED");
+                task.setErrorMessage(e.getMessage());
+                task.setCompletedAt(Instant.now());
+                asyncTaskRepository.save(task);
+                return;
+            }
+
             List<Map<String, Object>> dataSets = request.getDataSets();
             String failureStrategy = request.getFailureStrategy() != null
                     ? request.getFailureStrategy() : "CONTINUE";
@@ -146,7 +161,7 @@ public class BatchDocumentService {
                     genRequest.setOutputFormat(outputFormat);
                     genRequest.setStorageStrategy("TEMP");
 
-                    GenerateDocumentResponse response = documentGeneratorService.generateDocument(templateId, genRequest);
+                    GenerateDocumentResponse response = documentGeneratorService.generateDocument(templateId, genRequest, null);
 
                     // Download the generated content for ZIP packaging
                     if (response.getDocumentId() != null) {

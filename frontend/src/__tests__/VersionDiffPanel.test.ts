@@ -133,4 +133,32 @@ describe('VersionDiffPanel', () => {
     const tags = wrapper.findAll('.diff-summary .el-tag')
     expect(tags.length).toBe(3)
   })
+
+  it('renders diff details table when only non-text diffs exist (WS-06-T06)', async () => {
+    populateStore()
+    mockGetVersionDiff.mockResolvedValue({
+      versionA: 1,
+      versionB: 2,
+      textDiffs: [],
+      variableDiffs: [{ field: 'varFoo', type: 'ADDED', oldValue: '', newValue: 'new binding' }],
+      dataSourceDiffs: [],
+      expressionDiffs: [],
+      summary: { added: 1, removed: 0, modified: 0 },
+    })
+
+    const wrapper = mount(VersionDiffPanel)
+    await flushPromises()
+
+    const vm = wrapper.vm as any
+    vm.versionA = 1
+    vm.versionB = 2
+    await wrapper.vm.$nextTick()
+
+    await wrapper.find('.el-button--primary').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('.el-table').exists()).toBe(true)
+    expect(wrapper.text()).toContain('varFoo')
+    expect(wrapper.text()).toContain('new binding')
+  })
 })

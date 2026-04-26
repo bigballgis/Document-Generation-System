@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useUserStore } from '@/stores/user'
 import { useLocale } from '@/composables/useLocale'
 import { signOnlyOfficeConfig } from '@/api/composite-templates'
@@ -44,6 +45,7 @@ const emit = defineEmits<{
 
 const userStore = useUserStore()
 const { locale } = useLocale()
+const { t } = useI18n()
 
 const editorContainerId = `onlyoffice-editor-${Date.now()}`
 const editorInstanceRef = ref<any>(null)
@@ -74,7 +76,7 @@ function loadScript(): Promise<void> {
         resolve()
       } else {
         existing.addEventListener('load', () => resolve())
-        existing.addEventListener('error', () => reject(new Error('Failed to load OnlyOffice API')))
+        existing.addEventListener('error', () => reject(new Error(t('workspace.editor.loadScriptFailed'))))
       }
       return
     }
@@ -83,7 +85,7 @@ function loadScript(): Promise<void> {
     script.src = scriptUrl
     script.async = true
     script.onload = () => resolve()
-    script.onerror = () => reject(new Error('Failed to load OnlyOffice API script'))
+    script.onerror = () => reject(new Error(t('workspace.editor.loadScriptFailed')))
     document.head.appendChild(script)
   })
 }
@@ -162,7 +164,7 @@ function buildConfig() {
 
 async function createEditor() {
   if (!(window as any).DocsAPI) {
-    emit('error', 'OnlyOffice API not loaded')
+    emit('error', t('workspace.editor.apiNotLoaded'))
     return
   }
 
@@ -216,10 +218,10 @@ function insertTextAtCursor(text: string) {
       iframe.contentWindow?.focus()
     }
     import('element-plus').then(({ ElMessage }) => {
-      ElMessage.success({ message: `已复制 ${text}，请按 Ctrl+V 粘贴`, duration: 2000 })
+      ElMessage.success({ message: t('workspace.editor.insertTextCopied', { text }), duration: 2000 })
     })
   }).catch(() => {
-    window.prompt('请复制以下文本并粘贴到编辑器中:', text)
+    window.prompt(t('workspace.editor.insertTextPrompt'), text)
   })
 }
 
@@ -242,13 +244,23 @@ watch(locale, () => {
   }
 })
 
+// Reload editor when the document identity changes (createEditor destroys any previous instance first)
+watch(
+  () => [props.documentUrl, props.documentKey] as const,
+  () => {
+    if (scriptLoaded.value) {
+      createEditor()
+    }
+  },
+)
+
 onMounted(async () => {
   try {
     await loadScript()
     scriptLoaded.value = true
-    createEditor()
+    await createEditor()
   } catch (err: any) {
-    emit('error', err.message || 'Failed to initialize OnlyOffice editor')
+    emit('error', err.message || t('workspace.editor.initFailed'))
   }
 })
 

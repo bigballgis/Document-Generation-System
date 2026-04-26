@@ -167,7 +167,7 @@ public class ScheduledTaskService {
                 }
 
                 GenerateDocumentResponse response = documentGeneratorService
-                        .generateDocument(task.getTemplateId(), request);
+                        .generateDocument(task.getTemplateId(), request, null);
 
                 // Success
                 execution.setStatus(STATUS_SUCCESS);

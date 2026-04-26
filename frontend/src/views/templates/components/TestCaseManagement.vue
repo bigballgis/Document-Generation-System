@@ -324,6 +324,7 @@ async function handleSave() {
       await updateTestCase(editingCase.value.id, payload)
     } else {
       await createTestCase(props.templateId, payload)
+      currentPage.value = 1
     }
     ElMessage.success(t('message.saveSuccess'))
     dialogVisible.value = false
@@ -368,6 +369,7 @@ async function handleRunAll() {
     rpt.results.forEach((r) => { map[r.testCaseId] = r })
     resultMap.value = map
     ElMessage.success(`${rpt.passedCount}/${rpt.totalCount} ${t('test.passed')}`)
+    currentPage.value = 1
     await fetchTestCases()
   } catch { /* interceptor */ } finally {
     runAllLoading.value = false

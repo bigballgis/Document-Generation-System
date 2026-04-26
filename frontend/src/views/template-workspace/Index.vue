@@ -88,7 +88,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted, onBeforeUnmount, defineComponent } from 'vue'
+import { ref, computed, reactive, watch, onMounted, onBeforeUnmount, defineComponent } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
@@ -193,14 +193,31 @@ async function handleMigrate() {
   }
 }
 
+function workspaceIdFromRoute(): number {
+  return Number(route.params.id)
+}
+
 function retry() {
-  store.initWorkspace(Number(route.params.id))
+  store.initWorkspace(workspaceIdFromRoute())
 }
 
 onMounted(() => {
-  const id = Number(route.params.id)
-  store.initWorkspace(id)
+  store.initWorkspace(workspaceIdFromRoute())
 })
+
+// When the router reuses this view (same component instance, new `params.id`), reload workspace.
+watch(
+  () => route.params.id,
+  (newId, oldId) => {
+    if (newId === oldId) return
+    const id = Number(newId)
+    if (!Number.isFinite(id) || id <= 0) return
+    currentStage.value = 'design'
+    stageDataLoaded.test = false
+    stageDataLoaded.approval = false
+    store.initWorkspace(id)
+  },
+)
 
 onBeforeUnmount(() => {
   store.$reset()

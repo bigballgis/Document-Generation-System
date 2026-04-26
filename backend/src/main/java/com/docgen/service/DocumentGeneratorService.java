@@ -31,6 +31,7 @@ public class DocumentGeneratorService {
     private static final Logger log = LoggerFactory.getLogger(DocumentGeneratorService.class);
 
     private final TemplateRepository templateRepository;
+    private final TemplateGenerationEligibilityService templateGenerationEligibilityService;
     private final ParameterValidationService parameterValidationService;
     private final RestTemplate restTemplate;
     private final DocumentStorageService documentStorageService;
@@ -42,12 +43,14 @@ public class DocumentGeneratorService {
 
     public DocumentGeneratorService(
             TemplateRepository templateRepository,
+            TemplateGenerationEligibilityService templateGenerationEligibilityService,
             ParameterValidationService parameterValidationService,
             RestTemplate restTemplate,
             DocumentStorageService documentStorageService,
             CircuitBreaker docxtemplaterCircuitBreaker,
             CompositeGeneratorService compositeGeneratorService) {
         this.templateRepository = templateRepository;
+        this.templateGenerationEligibilityService = templateGenerationEligibilityService;
         this.parameterValidationService = parameterValidationService;
         this.restTemplate = restTemplate;
         this.documentStorageService = documentStorageService;
@@ -59,11 +62,36 @@ public class DocumentGeneratorService {
      * Synchronously generate a document for the given template.
      * Routes to CompositeGeneratorService for COMPOSITE templates,
      * or follows the existing single-file flow for SINGLE templates.
+     * <p>
+     * Async and batch callers use this overload; no sync API template version is passed.
      */
     public GenerateDocumentResponse generateDocument(Long templateId, GenerateDocumentRequest request) {
+        return generateDocument(templateId, request, null);
+    }
+
+    /**
+     * Same as {@link #generateDocument(Long, GenerateDocumentRequest)} with optional context from the
+     * synchronous generate API.
+     *
+     * @param syncValidatedTemplateVersion when non-null, {@link DynamicApiService} has validated this value against
+     *                                       {@code template_versions} and policy. Per {@code docs/versioned-template-generation-contract.md}
+     *                                       (WS-05-T04), the render source remains the current {@link Template} row
+     *                                       ({@code templateFilePath} / composite assembly), not the snapshot path
+     *                                       stored on the version row.
+     */
+    public GenerateDocumentResponse generateDocument(Long templateId, GenerateDocumentRequest request,
+                                                     Integer syncValidatedTemplateVersion) {
         Template template = templateRepository.findById(templateId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TEMPLATE_NOT_FOUND,
                         "模板不存在: " + templateId, HttpStatus.NOT_FOUND));
+
+        templateGenerationEligibilityService.requireActiveForDocumentGeneration(template, templateId);
+
+        if (syncValidatedTemplateVersion != null) {
+            log.info("Document generation for templateId={} with sync-validated template version {} "
+                            + "(render source remains current template row per versioned-generation contract)",
+                    templateId, syncValidatedTemplateVersion);
+        }
 
         // Route based on template_type
         if ("COMPOSITE".equals(template.getTemplateType())) {
@@ -104,6 +132,7 @@ public class DocumentGeneratorService {
         Template template = templateRepository.findById(templateId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TEMPLATE_NOT_FOUND,
                         "模板不存在: " + templateId, HttpStatus.NOT_FOUND));
+        // Intentionally no ACTIVE check: template tests must run against DRAFT / non-ACTIVE templates.
         Map<String, Object> params = parameters != null ? parameters : Collections.emptyMap();
         if ("COMPOSITE".equals(template.getTemplateType())) {
             return compositeGeneratorService.renderCompositeDocxInMemory(templateId, params);

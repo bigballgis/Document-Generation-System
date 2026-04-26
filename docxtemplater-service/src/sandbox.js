@@ -124,17 +124,21 @@ async function evaluateWithIsolatedVm(expression, context, timeout, memoryLimit)
     const vmContext = await isolate.createContext();
     const jail = vmContext.global;
 
-    // Inject safe functions
-    for (const [name, fn] of Object.entries(SAFE_FUNCTIONS)) {
-      await jail.set(name, new ivm.ExternalCopy(fn).copyInto());
+    // Inject safe globals: native callables cannot use ExternalCopy (clone error); use Reference.
+    for (const [name, value] of Object.entries(SAFE_FUNCTIONS)) {
+      if (typeof value === 'function') {
+        await jail.set(name, new ivm.Reference(value));
+      } else {
+        await jail.set(name, new ivm.ExternalCopy(value).copyInto());
+      }
     }
 
     // Inject data context
     await jail.set('data', new ivm.ExternalCopy(context).copyInto());
 
-    // Inject Formula.js functions
+    // Formula.js exports host callables — Reference keeps them callable from the isolate.
     const formulaFns = loadFormulaFunctions();
-    await jail.set('Formula', new ivm.ExternalCopy(formulaFns).copyInto());
+    await jail.set('Formula', new ivm.Reference(formulaFns));
 
     const script = await isolate.compileScript(expression);
     const result = await script.run(vmContext, { timeout });

@@ -36,15 +36,18 @@ public class AsyncDocumentService {
 
     private final AsyncTaskRepository asyncTaskRepository;
     private final TemplateRepository templateRepository;
+    private final TemplateGenerationEligibilityService templateGenerationEligibilityService;
     private final DocumentGeneratorService documentGeneratorService;
     private final DocumentStorageService documentStorageService;
 
     public AsyncDocumentService(AsyncTaskRepository asyncTaskRepository,
                                 TemplateRepository templateRepository,
+                                TemplateGenerationEligibilityService templateGenerationEligibilityService,
                                 DocumentGeneratorService documentGeneratorService,
                                 DocumentStorageService documentStorageService) {
         this.asyncTaskRepository = asyncTaskRepository;
         this.templateRepository = templateRepository;
+        this.templateGenerationEligibilityService = templateGenerationEligibilityService;
         this.documentGeneratorService = documentGeneratorService;
         this.documentStorageService = documentStorageService;
     }
@@ -58,6 +61,8 @@ public class AsyncDocumentService {
         Template template = templateRepository.findById(templateId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TEMPLATE_NOT_FOUND,
                         "模板不存在: " + templateId, HttpStatus.NOT_FOUND));
+
+        templateGenerationEligibilityService.requireActiveForDocumentGeneration(template, templateId);
 
         AsyncTask task = new AsyncTask();
         task.setTaskId(UUID.randomUUID().toString());
@@ -86,7 +91,7 @@ public class AsyncDocumentService {
             task.setStatus("RUNNING");
             asyncTaskRepository.save(task);
 
-            GenerateDocumentResponse response = documentGeneratorService.generateDocument(templateId, request);
+            GenerateDocumentResponse response = documentGeneratorService.generateDocument(templateId, request, null);
 
             task.setStatus("COMPLETED");
             task.setProgress(100);

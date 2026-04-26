@@ -36,7 +36,7 @@
         <template #default="{ row }">v{{ row.versionNumber }}</template>
       </el-table-column>
       <el-table-column prop="comment" :label="t('workspace.segment.publishComment')" min-width="160">
-        <template #default="{ row }">{{ row.comment || '—' }}</template>
+        <template #default="{ row }">{{ row.comment || t('common.emptyValue') }}</template>
       </el-table-column>
       <el-table-column prop="createdAt" :label="t('common.createdAt')" width="170">
         <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
@@ -113,12 +113,12 @@
           </el-table-column>
           <el-table-column :label="t('workspace.segment.diffOldValue')">
             <template #default="{ row }">
-              <div class="diff-cell diff-cell-old">{{ row.oldValue ?? '—' }}</div>
+              <div class="diff-cell diff-cell-old">{{ row.oldValue ?? t('common.emptyValue') }}</div>
             </template>
           </el-table-column>
           <el-table-column :label="t('workspace.segment.diffNewValue')">
             <template #default="{ row }">
-              <div class="diff-cell diff-cell-new">{{ row.newValue ?? '—' }}</div>
+              <div class="diff-cell diff-cell-new">{{ row.newValue ?? t('common.emptyValue') }}</div>
             </template>
           </el-table-column>
         </el-table>
@@ -178,7 +178,7 @@
               <span class="diff-line-num">&nbsp;</span>
               <span class="diff-line-prefix">&nbsp;</span>
               <span class="diff-line-text">
-                ↓ {{ t('workspace.segment.contentDiff.expandLines') }} ({{ processedDiffLines.length - renderLimit }} more)
+                ↓ {{ t('workspace.segment.contentDiff.expandLines') }} ({{ t('workspace.segment.contentDiff.moreLinesRemaining', { count: processedDiffLines.length - renderLimit }) }})
               </span>
             </div>
           </div>
@@ -282,7 +282,7 @@ function selectForCompare(row: SegmentVersionDTO) {
 async function handleCompare() {
   if (compareA.value == null || compareB.value == null) return
   if (compareA.value === compareB.value) {
-    ElMessage.warning(t('workspace.segment.sameVersionWarning', 'Cannot compare a version with itself'))
+    ElMessage.warning(t('workspace.segment.sameVersionWarning'))
     return
   }
   if (comparing.value) return // prevent double-click
@@ -318,7 +318,7 @@ function handleClosed() {
 }
 
 function formatTime(iso: string) {
-  if (!iso) return '—'
+  if (!iso) return t('common.emptyValue')
   return new Date(iso).toLocaleString()
 }
 

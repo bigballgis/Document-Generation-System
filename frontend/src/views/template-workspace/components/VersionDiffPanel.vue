@@ -25,21 +25,21 @@
         <el-tag type="warning" style="margin-left: 8px">~{{ diffResult.summary.modified }}</el-tag>
       </div>
 
-      <el-table v-if="diffResult.textDiffs.length > 0" :data="allDiffs" border stripe style="margin-top: 12px">
-        <el-table-column prop="field" label="Field" width="200" />
-        <el-table-column label="Type" width="120">
+      <el-table v-if="allDiffs.length > 0" :data="allDiffs" border stripe style="margin-top: 12px">
+        <el-table-column prop="field" :label="t('workspace.settings.versionDiffField')" width="200" />
+        <el-table-column :label="t('workspace.settings.versionDiffType')" width="120">
           <template #default="{ row }">
             <el-tag :type="diffTypeTag(row.type)" size="small">{{ row.type }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="Old Value">
+        <el-table-column :label="t('workspace.settings.versionDiffOldValue')">
           <template #default="{ row }">
-            <div class="diff-cell diff-cell-old">{{ row.oldValue ?? '—' }}</div>
+            <div class="diff-cell diff-cell-old">{{ row.oldValue ?? t('common.emptyValue') }}</div>
           </template>
         </el-table-column>
-        <el-table-column label="New Value">
+        <el-table-column :label="t('workspace.settings.versionDiffNewValue')">
           <template #default="{ row }">
-            <div class="diff-cell diff-cell-new">{{ row.newValue ?? '—' }}</div>
+            <div class="diff-cell diff-cell-new">{{ row.newValue ?? t('common.emptyValue') }}</div>
           </template>
         </el-table-column>
       </el-table>
