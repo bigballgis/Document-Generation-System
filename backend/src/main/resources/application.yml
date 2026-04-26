@@ -122,6 +122,15 @@ onlyoffice:
     # Main template callback returns JSON {"error":0} on success/ack and {"error":1} when a save
     # was rejected (invalid JWT, disallowed download URL, empty download, missing template).
 
+# Composite template ZIP import limits (defense in depth; see CompositeImportExportService#importFromZip)
+composite-import:
+  zip:
+    max-archive-bytes: ${COMPOSITE_IMPORT_ZIP_MAX_ARCHIVE_BYTES:52428800}
+    max-total-uncompressed-bytes: ${COMPOSITE_IMPORT_ZIP_MAX_TOTAL_UNCOMPRESSED_BYTES:104857600}
+    max-entry-count: ${COMPOSITE_IMPORT_ZIP_MAX_ENTRY_COUNT:512}
+    max-entry-bytes: ${COMPOSITE_IMPORT_ZIP_MAX_ENTRY_BYTES:20971520}
+    max-uncompressed-to-compressed-ratio: ${COMPOSITE_IMPORT_ZIP_MAX_RATIO:100}
+
 # Document Storage
 document:
   temp-cleanup-hours: ${DOCUMENT_TEMP_CLEANUP_HOURS:24}

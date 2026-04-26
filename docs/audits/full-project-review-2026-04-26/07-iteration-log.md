@@ -260,6 +260,25 @@ Validation commands:
 Validation result: BUILD SUCCESS.  
 Notes: full `mvn test` not run (task card default; environment may still hit unrelated failures).
 
+## 2026-04-26: WS-03-T02 Completed
+
+Task ID: WS-03-T02  
+Summary: Added configurable ZIP import limits (`composite-import.zip` in `application.yml` via `CompositeZipImportProperties`): max compressed archive bytes (multipart size + stream cap), max non-directory entry count, max per-entry uncompressed bytes (bounded read instead of `readAllBytes()` when limits are on), max total uncompressed bytes across entries, and optional compression expansion ratio when central directory reports compressed and uncompressed sizes. Enforced strict allowlist for entry paths (`config.json`, `test-data.json`, `parameters.json`, `coverage-report.json`, and single-segment `segments|headers|footers/<name>.docx` without `..`, `/`, or `\\` in `<name>`). Rejects unsupported paths instead of silently ignoring. Wired `getInputStream()` IOException to `IMPORT_INVALID_FILE`. Updated export property tests: DRAFT is exportable alongside ACTIVE per current service rules.  
+Files changed:
+- `backend/src/main/java/com/docgen/config/CompositeZipImportProperties.java`
+- `backend/src/main/java/com/docgen/service/CompositeImportExportService.java`
+- `backend/src/main/resources/application.yml`
+- `backend/src/test/java/com/docgen/service/CompositeImportExportServiceTest.java`
+- `backend/src/test/java/com/docgen/service/CompositeImportExportServiceExportTest.java`
+- `backend/src/test/java/com/docgen/property/ExportConstraintPropertyTest.java`
+- `docs/audits/full-project-review-2026-04-26/05-traceability-matrix.md`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+Validation commands:
+- `mvn "-Dtest=CompositeImportExportServiceTest,CompositeImportExportServiceExportTest,ExportConstraintPropertyTest" test` (from `backend/`)
+- `mvn -Dtest=DocgenApplicationTests test` (from `backend/`)
+Validation result: BUILD SUCCESS (full `mvn test` not run).  
+Remaining risks: object key sanitization for segment/header/footer names is `WS-03-T03`; compression ratio check is skipped when ZIP headers omit sizes (`-1`).
+
 ## 2026-04-26: Template testing hardening (ad-hoc)
 
 Summary: Aligned frontend test-case types with backend JSON (`testDataJson`, `comparisonType`, `TestReportDTO` counters). `TemplateTestService` now runs real `DocumentGeneratorService` rendering plus `DocxTextExtractor` for text assertions and SHA-256 of DOCX bytes for snapshot mode. Added `TemplateTestRenderOutcome`, composite in-memory render helper, backward-compatible Jackson aliases on `CreateTestCaseRequest`, and `testCaseName` on `TestResultDTO`. Improved template detail test UI (hints, JSON validation, result drawer).  
@@ -274,6 +293,11 @@ Validation: `mvn "-Dtest=TemplateTestServiceTest" test` (from `backend/`) — BU
 
 Summary: Vitest mocks for `getTestCases` now return a `PageResult` shape (fixes `refreshTestCases` using `.content`). Added `getTestCases` contract test in `market-extensions.test.ts`. `TestCaseManagement` supports `hideIntro` to suppress the long info alert when embedded under workspace `TestStage`.  
 Validation: `npx vitest run src/__tests__/api/market-extensions.test.ts src/__tests__/views/TemplateWorkspaceIndex.test.ts` (from `frontend/`) — passed.
+
+## 2026-04-26: Test case list page cap and UX (ad-hoc)
+
+Summary: `TemplateTestService.listTestCases` caps `page`/`size` via `capPageable` (max page size 500, minimum effective size 20 when requested size is below 1). `TestCaseManagement` resets to page 1 after creating a test case and after Run All so the refreshed list shows the newest ordering. Added unit tests for oversized requests, zero-size `Pageable`, and unchanged pass-through.  
+Validation: `mvn "-Dtest=TemplateTestServiceTest" test` (from `backend/`) — BUILD SUCCESS.
 
 ## Entry Template
 

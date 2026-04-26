@@ -1,5 +1,6 @@
 package com.docgen.service;
 
+import com.docgen.config.CompositeZipImportProperties;
 import com.docgen.dto.*;
 import com.docgen.entity.Template;
 import com.docgen.entity.TestCase;
@@ -48,6 +49,7 @@ public class CompositeImportExportService {
     private final CompositeCoverageService compositeCoverageService;
     private final ParameterService parameterService;
     private final ParameterRepository parameterRepository;
+    private final CompositeZipImportProperties zipImportProperties;
 
     @Value("${minio.bucket-name:docgen}")
     private String bucketName;
@@ -59,7 +61,8 @@ public class CompositeImportExportService {
                                         TestCaseRepository testCaseRepository,
                                         CompositeCoverageService compositeCoverageService,
                                         ParameterService parameterService,
-                                        ParameterRepository parameterRepository) {
+                                        ParameterRepository parameterRepository,
+                                        CompositeZipImportProperties zipImportProperties) {
         this.templateRepository = templateRepository;
         this.assemblyConfigService = assemblyConfigService;
         this.minioClient = minioClient;
@@ -68,6 +71,7 @@ public class CompositeImportExportService {
         this.compositeCoverageService = compositeCoverageService;
         this.parameterService = parameterService;
         this.parameterRepository = parameterRepository;
+        this.zipImportProperties = zipImportProperties;
     }
 
     /**
@@ -195,35 +199,94 @@ public class CompositeImportExportService {
         byte[] testDataBytes = null;
         byte[] parametersBytes = null;
 
-        // Parse ZIP
-        try (ZipInputStream zis = new ZipInputStream(zipFile.getInputStream())) {
-            ZipEntry entry;
-            while ((entry = zis.getNextEntry()) != null) {
-                if (entry.isDirectory()) continue;
-                String name = entry.getName();
-                byte[] content = zis.readAllBytes();
+        long maxArchiveBytes = zipImportProperties.getMaxArchiveBytes();
+        if (maxArchiveBytes > 0) {
+            long declaredSize = zipFile.getSize();
+            if (declaredSize >= 0 && declaredSize > maxArchiveBytes) {
+                throw zipImportRejected("ZIP file exceeds maximum allowed size");
+            }
+        }
 
+        final InputStream rawIn;
+        try {
+            rawIn = zipFile.getInputStream();
+        } catch (IOException e) {
+            throw new BusinessException(ErrorCode.IMPORT_INVALID_FILE,
+                    "Failed to read uploaded ZIP file", HttpStatus.BAD_REQUEST, e);
+        }
+        InputStream sizedIn = (maxArchiveBytes > 0)
+                ? new LimitedArchiveInputStream(rawIn, maxArchiveBytes)
+                : rawIn;
+
+        // Parse ZIP with entry/path/size/count limits (see composite-import.zip in application.yml)
+        try (ZipInputStream zis = new ZipInputStream(sizedIn)) {
+            ZipEntry entry;
+            int fileEntryOrdinal = 0;
+            long totalUncompressed = 0;
+            while ((entry = zis.getNextEntry()) != null) {
+                if (entry.isDirectory()) {
+                    zis.closeEntry();
+                    continue;
+                }
+                String name = entry.getName();
+                assertAllowedCompositeImportEntryPath(name);
+
+                fileEntryOrdinal++;
+                int maxEntries = zipImportProperties.getMaxEntryCount();
+                if (maxEntries > 0 && fileEntryOrdinal > maxEntries) {
+                    throw zipImportRejected("ZIP contains too many entries");
+                }
+
+                assertDeclaredZipEntrySizesWithinLimits(entry, zipImportProperties);
+
+                long perEntryCap = zipImportProperties.getMaxEntryBytes();
                 if ("config.json".equals(name)) {
+                    byte[] content = readZipEntryBody(zis, perEntryCap);
+                    totalUncompressed = addUncompressedTotalOrReject(totalUncompressed, content.length,
+                            zipImportProperties.getMaxTotalUncompressedBytes());
                     exportConfig = objectMapper.readValue(content, CompositeExportConfig.class);
                 } else if (name.startsWith("segments/") && name.endsWith(".docx")) {
                     String segmentName = name.substring("segments/".length(),
                             name.length() - ".docx".length());
+                    byte[] content = readZipEntryBody(zis, perEntryCap);
+                    totalUncompressed = addUncompressedTotalOrReject(totalUncompressed, content.length,
+                            zipImportProperties.getMaxTotalUncompressedBytes());
                     segmentFiles.put(segmentName, content);
                 } else if (name.startsWith("headers/") && name.endsWith(".docx")) {
                     String headerName = name.substring("headers/".length(),
                             name.length() - ".docx".length());
+                    byte[] content = readZipEntryBody(zis, perEntryCap);
+                    totalUncompressed = addUncompressedTotalOrReject(totalUncompressed, content.length,
+                            zipImportProperties.getMaxTotalUncompressedBytes());
                     headerFiles.put(headerName, content);
                 } else if (name.startsWith("footers/") && name.endsWith(".docx")) {
                     String footerName = name.substring("footers/".length(),
                             name.length() - ".docx".length());
+                    byte[] content = readZipEntryBody(zis, perEntryCap);
+                    totalUncompressed = addUncompressedTotalOrReject(totalUncompressed, content.length,
+                            zipImportProperties.getMaxTotalUncompressedBytes());
                     footerFiles.put(footerName, content);
                 } else if ("test-data.json".equals(name)) {
+                    byte[] content = readZipEntryBody(zis, perEntryCap);
+                    totalUncompressed = addUncompressedTotalOrReject(totalUncompressed, content.length,
+                            zipImportProperties.getMaxTotalUncompressedBytes());
                     testDataBytes = content;
                 } else if ("parameters.json".equals(name)) {
+                    byte[] content = readZipEntryBody(zis, perEntryCap);
+                    totalUncompressed = addUncompressedTotalOrReject(totalUncompressed, content.length,
+                            zipImportProperties.getMaxTotalUncompressedBytes());
                     parametersBytes = content;
+                } else if ("coverage-report.json".equals(name)) {
+                    long drained = drainZipEntry(zis, perEntryCap);
+                    totalUncompressed = addUncompressedTotalOrReject(totalUncompressed, drained,
+                            zipImportProperties.getMaxTotalUncompressedBytes());
+                } else {
+                    throw zipImportRejected("ZIP contains an unsupported entry path");
                 }
                 zis.closeEntry();
             }
+        } catch (BusinessException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Failed to parse import ZIP file", e);
             throw new BusinessException(ErrorCode.IMPORT_INVALID_FILE,
@@ -604,6 +667,172 @@ public class CompositeImportExportService {
         dto.setCreatedAt(template.getCreatedAt());
         dto.setUpdatedAt(template.getUpdatedAt());
         return dto;
+    }
+
+    private BusinessException zipImportRejected(String message) {
+        return new BusinessException(ErrorCode.IMPORT_INVALID_FILE, message, HttpStatus.BAD_REQUEST);
+    }
+
+    /**
+     * Only known composite export entry paths are accepted; segment/header/footer names must be a single path segment
+     * without traversal markers.
+     */
+    private void assertAllowedCompositeImportEntryPath(String name) {
+        if ("config.json".equals(name)
+                || "test-data.json".equals(name)
+                || "parameters.json".equals(name)
+                || "coverage-report.json".equals(name)) {
+            return;
+        }
+        if (name.startsWith("segments/") && name.endsWith(".docx")) {
+            String inner = name.substring("segments/".length(), name.length() - ".docx".length());
+            if (isSafeZipPathSegment(inner)) {
+                return;
+            }
+            throw zipImportRejected("ZIP contains an invalid segment entry path");
+        }
+        if (name.startsWith("headers/") && name.endsWith(".docx")) {
+            String inner = name.substring("headers/".length(), name.length() - ".docx".length());
+            if (isSafeZipPathSegment(inner)) {
+                return;
+            }
+            throw zipImportRejected("ZIP contains an invalid header entry path");
+        }
+        if (name.startsWith("footers/") && name.endsWith(".docx")) {
+            String inner = name.substring("footers/".length(), name.length() - ".docx".length());
+            if (isSafeZipPathSegment(inner)) {
+                return;
+            }
+            throw zipImportRejected("ZIP contains an invalid footer entry path");
+        }
+        throw zipImportRejected("ZIP contains an unsupported entry path");
+    }
+
+    private static boolean isSafeZipPathSegment(String inner) {
+        if (inner == null || inner.isEmpty()) {
+            return false;
+        }
+        if (inner.contains("/") || inner.contains("\\")) {
+            return false;
+        }
+        if (inner.contains("..")) {
+            return false;
+        }
+        return !".".equals(inner);
+    }
+
+    private void assertDeclaredZipEntrySizesWithinLimits(ZipEntry entry, CompositeZipImportProperties p) {
+        long declared = entry.getSize();
+        long maxEntry = p.getMaxEntryBytes();
+        if (maxEntry > 0 && declared > 0 && declared > maxEntry) {
+            throw zipImportRejected("ZIP entry exceeds maximum allowed uncompressed size");
+        }
+        int ratio = p.getMaxUncompressedToCompressedRatio();
+        long compressed = entry.getCompressedSize();
+        if (ratio > 0 && declared > 0 && compressed > 0) {
+            if ((double) declared / (double) compressed > ratio) {
+                throw zipImportRejected("ZIP entry exceeds maximum allowed compression expansion ratio");
+            }
+        }
+    }
+
+    private long addUncompressedTotalOrReject(long current, long delta, long maxTotal) {
+        if (maxTotal <= 0) {
+            return current + delta;
+        }
+        if (delta < 0) {
+            throw zipImportRejected("ZIP entry size is invalid");
+        }
+        if (current > Long.MAX_VALUE - delta) {
+            throw zipImportRejected("ZIP uncompressed total size exceeds maximum allowed");
+        }
+        long next = current + delta;
+        if (next > maxTotal) {
+            throw zipImportRejected("ZIP uncompressed total size exceeds maximum allowed");
+        }
+        return next;
+    }
+
+    private byte[] readZipEntryBody(ZipInputStream zis, long maxEntryBytes) throws IOException {
+        if (maxEntryBytes <= 0) {
+            return zis.readAllBytes();
+        }
+        return readZipEntryBounded(zis, maxEntryBytes);
+    }
+
+    private byte[] readZipEntryBounded(ZipInputStream zis, long maxEntryBytes) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        byte[] buf = new byte[8192];
+        long total = 0;
+        while (true) {
+            int n = zis.read(buf);
+            if (n < 0) {
+                break;
+            }
+            if (total + (long) n > maxEntryBytes) {
+                throw new IOException("ZIP entry exceeds maximum allowed uncompressed size");
+            }
+            total += n;
+            baos.write(buf, 0, n);
+        }
+        return baos.toByteArray();
+    }
+
+    private long drainZipEntry(ZipInputStream zis, long maxEntryBytes) throws IOException {
+        byte[] buf = new byte[8192];
+        long total = 0;
+        while (true) {
+            int n = zis.read(buf);
+            if (n < 0) {
+                break;
+            }
+            if (total + (long) n > maxEntryBytes) {
+                throw new IOException("ZIP entry exceeds maximum allowed uncompressed size");
+            }
+            total += n;
+        }
+        return total;
+    }
+
+    private static final class LimitedArchiveInputStream extends FilterInputStream {
+        private final long maxBytes;
+        private long read;
+
+        private LimitedArchiveInputStream(InputStream in, long maxBytes) {
+            super(in);
+            this.maxBytes = maxBytes;
+        }
+
+        @Override
+        public int read() throws IOException {
+            int b = super.read();
+            if (b >= 0) {
+                incrementOrThrow(1);
+            }
+            return b;
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+            int n = super.read(b, off, len);
+            if (n > 0) {
+                incrementOrThrow(n);
+            }
+            return n;
+        }
+
+        private void incrementOrThrow(int n) throws IOException {
+            if (maxBytes <= 0) {
+                return;
+            }
+            if (read > Long.MAX_VALUE - n) {
+                throw new IOException("ZIP file exceeds maximum allowed compressed size");
+            }
+            read += n;
+            if (read > maxBytes) {
+                throw new IOException("ZIP file exceeds maximum allowed compressed size");
+            }
+        }
     }
 
     /**

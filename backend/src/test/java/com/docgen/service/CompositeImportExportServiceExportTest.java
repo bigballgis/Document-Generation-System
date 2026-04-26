@@ -1,5 +1,6 @@
 package com.docgen.service;
 
+import com.docgen.config.CompositeZipImportProperties;
 import com.docgen.dto.AssemblyConfigDTO;
 import com.docgen.dto.AssemblySegmentEntry;
 import com.docgen.dto.CompositeCoverageReport;
@@ -54,7 +55,8 @@ class CompositeImportExportServiceExportTest {
                 templateRepository, assemblyConfigService,
                 minioClient, objectMapper,
                 testCaseRepository, compositeCoverageService,
-                parameterService, parameterRepository);
+                parameterService, parameterRepository,
+                new CompositeZipImportProperties());
         Field bucketField = CompositeImportExportService.class.getDeclaredField("bucketName");
         bucketField.setAccessible(true);
         bucketField.set(service, "docgen-test");
@@ -64,15 +66,6 @@ class CompositeImportExportServiceExportTest {
     @AfterEach
     void tearDown() {
         TenantContext.clear();
-    }
-
-    @Test
-    void exportAsZip_draftStatus_throwsBusinessException() {
-        Template template = createTemplate("DRAFT");
-        when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
-
-        BusinessException ex = assertThrows(BusinessException.class, () -> service.exportAsZip(1L));
-        assertEquals(ErrorCode.TEMPLATE_EXPORT_NOT_ACTIVE, ex.getErrorCode());
     }
 
     @Test

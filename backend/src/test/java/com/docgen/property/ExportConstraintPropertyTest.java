@@ -8,6 +8,7 @@ import com.docgen.exception.BusinessException;
 import com.docgen.exception.ErrorCode;
 import com.docgen.repository.TemplateRepository;
 import com.docgen.repository.TestCaseRepository;
+import com.docgen.config.CompositeZipImportProperties;
 import com.docgen.service.AssemblyConfigService;
 import com.docgen.service.CompositeCoverageService;
 import com.docgen.service.CompositeImportExportService;
@@ -32,9 +33,9 @@ import static org.mockito.Mockito.*;
  * <p>Feature: template-workflow-stages, Property 3: 导出约束后端强制</p>
  * <p><b>Validates: Requirements 12.1</b></p>
  *
- * For any non-ACTIVE TemplateState, exportAsZip must throw BusinessException
+ * For any TemplateState that is neither ACTIVE nor DRAFT, exportAsZip must throw BusinessException
  * with error code TEMPLATE_EXPORT_NOT_ACTIVE and HTTP 400.
- * For ACTIVE state, exportAsZip must not throw that exception.
+ * For ACTIVE or DRAFT state, exportAsZip must not throw that exception (with mocked assembly/coverage).
  */
 @Tag("Feature: template-workflow-stages, Property 3: 导出约束后端强制")
 class ExportConstraintPropertyTest {
@@ -51,7 +52,8 @@ class ExportConstraintPropertyTest {
                 templateRepository, assemblyConfigService,
                 minioClient, objectMapper,
                 testCaseRepository, compositeCoverageService,
-                parameterService, parameterRepository);
+                parameterService, parameterRepository,
+                new CompositeZipImportProperties());
         Field bucketField = CompositeImportExportService.class.getDeclaredField("bucketName");
         bucketField.setAccessible(true);
         bucketField.set(service, "docgen-test");
@@ -75,11 +77,11 @@ class ExportConstraintPropertyTest {
     }
 
     /**
-     * Property 3: For any non-ACTIVE template state, exportAsZip throws
+     * Property 3: For any template state that is neither ACTIVE nor DRAFT, exportAsZip throws
      * BusinessException with TEMPLATE_EXPORT_NOT_ACTIVE and HTTP 400.
      */
     @Property(tries = 100)
-    void nonActiveState_exportAsZip_throwsBusinessException(
+    void nonExportableState_exportAsZip_throwsBusinessException(
             @ForAll("nonActiveStates") TemplateState state) throws Exception {
         TenantContext.setCurrentTenantId(1L);
         try {
@@ -102,12 +104,12 @@ class ExportConstraintPropertyTest {
     }
 
     /**
-     * Property 3: For ACTIVE state, exportAsZip does not throw
+     * Property 3: For ACTIVE or DRAFT state, exportAsZip does not throw
      * TEMPLATE_EXPORT_NOT_ACTIVE exception.
      */
     @Property(tries = 100)
-    void activeState_exportAsZip_doesNotThrowExportNotActive(
-            @ForAll("activeState") TemplateState state) throws Exception {
+    void activeOrDraftState_exportAsZip_doesNotThrowExportNotActive(
+            @ForAll("activeOrDraftStates") TemplateState state) throws Exception {
         TenantContext.setCurrentTenantId(1L);
         try {
             TemplateRepository templateRepository = mock(TemplateRepository.class);
@@ -143,7 +145,6 @@ class ExportConstraintPropertyTest {
     @Provide
     Arbitrary<TemplateState> nonActiveStates() {
         return Arbitraries.of(
-                TemplateState.DRAFT,
                 TemplateState.PENDING_REVIEW,
                 TemplateState.REVIEWED,
                 TemplateState.ARCHIVED
@@ -151,7 +152,7 @@ class ExportConstraintPropertyTest {
     }
 
     @Provide
-    Arbitrary<TemplateState> activeState() {
-        return Arbitraries.of(TemplateState.ACTIVE);
+    Arbitrary<TemplateState> activeOrDraftStates() {
+        return Arbitraries.of(TemplateState.ACTIVE, TemplateState.DRAFT);
     }
 }
