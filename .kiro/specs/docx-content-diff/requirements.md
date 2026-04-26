@@ -92,3 +92,20 @@
 1. WHEN the extracted text content from a single .docx file exceeds 500KB, THE Docx_Text_Extractor SHALL truncate the text at the 500KB boundary and append a "[... content truncated ...]" indicator
 2. WHEN the total number of diff lines exceeds 2000, THE Content_Diff_Service SHALL truncate the diff result and set the `truncated` flag to true in the response
 3. IF an unexpected error occurs during text extraction or diff computation, THEN THE Content_Diff_Service SHALL log the error and return a graceful degradation response with empty contentDiffs and contentChanged=false rather than failing the API call
+
+---
+
+## WS-04-T03 amendment (English): Identical-text contract
+
+**Requirement 2, acceptance criterion 3** above describes the internal line-diff primitive in simplified terms. The **canonical API contract** for compared DOCX bodies is:
+
+1. **`computeContentDiff` / `contentDiffs` (segment version compare API)**  
+   When extracted plain text for old and new files is **equal** (`String.equals`): return **`contentDiffs` as an empty list**, **`contentChanged=false`**. Do **not** emit `EQUAL` rows. `truncated` may still be `true` if either extractor truncated. The line diff algorithm is not run.
+
+2. **`computeLineDiff` (package-private helper)**  
+   - Both strings **empty** → **empty list**.  
+   - Identical **non-empty** text (same line split) → **only `EQUAL` rows** (e.g. one line → one `EQUAL` row).
+
+**Client rule:** Do not infer “no textual change” from `contentDiffs` alone; use **`contentChanged=false`** for identical bodies when content diff is enabled.
+
+**Evidence:** `docs/audits/full-project-review-2026-04-26/19-docx-identical-diff-contract.md`, `ContentDiffServiceTest` (WS-04-T01).

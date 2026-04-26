@@ -289,6 +289,21 @@ Validation commands:
 Validation result: BUILD SUCCESS.  
 Notes: full `mvn test` (task card default) not run. Next: **WS-04-T03** (identical diff contract documentation).
 
+## 2026-04-26: WS-04-T03 Completed
+
+Task ID: WS-04-T03  
+Summary: Recorded the **canonical identical-text contract** for DOCX segment content diff: when extracted plain text is equal, **`contentChanged=false`** and **`contentDiffs` is empty** (no synthetic `EQUAL` rows); distinguished this from the package-private **`computeLineDiff`** primitive (both-empty → empty list; identical non-empty → `EQUAL` rows only). Documented client compatibility (do not infer equality from `EQUAL` rows). Added audit note [19-docx-identical-diff-contract.md](19-docx-identical-diff-contract.md), English amendment in `.kiro/specs/docx-content-diff/requirements.md`, `includeContentDiff` and content-diff field table in `docs/segment-version-api.md`, and README link.  
+Files changed:
+- `docs/audits/full-project-review-2026-04-26/19-docx-identical-diff-contract.md`
+- `docs/audits/full-project-review-2026-04-26/README.md`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+- `docs/segment-version-api.md`
+- `.kiro/specs/docx-content-diff/requirements.md`
+Validation commands:
+- `rg "[\\p{Han}]" docs/audits/full-project-review-2026-04-26/19-docx-identical-diff-contract.md docs/segment-version-api.md` (scoped to new/edited English sections; full path per task card still matches legacy Chinese under `.kiro/specs/docx-content-diff/requirements.md`)
+Validation result: no Han characters in `19-docx-identical-diff-contract.md` or in the newly added `segment-version-api.md` paragraphs (verified via search).  
+Notes: **WS-04-T04** is a no-op if implementation already matches this contract (current `ContentDiffService` does). Next: **WS-04-T04** (verify alignment) or **WS-04-T05** per execution sequence.
+
 ## 2026-04-26: WS-03-T01 Completed
 
 Task ID: WS-03-T01  
