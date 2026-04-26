@@ -263,6 +263,19 @@ Validation commands:
 Validation result: no Chinese text in new English decision document.  
 Notes: **WS-03-T05** and **WS-03-T06** remain blocked by this deferral until a new decision supersedes WS-03-T04.
 
+## 2026-04-26: WS-04-T01 Completed
+
+Task ID: WS-04-T01  
+Summary: Added `ContentDiffServiceTest` with Mockito-backed `DocxTextExtractor` covering `computeLineDiff`: both-empty list, null-as-empty vs non-empty, identical single-line (one `EQUAL` row), added line, removed line, `MODIFIED` line; `computeContentDiff` short-circuit for identical bodies (empty `lines`, `contentChanged=false`), truncated-only flag when extractors report truncation, and differing bodies; `hasContentChanged` true/false. Documents that **identical multi-line text** still short-circuits at `computeContentDiff` (no diff lines), while **identical single-line via `computeLineDiff` alone** yields one `EQUAL` line (algorithm path).  
+Files changed:
+- `backend/src/test/java/com/docgen/service/ContentDiffServiceTest.java`
+- `docs/audits/full-project-review-2026-04-26/05-traceability-matrix.md`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+Validation commands:
+- `mvn -Dtest=ContentDiffServiceTest test` (from `backend/`)
+Validation result: BUILD SUCCESS.  
+Notes: full `mvn test` not run. Next: **WS-04-T02** (`DocxTextExtractor` unit tests).
+
 ## 2026-04-26: WS-03-T01 Completed
 
 Task ID: WS-03-T01  
