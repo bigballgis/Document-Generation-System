@@ -198,6 +198,49 @@ describe('GET /health', () => {
 
 
 describe('POST /evaluate', () => {
+  describe('expression type validation', () => {
+    it('rejects unknown type with 400 and does not run the sandbox', async () => {
+      const res = await request('POST', '/evaluate', {
+        expression: "typeof process !== 'undefined' ? 'sandbox-leak' : '1+1'",
+        type: 'python',
+        context: {},
+      });
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('UNKNOWN_EXPRESSION_TYPE');
+    });
+
+    it('rejects non-string type with 400', async () => {
+      const res = await request('POST', '/evaluate', {
+        expression: '1+1',
+        type: 123,
+        context: {},
+      });
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('INVALID_EXPRESSION_TYPE');
+    });
+
+    it('defaults omitted type to javascript', async () => {
+      const res = await request('POST', '/evaluate', {
+        expression: '1+1',
+        context: {},
+      });
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.result).toBe(2);
+    });
+
+    it('accepts explicit javascript type', async () => {
+      const res = await request('POST', '/evaluate', {
+        expression: '2+2',
+        type: 'javascript',
+        context: {},
+      });
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.result).toBe(4);
+    });
+  });
+
   describe('valid JavaScript expressions', () => {
     it('should evaluate simple arithmetic', async () => {
       const res = await request('POST', '/evaluate', {

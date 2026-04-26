@@ -186,6 +186,18 @@ Validation commands:
 Validation result: BUILD SUCCESS.  
 Notes: full `mvn test` not run in this pass.
 
+## 2026-04-26: WS-02-T03 Completed
+
+Task ID: WS-02-T03  
+Summary: `/evaluate` now rejects unknown or non-string `type` with HTTP 400 (`UNKNOWN_EXPRESSION_TYPE` / `INVALID_EXPRESSION_TYPE`) before any sandbox or formula evaluation; omitted or blank-after-trim `type` still defaults to `javascript`. Integration tests cover unknown type, invalid type shape, default path, and explicit `javascript`.  
+Files changed:
+- `docxtemplater-service/src/routes/evaluate.js`
+- `docxtemplater-service/src/__tests__/integration.test.js`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+Validation commands:
+- `npm test` (from `docxtemplater-service/`)
+Validation result: PASS (74 tests).
+
 ## 2026-04-26: Template testing hardening (ad-hoc)
 
 Summary: Aligned frontend test-case types with backend JSON (`testDataJson`, `comparisonType`, `TestReportDTO` counters). `TemplateTestService` now runs real `DocumentGeneratorService` rendering plus `DocxTextExtractor` for text assertions and SHA-256 of DOCX bytes for snapshot mode. Added `TemplateTestRenderOutcome`, composite in-memory render helper, backward-compatible Jackson aliases on `CreateTestCaseRequest`, and `testCaseName` on `TestResultDTO`. Improved template detail test UI (hints, JSON validation, result drawer).  
