@@ -42,6 +42,8 @@ export interface TestCaseDTO {
   comparisonType: ComparisonType
   createdAt: string
   updatedAt: string
+  /** Latest run from list API; not included in export JSON. */
+  lastRun?: TestResultDTO | null
 }
 
 export interface CreateTestCaseRequest {

@@ -122,7 +122,7 @@
               @change="handleImportTestCases"
             />
           </div>
-          <TestCaseManagement :template-id="template.id" />
+          <TestCaseManagement ref="testCaseMgmtRef" :template-id="template.id" />
         </el-tab-pane>
         <el-tab-pane :label="$t('schedule.title')" name="schedule">
           <ScheduledTaskManagement :template-id="template.id" />
@@ -266,7 +266,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, type ComponentPublicInstance } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -330,6 +330,7 @@ const availableTransitions = ref<string[]>([])
 // Scan variables & test case import
 const scanLoading = ref(false)
 const testCaseFileInput = ref<HTMLInputElement | null>(null)
+const testCaseMgmtRef = ref<ComponentPublicInstance<{ refreshTestCases: () => Promise<void> }> | null>(null)
 
 type TagType = 'primary' | 'success' | 'info' | 'warning' | 'danger'
 
@@ -561,6 +562,7 @@ async function handleImportTestCases(event: Event) {
     const text = await file.text()
     await importTestCases(templateId, text)
     ElMessage.success(t('message.importSuccess'))
+    await testCaseMgmtRef.value?.refreshTestCases?.()
   } catch { /* handled */ } finally {
     input.value = ''
   }

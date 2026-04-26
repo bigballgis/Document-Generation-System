@@ -214,11 +214,19 @@ function validateJsonOrAlert(raw: string, label: string): boolean {
 async function fetchTestCases() {
   loading.value = true
   try {
-    testCases.value = await getTestCases(props.templateId)
+    const rows = await getTestCases(props.templateId)
+    testCases.value = rows
+    const merged: Record<number, TestResultDTO> = { ...resultMap.value }
+    for (const tc of rows) {
+      if (tc.lastRun) merged[tc.id] = tc.lastRun
+    }
+    resultMap.value = merged
   } catch { /* handled by interceptor */ } finally {
     loading.value = false
   }
 }
+
+defineExpose({ refreshTestCases: fetchTestCases })
 
 function openCreateDialog() {
   editingCase.value = null

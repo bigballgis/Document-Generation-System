@@ -18,6 +18,9 @@ public class TestCaseDTO {
     private Instant createdAt;
     private Instant updatedAt;
 
+    /** Latest execution result for this case (list endpoint only; omitted in export payloads). */
+    private TestResultDTO lastRun;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -41,4 +44,7 @@ public class TestCaseDTO {
 
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+
+    public TestResultDTO getLastRun() { return lastRun; }
+    public void setLastRun(TestResultDTO lastRun) { this.lastRun = lastRun; }
 }

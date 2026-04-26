@@ -63,14 +63,19 @@ public class TemplateTestService {
         testCase.setComparisonType(
                 request.getComparisonType() != null ? request.getComparisonType() : ComparisonType.VARIABLE_VALUE);
         testCase = testCaseRepository.save(testCase);
-        return toTestCaseDTO(testCase);
+        return toTestCaseDTO(testCase, null);
     }
 
     @Transactional(readOnly = true)
     public List<TestCaseDTO> listTestCases(Long templateId) {
         return testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(templateId)
                 .stream()
-                .map(this::toTestCaseDTO)
+                .map(tc -> {
+                    TestResultDTO last = testResultRepository.findFirstByTestCaseIdOrderByExecutedAtDesc(tc.getId())
+                            .map(r -> toTestResultDTO(r, tc.getName()))
+                            .orElse(null);
+                    return toTestCaseDTO(tc, last);
+                })
                 .toList();
     }
 
@@ -90,7 +95,7 @@ public class TemplateTestService {
             testCase.setComparisonType(request.getComparisonType());
         }
         testCase = testCaseRepository.save(testCase);
-        return toTestCaseDTO(testCase);
+        return toTestCaseDTO(testCase, null);
     }
 
     @Transactional
@@ -222,7 +227,7 @@ public class TemplateTestService {
     @Transactional(readOnly = true)
     public String exportTestCases(Long templateId) {
         List<TestCase> testCases = testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(templateId);
-        List<TestCaseDTO> dtos = testCases.stream().map(this::toTestCaseDTO).toList();
+        List<TestCaseDTO> dtos = testCases.stream().map(tc -> toTestCaseDTO(tc, null)).toList();
         try {
             return objectMapper.writeValueAsString(dtos);
         } catch (JsonProcessingException e) {
@@ -339,7 +344,7 @@ public class TemplateTestService {
         return objectMapper.readValue(json, Map.class);
     }
 
-    private TestCaseDTO toTestCaseDTO(TestCase entity) {
+    private TestCaseDTO toTestCaseDTO(TestCase entity, TestResultDTO lastRun) {
         TestCaseDTO dto = new TestCaseDTO();
         dto.setId(entity.getId());
         dto.setTemplateId(entity.getTemplateId());
@@ -349,6 +354,7 @@ public class TemplateTestService {
         dto.setComparisonType(entity.getComparisonType());
         dto.setCreatedAt(entity.getCreatedAt());
         dto.setUpdatedAt(entity.getUpdatedAt());
+        dto.setLastRun(lastRun);
         return dto;
     }
 

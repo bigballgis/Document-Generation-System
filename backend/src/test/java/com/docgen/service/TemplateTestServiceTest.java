@@ -45,6 +45,8 @@ class TemplateTestServiceTest {
     void setUp() {
         service = new TemplateTestService(testCaseRepository, testResultRepository, objectMapper,
                 documentGeneratorService, docxTextExtractor);
+        lenient().when(testResultRepository.findFirstByTestCaseIdOrderByExecutedAtDesc(anyLong()))
+                .thenReturn(Optional.empty());
     }
 
     // ── createTestCase ──
