@@ -43,6 +43,7 @@ This directory is the durable working package for a staged, full-project review 
 - [19-docx-identical-diff-contract.md](19-docx-identical-diff-contract.md): WS-04-T03 canonical contract for identical DOCX body text (`contentDiffs` empty, `contentChanged=false`).
 - [20-composite-coverage-variable-scan-contract.md](20-composite-coverage-variable-scan-contract.md): WS-02-T06 normative contract for composite segment variable scanning (`POST /scan-variables`); implementation WS-02-T07.
 - [21-database-migration-runbook-v30-v36-v39.md](21-database-migration-runbook-v30-v36-v39.md): WS-07-T05 runbook for Flyway V30/V36/V39 and `segment_versions` lifecycle risks.
+- [22-release-runbook.md](22-release-runbook.md): WS-07-T06 release process (pre-release, build/test, backup, deploy, smoke, rollback).
 
 ## Current Top Priorities
 

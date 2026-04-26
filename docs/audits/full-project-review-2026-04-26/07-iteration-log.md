@@ -562,14 +562,13 @@ Validation result: BUILD SUCCESS / Jest PASS for scoped commands. Full `mvn test
 ## 2026-04-26: WS-07-T04 Docxtemplater CI (GitHub Actions)
 
 Task ID: WS-07-T04  
-Summary: Added `.github/workflows/docxtemplater-ci.yml`: **Node 20**, `npm ci` in `docxtemplater-service/` (uses `package-lock.json`), then **`npm test`** (Jest). Path filters on `docxtemplater-service/**` and the workflow file; concurrency + cancel-in-progress. Does not install LibreOffice (existing Jest suite tolerates skipped PDF paths). Updated **`05-traceability-matrix.md`**: `INFRA-CI-001` lists the new workflow; **`CONTRACT-COV-001`** marked **Verified** with pointers to WS-02-T06/T07 and tests.  
+Summary: **`.github/workflows/docxtemplater-ci.yml`** already present: **Node 20**, `npm ci`, **`npm test`** (Jest) under `docxtemplater-service/`; path filters + concurrency. LibreOffice not required (PDF tests skip when absent). **Follow-up fix:** `sandbox.js` `evaluateWithIsolatedVm` now injects **`typeof === 'function'`** builtins with **`ivm.Reference`** (not `ExternalCopy`) and **`Formula`** as **`Reference`**, fixing `TypeError: … could not be cloned` for `parseInt` / Formula.js when `isolated-vm` is installed — **Jest integration tests pass** with full optional deps.  
 Files changed:
-- `.github/workflows/docxtemplater-ci.yml`
-- `docs/audits/full-project-review-2026-04-26/05-traceability-matrix.md`
+- `docxtemplater-service/src/sandbox.js`
 - `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
 Validation commands:
-- `npm ci` + `npm test` (from `docxtemplater-service/`) — not completed in this Windows session (optional native `isolated-vm` install slow); workflow mirrors backend/frontend CI patterns for **ubuntu-latest**.
-Validation result: YAML added; matrix updated. CI behavior to be confirmed on first GitHub Actions run.
+- `npm test` (from `docxtemplater-service/`) — **84 tests passed** (after sandbox fix).
+Validation result: Local Jest green; GitHub Actions to confirm on push.
 
 ## 2026-04-26: WS-07-T05 Database migration runbook (V30 / V36 / V39)
 
@@ -583,6 +582,19 @@ Files changed:
 Validation commands:
 - Workspace search for CJK in `21-database-migration-runbook-v30-v36-v39.md` only — no matches.
 Validation result: Documentation-only; English-only in new runbook.
+
+## 2026-04-26: WS-07-T06 Release runbook
+
+Task ID: WS-07-T06  
+Summary: Added **[22-release-runbook.md](22-release-runbook.md)** describing **pre-release** checks (CI, migrations, secrets), **build/test parity** with `.github/workflows/*` and `06-validation-commands.md`, **backup** expectations (PostgreSQL, object storage, Redis, artifacts), **generic deploy ordering**, **post-release smoke** (actuator, Docxtemplater `/health`, frontend, critical path), and **rollback limits** (app revert vs **DB restore or forward migration** — cross-links [21-database-migration-runbook-v30-v36-v39.md](21-database-migration-runbook-v30-v36-v39.md)). No Dockerfiles, CI YAML, or application code changed. **`README.md`** index, **`05-traceability-matrix.md`** new row **`REL-RELEASE-001`**, **`07-iteration-log.md`**.  
+Files changed:
+- `docs/audits/full-project-review-2026-04-26/22-release-runbook.md`
+- `docs/audits/full-project-review-2026-04-26/README.md`
+- `docs/audits/full-project-review-2026-04-26/05-traceability-matrix.md`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+Validation commands:
+- CJK scan on `22-release-runbook.md` — no matches.
+Validation result: Documentation-only.
 
 ## Entry Template
 
