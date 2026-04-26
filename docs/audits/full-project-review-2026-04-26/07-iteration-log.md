@@ -247,6 +247,19 @@ Validation commands:
 - `npm test` (from `docxtemplater-service/`)
 Validation result: PASS (74 tests).
 
+## 2026-04-26: WS-03-T01 Completed
+
+Task ID: WS-03-T01  
+Summary: Added ZIP import boundary characterization tests for `CompositeImportExportService.importFromZip`: non-ZIP payload, empty archive, malformed `config.json`, many ignored entry paths, zip-slip-style `segments/../segments/...` names (segment key retains `..`), 512 KiB segment buffered entirely in memory, and 200 junk entries before core files (no entry-count limit yet). Documents current lack of path/size/count enforcement ahead of `WS-03-T02`.  
+Files changed:
+- `backend/src/test/java/com/docgen/service/CompositeImportExportServiceTest.java`
+- `docs/audits/full-project-review-2026-04-26/05-traceability-matrix.md`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+Validation commands:
+- `mvn -Dtest=CompositeImportExportServiceTest test` (from `backend/`)
+Validation result: BUILD SUCCESS.  
+Notes: full `mvn test` not run (task card default; environment may still hit unrelated failures).
+
 ## 2026-04-26: Template testing hardening (ad-hoc)
 
 Summary: Aligned frontend test-case types with backend JSON (`testDataJson`, `comparisonType`, `TestReportDTO` counters). `TemplateTestService` now runs real `DocumentGeneratorService` rendering plus `DocxTextExtractor` for text assertions and SHA-256 of DOCX bytes for snapshot mode. Added `TemplateTestRenderOutcome`, composite in-memory render helper, backward-compatible Jackson aliases on `CreateTestCaseRequest`, and `testCaseName` on `TestResultDTO`. Improved template detail test UI (hints, JSON validation, result drawer).  

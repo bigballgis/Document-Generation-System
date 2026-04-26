@@ -8,6 +8,7 @@ import com.docgen.entity.ComparisonType;
 import com.docgen.entity.Template;
 import com.docgen.entity.TestCase;
 import com.docgen.exception.BusinessException;
+import com.docgen.exception.ErrorCode;
 import com.docgen.repository.TemplateRepository;
 import com.docgen.repository.TestCaseRepository;
 import com.docgen.util.TenantContext;
@@ -18,6 +19,7 @@ import io.minio.MinioClient;
 import okhttp3.Headers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -27,6 +29,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
 import java.util.zip.ZipEntry;
@@ -36,7 +39,11 @@ import java.util.zip.ZipOutputStream;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class CompositeImportExportServiceTest {
@@ -174,6 +181,129 @@ class CompositeImportExportServiceTest {
         verify(testCaseRepository, never()).save(any(TestCase.class));
     }
 
+    // ── importFromZip: ZIP boundary / path characterization (WS-03-T01) ──
+
+    @Test
+    @DisplayName("Non-ZIP bytes fail parse with IMPORT_INVALID_FILE")
+    void importFromZip_nonZipBytes_throwsImportInvalidFile() {
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "noise.zip", "application/zip", new byte[]{0x00, 0x01, 0x02, 0x03, 0x04, 0x05});
+
+        BusinessException ex = assertThrows(BusinessException.class, () -> service.importFromZip(file, 1L));
+        assertEquals(ErrorCode.IMPORT_INVALID_FILE, ex.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("Valid empty ZIP (no entries) → missing config.json")
+    void importFromZip_emptyZipArchive_throwsMissingConfig() throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+            // no entries
+        }
+        MockMultipartFile file = new MockMultipartFile("file", "empty.zip", "application/zip", baos.toByteArray());
+
+        BusinessException ex = assertThrows(BusinessException.class, () -> service.importFromZip(file, 1L));
+        assertEquals(ErrorCode.IMPORT_INVALID_FILE, ex.getErrorCode());
+        assertTrue(ex.getMessage().contains("config.json"));
+    }
+
+    @Test
+    @DisplayName("Malformed config.json → parse error mapped to IMPORT_INVALID_FILE")
+    void importFromZip_malformedConfigJson_throwsImportInvalidFile() throws Exception {
+        byte[] zipBytes = buildZipWithRawEntry("config.json", "{ not valid json ".getBytes(StandardCharsets.UTF_8),
+                Map.of("segments/intro.docx", new byte[]{0x50, 0x4B, 0x03, 0x04}));
+        MockMultipartFile file = new MockMultipartFile("file", "bad-config.zip", "application/zip", zipBytes);
+
+        BusinessException ex = assertThrows(BusinessException.class, () -> service.importFromZip(file, 1L));
+        assertEquals(ErrorCode.IMPORT_INVALID_FILE, ex.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("Unexpected entry paths are ignored; valid segments still import")
+    void importFromZip_unexpectedPathsIgnored_importSucceeds() throws Exception {
+        Map<String, byte[]> extras = new LinkedHashMap<>();
+        extras.put("readme.txt", "hello".getBytes(StandardCharsets.UTF_8));
+        extras.put("evil/../outside.docx", new byte[]{0x50, 0x4B});
+        extras.put("segments/readme.txt", "x".getBytes(StandardCharsets.UTF_8));
+        extras.put("headers/notes.txt", "y".getBytes(StandardCharsets.UTF_8));
+        extras.put("footers/readme.md", "z".getBytes(StandardCharsets.UTF_8));
+        byte[] zipBytes = buildMinimalImportZipWithExtras(extras);
+
+        Template saved = createCompositeTemplate(99L, "Imported");
+        when(templateRepository.save(any(Template.class))).thenReturn(saved);
+
+        TemplateDTO result = service.importFromZip(
+                new MockMultipartFile("file", "mixed.zip", "application/zip", zipBytes), 1L);
+
+        assertNotNull(result);
+        verify(minioClient, atLeastOnce()).putObject(any());
+    }
+
+    @Test
+    @DisplayName("Zip-slip-style entry name is accepted; segment key contains '..' (pre-hardening behavior)")
+    void importFromZip_segmentPathWithDotDot_preservesSegmentNameForUpload() throws Exception {
+        byte[] zipBytes = buildZipWithRawEntry(
+                "config.json",
+                objectMapper.writeValueAsBytes(minimalExportConfig()),
+                Map.of("segments/../segments/slip.docx", new byte[]{0x50, 0x4B, 0x03, 0x04}));
+        MockMultipartFile file = new MockMultipartFile("file", "slip.zip", "application/zip", zipBytes);
+
+        Template saved = createCompositeTemplate(88L, "Slip");
+        when(templateRepository.save(any(Template.class))).thenReturn(saved);
+
+        TemplateDTO result = service.importFromZip(file, 1L);
+        assertNotNull(result);
+        verify(minioClient, atLeastOnce()).putObject(any());
+    }
+
+    @Test
+    @DisplayName("Large in-memory segment entry is fully buffered via readAllBytes (OOM risk documented for WS-03-T02)")
+    void importFromZip_largeSegmentEntry_importSucceeds() throws Exception {
+        int size = 512 * 1024;
+        byte[] big = new byte[size];
+        big[0] = 0x50;
+        big[1] = 0x4B;
+        byte[] zipBytes = buildZipWithRawEntry(
+                "config.json",
+                objectMapper.writeValueAsBytes(minimalExportConfig()),
+                Map.of("segments/intro.docx", big));
+        MockMultipartFile file = new MockMultipartFile("file", "big.zip", "application/zip", zipBytes);
+
+        Template saved = createCompositeTemplate(77L, "Big");
+        when(templateRepository.save(any(Template.class))).thenReturn(saved);
+
+        TemplateDTO result = service.importFromZip(file, 1L);
+        assertNotNull(result);
+        verify(minioClient, atLeastOnce()).putObject(any());
+    }
+
+    @Test
+    @DisplayName("Many non-matching ZIP entries still parse until valid config + segment (no entry-count cap yet)")
+    void importFromZip_manyJunkEntries_importSucceeds() throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+            for (int i = 0; i < 200; i++) {
+                zos.putNextEntry(new ZipEntry("noise/dir-" + i + "/file.txt"));
+                zos.write(("n" + i).getBytes(StandardCharsets.UTF_8));
+                zos.closeEntry();
+            }
+            byte[] configBytes = objectMapper.writeValueAsBytes(minimalExportConfig());
+            zos.putNextEntry(new ZipEntry("config.json"));
+            zos.write(configBytes);
+            zos.closeEntry();
+            zos.putNextEntry(new ZipEntry("segments/intro.docx"));
+            zos.write(new byte[]{0x50, 0x4B, 0x03, 0x04});
+            zos.closeEntry();
+        }
+        MockMultipartFile file = new MockMultipartFile("file", "many.zip", "application/zip", baos.toByteArray());
+
+        Template saved = createCompositeTemplate(66L, "Many");
+        when(templateRepository.save(any(Template.class))).thenReturn(saved);
+
+        assertNotNull(service.importFromZip(file, 1L));
+        verify(minioClient, atLeastOnce()).putObject(any());
+    }
+
     // ── Helper methods ──
 
     private Template createCompositeTemplate(Long id, String name) {
@@ -277,6 +407,55 @@ class CompositeImportExportServiceTest {
             }
 
             zos.finish();
+        }
+        return baos.toByteArray();
+    }
+
+    private CompositeImportExportService.CompositeExportConfig minimalExportConfig() {
+        CompositeImportExportService.CompositeExportConfig exportConfig =
+                new CompositeImportExportService.CompositeExportConfig();
+        exportConfig.setTemplateName("Imported");
+        exportConfig.setTemplateDescription("Boundary test");
+        CompositeImportExportService.CompositeExportConfig.SegmentExportEntry seg =
+                new CompositeImportExportService.CompositeExportConfig.SegmentExportEntry();
+        seg.setSegmentName("intro");
+        seg.setPosition(0);
+        seg.setEnabled(true);
+        exportConfig.setSegments(List.of(seg));
+        return exportConfig;
+    }
+
+    private byte[] buildZipWithRawEntry(String firstEntryName, byte[] firstEntryBytes,
+                                        Map<String, byte[]> additionalEntries) throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+            zos.putNextEntry(new ZipEntry(firstEntryName));
+            zos.write(firstEntryBytes);
+            zos.closeEntry();
+            for (Map.Entry<String, byte[]> e : additionalEntries.entrySet()) {
+                zos.putNextEntry(new ZipEntry(e.getKey()));
+                zos.write(e.getValue());
+                zos.closeEntry();
+            }
+        }
+        return baos.toByteArray();
+    }
+
+    private byte[] buildMinimalImportZipWithExtras(Map<String, byte[]> extrasBeforeCore) throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+            for (Map.Entry<String, byte[]> e : extrasBeforeCore.entrySet()) {
+                zos.putNextEntry(new ZipEntry(e.getKey()));
+                zos.write(e.getValue());
+                zos.closeEntry();
+            }
+            byte[] configBytes = objectMapper.writeValueAsBytes(minimalExportConfig());
+            zos.putNextEntry(new ZipEntry("config.json"));
+            zos.write(configBytes);
+            zos.closeEntry();
+            zos.putNextEntry(new ZipEntry("segments/intro.docx"));
+            zos.write(new byte[]{0x50, 0x4B, 0x03, 0x04});
+            zos.closeEntry();
         }
         return baos.toByteArray();
     }
