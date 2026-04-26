@@ -265,6 +265,11 @@ Notes: full `mvn test` not run (task card default; environment may still hit unr
 Summary: Aligned frontend test-case types with backend JSON (`testDataJson`, `comparisonType`, `TestReportDTO` counters). `TemplateTestService` now runs real `DocumentGeneratorService` rendering plus `DocxTextExtractor` for text assertions and SHA-256 of DOCX bytes for snapshot mode. Added `TemplateTestRenderOutcome`, composite in-memory render helper, backward-compatible Jackson aliases on `CreateTestCaseRequest`, and `testCaseName` on `TestResultDTO`. Improved template detail test UI (hints, JSON validation, result drawer).  
 Validation: `mvn "-Dtest=TemplateTestServiceTest" test` and `mvn -DskipTests compile` from `backend/` — BUILD SUCCESS. Frontend Vitest for `TestCaseFormDialog` hit a worker timeout in this environment (no test assertion failures observed).
 
+## 2026-04-26: Template test list pagination and workspace embedding (ad-hoc)
+
+Summary: `GET /api/templates/{id}/test-cases` now returns a Spring `Page<TestCaseDTO>` with optional `q` (name contains, case-insensitive) and standard `page`/`size`. Latest `lastRun` per case is loaded in one PostgreSQL `DISTINCT ON` query. Frontend `getTestCases` consumes `PageResult`; `TestCaseManagement` adds search, pagination, last-run column, empty-page rewind after deletes, and refresh after run. `TestStage` embeds `TestCaseManagement` under a collapse panel; Pinia `refreshTestCases` loads up to 500 rows for export summaries. Ran `git gc --prune=now`; `git push` to GitHub failed in this environment (connection timeout to github.com:443). Commits: `d5d94e4` (this batch) on top of prior template-test commits.  
+Validation: `mvn "-Dtest=TemplateTestServiceTest" test` (from `backend/`) — BUILD SUCCESS.
+
 ## Entry Template
 
 ```text
