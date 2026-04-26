@@ -101,6 +101,22 @@ public class CompositeGeneratorService {
     }
 
     /**
+     * Renders a composite template in memory for automated tests (no document persistence).
+     */
+    public TemplateTestRenderOutcome renderCompositeDocxInMemory(Long templateId, Map<String, Object> parameters) {
+        Template template = templateRepository.findById(templateId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.TEMPLATE_NOT_FOUND,
+                        "模板不存在: " + templateId, HttpStatus.NOT_FOUND));
+
+        Map<String, Object> params = parameters != null ? parameters : Collections.emptyMap();
+        Map<String, Object> data = executePipeline(template, params);
+        AssemblyConfigDTO assemblyConfig = getAssemblyConfig(template);
+        AssemblyResult assemblyResult = assemblyEngineService.assembleDocument(assemblyConfig, data);
+        byte[] docxBytes = applyWatermarkIfConfigured(template, assemblyResult.getDocumentBytes(), data);
+        return new TemplateTestRenderOutcome(data, docxBytes);
+    }
+
+    /**
      * Three-step pipeline: validate parameters → evaluate DERIVED parameters → return data context.
      */
     private Map<String, Object> executePipeline(Template template, Map<String, Object> params) {

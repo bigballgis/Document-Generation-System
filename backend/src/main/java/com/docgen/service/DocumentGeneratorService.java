@@ -2,6 +2,7 @@ package com.docgen.service;
 
 import com.docgen.dto.GenerateDocumentRequest;
 import com.docgen.dto.GenerateDocumentResponse;
+import com.docgen.dto.TemplateTestRenderOutcome;
 import com.docgen.entity.Template;
 import com.docgen.exception.BusinessException;
 import com.docgen.exception.ErrorCode;
@@ -93,6 +94,23 @@ public class DocumentGeneratorService {
         } else {
             return documentStorageService.store(template, docxBytes, "WORD", storageStrategy);
         }
+    }
+
+    /**
+     * Validates parameters, runs the pipeline, and renders DOCX in memory for template test execution.
+     * Does not persist a document record or upload output to storage.
+     */
+    public TemplateTestRenderOutcome renderForTemplateTest(long templateId, Map<String, Object> parameters) {
+        Template template = templateRepository.findById(templateId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.TEMPLATE_NOT_FOUND,
+                        "模板不存在: " + templateId, HttpStatus.NOT_FOUND));
+        Map<String, Object> params = parameters != null ? parameters : Collections.emptyMap();
+        if ("COMPOSITE".equals(template.getTemplateType())) {
+            return compositeGeneratorService.renderCompositeDocxInMemory(templateId, params);
+        }
+        Map<String, Object> data = parameterValidationService.validateAndBuildContext(templateId, params);
+        byte[] docxBytes = renderDocument(template.getTemplateFilePath(), data);
+        return new TemplateTestRenderOutcome(data, docxBytes);
     }
 
     /**

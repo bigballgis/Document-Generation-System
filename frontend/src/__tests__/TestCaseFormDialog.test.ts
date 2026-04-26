@@ -6,8 +6,8 @@ const mockCreateTestCase = vi.fn()
 const mockUpdateTestCase = vi.fn()
 
 vi.mock('@/api/market', () => ({
-  createTestCase: (...args: any[]) => mockCreateTestCase(...args),
-  updateTestCase: (...args: any[]) => mockUpdateTestCase(...args),
+  createTestCase: (...args: unknown[]) => mockCreateTestCase(...args),
+  updateTestCase: (...args: unknown[]) => mockUpdateTestCase(...args),
 }))
 
 vi.mock('vue-router', () => ({
@@ -18,9 +18,14 @@ vi.mock('vue-router', () => ({
 import TestCaseFormDialog from '@/views/template-workspace/components/TestCaseFormDialog.vue'
 
 const sampleTestCase: TestCaseDTO = {
-  id: 10, templateId: 1, name: 'Test Case 1', testData: '{"key":"value"}',
-  expectedResult: '{"result":"ok"}', compareMode: 'TEXT',
-  createdAt: '2024-01-01', updatedAt: '2024-06-01',
+  id: 10,
+  templateId: 1,
+  name: 'Test Case 1',
+  testDataJson: '{"key":"value"}',
+  expectedResultJson: '{"result":"ok"}',
+  comparisonType: 'TEXT_CONTENT',
+  createdAt: '2024-01-01',
+  updatedAt: '2024-06-01',
 }
 
 function mountDialog(props: { visible?: boolean; testCase?: TestCaseDTO | null } = {}) {
@@ -42,40 +47,34 @@ describe('TestCaseFormDialog', () => {
     mockUpdateTestCase.mockResolvedValue(sampleTestCase)
   })
 
-  // Requirement 1.4: New mode shows empty form
   it('shows empty form in create mode (testCase=null)', async () => {
     const wrapper = mountDialog({ testCase: null })
     await flushPromises()
     const vm = wrapper.vm as any
     expect(vm.form.name).toBe('')
-    expect(vm.form.testData).toBe('{}')
-    expect(vm.form.expectedResult).toBe('')
-    expect(vm.form.compareMode).toBe('VARIABLE')
+    expect(vm.form.testDataJson).toBe('{}')
+    expect(vm.form.expectedResultJson).toBe('')
+    expect(vm.form.comparisonType).toBe('VARIABLE_VALUE')
   })
 
-  // Requirement 1.6: Edit mode pre-populates form
   it('pre-populates form in edit mode', async () => {
     const wrapper = mountDialog({ visible: false, testCase: sampleTestCase })
     await flushPromises()
-    // Trigger the watch by setting visible to true
     await wrapper.setProps({ visible: true })
     await flushPromises()
     const vm = wrapper.vm as any
     expect(vm.form.name).toBe('Test Case 1')
-    expect(vm.form.testData).toBe('{"key":"value"}')
-    expect(vm.form.expectedResult).toBe('{"result":"ok"}')
-    expect(vm.form.compareMode).toBe('TEXT')
+    expect(vm.form.testDataJson).toBe('{"key":"value"}')
+    expect(vm.form.expectedResultJson).toBe('{"result":"ok"}')
+    expect(vm.form.comparisonType).toBe('TEXT_CONTENT')
   })
 
-  // Requirement 1.5: Submit in create mode calls createTestCase
   it('calls createTestCase on submit in create mode', async () => {
     const wrapper = mountDialog({ testCase: null })
     await flushPromises()
     const vm = wrapper.vm as any
     vm.form.name = 'New Test'
-    vm.form.testData = '{"a":1}'
-    // Bypass form validation by calling handleSubmit directly
-    // Mock formRef validate to resolve
+    vm.form.testDataJson = '{"a":1}'
     vm.formRef = { validate: vi.fn().mockResolvedValue(true), resetFields: vi.fn() }
     await vm.handleSubmit()
     await flushPromises()
@@ -83,7 +82,6 @@ describe('TestCaseFormDialog', () => {
     expect(wrapper.emitted('saved')).toBeTruthy()
   })
 
-  // Requirement 1.6: Submit in edit mode calls updateTestCase
   it('calls updateTestCase on submit in edit mode', async () => {
     const wrapper = mountDialog({ testCase: sampleTestCase })
     await flushPromises()
@@ -96,18 +94,16 @@ describe('TestCaseFormDialog', () => {
     expect(wrapper.emitted('saved')).toBeTruthy()
   })
 
-  // Submit failure shows error
   it('shows error message when submit fails', async () => {
     mockCreateTestCase.mockRejectedValue(new Error('Server error'))
     const wrapper = mountDialog({ testCase: null })
     await flushPromises()
     const vm = wrapper.vm as any
     vm.form.name = 'Fail Test'
-    vm.form.testData = '{"a":1}'
+    vm.form.testDataJson = '{"a":1}'
     vm.formRef = { validate: vi.fn().mockResolvedValue(true), resetFields: vi.fn() }
     await vm.handleSubmit()
     await flushPromises()
-    // Should not emit saved
     expect(wrapper.emitted('saved')).toBeFalsy()
   })
 })

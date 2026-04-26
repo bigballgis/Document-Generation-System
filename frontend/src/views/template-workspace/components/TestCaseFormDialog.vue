@@ -10,24 +10,24 @@
       <el-form-item :label="t('workspace.testing.name')" prop="name">
         <el-input v-model="form.name" maxlength="100" show-word-limit />
       </el-form-item>
-      <el-form-item :label="t('workspace.testing.compareMode')" prop="compareMode">
-        <el-select v-model="form.compareMode" style="width: 100%">
-          <el-option label="VARIABLE" value="VARIABLE" />
-          <el-option label="TEXT" value="TEXT" />
-          <el-option label="SNAPSHOT" value="SNAPSHOT" />
+      <el-form-item :label="t('workspace.testing.compareMode')" prop="comparisonType">
+        <el-select v-model="form.comparisonType" style="width: 100%">
+          <el-option :label="t('test.modeVariable')" value="VARIABLE_VALUE" />
+          <el-option :label="t('test.modeText')" value="TEXT_CONTENT" />
+          <el-option :label="t('test.modeSnapshot')" value="FILE_SNAPSHOT" />
         </el-select>
       </el-form-item>
-      <el-form-item :label="t('workspace.testing.testDataJson')" prop="testData">
+      <el-form-item :label="t('workspace.testing.testDataJson')" prop="testDataJson">
         <el-input
-          v-model="form.testData"
+          v-model="form.testDataJson"
           type="textarea"
           :rows="6"
           :placeholder="t('workspace.testing.testDataPlaceholder')"
         />
       </el-form-item>
-      <el-form-item :label="t('workspace.testing.expectedResult')" prop="expectedResult">
+      <el-form-item :label="t('workspace.testing.expectedResult')" prop="expectedResultJson">
         <el-input
-          v-model="form.expectedResult"
+          v-model="form.expectedResultJson"
           type="textarea"
           :rows="4"
           :placeholder="t('workspace.testing.expectedResultPlaceholder')"
@@ -47,7 +47,7 @@ import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { createTestCase, updateTestCase } from '@/api/market'
-import type { TestCaseDTO, CreateTestCaseRequest } from '@/api/market'
+import type { TestCaseDTO, CreateTestCaseRequest, ComparisonType } from '@/api/market'
 
 const props = defineProps<{
   visible: boolean
@@ -66,12 +66,12 @@ const saving = ref(false)
 
 const form = reactive({
   name: '',
-  testData: '{}',
-  expectedResult: '',
-  compareMode: 'VARIABLE' as 'VARIABLE' | 'TEXT' | 'SNAPSHOT',
+  testDataJson: '{}',
+  expectedResultJson: '',
+  comparisonType: 'VARIABLE_VALUE' as ComparisonType,
 })
 
-function validateJson(_rule: any, value: string, callback: (error?: Error) => void) {
+function validateJson(_rule: unknown, value: string, callback: (error?: Error) => void) {
   if (!value) { callback(); return }
   try {
     JSON.parse(value)
@@ -81,28 +81,34 @@ function validateJson(_rule: any, value: string, callback: (error?: Error) => vo
   }
 }
 
+function validateOptionalJson(_rule: unknown, value: string, callback: (error?: Error) => void) {
+  if (!value || !String(value).trim()) { callback(); return }
+  validateJson(_rule, value, callback)
+}
+
 const rules: FormRules = {
   name: [
     { required: true, message: () => t('workspace.testing.nameRequired'), trigger: 'blur' },
     { max: 100, message: () => t('workspace.testing.nameMaxLength'), trigger: 'blur' },
   ],
-  testData: [
+  testDataJson: [
     { required: true, message: () => t('workspace.testing.testDataRequired'), trigger: 'blur' },
     { validator: validateJson, trigger: 'blur' },
   ],
+  expectedResultJson: [{ validator: validateOptionalJson, trigger: 'blur' }],
 }
 
 watch(() => props.visible, (val) => {
   if (val && props.testCase) {
     form.name = props.testCase.name
-    form.testData = props.testCase.testData
-    form.expectedResult = props.testCase.expectedResult ?? ''
-    form.compareMode = props.testCase.compareMode
+    form.testDataJson = props.testCase.testDataJson ?? '{}'
+    form.expectedResultJson = props.testCase.expectedResultJson ?? ''
+    form.comparisonType = props.testCase.comparisonType
   } else if (val) {
     form.name = ''
-    form.testData = '{}'
-    form.expectedResult = ''
-    form.compareMode = 'VARIABLE'
+    form.testDataJson = '{}'
+    form.expectedResultJson = ''
+    form.comparisonType = 'VARIABLE_VALUE'
   }
 })
 
@@ -119,9 +125,9 @@ async function handleSubmit() {
   try {
     const data: CreateTestCaseRequest = {
       name: form.name,
-      testData: form.testData,
-      expectedResult: form.expectedResult || '',
-      compareMode: form.compareMode,
+      testDataJson: form.testDataJson,
+      expectedResultJson: form.expectedResultJson.trim() ? form.expectedResultJson.trim() : '{}',
+      comparisonType: form.comparisonType,
     }
     if (props.testCase) {
       await updateTestCase(props.testCase.id, data)

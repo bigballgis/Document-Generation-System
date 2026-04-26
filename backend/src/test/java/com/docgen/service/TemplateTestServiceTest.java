@@ -10,12 +10,13 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -31,12 +32,19 @@ class TemplateTestServiceTest {
     @Mock
     private TestResultRepository testResultRepository;
 
+    @Mock
+    private DocumentGeneratorService documentGeneratorService;
+
+    @Mock
+    private DocxTextExtractor docxTextExtractor;
+
     private TemplateTestService service;
     private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
     @BeforeEach
     void setUp() {
-        service = new TemplateTestService(testCaseRepository, testResultRepository, objectMapper);
+        service = new TemplateTestService(testCaseRepository, testResultRepository, objectMapper,
+                documentGeneratorService, docxTextExtractor);
     }
 
     // ── createTestCase ──
@@ -79,7 +87,6 @@ class TemplateTestServiceTest {
         CreateTestCaseRequest request = new CreateTestCaseRequest();
         request.setName("Test default");
         request.setTestDataJson("{\"x\":1}");
-        // comparisonType not set — should default to VARIABLE_VALUE
 
         TestCaseDTO result = service.createTestCase(100L, request);
         assertEquals(ComparisonType.VARIABLE_VALUE, result.getComparisonType());
@@ -152,6 +159,8 @@ class TemplateTestServiceTest {
         tc.setExpectedResultJson("{\"name\":\"John\",\"age\":\"30\"}");
         tc.setComparisonType(ComparisonType.VARIABLE_VALUE);
         when(testCaseRepository.findById(1L)).thenReturn(Optional.of(tc));
+        when(documentGeneratorService.renderForTemplateTest(eq(100L), any()))
+                .thenReturn(new TemplateTestRenderOutcome(Map.of("name", "John", "age", "30"), new byte[]{1, 2, 3}));
         when(testResultRepository.save(any(TestResult.class))).thenAnswer(inv -> {
             TestResult r = inv.getArgument(0);
             r.setId(10L);
@@ -160,6 +169,7 @@ class TemplateTestServiceTest {
 
         TestResultDTO result = service.runTestCase(1L);
         assertEquals(TestStatus.PASSED, result.getStatus());
+        assertEquals("TC", result.getTestCaseName());
         assertNull(result.getDiffDetails());
     }
 
@@ -170,6 +180,8 @@ class TemplateTestServiceTest {
         tc.setExpectedResultJson("{\"name\":\"Jane\"}");
         tc.setComparisonType(ComparisonType.VARIABLE_VALUE);
         when(testCaseRepository.findById(1L)).thenReturn(Optional.of(tc));
+        when(documentGeneratorService.renderForTemplateTest(eq(100L), any()))
+                .thenReturn(new TemplateTestRenderOutcome(Map.of("name", "John"), new byte[]{1}));
         when(testResultRepository.save(any(TestResult.class))).thenAnswer(inv -> {
             TestResult r = inv.getArgument(0);
             r.setId(11L);
@@ -185,10 +197,14 @@ class TemplateTestServiceTest {
     @Test
     void runTestCase_textContent_passed() {
         TestCase tc = createSampleTestCase(1L, 100L, "TC");
-        tc.setTestDataJson("{\"_textContent\":\"Hello World\"}");
+        tc.setTestDataJson("{}");
         tc.setExpectedResultJson("{\"_textContent\":\"Hello World\"}");
         tc.setComparisonType(ComparisonType.TEXT_CONTENT);
         when(testCaseRepository.findById(1L)).thenReturn(Optional.of(tc));
+        when(documentGeneratorService.renderForTemplateTest(eq(100L), any()))
+                .thenReturn(new TemplateTestRenderOutcome(Map.of(), new byte[]{9}));
+        when(docxTextExtractor.extractText(any(), anyInt()))
+                .thenReturn(new ExtractedText("Hello World", false));
         when(testResultRepository.save(any(TestResult.class))).thenAnswer(inv -> {
             TestResult r = inv.getArgument(0);
             r.setId(12L);
@@ -202,10 +218,14 @@ class TemplateTestServiceTest {
     @Test
     void runTestCase_textContent_failed() {
         TestCase tc = createSampleTestCase(1L, 100L, "TC");
-        tc.setTestDataJson("{\"_textContent\":\"Hello\"}");
+        tc.setTestDataJson("{}");
         tc.setExpectedResultJson("{\"_textContent\":\"World\"}");
         tc.setComparisonType(ComparisonType.TEXT_CONTENT);
         when(testCaseRepository.findById(1L)).thenReturn(Optional.of(tc));
+        when(documentGeneratorService.renderForTemplateTest(eq(100L), any()))
+                .thenReturn(new TemplateTestRenderOutcome(Map.of(), new byte[]{9}));
+        when(docxTextExtractor.extractText(any(), anyInt()))
+                .thenReturn(new ExtractedText("Hello", false));
         when(testResultRepository.save(any(TestResult.class))).thenAnswer(inv -> {
             TestResult r = inv.getArgument(0);
             r.setId(13L);
@@ -219,13 +239,15 @@ class TemplateTestServiceTest {
 
     @Test
     void runTestCase_fileSnapshot_passed() {
-        String content = "file content";
-        String hash = service.computeHash(content);
+        byte[] bytes = "file content".getBytes(StandardCharsets.UTF_8);
+        String hash = service.computeHashBytes(bytes);
         TestCase tc = createSampleTestCase(1L, 100L, "TC");
-        tc.setTestDataJson("{\"_fileContent\":\"" + content + "\"}");
+        tc.setTestDataJson("{}");
         tc.setExpectedResultJson("{\"_snapshotHash\":\"" + hash + "\"}");
         tc.setComparisonType(ComparisonType.FILE_SNAPSHOT);
         when(testCaseRepository.findById(1L)).thenReturn(Optional.of(tc));
+        when(documentGeneratorService.renderForTemplateTest(eq(100L), any()))
+                .thenReturn(new TemplateTestRenderOutcome(Map.of(), bytes));
         when(testResultRepository.save(any(TestResult.class))).thenAnswer(inv -> {
             TestResult r = inv.getArgument(0);
             r.setId(14L);
@@ -239,10 +261,12 @@ class TemplateTestServiceTest {
     @Test
     void runTestCase_fileSnapshot_failed() {
         TestCase tc = createSampleTestCase(1L, 100L, "TC");
-        tc.setTestDataJson("{\"_fileContent\":\"abc\"}");
+        tc.setTestDataJson("{}");
         tc.setExpectedResultJson("{\"_snapshotHash\":\"wrong_hash\"}");
         tc.setComparisonType(ComparisonType.FILE_SNAPSHOT);
         when(testCaseRepository.findById(1L)).thenReturn(Optional.of(tc));
+        when(documentGeneratorService.renderForTemplateTest(eq(100L), any()))
+                .thenReturn(new TemplateTestRenderOutcome(Map.of(), "abc".getBytes(StandardCharsets.UTF_8)));
         when(testResultRepository.save(any(TestResult.class))).thenAnswer(inv -> {
             TestResult r = inv.getArgument(0);
             r.setId(15L);
@@ -278,6 +302,14 @@ class TemplateTestServiceTest {
                 .thenReturn(List.of(tc1, tc2));
         when(testCaseRepository.findById(1L)).thenReturn(Optional.of(tc1));
         when(testCaseRepository.findById(2L)).thenReturn(Optional.of(tc2));
+        when(documentGeneratorService.renderForTemplateTest(eq(100L), argThat(m -> true)))
+                .thenAnswer(inv -> {
+                    Map<String, Object> p = inv.getArgument(1);
+                    if (p.containsKey("name") && "John".equals(String.valueOf(p.get("name")))) {
+                        return new TemplateTestRenderOutcome(Map.of("name", "John"), new byte[]{1});
+                    }
+                    return new TemplateTestRenderOutcome(Map.of(), new byte[]{1});
+                });
         when(testResultRepository.save(any(TestResult.class))).thenAnswer(inv -> {
             TestResult r = inv.getArgument(0);
             r.setId(r.getTestCaseId() * 10);
@@ -347,6 +379,12 @@ class TemplateTestServiceTest {
         String h2 = service.computeHash("test");
         assertEquals(h1, h2);
         assertNotEquals(h1, service.computeHash("other"));
+    }
+
+    @Test
+    void computeHashBytes_deterministic() {
+        byte[] b = "x".getBytes(StandardCharsets.UTF_8);
+        assertEquals(service.computeHashBytes(b), service.computeHashBytes(b));
     }
 
     // ── Helpers ──

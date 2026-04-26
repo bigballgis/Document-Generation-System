@@ -11,6 +11,8 @@ public class TestResultDTO {
 
     private Long id;
     private Long testCaseId;
+    /** Display name of the test case (denormalized for report tables). */
+    private String testCaseName;
     private TestStatus status;
     private String actualResultJson;
     private String diffDetails;
@@ -21,6 +23,9 @@ public class TestResultDTO {
 
     public Long getTestCaseId() { return testCaseId; }
     public void setTestCaseId(Long testCaseId) { this.testCaseId = testCaseId; }
+
+    public String getTestCaseName() { return testCaseName; }
+    public void setTestCaseName(String testCaseName) { this.testCaseName = testCaseName; }
 
     public TestStatus getStatus() { return status; }
     public void setStatus(TestStatus status) { this.status = status; }

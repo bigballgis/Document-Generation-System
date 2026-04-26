@@ -29,42 +29,52 @@ export interface ShareRequest {
   scope: 'TENANT_INTERNAL' | 'GLOBAL'
 }
 
-// --- Test Case Types ---
+// --- Test Case Types (aligned with backend JSON field names) ---
+
+export type ComparisonType = 'VARIABLE_VALUE' | 'TEXT_CONTENT' | 'FILE_SNAPSHOT'
 
 export interface TestCaseDTO {
   id: number
   templateId: number
   name: string
-  testData: string
-  expectedResult: string
-  compareMode: 'VARIABLE' | 'TEXT' | 'SNAPSHOT'
+  testDataJson: string
+  expectedResultJson: string | null
+  comparisonType: ComparisonType
   createdAt: string
   updatedAt: string
 }
 
 export interface CreateTestCaseRequest {
   name: string
-  testData: string
-  expectedResult: string
-  compareMode: 'VARIABLE' | 'TEXT' | 'SNAPSHOT'
+  testDataJson: string
+  /** Use "{}" when no expectations are defined. */
+  expectedResultJson?: string | null
+  comparisonType: ComparisonType
 }
 
+export type TestStatus = 'PASSED' | 'FAILED'
+
 export interface TestResultDTO {
+  id: number
   testCaseId: number
-  testCaseName: string
-  passed: boolean
-  actualResult?: string
-  diffDetails?: string
+  testCaseName?: string | null
+  status: TestStatus
+  actualResultJson?: string | null
+  diffDetails?: string | null
   executedAt: string
 }
 
 export interface TestReportDTO {
   templateId: number
-  totalCases: number
-  passedCases: number
-  failedCases: number
+  totalCount: number
+  passedCount: number
+  failedCount: number
   results: TestResultDTO[]
   executedAt: string
+}
+
+export function isTestPassed(result: TestResultDTO): boolean {
+  return result.status === 'PASSED'
 }
 
 // --- Scheduled Task Types ---
