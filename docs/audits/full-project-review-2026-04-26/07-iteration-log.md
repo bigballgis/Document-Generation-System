@@ -303,7 +303,20 @@ Files changed:
 Validation commands:
 - `rg "[\\p{Han}]" docs/audits/full-project-review-2026-04-26/19-docx-identical-diff-contract.md docs/segment-version-api.md` (scoped to new/edited English sections; full path per task card still matches legacy Chinese under `.kiro/specs/docx-content-diff/requirements.md`)
 Validation result: no Han characters in `19-docx-identical-diff-contract.md` or in the newly added `segment-version-api.md` paragraphs (verified via search).  
-Notes: **WS-04-T04** is a no-op if implementation already matches this contract (current `ContentDiffService` does). Next: **WS-04-T04** (verify alignment) or **WS-04-T05** per execution sequence.
+Notes: Implementation alignment for **WS-04-T04** recorded in a follow-up entry below.
+
+## 2026-04-26: WS-04-T04 Completed
+
+Task ID: WS-04-T04  
+Summary: Confirmed `ContentDiffService.computeContentDiff` already matches WS-04-T03 (short-circuit on `String.equals`, empty `lines`, `contentChanged=false`, truncation preserved). Documented the contract on the public method with Javadoc; added `computeContentDiff_identicalEmptyExtractedText_returnsEmptyLinesAndNoContentChange` so identical **empty** extracted bodies are explicitly covered (contrasts with `computeLineDiff` both-empty, which is never invoked on that path).  
+Files changed:
+- `backend/src/main/java/com/docgen/service/ContentDiffService.java`
+- `backend/src/test/java/com/docgen/service/ContentDiffServiceTest.java`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+Validation commands:
+- `mvn -Dtest=ContentDiffServiceTest test` (from `backend/`)
+Validation result: BUILD SUCCESS (12 tests).  
+Notes: full `mvn test` not run (task card default). Next: **WS-04-T05** (docx XML parse failure semantics).
 
 ## 2026-04-26: WS-03-T01 Completed
 

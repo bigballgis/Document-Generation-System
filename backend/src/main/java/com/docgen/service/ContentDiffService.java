@@ -34,6 +34,13 @@ public class ContentDiffService {
 
     /**
      * Compute content diff between two .docx files stored in MinIO.
+     * <p>
+     * <strong>Identical-text contract (WS-04-T03):</strong> When extracted plain text is equal
+     * ({@link String#equals(Object)}), this method returns an empty {@code lines} list,
+     * {@code contentChanged=false}, and does not run the line diff algorithm (no synthetic
+     * {@code EQUAL} rows). {@code truncated} is still {@code true} if either extraction was truncated.
+     * Package-private {@link #computeLineDiff(String, String)} is only used when texts differ.
+     * </p>
      *
      * @param oldFilePath old version file path in MinIO
      * @param newFilePath new version file path in MinIO

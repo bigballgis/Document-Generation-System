@@ -19,7 +19,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link ContentDiffService} line diff and MinIO-backed diff entry points.
- * WS-04-T01: characterize current behavior before diff contract changes.
+ * WS-04-T01: baseline characterization; WS-04-T03/T04: identical-text API contract (empty lines when equal).
  */
 @ExtendWith(MockitoExtension.class)
 class ContentDiffServiceTest {
@@ -102,6 +102,19 @@ class ContentDiffServiceTest {
         assertFalse(result.truncated());
         verify(textExtractor).extractTextFromMinio(OLD_PATH);
         verify(textExtractor).extractTextFromMinio(NEW_PATH);
+    }
+
+    /** WS-04-T03/T04: empty extracted bodies are still "identical" — no EQUAL rows materialized. */
+    @Test
+    void computeContentDiff_identicalEmptyExtractedText_returnsEmptyLinesAndNoContentChange() {
+        when(textExtractor.extractTextFromMinio(eq(OLD_PATH))).thenReturn(new ExtractedText("", false));
+        when(textExtractor.extractTextFromMinio(eq(NEW_PATH))).thenReturn(new ExtractedText("", false));
+
+        ContentDiffResult result = service.computeContentDiff(OLD_PATH, NEW_PATH);
+
+        assertTrue(result.lines().isEmpty());
+        assertFalse(result.contentChanged());
+        assertFalse(result.truncated());
     }
 
     @Test
