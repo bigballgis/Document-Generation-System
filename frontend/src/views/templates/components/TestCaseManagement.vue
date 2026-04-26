@@ -1,6 +1,6 @@
 <template>
   <div class="test-case-management">
-    <el-alert type="info" show-icon :closable="false" class="hint-alert">
+    <el-alert v-if="!hideIntro" type="info" show-icon :closable="false" class="hint-alert">
       <template #title>{{ $t('test.hintTitle') }}</template>
       <p class="hint-body">{{ $t('test.hintBody') }}</p>
     </el-alert>
@@ -165,7 +165,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, withDefaults } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { VideoPlay, QuestionFilled } from '@element-plus/icons-vue'
@@ -177,7 +177,9 @@ import {
   type ComparisonType,
 } from '@/api/market'
 
-const props = defineProps<{ templateId: number }>()
+const props = withDefaults(defineProps<{ templateId: number; hideIntro?: boolean }>(), {
+  hideIntro: false,
+})
 const { t } = useI18n()
 
 const loading = ref(false)

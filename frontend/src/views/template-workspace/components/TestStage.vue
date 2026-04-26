@@ -41,7 +41,7 @@
     <el-collapse v-if="store.templateId" class="saved-tests-collapse">
       <el-collapse-item :title="t('workspace.testing.savedTestCasesTitle')" name="saved">
         <div class="saved-tests-body">
-          <TestCaseManagement :template-id="store.templateId" />
+          <TestCaseManagement :template-id="store.templateId" hide-intro />
         </div>
       </el-collapse-item>
     </el-collapse>

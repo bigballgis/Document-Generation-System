@@ -270,6 +270,11 @@ Validation: `mvn "-Dtest=TemplateTestServiceTest" test` and `mvn -DskipTests com
 Summary: `GET /api/templates/{id}/test-cases` now returns a Spring `Page<TestCaseDTO>` with optional `q` (name contains, case-insensitive) and standard `page`/`size`. Latest `lastRun` per case is loaded in one PostgreSQL `DISTINCT ON` query. Frontend `getTestCases` consumes `PageResult`; `TestCaseManagement` adds search, pagination, last-run column, empty-page rewind after deletes, and refresh after run. `TestStage` embeds `TestCaseManagement` under a collapse panel; Pinia `refreshTestCases` loads up to 500 rows for export summaries. Ran `git gc --prune=now`; `git push` to GitHub failed in this environment (connection timeout to github.com:443). Commits: `d5d94e4` (this batch) on top of prior template-test commits.  
 Validation: `mvn "-Dtest=TemplateTestServiceTest" test` (from `backend/`) — BUILD SUCCESS.
 
+## 2026-04-26: Template test mocks and workspace UX (ad-hoc)
+
+Summary: Vitest mocks for `getTestCases` now return a `PageResult` shape (fixes `refreshTestCases` using `.content`). Added `getTestCases` contract test in `market-extensions.test.ts`. `TestCaseManagement` supports `hideIntro` to suppress the long info alert when embedded under workspace `TestStage`.  
+Validation: `npx vitest run src/__tests__/api/market-extensions.test.ts src/__tests__/views/TemplateWorkspaceIndex.test.ts` (from `frontend/`) — passed.
+
 ## Entry Template
 
 ```text

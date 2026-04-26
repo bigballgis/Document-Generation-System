@@ -27,7 +27,9 @@ vi.mock('@/api/parameters', () => ({
 }))
 
 vi.mock('@/api/market', () => ({
-  getTestCases: vi.fn().mockResolvedValue([]),
+  getTestCases: vi.fn().mockResolvedValue({
+    content: [], totalElements: 0, totalPages: 0, size: 20, number: 0,
+  }),
 }))
 
 vi.mock('@/api/admin', () => ({

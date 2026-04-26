@@ -20,7 +20,11 @@ vi.mock('@/api/composite-templates', () => ({
 
 vi.mock('@/api/parameters', () => ({ getParameters: vi.fn().mockResolvedValue([]) }))
 
-vi.mock('@/api/market', () => ({ getTestCases: vi.fn().mockResolvedValue([]) }))
+vi.mock('@/api/market', () => ({
+  getTestCases: vi.fn().mockResolvedValue({
+    content: [], totalElements: 0, totalPages: 0, size: 20, number: 0,
+  }),
+}))
 vi.mock('@/api/admin', () => ({
   getTemplateReviews: vi.fn().mockResolvedValue({ content: [], totalElements: 0 }),
   getTemplatePermissions: vi.fn().mockResolvedValue([]),

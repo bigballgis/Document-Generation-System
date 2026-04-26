@@ -12,7 +12,7 @@ vi.mock('@/api/request', () => ({
   },
 }))
 
-import { exportTestCases, importTestCases } from '@/api/market'
+import { exportTestCases, importTestCases, getTestCases } from '@/api/market'
 
 describe('market.ts extension functions', () => {
   beforeEach(() => {
@@ -40,6 +40,19 @@ describe('market.ts extension functions', () => {
         json,
         { headers: { 'Content-Type': 'application/json' } },
       )
+    })
+  })
+
+  describe('getTestCases', () => {
+    it('sends GET with pagination and search params', async () => {
+      mockGet.mockResolvedValue({
+        content: [], totalElements: 0, totalPages: 0, size: 10, number: 1,
+      })
+      await getTestCases(7, { page: 1, size: 10, q: '  smoke  ' })
+
+      expect(mockGet).toHaveBeenCalledWith('/templates/7/test-cases', {
+        params: { page: 1, size: 10, q: 'smoke' },
+      })
     })
   })
 })
