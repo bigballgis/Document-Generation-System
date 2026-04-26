@@ -318,6 +318,19 @@ Validation commands:
 Validation result: BUILD SUCCESS (12 tests).  
 Notes: full `mvn test` not run (task card default). Next: **WS-04-T05** (docx XML parse failure semantics).
 
+## 2026-04-26: WS-04-T05 Completed
+
+Task ID: WS-04-T05  
+Summary: `DocxTextExtractor` no longer treats **malformed `word/document.xml`** as empty text: SAX parse failures on the main document throw **`BusinessException`** with **`CONTENT_DIFF_EXTRACTION_FAILED`**. **`word/header*.xml`** and **`word/footer*.xml`** remain **best-effort** (warn and skip part) so a corrupt header does not mask body extraction. Class Javadoc documents the policy; XXE-related features unchanged (`disallow-doctype-decl`, external entities off). Tests: corrupt body XML, body with `<!DOCTYPE` (rejected), corrupt `word/header1.xml` alongside valid body.  
+Files changed:
+- `backend/src/main/java/com/docgen/service/DocxTextExtractor.java`
+- `backend/src/test/java/com/docgen/service/DocxTextExtractorTest.java`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+Validation commands:
+- `mvn -Dtest=DocxTextExtractorTest test` (from `backend/`)
+Validation result: BUILD SUCCESS (10 tests).  
+Notes: full `mvn test` not run. Next: **WS-04-T06** (concurrent segment publish).
+
 ## 2026-04-26: WS-03-T01 Completed
 
 Task ID: WS-03-T01  
@@ -401,8 +414,13 @@ Validation: `mvn -q test "-Dtest=DynamicApiServiceVersionParameterTest"` (from `
 
 ## 2026-04-26: WS-05-T04 Versioned rendering contract (documentation)
 
-Summary: Completed **WS-05-T04** (no production code). Decided and documented normative contract: synchronous `POST /api/generate/{templateId}?version=n` — `version` is **supported for validation and policy only**; **historical `template_versions` file paths are not used** for render output; generation **always** uses current `templates.template_file_path` unless WS-05-T05 supersedes. Async/batch have no `version` parameter. Added canonical English spec `docs/versioned-template-generation-contract.md`; linked from audit `18-generate-api-version-parameter-behavior.md` and `README.md`; traceability `REQ-GEN-VERSION-CONTRACT-001`.  
+Summary: Completed **WS-05-T04** (no production code). Decided and documented normative contract: synchronous `POST /api/generate/{templateId}?version=n` — `version` is **supported for validation and policy only**; **historical `template_versions` file paths are not used** for render output; generation **always** uses current `templates.template_file_path`. Async/batch have no `version` parameter. Added canonical English spec `docs/versioned-template-generation-contract.md`; linked from audit `18-generate-api-version-parameter-behavior.md` and `README.md`; traceability `REQ-GEN-VERSION-CONTRACT-001`.  
 Validation: `rg "[\\p{Han}]" docs/versioned-template-generation-contract.md` — no matches (ASCII / English only in new file).
+
+## 2026-04-26: WS-05-T05 Version parameter plumbing (contract-preserving)
+
+Summary: Implemented **WS-05-T05** per WS-05-T04 (historical **file** rendering still **not** supported). Added `DocumentGeneratorService.generateDocument(templateId, request, syncValidatedTemplateVersion)` with two-arg delegating to `null` third parameter; `DynamicApiService` passes validated `version` (or `null`); async, batch, and scheduled paths call `generateDocument(..., null)` explicitly so mocks match runtime. Logging when third argument non-null. Tests: extended `DynamicApiServiceVersionParameterTest`, new `DocumentGeneratorServiceSyncVersionRenderPathTest`, updated `ScheduledTaskServiceTest` and `BatchGenerationCompletenessPropertyTest`. Updated `docs/versioned-template-generation-contract.md` implementation section.  
+Validation: `mvn -q test "-Dtest=DynamicApiServiceVersionParameterTest,DocumentGeneratorServiceSyncVersionRenderPathTest,DocumentGeneratorServiceGenerationEligibilityTest,ScheduledTaskServiceTest,BatchGenerationCompletenessPropertyTest,TemplateTestServiceTest"` (from `backend/`) — BUILD SUCCESS.
 
 ## Entry Template
 

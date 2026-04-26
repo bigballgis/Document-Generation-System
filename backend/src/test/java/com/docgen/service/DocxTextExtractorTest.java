@@ -26,7 +26,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for {@link DocxTextExtractor} using in-memory .docx ZIP payloads (WS-04-T02).
+ * Unit tests for {@link DocxTextExtractor} using in-memory .docx ZIP payloads (WS-04-T02, WS-04-T05).
  */
 @ExtendWith(MockitoExtension.class)
 class DocxTextExtractorTest {
@@ -110,6 +110,43 @@ class DocxTextExtractorTest {
     }
 
     @Test
+    void extractText_corruptWordDocumentXml_throwsBusinessException() throws Exception {
+        byte[] docx = minimalDocx("<<<not-xml");
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> extractor.extractText(new ByteArrayInputStream(docx), 512_000));
+
+        assertEquals(ErrorCode.CONTENT_DIFF_EXTRACTION_FAILED, ex.getErrorCode());
+        assertTrue(ex.getMessage().contains("word/document.xml"));
+    }
+
+    /** DOCTYPE is rejected (XXE hardening); main part must parse or extraction fails. */
+    @Test
+    void extractText_documentXmlWithDoctype_throwsBusinessException() throws Exception {
+        String withDoctype = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><!DOCTYPE root [<!ELEMENT root ANY>]>"
+                + body("");
+        byte[] docx = minimalDocx(withDoctype);
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> extractor.extractText(new ByteArrayInputStream(docx), 512_000));
+
+        assertEquals(ErrorCode.CONTENT_DIFF_EXTRACTION_FAILED, ex.getErrorCode());
+    }
+
+    @Test
+    void extractText_corruptHeaderXml_documentStillExtracted() throws Exception {
+        byte[] docx = zipDocumentAndExtra(
+                body(singleParagraph("BodyOnly")),
+                "word/header1.xml",
+                "<<<invalid".getBytes(StandardCharsets.UTF_8));
+
+        ExtractedText out = extractor.extractText(new ByteArrayInputStream(docx), 512_000);
+
+        assertEquals("BodyOnly", out.text());
+        assertFalse(out.truncated());
+    }
+
+    @Test
     void extractTextFromMinio_delegatesToGetObject() throws Exception {
         byte[] docx = minimalDocx(body(singleParagraph("FromMinio")));
         GetObjectResponse response = new GetObjectResponse(
@@ -143,6 +180,21 @@ class DocxTextExtractorTest {
         try (ZipOutputStream zos = new ZipOutputStream(baos)) {
             zos.putNextEntry(new ZipEntry(path));
             zos.write(content);
+            zos.closeEntry();
+        }
+        return baos.toByteArray();
+    }
+
+    /** Two ZIP entries: {@code word/document.xml} then an extra part (e.g. header). */
+    private static byte[] zipDocumentAndExtra(String documentXmlUtf8, String extraPath, byte[] extraContent)
+            throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+            zos.putNextEntry(new ZipEntry("word/document.xml"));
+            zos.write(documentXmlUtf8.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+            zos.putNextEntry(new ZipEntry(extraPath));
+            zos.write(extraContent);
             zos.closeEntry();
         }
         return baos.toByteArray();

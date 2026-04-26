@@ -26,6 +26,12 @@ import java.util.zip.ZipInputStream;
 /**
  * Extracts plain text from .docx files using JDK ZipInputStream + SAXParser.
  * No Apache POI dependency required.
+ * <p>
+ * Parse failure policy: {@code word/document.xml} must parse successfully or extraction fails with
+ * {@link ErrorCode#CONTENT_DIFF_EXTRACTION_FAILED}. Header/footer parts ({@code word/header*.xml},
+ * {@code word/footer*.xml}) are best-effort: parse errors are logged and skipped so a corrupt header
+ * does not hide body text.
+ * </p>
  */
 @Component
 public class DocxTextExtractor {
@@ -69,7 +75,7 @@ public class DocxTextExtractor {
                         foundDocumentXml = true;
                     }
                     byte[] xmlBytes = readAllBytes(zis);
-                    String partText = parseXmlText(xmlBytes);
+                    String partText = parseXmlText(xmlBytes, name);
                     if (!partText.isEmpty()) {
                         if (result.length() > 0 && result.charAt(result.length() - 1) != '\n') {
                             result.append('\n');
@@ -176,7 +182,11 @@ public class DocxTextExtractor {
         return baos.toByteArray();
     }
 
-    private String parseXmlText(byte[] xmlBytes) {
+    /**
+     * @param zipEntryName ZIP entry path (e.g. {@code word/document.xml}) for failure policy
+     */
+    private String parseXmlText(byte[] xmlBytes, String zipEntryName) {
+        boolean mainDocument = "word/document.xml".equals(zipEntryName);
         try {
             SAXParserFactory factory = SAXParserFactory.newInstance();
             // XXE protection
@@ -188,7 +198,12 @@ public class DocxTextExtractor {
             parser.parse(new ByteArrayInputStream(xmlBytes), handler);
             return handler.getText();
         } catch (Exception e) {
-            log.warn("Failed to parse XML content: {}", e.getMessage());
+            if (mainDocument) {
+                throw new BusinessException(ErrorCode.CONTENT_DIFF_EXTRACTION_FAILED,
+                        "Failed to parse " + zipEntryName + ": " + e.getMessage(),
+                        HttpStatus.INTERNAL_SERVER_ERROR, e);
+            }
+            log.warn("Skipping unreadable OOXML part {}: {}", zipEntryName, e.getMessage());
             return "";
         }
     }
