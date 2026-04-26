@@ -119,6 +119,8 @@ onlyoffice:
     # Keep this aligned with your OnlyOffice Document Server base URL host.
     allowed-hosts: ${ONLYOFFICE_CALLBACK_ALLOWED_HOSTS:}
     max-download-bytes: ${ONLYOFFICE_CALLBACK_MAX_DOWNLOAD_BYTES:20971520}
+    # Optional CIDR allowlist for Document Server -> app callbacks (remoteAddr). Empty = disabled.
+    allowed-source-cidrs: []
     # Main template callback returns JSON {"error":0} on success/ack and {"error":1} when a save
     # was rejected (invalid JWT, disallowed download URL, empty download, missing template).
 

@@ -2,6 +2,7 @@ package com.docgen.config;
 
 import com.docgen.filter.ApiKeyAuthenticationFilter;
 import com.docgen.filter.JwtAuthenticationFilter;
+import com.docgen.filter.OnlyOfficeCallbackIpFilter;
 import com.docgen.filter.RateLimitFilter;
 import com.docgen.filter.TenantIsolationFilter;
 import org.junit.jupiter.api.Test;
@@ -22,8 +23,10 @@ class SecurityConfigTest {
     private final ApiKeyAuthenticationFilter apiKeyFilter = mock(ApiKeyAuthenticationFilter.class);
     private final TenantIsolationFilter tenantFilter = mock(TenantIsolationFilter.class);
     private final RateLimitFilter rateLimitFilter = mock(RateLimitFilter.class);
+    private final OnlyOfficeCallbackIpFilter onlyOfficeCallbackIpFilter = mock(OnlyOfficeCallbackIpFilter.class);
 
-    private final SecurityConfig config = new SecurityConfig(jwtFilter, apiKeyFilter, tenantFilter, rateLimitFilter);
+    private final SecurityConfig config = new SecurityConfig(
+            jwtFilter, apiKeyFilter, tenantFilter, rateLimitFilter, onlyOfficeCallbackIpFilter);
 
     @Test
     void passwordEncoderReturnsBCrypt() {

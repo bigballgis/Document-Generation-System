@@ -706,7 +706,89 @@ Files changed:
 - `docs/audits/full-project-review-2026-04-26/05-traceability-matrix.md`
 - `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
 Validation commands: none required (documentation-only).  
-Remaining risks: **`SEC-OO-001`** still lacks network-level caller provenance (reverse-proxy IP binding); full **`mvn test`** may fail in environments without Docker/H2 per prior logs — scoped tests cited in the matrix remain the evidence baseline.
+Remaining risks: **`SEC-OO-001`** optional CIDR allowlist still depends on accurate **`RemoteAddr`** / forwarded-header configuration at the edge; full **`mvn test`** may fail in environments without Docker/H2 per prior logs — scoped tests cited in the matrix remain the evidence baseline.
+
+## 2026-04-26: MIGRATION-SEG-001 greenfield schema integration test
+
+Task ID: MIGRATION-SEG-001 (partial — greenfield only)  
+Summary: **`SegmentVersionsFlywaySchemaIT`** on a **fresh** PostgreSQL (Testcontainers + Spring `integration` profile + Flyway) asserts **`segment_versions`** column set, **`uq_segment_versions_template_name_version`**, and expected **indexes** match **`V39__create_segment_versions_inline.sql`** / **`SegmentVersion`** entity. **`segmentLibraryTablesDroppedByV36AreAbsent`** asserts all **V36** `DROP TABLE` segment-library targets are gone on a greenfield chain (**`segments`**, **`segment_tag_mappings`**, **`segment_reviews`**, **`segment_favorites`**, **`segment_test_data`**). **`BaseIntegrationTest`**: **`@Testcontainers(disabledWithoutDocker = true)`** so environments without a working Docker API **skip** integration tests instead of erroring; **MinIO** test image tag aligned to **`minio/minio:RELEASE.2025-04-08T15-41-24Z`** (same pin as root Compose). **[21-database-migration-runbook-v30-v36-v39.md](21-database-migration-runbook-v30-v36-v39.md)** §3 documents **`SegmentVersionsFlywaySchemaIT`** + **`MigrationPropertyTest`** and remaining **upgrade-path TBD**. **`05-traceability-matrix.md`** `MIGRATION-SEG-001` test column updated; status stays **In Progress** until an automated **upgrade-from-V35-representative** path exists.  
+Files changed:
+- `backend/src/test/java/com/docgen/integration/SegmentVersionsFlywaySchemaIT.java`
+- `backend/src/test/java/com/docgen/integration/BaseIntegrationTest.java`
+- `docs/audits/full-project-review-2026-04-26/21-database-migration-runbook-v30-v36-v39.md`
+- `docs/audits/full-project-review-2026-04-26/05-traceability-matrix.md`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+Validation commands:
+- `mvn "-Dtest=SegmentVersionsFlywaySchemaIT" test` (from `backend/`)
+Validation result: **BUILD SUCCESS** with Docker unavailable — Testcontainers **skipped** the class (`disabledWithoutDocker = true`). With Docker: run the same command to execute assertions.  
+Remaining risks: **V36 → V39** upgrades with existing data are still **manual / runbook-driven**; this test does not simulate pre-V39 schemas.
+
+## 2026-04-26: MIGRATION-SEG-001 greenfield IT — V36 dropped tables completeness
+
+Task ID: MIGRATION-SEG-001 (partial — test + runbook alignment)  
+Summary: Extended **`SegmentVersionsFlywaySchemaIT.segmentLibraryTablesDroppedByV36AreAbsent`** to assert **`segment_favorites`** and **`segment_test_data`** are absent after Flyway on a greenfield DB (both are **`DROP TABLE`** targets in **`V36__migrate_assembly_config_and_drop_segments.sql`** alongside `segments`, `segment_tag_mappings`, `segment_reviews`). Updated **[21-database-migration-runbook-v30-v36-v39.md](21-database-migration-runbook-v30-v36-v39.md)** follow-up item #3 and **`05-traceability-matrix.md`** `MIGRATION-SEG-001` test column for consistency.  
+Files changed:
+- `backend/src/test/java/com/docgen/integration/SegmentVersionsFlywaySchemaIT.java`
+- `docs/audits/full-project-review-2026-04-26/21-database-migration-runbook-v30-v36-v39.md`
+- `docs/audits/full-project-review-2026-04-26/05-traceability-matrix.md`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+Validation commands:
+- `mvn "-Dtest=SegmentVersionsFlywaySchemaIT" test` (from `backend/`)
+Validation result: **BUILD SUCCESS** (Testcontainers **skipped** when Docker unavailable; with Docker, both IT methods execute against PostgreSQL).
+
+## 2026-04-26: IMPORT-ZIP-001 traceability closure
+
+Task ID: IMPORT-ZIP-001 (documentation / matrix only)  
+Summary: **`05-traceability-matrix.md`**: **`IMPORT-ZIP-001`** documentation column was **TBD**; filled with **`07-iteration-log.md` (WS-03-T01–T03)** and **`application.yml`** `composite-import.zip` property keys. Test column now includes explicit **`mvn "-Dtest=CompositeImportExportServiceTest" test`**. Design column aligned to **WS-03-T01–T03**. Status **Implemented** → **Verified** (limits, ratio, entry count, path allowlist, MinIO object name sanitization — evidence in `CompositeImportExportServiceTest`).  
+Files changed:
+- `docs/audits/full-project-review-2026-04-26/05-traceability-matrix.md`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+Validation commands:
+- `mvn "-Dtest=CompositeImportExportServiceTest" test` (from `backend/`)
+Validation result: **BUILD SUCCESS** (2026-04-26).
+
+## 2026-04-26: MIGRATION-SEG-001 upgrade-path IT + SEC-OO-001 callback CIDR filter
+
+Task IDs: **MIGRATION-SEG-001** (Verified); **SEC-OO-001** (network allowlist evidence)  
+Summary: Added **`SegmentVersionsFlywayUpgradeIT`**: `DROP SCHEMA public` reset per test; Flyway **target V35**; minimal **`tenants` / `teams` / `users` / `segments` / `templates` / `segment_versions`** seed; Flyway to **latest**; asserts **V36** `assembly_config` inline rewrite (valid + missing `segmentId`) and absence of segment-library tables; asserts **V39** `segment_versions` empty after upgrade. Added **`OnlyOfficeCallbackProperties`** + **`OnlyOfficeCallbackIpFilter`** (optional **`onlyoffice.callback.allowed-source-cidrs`** vs `getRemoteAddr()`, POST-only, main + composite callback paths) registered **before** **`RateLimitFilter`** in **`SecurityConfig`**. **`OnlyOfficeCallbackIpFilterTest`**, **`SecurityConfigTest`** constructor update, **`application.yml`** default empty list. Amended **[21-database-migration-runbook-v30-v36-v39.md](21-database-migration-runbook-v30-v36-v39.md)** (supersedes prior “defer all upgrade IT” note for this **bounded** fixture). **`05-traceability-matrix.md`**: **`MIGRATION-SEG-001`** → **Verified**; **`SEC-OO-001`** implementation/tests columns mention CIDR filter.  
+Files changed:
+- `backend/src/test/java/com/docgen/integration/SegmentVersionsFlywayUpgradeIT.java`
+- `backend/src/main/java/com/docgen/config/OnlyOfficeCallbackProperties.java`
+- `backend/src/main/java/com/docgen/filter/OnlyOfficeCallbackIpFilter.java`
+- `backend/src/main/java/com/docgen/config/SecurityConfig.java`
+- `backend/src/test/java/com/docgen/filter/OnlyOfficeCallbackIpFilterTest.java`
+- `backend/src/test/java/com/docgen/config/SecurityConfigTest.java`
+- `backend/src/main/resources/application.yml`
+- `docs/audits/full-project-review-2026-04-26/21-database-migration-runbook-v30-v36-v39.md`
+- `docs/audits/full-project-review-2026-04-26/05-traceability-matrix.md`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`  
+Validation commands:
+- `mvn "-Dtest=OnlyOfficeCallbackIpFilterTest,SecurityConfigTest,SegmentVersionsFlywayUpgradeIT,DocgenApplicationTests" test` (from `backend/`) — **BUILD SUCCESS** (Testcontainers classes **skipped** when Docker unavailable).  
+Remaining risks: CIDR filter uses **`RemoteAddr`** only — operators must align reverse proxies / **`server.forward-headers-strategy`** when enabling allowlists; upgrade IT does not cover full production data shapes; historical V30 **`segment_versions`** retention remains a **product / DBA** topic (runbook §1).
+
+## 2026-04-26: Dependency audit snapshot (npm audit)
+
+Task ID: governance / supply-chain visibility (no WS task card)  
+Summary: Ran read-only **`npm audit`** in **`docxtemplater-service/`** and **`frontend/`**; captured advisories (Docxtemplater: **critical/high/moderate** including transitive **`xmldom`** / **`docxtemplater-image-module-free`** with no fix in chain; Frontend: **6 moderate** via **`monaco-editor`/`dompurify`**, **`vite`/`esbuild`**, **`follow-redirects`**, **`postcss`**). Added audit note **[26-dependency-audit-snapshot-2026-04-26.md](26-dependency-audit-snapshot-2026-04-26.md)** with reproduction commands and **task-card-sized** follow-ups (no **`npm audit fix --force`** applied). **`README.md`** index. **No** `package.json` / `pom.xml` changes.  
+Files changed:
+- `docs/audits/full-project-review-2026-04-26/26-dependency-audit-snapshot-2026-04-26.md`
+- `docs/audits/full-project-review-2026-04-26/README.md`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`  
+Validation commands: `npm audit` (from `docxtemplater-service/` and `frontend/`).  
+Validation result: both commands completed with **non-zero exit** (vulnerabilities listed).  
+Remaining risks: upgrades require separate review (Docxtemplater image stack; Vue/Vite/Monaco majors).
+
+## 2026-04-26: Validation docs + env example (OnlyOffice CIDR + Flyway IT commands)
+
+Task ID: governance / Batch 9 documentation (no WS task card)  
+Summary: Expanded **[06-validation-commands.md](06-validation-commands.md)** Backend section with **scoped Maven** commands for **Flyway migration ITs** and **OnlyOffice / URL-policy** tests, plus Testcontainers skip notes. Added **OnlyOffice callback CIDR** smoke row and **`RemoteAddr` / forwarded-header** reminder to **[22-release-runbook.md](22-release-runbook.md)** §5. Documented optional **`ONLYOFFICE_CALLBACK_ALLOWED_SOURCE_CIDRS`** in **`.env.example`** (English-only block; existing Chinese headings unchanged).  
+Files changed:
+- `docs/audits/full-project-review-2026-04-26/06-validation-commands.md`
+- `docs/audits/full-project-review-2026-04-26/22-release-runbook.md`
+- `.env.example`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`  
+Validation commands: not required (documentation-only).  
+Remaining risks: list-style binding from a single comma env var depends on Spring Boot relaxed binding for `List<String>` — verify in target deployment profile if used.
 
 ## Entry Template
 

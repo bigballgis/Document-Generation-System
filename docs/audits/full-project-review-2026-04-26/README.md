@@ -47,6 +47,7 @@ This directory is the durable working package for a staged, full-project review 
 - [23-docker-image-pinning-ws-08-t01.md](23-docker-image-pinning-ws-08-t01.md): WS-08-T01 Compose upstream image pins (Euro-Office digest, MinIO `RELEASE.*`, Redis patch; local `docgen-*` tags documented).
 - [24-compose-resource-limits-ws-08-t02.md](24-compose-resource-limits-ws-08-t02.md): WS-08-T02 `deploy.resources` memory limits in root `docker-compose.yml`.
 - [25-docker-non-root-runtime-ws-08-t04.md](25-docker-non-root-runtime-ws-08-t04.md): WS-08-T04 non-root users in backend, frontend, and Docxtemplater Dockerfiles (nginx `cap_net_bind_service` for port 80).
+- [26-dependency-audit-snapshot-2026-04-26.md](26-dependency-audit-snapshot-2026-04-26.md): read-only `npm audit` snapshot for Docxtemplater and frontend; follow-up guidance (no upgrades applied in this pass).
 
 ## Current Top Priorities
 

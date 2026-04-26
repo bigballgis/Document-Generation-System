@@ -61,6 +61,7 @@ Run a **short** scripted checklist after health goes green:
 | **Docxtemplater** | `GET /health` on the Node service port. |
 | **Frontend** | Load login or static landing page; confirm no 5xx from edge. |
 | **Critical path** | Login, open one template workspace, render or generate a trivial document (tenant-scoped). |
+| **OnlyOffice callbacks** | If `onlyoffice.callback.allowed-source-cidrs` is **non-empty**, confirm Document Server (or its egress IP as seen by Spring `RemoteAddr`) is covered; otherwise callbacks return **403**. Align reverse proxies / `server.forward-headers-strategy` so `RemoteAddr` reflects the expected hop. |
 
 Record pass/fail and timestamps in the change ticket.
 

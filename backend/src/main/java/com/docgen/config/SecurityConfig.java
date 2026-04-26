@@ -2,6 +2,7 @@ package com.docgen.config;
 
 import com.docgen.filter.ApiKeyAuthenticationFilter;
 import com.docgen.filter.JwtAuthenticationFilter;
+import com.docgen.filter.OnlyOfficeCallbackIpFilter;
 import com.docgen.filter.RateLimitFilter;
 import com.docgen.filter.TenantIsolationFilter;
 import org.springframework.context.annotation.Bean;
@@ -36,6 +37,9 @@ import java.util.List;
  * Those callback paths are {@code permitAll} because Document Server cannot authenticate as an
  * application user; requests are protected by OnlyOffice JWT validation and outbound URL policy
  * inside the service layer, and return a non-zero JSON {@code error} field when validation fails.
+ * When {@code onlyoffice.callback.allowed-source-cidrs} is non-empty, {@link OnlyOfficeCallbackIpFilter}
+ * rejects callback POSTs whose {@link jakarta.servlet.http.HttpServletRequest#getRemoteAddr()} is
+ * outside all listed CIDRs before other filters run.
  * Tenant administration routes require the {@code SUPER_ADMIN} role; other {@code /api/} routes
  * require authentication.
  */
@@ -47,15 +51,18 @@ public class SecurityConfig {
     private final ApiKeyAuthenticationFilter apiKeyAuthenticationFilter;
     private final TenantIsolationFilter tenantIsolationFilter;
     private final RateLimitFilter rateLimitFilter;
+    private final OnlyOfficeCallbackIpFilter onlyOfficeCallbackIpFilter;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
                           ApiKeyAuthenticationFilter apiKeyAuthenticationFilter,
                           TenantIsolationFilter tenantIsolationFilter,
-                          RateLimitFilter rateLimitFilter) {
+                          RateLimitFilter rateLimitFilter,
+                          OnlyOfficeCallbackIpFilter onlyOfficeCallbackIpFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.apiKeyAuthenticationFilter = apiKeyAuthenticationFilter;
         this.tenantIsolationFilter = tenantIsolationFilter;
         this.rateLimitFilter = rateLimitFilter;
+        this.onlyOfficeCallbackIpFilter = onlyOfficeCallbackIpFilter;
     }
 
     @Bean
@@ -64,7 +71,8 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            // Filter chain order: RateLimit → ApiKey → JWT → TenantIsolation
+            // Filter chain order: OnlyOffice callback IP (optional) → RateLimit → ApiKey → JWT → TenantIsolation
+            .addFilterBefore(onlyOfficeCallbackIpFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterAfter(apiKeyAuthenticationFilter, RateLimitFilter.class)
             .addFilterAfter(jwtAuthenticationFilter, ApiKeyAuthenticationFilter.class)

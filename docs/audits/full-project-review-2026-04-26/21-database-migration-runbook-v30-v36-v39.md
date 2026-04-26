@@ -68,7 +68,23 @@ Take a **full logical backup** (or disk snapshot of the volume) **before** apply
 
 1. **Historical segment version payloads:** If the product requires retaining old `segment_versions` (V30) content across V36, that requires a **separate, explicit data migration design** (not present in current V36/V39 scripts). Treat as **product / DBA decision**.
 2. **R7 composite ZIP `render-config.json`:** Deferred per [17-composite-r7-render-config-scope.md](17-composite-r7-render-config-scope.md); unrelated to V30/V36/V39 DDL but may affect import/export expectations.
-3. **Automated migration tests:** `MIGRATION-SEG-001` in `05-traceability-matrix.md` still tracks Testcontainers / upgrade-path tests as **TBD**.
+3. **Automated migration tests:**
+   - **`SegmentVersionsFlywaySchemaIT`** (extends `BaseIntegrationTest`: PostgreSQL + Redis + MinIO + Spring Flyway on the **integration** profile) asserts **`segment_versions`** matches **V39** (columns, unique constraint, indexes), and that **V36-dropped** segment-library tables (**`segments`**, **`segment_tag_mappings`**, **`segment_reviews`**, **`segment_favorites`**, **`segment_test_data`**) are **absent** on a greenfield database.
+   - **`SegmentVersionsFlywayUpgradeIT`** (Testcontainers PostgreSQL + programmatic Flyway) migrates to **V35**, inserts a **minimal** composite template + **`segments`** / legacy **`segment_versions`** row, then migrates to **latest** and asserts **V36** inline rewrite (valid `segmentId` and missing `segmentId` → **`INVALID_SEGMENT_*`**) and **V39** `segment_versions` table shape. This is **not** a full production clone; it is a **bounded** regression for Flyway ordering + the `assembly_config` UPDATE.
+   - **`MigrationPropertyTest`** covers V36 **assembly_config** JSON transformation in isolation (Java simulation of the SQL step).
+   - **`@Testcontainers(disabledWithoutDocker = true)`** skips these tests when Docker is unavailable (common on laptops and some CI agents).
+
+## Engineering decision: upgrade-path automated tests (amended)
+
+**Date:** 2026-04-26 (amended same day)  
+**Status:** Supersedes the earlier “defer all upgrade-path IT” note for a **minimal** automated gate only.
+
+**Decision:** Implement **`SegmentVersionsFlywayUpgradeIT`** as described in *Unresolved decisions* §3. **Do not** claim coverage for arbitrary historical V30 `segment_versions` payloads, large permission matrices, or full application data — those still belong to **staging clones** and DBA review (*Unresolved decisions* §1).
+
+**Rationale for the amendment:**
+
+- A **small deterministic seed** after **V35** exercises the **same Flyway scripts** operators run, without inventing a full customer dump.
+- **Docker remains optional** in default `mvn test`; teams that require the gate should run Docker-backed tests in CI or locally before applying **V36** on shared environments.
 
 ## Operational checklist (upgrade)
 

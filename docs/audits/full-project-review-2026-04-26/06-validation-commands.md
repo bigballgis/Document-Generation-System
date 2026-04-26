@@ -14,11 +14,24 @@ mvn test
 mvn verify
 ```
 
+Scoped regression (faster than full `mvn test` when Docker is available):
+
+```powershell
+mvn "-Dtest=SegmentVersionsFlywaySchemaIT,SegmentVersionsFlywayUpgradeIT" test
+```
+
+```powershell
+mvn "-Dtest=OnlyOfficeCallbackIpFilterTest,OnlyOfficeServiceTest,OutboundUrlPolicyTest" test
+```
+
+Notes:
+
+- `SegmentVersionsFlywaySchemaIT` and `SegmentVersionsFlywayUpgradeIT` use Testcontainers PostgreSQL and are **skipped** when Docker is unavailable (`disabledWithoutDocker = true`).
+- `OnlyOfficeCallbackIpFilterTest` is pure unit tests and does **not** require Docker.
+
 Future additions:
 
-- Separate unit and integration test phases.
-- Flyway migration validation.
-- Testcontainers PostgreSQL migration execution.
+- Separate unit and integration test phases in CI.
 - JaCoCo coverage reports.
 
 ## Frontend
