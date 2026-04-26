@@ -1,5 +1,5 @@
 services:
-  # Vue 3 前端应用（Nginx）
+  # Vue 3 frontend (Nginx)
   frontend:
     build:
       context: ./frontend
@@ -13,8 +13,14 @@ services:
       app:
         condition: service_healthy
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 64M
 
-  # Spring Boot 主应用
+  # Spring Boot backend
   app:
     build:
       context: ./backend
@@ -60,8 +66,14 @@ services:
       docxtemplater:
         condition: service_healthy
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
 
-  # Node.js Docxtemplater 服务（含 LibreOffice）
+  # Node.js Docxtemplater service (includes LibreOffice)
   docxtemplater:
     build:
       context: ./docxtemplater-service
@@ -85,10 +97,17 @@ services:
       minio:
         condition: service_healthy
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 3G
+        reservations:
+          memory: 512M
 
   # Euro-Office Document Server (FOSS fork of OnlyOffice)
   onlyoffice:
-    image: ghcr.io/euro-office/documentserver:latest
+    # Digest-pinned (WS-08-T01); see docs/audits/full-project-review-2026-04-26/23-docker-image-pinning-ws-08-t01.md
+    image: ghcr.io/euro-office/documentserver@sha256:8e78211dd45407c92d5f60193ecb3f23be371fd3a359a65bef2f9310f09b3d0b
     ports:
       - "8443:443"
       - "8088:80"
@@ -107,8 +126,14 @@ services:
       - app
       - minio
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 1G
 
-  # PostgreSQL 数据库
+  # PostgreSQL
   postgres:
     image: postgres:16.5
     ports:
@@ -125,10 +150,16 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 256M
 
-  # Redis 缓存
+  # Redis
   redis:
-    image: redis:7.2-alpine
+    image: redis:7.2.7-alpine
     ports:
       - "6379:6379"
     command: redis-server --requirepass ${REDIS_PASSWORD}
@@ -140,10 +171,17 @@ services:
     volumes:
       - redis_data:/data
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
 
-  # MinIO 对象存储
+  # MinIO object storage
   minio:
-    image: minio/minio:latest
+    # Pinned MinIO server release (WS-08-T01); see docs/audits/full-project-review-2026-04-26/23-docker-image-pinning-ws-08-t01.md
+    image: minio/minio:RELEASE.2025-04-08T15-41-24Z
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -159,6 +197,12 @@ services:
     volumes:
       - minio_data:/data
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 256M
 
 volumes:
   postgres_data:

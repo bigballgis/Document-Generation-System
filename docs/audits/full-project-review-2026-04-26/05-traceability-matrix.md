@@ -35,6 +35,8 @@ This file tracks requirements, implementation, tests, and documentation. Every f
 | REQ-COMPOSITE-ACTIVATE-001 | Composite activation uses `TemplateStateMachineService.transition(..., ACTIVE)` after assembly checks; same DRAFT/REVIEWED rules as single templates | WS-05-T06 | `CompositeTemplateService`, `TemplateStateMachineService` | `CompositeTemplateServiceActivateTest` | `07-iteration-log.md` (WS-05-T06) | Verified |
 | FRONT-WS-06-T02 | Template workspace reloads when route template `id` changes without remount | WS-06-T02 | `Index.vue` | `TemplateWorkspaceIndex.test.ts` (WS-06-T02 describe) | `07-iteration-log.md` (WS-06-T02) | Verified |
 | REL-RELEASE-001 | Documented release process (build, test, backup, deploy, smoke, rollback) | WS-07-T06 | N/A (operational process) | GitHub Actions workflows as quality gates | [22-release-runbook.md](22-release-runbook.md) | Implemented |
+| INFRA-COMPOSE-PIN-001 | Root `docker-compose.yml` uses pinned upstream images (no `latest` for MinIO/OnlyOffice; Redis patch pin; Euro-Office digest) | WS-08-T01 | `docker-compose.yml` | `docker compose config` (syntax / merge) | [23-docker-image-pinning-ws-08-t01.md](23-docker-image-pinning-ws-08-t01.md) | Implemented |
+| INFRA-COMPOSE-LIMITS-001 | Root `docker-compose.yml` defines conservative `deploy.resources` memory limits | WS-08-T02 | `docker-compose.yml` | `docker compose config` | [24-compose-resource-limits-ws-08-t02.md](24-compose-resource-limits-ws-08-t02.md) | Verified |
 
 ## Update Rules
 

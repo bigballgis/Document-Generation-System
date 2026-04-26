@@ -596,6 +596,48 @@ Validation commands:
 - CJK scan on `22-release-runbook.md` — no matches.
 Validation result: Documentation-only.
 
+## 2026-04-26: WS-08-T03 Frontend Docker reproducibility
+
+Task ID: WS-08-T03  
+Summary: **`frontend/Dockerfile`**: build stage uses **`node:20-alpine`** (aligned with frontend CI), copies **`package.json` + `package-lock.json`**, runs **`npm ci`**, then **`npm run build`** (`vue-tsc` + `vite build` per `package.json` — type check no longer skipped in the image). Preserved **`VITE_ONLYOFFICE_URL`** / **`VITE_BACKEND_INTERNAL_URL`** args and nginx stage. Comments translated to **English**. **`Dockerfile.local`**: header comment English-only (still host `dist/` only).  
+Files changed:
+- `frontend/Dockerfile`
+- `frontend/Dockerfile.local`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+Validation commands:
+- `docker build -f frontend/Dockerfile -t docgen-frontend:test frontend` (from repo root)
+Validation result: **Not completed** — Docker Hub pull timed out in this environment (network). Dockerfile reviewed for lockfile presence and `npm ci` / `npm run build` consistency with `package-lock.json`.
+
+## 2026-04-26: WS-08-T01 Pin floating Docker image tags
+
+Task ID: WS-08-T01  
+Summary: **`docker-compose.yml`** already used pinned **MinIO** (`RELEASE.2025-04-08T15-41-24Z`), **Redis** (`7.2.7-alpine`), **PostgreSQL** (`16.5`), and **Euro-Office Document Server** (image **digest** on GHCR). Completed the audit deliverable **[23-docker-image-pinning-ws-08-t01.md](23-docker-image-pinning-ws-08-t01.md)** (registry vs local images, upgrade notes, verification expectations). Translated **Compose service comments** to **English**; aligned inline doc pointers with the new file. **`README.md`** index, **`05-traceability-matrix.md`** row **`INFRA-COMPOSE-PIN-001`**.  
+Files changed:
+- `docker-compose.yml`
+- `docs/audits/full-project-review-2026-04-26/23-docker-image-pinning-ws-08-t01.md`
+- `docs/audits/full-project-review-2026-04-26/README.md`
+- `docs/audits/full-project-review-2026-04-26/05-traceability-matrix.md`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+Validation commands:
+- `docker compose config` (from repo root)
+Validation result: **Exit code 0** — merged Compose config valid.  
+Not run: `docker compose pull` / image digest re-verification via pull (optional; previously unreliable on this network).  
+Known limitations: locally built images still use the `:latest` **label** for compose-built services (documented as non-upstream); Kubernetes manifests under `k8s/` were out of scope for this task card.
+
+## 2026-04-26: WS-08-T02 Compose resource limits
+
+Task ID: WS-08-T02  
+Summary: Added **`deploy.resources`** memory **limits** and **reservations** to all services in root **`docker-compose.yml`** (conservative values: frontend 512M, app 2G, docxtemplater 3G, onlyoffice 4G, postgres 1G, redis 512M, minio 1G). **CPU caps omitted** for laptop-friendly JVM/LO behavior. Documented in **[24-compose-resource-limits-ws-08-t02.md](24-compose-resource-limits-ws-08-t02.md)**; **`README.md`** index; **`05-traceability-matrix.md`** row **`INFRA-COMPOSE-LIMITS-001`**. Volumes unchanged.  
+Files changed:
+- `docker-compose.yml`
+- `docs/audits/full-project-review-2026-04-26/24-compose-resource-limits-ws-08-t02.md`
+- `docs/audits/full-project-review-2026-04-26/README.md`
+- `docs/audits/full-project-review-2026-04-26/05-traceability-matrix.md`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+Validation commands:
+- `docker compose config` (from repo root) — exit code 0.
+Validation result: Compose merge valid.
+
 ## Entry Template
 
 ```text
