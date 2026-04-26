@@ -346,6 +346,19 @@ Validation commands:
 Validation result: BUILD SUCCESS (7 tests).  
 Notes: full `mvn test` not run. Next: **WS-04-T07** (segment version API documentation).
 
+## 2026-04-26: WS-04-T07 Completed
+
+Task ID: WS-04-T07  
+Summary: Expanded **[segment-version-api.md](../../segment-version-api.md)** with English API reference: `SegmentVersionDTO` table; compare query params including **`includeContentDiff`** (default `false`); full **`SegmentVersionDiffResult`**, **`SegmentDiffEntry`**, and **`ContentDiffLine`** field tables; **identical-text** behavior (WS-04-T03); same-version shortcut; **truncation** and **graceful degradation** semantics for content diff; **publish** **`409`** / **`SEGMENT_VERSION_PUBLISH_CONFLICT`** (WS-04-T06). Updated traceability **`DIFF-TEST-001`** documentation column.  
+Files changed:
+- `docs/segment-version-api.md`
+- `docs/audits/full-project-review-2026-04-26/05-traceability-matrix.md`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+Validation commands:
+- PowerShell ASCII-only check on `docs/segment-version-api.md` (replaced typographic punctuation); task-card `rg "[\\p{Han}]"` not run on full audit tree.
+Validation result: documentation-only; no `mvn test`.  
+Notes: Next: **WS-04-T08** (SegmentVersionDialog tests).
+
 ## 2026-04-26: WS-03-T01 Completed
 
 Task ID: WS-03-T01  
@@ -451,6 +464,11 @@ Validation (after T02): `npx vitest run src/__tests__/views/TemplateWorkspaceInd
 
 Summary: Completed **WS-06-T02**. `Index.vue` watches `route.params.id`; on change (finite positive id) resets stage UI to design and calls `store.initWorkspace(id)`. Extracted `workspaceIdFromRoute()` for mount, retry, and consistent parsing. Tests: WS-06-T01 characterization block replaced with WS-06-T02 assertion that `initWorkspace` is invoked with the new id without remount.  
 Validation: `npx vitest run src/__tests__/views/TemplateWorkspaceIndex.test.ts` (from `frontend/`) — 5 tests passed.
+
+## 2026-04-26: WS-06-T03 OnlyOfficeEditor document prop characterization
+
+Summary: Completed **WS-06-T03**. Added `OnlyOfficeEditor.test.ts`: pre-seeds a script tag + mocked `window.DocsAPI.DocEditor` (constructable spy) so `loadScript()` resolves without network; mocks `signOnlyOfficeConfig`. Characterization proves that after mount, changing `documentUrl` and `documentKey` does **not** call `DocEditor` again (no prop watchers; contrast with `watch(locale)`). Traceability `FRONT-OO-001` updated to In Progress with test pointer.  
+Validation: `npx vitest run src/__tests__/components/OnlyOfficeEditor.test.ts` (from `frontend/`) — 1 test passed. Full `npm test` not re-run (known unrelated failures in this environment).
 
 ## Entry Template
 
