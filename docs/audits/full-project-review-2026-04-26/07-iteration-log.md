@@ -186,6 +186,21 @@ Validation commands:
 Validation result: BUILD SUCCESS.  
 Notes: full `mvn test` not run in this pass.
 
+## 2026-04-26: WS-02-T02 Completed
+
+Task ID: WS-02-T02  
+Summary: `ExpressionType` now exposes `toEvaluateApiType()` mapping `JAVASCRIPT` → `javascript` and `EXCEL_FORMULA` → `excel` for Docxtemplater `POST /evaluate`. `ExpressionEngineImpl` sends these literals and normalizes structured `{ code, message }` error payloads from Node. Added `ExpressionTypeTest` and extended `ExpressionEngineImplTest` (request body assertions, structured error case); reset `RestTemplate` mock between tests.  
+Files changed:
+- `backend/src/main/java/com/docgen/entity/ExpressionType.java`
+- `backend/src/main/java/com/docgen/service/ExpressionEngineImpl.java`
+- `backend/src/test/java/com/docgen/entity/ExpressionTypeTest.java`
+- `backend/src/test/java/com/docgen/service/ExpressionEngineImplTest.java`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+Validation commands:
+- `mvn "-Dtest=ExpressionEngineImplTest,ExpressionTypeTest" test` (from `backend/`)
+Validation result: BUILD SUCCESS.  
+Notes: `npm test` in `docxtemplater-service/` not re-run for this card (WS-02-T03 already covered `/evaluate` type rejection).
+
 ## 2026-04-26: WS-02-T03 Completed
 
 Task ID: WS-02-T03  
