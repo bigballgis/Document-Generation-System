@@ -571,6 +571,19 @@ Validation commands:
 - `npm ci` + `npm test` (from `docxtemplater-service/`) — not completed in this Windows session (optional native `isolated-vm` install slow); workflow mirrors backend/frontend CI patterns for **ubuntu-latest**.
 Validation result: YAML added; matrix updated. CI behavior to be confirmed on first GitHub Actions run.
 
+## 2026-04-26: WS-07-T05 Database migration runbook (V30 / V36 / V39)
+
+Task ID: WS-07-T05  
+Summary: Added **[21-database-migration-runbook-v30-v36-v39.md](21-database-migration-runbook-v30-v36-v39.md)** covering **greenfield** Flyway order, **upgrade** risks (V36 drops segment-library tables including V30 `segment_versions`; V39 creates a new template-scoped `segment_versions`), **mandatory backups before V36** when historical segment data matters, **rollback limits** (restore / forward-fix only), and **open decisions** (no automatic retention of old segment version rows across V36). Updated **`README.md`** index and **`05-traceability-matrix.md`** `MIGRATION-SEG-001` documentation column to point at the runbook (`Open` → `In Progress` while migration tests remain TBD). No Flyway SQL changes.  
+Files changed:
+- `docs/audits/full-project-review-2026-04-26/21-database-migration-runbook-v30-v36-v39.md`
+- `docs/audits/full-project-review-2026-04-26/README.md`
+- `docs/audits/full-project-review-2026-04-26/05-traceability-matrix.md`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+Validation commands:
+- Workspace search for CJK in `21-database-migration-runbook-v30-v36-v39.md` only — no matches.
+Validation result: Documentation-only; English-only in new runbook.
+
 ## Entry Template
 
 ```text
