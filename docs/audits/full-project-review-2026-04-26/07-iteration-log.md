@@ -559,6 +559,18 @@ Validation commands:
 - `mvn -q test "-Dtest=CompositeCoverageServiceScanVariablesTest"` (from `backend/`)
 Validation result: BUILD SUCCESS / Jest PASS for scoped commands. Full `mvn test` not run (task card lists full suite; time/environment).
 
+## 2026-04-26: WS-07-T04 Docxtemplater CI (GitHub Actions)
+
+Task ID: WS-07-T04  
+Summary: Added `.github/workflows/docxtemplater-ci.yml`: **Node 20**, `npm ci` in `docxtemplater-service/` (uses `package-lock.json`), then **`npm test`** (Jest). Path filters on `docxtemplater-service/**` and the workflow file; concurrency + cancel-in-progress. Does not install LibreOffice (existing Jest suite tolerates skipped PDF paths). Updated **`05-traceability-matrix.md`**: `INFRA-CI-001` lists the new workflow; **`CONTRACT-COV-001`** marked **Verified** with pointers to WS-02-T06/T07 and tests.  
+Files changed:
+- `.github/workflows/docxtemplater-ci.yml`
+- `docs/audits/full-project-review-2026-04-26/05-traceability-matrix.md`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+Validation commands:
+- `npm ci` + `npm test` (from `docxtemplater-service/`) — not completed in this Windows session (optional native `isolated-vm` install slow); workflow mirrors backend/frontend CI patterns for **ubuntu-latest**.
+Validation result: YAML added; matrix updated. CI behavior to be confirmed on first GitHub Actions run.
+
 ## Entry Template
 
 ```text
