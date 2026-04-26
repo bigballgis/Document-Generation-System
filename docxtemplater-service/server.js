@@ -1,6 +1,7 @@
 const express = require('express');
 const { minioClient, ensureBucket } = require('./src/minio-client');
 const renderRouter = require('./src/routes/render');
+const scanVariablesRouter = require('./src/routes/scan-variables');
 const evaluateRouter = require('./src/routes/evaluate');
 const convertPdfRouter = require('./src/routes/convert-pdf');
 const mergeSegmentsRouter = require('./src/routes/merge-segments');
@@ -26,6 +27,7 @@ app.get('/health', async (_req, res) => {
 
 // Routes
 app.use('/render', renderRouter);
+app.use('/scan-variables', scanVariablesRouter);
 app.use('/evaluate', evaluateRouter);
 app.use('/convert-pdf', convertPdfRouter);
 // Backend document merge calls POST /merge-segments (see DocumentMergeService in Java).

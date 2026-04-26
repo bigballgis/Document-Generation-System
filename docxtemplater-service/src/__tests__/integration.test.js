@@ -1,7 +1,7 @@
 /**
  * Integration tests for Docxtemplater Service
  *
- * Tests the HTTP endpoints: /health, /evaluate, /watermark, /render, /convert-pdf
+ * Tests the HTTP endpoints: /health, /evaluate, /scan-variables, /watermark, /render, /convert-pdf
  *
  * **Validates: Requirements 6, 11, 21, 51**
  */
@@ -196,6 +196,35 @@ describe('GET /health', () => {
   });
 });
 
+describe('POST /scan-variables', () => {
+  it('returns sorted unique variables from segment docx', async () => {
+    const path = 'templates/coverage-scan.docx';
+    mockFileStore.set(path, createTestDocx('{z_tag}{a_tag}{a_tag}'));
+    const res = await request('POST', '/scan-variables', { templatePath: path });
+    expect(res.status).toBe(200);
+    expect(res.body.variables).toEqual(['a_tag', 'z_tag']);
+  });
+
+  it('returns empty variables when template has no placeholders', async () => {
+    const path = 'templates/plain-scan.docx';
+    mockFileStore.set(path, createTestDocx('Hello world'));
+    const res = await request('POST', '/scan-variables', { templatePath: path });
+    expect(res.status).toBe(200);
+    expect(res.body.variables).toEqual([]);
+  });
+
+  it('returns 400 when templatePath is missing', async () => {
+    const res = await request('POST', '/scan-variables', {});
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('MISSING_TEMPLATE_PATH');
+  });
+
+  it('returns 404 when MinIO object is missing', async () => {
+    const res = await request('POST', '/scan-variables', { templatePath: 'missing/object.docx' });
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe('TEMPLATE_NOT_FOUND');
+  });
+});
 
 describe('POST /evaluate', () => {
   describe('expression type validation', () => {

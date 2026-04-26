@@ -505,6 +505,11 @@ Validation: `npx vitest run src/__tests__/VersionDiffPanel.test.ts` (from `front
 Summary: Completed **WS-06-T07**. Replaced user-facing hardcoded strings with `t()` / `i18n.global.t()`: `OnlyOfficeEditor.vue` (clipboard/prompt, API/load/init errors); `VersionDiffPanel.vue` (table column labels, empty cells); `SegmentVersionDialog.vue` (fixed invalid `t(key, default)` for same-version warning; empty placeholders; content-diff “more lines” line). `request.ts` uses `i18n.global.t('message.forbidden'|'message.tooManyRequests')` for 403/429. Added keys in `en-US.json`, `zh-CN.json`, `zh-TW.json` (`common.emptyValue`, `message.tooManyRequests`, `workspace.settings.versionDiff*`, `workspace.editor.insertText*`, `apiNotLoaded`, `initFailed`, `loadScriptFailed`, `workspace.segment.sameVersionWarning`, `workspace.segment.contentDiff.moreLinesRemaining`).  
 Validation: `npx vitest run src/__tests__/components/OnlyOfficeEditor.test.ts src/__tests__/VersionDiffPanel.test.ts src/__tests__/views/TemplateWorkspaceIndex.test.ts` (from `frontend/`) — 14 tests passed. Full `npm test` not re-run.
 
+## 2026-04-26: WS-07-T03 Frontend CI (GitHub Actions)
+
+Summary: Completed **WS-07-T03**. Added `.github/workflows/frontend-ci.yml`: **Node 20**, `npm ci` in `frontend/` (uses `package-lock.json`), then **`npm run type-check`**, **`npm test`**, **`npm run build`**. Path filters on `frontend/**` and workflow file; concurrency + cancel-in-progress. Fixed **`vue-tsc`** failure from `require('vue')` in `TemplateWorkspaceIndex.test.ts` by moving route mock state to **`src/__tests__/helpers/templateWorkspaceRouteMock.ts`** and using an **async** `vi.mock('vue-router', …)` factory.  
+Validation (from `frontend/`): `npm run type-check` — pass; `npx vitest run src/__tests__/views/TemplateWorkspaceIndex.test.ts` — pass; `npm run build` — pass. Full `npm ci` not re-run (existing `node_modules`); full `npm test` may still surface unrelated flaky tests in CI.
+
 ## 2026-04-26: WS-07-T02 Backend CI (GitHub Actions)
 
 Summary: Completed **WS-07-T02**. Added `.github/workflows/backend-ci.yml`: **GitHub Actions** on `push` / `pull_request` / `workflow_dispatch` when `backend/**` or the workflow file changes; **Temurin JDK 17** (matches `pom.xml`); **Maven cache** via `actions/setup-java`; **Redis 7.2** service for `application-test` profile; `mvn -B -ntp test` in `backend/`. Concurrency cancels redundant runs. Traceability `INFRA-CI-001` → In Progress (frontend/docxtemplater stages still TBD).  
@@ -533,6 +538,26 @@ Files changed:
 Validation commands:
 - `rg "[\\p{Han}]" docs/audits/full-project-review-2026-04-26/20-composite-coverage-variable-scan-contract.md docs/audits/full-project-review-2026-04-26/14-java-node-contract-mismatch-inventory.md docs/audits/full-project-review-2026-04-26/README.md`
 Validation result: No Han/CJK matches in `20-composite-coverage-variable-scan-contract.md` (workspace search); README link line is ASCII-only.
+
+## 2026-04-26: WS-02-T07 Implement composite coverage variable scan
+
+Task ID: WS-02-T07  
+Summary: Implemented **`POST /scan-variables`** on the Docxtemplater service: loads `.docx` from MinIO with the **same** `parser` + `createImageModule()` stack as `/render` (extracted to `src/docx-templater-config.js`), runs Docxtemplater compile + internal `getTags` postparse walk, returns **lexicographically sorted unique** placeholder paths as `{ variables: string[] }`. Errors: `400` missing path, `404` object not found, `422` template parse errors, `500` otherwise. **`CompositeCoverageService`** now calls `/scan-variables` instead of `/evaluate`. Added Jest integration tests and **`CompositeCoverageServiceScanVariablesTest`** (Mockito). Updated contract doc status and **C-004** inventory narrative.  
+Files changed:
+- `docxtemplater-service/src/docx-templater-config.js`
+- `docxtemplater-service/src/routes/render.js`
+- `docxtemplater-service/src/routes/scan-variables.js`
+- `docxtemplater-service/server.js`
+- `docxtemplater-service/src/__tests__/integration.test.js`
+- `backend/src/main/java/com/docgen/service/CompositeCoverageService.java`
+- `backend/src/test/java/com/docgen/service/CompositeCoverageServiceScanVariablesTest.java`
+- `docs/audits/full-project-review-2026-04-26/20-composite-coverage-variable-scan-contract.md`
+- `docs/audits/full-project-review-2026-04-26/14-java-node-contract-mismatch-inventory.md`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+Validation commands:
+- `npm test -- --testPathPattern=integration.test` (from `docxtemplater-service/`)
+- `mvn -q test "-Dtest=CompositeCoverageServiceScanVariablesTest"` (from `backend/`)
+Validation result: BUILD SUCCESS / Jest PASS for scoped commands. Full `mvn test` not run (task card lists full suite; time/environment).
 
 ## Entry Template
 

@@ -25,7 +25,7 @@ import java.util.*;
 
 /**
  * Service for computing aggregate coverage across all Segments of a Composite_Template.
- * Uses inline segment data from assembly_config and Docxtemplater /evaluate endpoint for variable scanning.
+ * Uses inline segment data from assembly_config and Docxtemplater {@code POST /scan-variables} for variable scanning.
  */
 @Service
 public class CompositeCoverageService {
@@ -116,7 +116,7 @@ public class CompositeCoverageService {
     }
 
     /**
-     * Scan variables from a segment file using Docxtemplater /evaluate endpoint.
+     * Scan variables from a segment file using Docxtemplater {@code POST /scan-variables}.
      */
     private List<String> scanVariablesFromFile(String filePath) {
         if (filePath == null || filePath.isBlank()) {
@@ -129,7 +129,7 @@ public class CompositeCoverageService {
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
             ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
-                    docxtemplaterServiceUrl + "/evaluate",
+                    docxtemplaterServiceUrl + "/scan-variables",
                     HttpMethod.POST,
                     entity,
                     new ParameterizedTypeReference<Map<String, Object>>() {});

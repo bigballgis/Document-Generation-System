@@ -1,6 +1,6 @@
 # WS-02-T06: Composite coverage variable scan contract
 
-**Status:** Adopted (documentation only).  
+**Status:** Implemented (WS-02-T07): Node `POST /scan-variables`; Java `CompositeCoverageService` calls this endpoint.  
 **Date:** 2026-04-26
 
 ## Problem statement (current mismatch)

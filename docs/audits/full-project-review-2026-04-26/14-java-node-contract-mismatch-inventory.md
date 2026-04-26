@@ -23,7 +23,7 @@ Java backend calls the Node service using `docxtemplater.service-url` (default `
 | C-001 | Document merge | P0 | `DocumentMergeService` | none | Java calls a route that Node does not expose |
 | C-002 | Watermark | P0 | `WatermarkService` | none | Java calls a route that Node does not expose |
 | C-003 | Expression evaluation type | P0 | `ExpressionEngineImpl` | `/evaluate` | Java sends enum names, Node expects `'javascript' | 'excel'` |
-| C-004 | Composite coverage variable scan | P0/P1 | `CompositeCoverageService` | `/evaluate` | Java uses `/evaluate` for variable scanning; Node requires `expression` |
+| C-004 | Composite coverage variable scan | Resolved (WS-02-T07) | `CompositeCoverageService` | `/scan-variables` | Was: Java called `/evaluate` for variable scanning; now calls dedicated `/scan-variables` per contract |
 
 ## C-001: Document Merge Route and Payload
 
@@ -165,32 +165,27 @@ Decision drivers:
 
 ## C-004: Composite Coverage Variable Scanning
 
-### Java Caller
+**Resolution (WS-02-T07):** Java calls `POST {docxtemplaterServiceUrl}/scan-variables` with `{ templatePath }`; Node implements `docxtemplater-service/src/routes/scan-variables.js` (same Docxtemplater/parser stack as `/render`). Contract: [20-composite-coverage-variable-scan-contract.md](20-composite-coverage-variable-scan-contract.md).
+
+### Historical mismatch (pre-WS-02-T07)
+
+### Java Caller (before)
 
 - File: `backend/src/main/java/com/docgen/service/CompositeCoverageService.java`
-- Calls: `POST {docxtemplaterServiceUrl}/evaluate`
-- Sends body:
+- Called: `POST {docxtemplaterServiceUrl}/evaluate` (incorrect reuse)
+- Sent body:
   - `templatePath`: MinIO path
-- Expects response field:
+- Expected response field:
   - `variables: string[]`
 
-### Node Service Reality
+### Node `/evaluate` reality (unchanged; unrelated to scanning)
 
 - File: `docxtemplater-service/src/routes/evaluate.js`
-- Requires:
-  - `expression` string
-- Does not return:
-  - `variables`
+- Requires: `expression` string (sandbox evaluation only)
 
-### Mismatch
+### Risk (mitigated)
 
-- Java uses `/evaluate` as a variable extraction endpoint.
-- Node implements `/evaluate` as a sandbox expression evaluator only.
-
-### Risk
-
-- Composite coverage scanning likely returns empty results or fails silently.
-- Coverage-based UI gates may be incorrect.
+- Prior behavior could return empty variable lists or swallow errors; coverage is now sourced from real template placeholders via `/scan-variables`.
 
 ### Suggested Target Contract (for WS-02-T06 and WS-02-T07)
 
@@ -217,5 +212,5 @@ Proceed in this order:
 2. `WS-02-T02`: Align expression type mapping.
 3. `WS-02-T04`: Align merge route.
 4. `WS-02-T05`: Align watermark route.
-5. `WS-02-T06`: Define variable scan contract.
-6. `WS-02-T07`: Implement variable scan contract.
+5. `WS-02-T06`: Define variable scan contract. (Done)
+6. `WS-02-T07`: Implement variable scan contract. (Done)
