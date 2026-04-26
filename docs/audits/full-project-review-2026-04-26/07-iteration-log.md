@@ -247,6 +247,22 @@ Validation commands:
 - `npm test` (from `docxtemplater-service/`)
 Validation result: PASS (74 tests).
 
+## 2026-04-26: WS-03-T04 Completed
+
+Task ID: WS-03-T04  
+Summary: Documented a single product decision: **defer** `render-config.json` in composite template ZIP export/import until a reviewed JSON schema, SSRF-safe validation, ZIP allowlist extension under existing `composite-import.zip` limits, and a persistence model on `Template` (or a related entity) exist. Recorded impact (no round-trip of watermark/barcode via ZIP), backlog target, and follow-up criteria. Updated Kiro `requirements.md` (English R7 status block), `tasks.md` (Task 6 deferred), traceability **REQ-R7-001** to **Deferred**, and audit `README.md` link.  
+Files changed:
+- `docs/audits/full-project-review-2026-04-26/17-composite-r7-render-config-scope.md`
+- `docs/audits/full-project-review-2026-04-26/README.md`
+- `docs/audits/full-project-review-2026-04-26/05-traceability-matrix.md`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+- `.kiro/specs/composite-template-full-import/requirements.md`
+- `.kiro/specs/composite-template-full-import/tasks.md`
+Validation commands:
+- `rg "\\p{Han}" docs/audits/full-project-review-2026-04-26/17-composite-r7-render-config-scope.md` (expect no matches on new file)
+Validation result: no Chinese text in new English decision document.  
+Notes: **WS-03-T05** and **WS-03-T06** remain blocked by this deferral until a new decision supersedes WS-03-T04.
+
 ## 2026-04-26: WS-03-T01 Completed
 
 Task ID: WS-03-T01  

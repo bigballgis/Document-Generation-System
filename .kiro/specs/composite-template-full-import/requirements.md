@@ -48,6 +48,16 @@
 - 如果模板有关联的渲染配置 (watermark、barcodes)，导出到 `render-config.json`
 - 导入时作为模板的附加元数据存储 (可选，不存在则跳过)
 
+---
+
+### R7 implementation status (audit WS-03-T04, 2026-04-26) — English
+
+**Status:** **Deferred.** `render-config.json` is **not** part of composite ZIP export or import in the current codebase.
+
+**Authoritative rationale and follow-up criteria:** see `docs/audits/full-project-review-2026-04-26/17-composite-r7-render-config-scope.md`.
+
+**Summary:** Implementation is postponed until a reviewed JSON schema, bounded parsing under ZIP import limits, SSRF-safe handling of any embedded resource references, and a clear persistence model exist. Until then, **WS-03-T05** and **WS-03-T06** in the audit task package remain **out of scope**.
+
 ## 验收标准
 
 1. 从系统导出一个包含参数、segment、测试数据的 COMPOSITE 模板 ZIP

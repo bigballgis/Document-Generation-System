@@ -36,6 +36,8 @@ This directory is the durable working package for a staged, full-project review 
 - [12-skill-registry.md](12-skill-registry.md): project skill registry and task-to-skill mapping.
 - [13-dirty-working-tree-classification.md](13-dirty-working-tree-classification.md): classification of current uncommitted and untracked artifacts.
 - [14-java-node-contract-mismatch-inventory.md](14-java-node-contract-mismatch-inventory.md): inventory of Java-to-Node contract mismatches.
+- [16-template-test-execution-semantics.md](16-template-test-execution-semantics.md): characterized behavior of `TemplateTestService` (real render pipeline vs JSON-only).
+- [17-composite-r7-render-config-scope.md](17-composite-r7-render-config-scope.md): WS-03-T04 decision to defer `render-config.json` in composite ZIP (R7).
 
 ## Current Top Priorities
 
