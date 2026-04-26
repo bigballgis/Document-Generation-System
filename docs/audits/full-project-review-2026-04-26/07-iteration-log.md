@@ -359,6 +359,20 @@ Validation commands:
 Validation result: documentation-only; no `mvn test`.  
 Notes: Next: **WS-04-T08** (SegmentVersionDialog tests).
 
+## 2026-04-26: WS-04-T08 and WS-04-T09 Completed
+
+Task IDs: WS-04-T08, WS-04-T09  
+Summary: Added **`frontend/src/__tests__/views/SegmentVersionDialog.test.ts`** (Vitest + Element Plus global setup): compare calls **`compareSegmentVersions(..., true)`**; **`contentChanged=false`** shows no-difference / no-content-change UI; **`truncated=true`** shows warning alert; ADDED/REMOVED/MODIFIED lines render; collapsed EQUAL group expands and reveals more rows. Fixed **`expandGroup`** to replace the **`Set`** immutably so computed **`processedDiffLines`** refreshes (WS-04-T09). Added **`{ immediate: true }`** on the dialog-open watch so **`getSegmentVersions`** runs when the dialog is initially open.  
+Files changed:
+- `frontend/src/views/template-workspace/components/SegmentVersionDialog.vue`
+- `frontend/src/__tests__/views/SegmentVersionDialog.test.ts`
+- `docs/audits/full-project-review-2026-04-26/05-traceability-matrix.md`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+Validation commands:
+- `npx vitest run src/__tests__/views/SegmentVersionDialog.test.ts` (from `frontend/`)
+Validation result: passed (5 tests).  
+Notes: full `npm test` not run. Next workstreams follow **`11-execution-sequence.md`** (e.g. remaining WS-05/06/07/08 task cards).
+
 ## 2026-04-26: WS-03-T01 Completed
 
 Task ID: WS-03-T01  
@@ -469,6 +483,17 @@ Validation: `npx vitest run src/__tests__/views/TemplateWorkspaceIndex.test.ts` 
 
 Summary: Completed **WS-06-T03**. Added `OnlyOfficeEditor.test.ts`: pre-seeds a script tag + mocked `window.DocsAPI.DocEditor` (constructable spy) so `loadScript()` resolves without network; mocks `signOnlyOfficeConfig`. Characterization proves that after mount, changing `documentUrl` and `documentKey` does **not** call `DocEditor` again (no prop watchers; contrast with `watch(locale)`). Traceability `FRONT-OO-001` updated to In Progress with test pointer.  
 Validation: `npx vitest run src/__tests__/components/OnlyOfficeEditor.test.ts` (from `frontend/`) — 1 test passed. Full `npm test` not re-run (known unrelated failures in this environment).
+
+## 2026-04-26: WS-06-T04 OnlyOfficeEditor reinitialize on document change
+
+Summary: Completed **WS-06-T04**. `OnlyOfficeEditor.vue` watches `[documentUrl, documentKey]` and calls `createEditor()` when `scriptLoaded` (same path as locale reload; `createEditor` still calls `destroyEditor()` first). `onMounted` now `await createEditor()` so the first construction finishes before later prop updates are handled, reducing overlap risk. Tests cover mount, combined url/key change, url-only, and key-only; assert prior instance `destroyEditor` before second `DocEditor` construction. Signing path unchanged (`signOnlyOfficeConfig` per recreation). Traceability `FRONT-OO-001` → Verified.  
+Validation: `npx vitest run src/__tests__/components/OnlyOfficeEditor.test.ts` (from `frontend/`) — 4 tests passed.
+
+## 2026-04-26: WS-06-T05 DesignStage debug logging removal
+
+Summary: Completed **WS-06-T05**. Removed two `console.log` calls and one `console.warn` from `insertToEditor` in `DesignStage.vue` (they logged tab id, type, payload, and ref map keys — avoid leaking editor/template-related data). Missing editor ref still returns early with no user-visible change. No debug-flag convention referenced those logs.  
+Removed: `[DesignStage] insertToEditor called: …`, `[DesignStage] No editor ref found for tab: …`, `[DesignStage] Editor ref found, type: …`.  
+Validation: `npx vitest run src/__tests__/views/TemplateWorkspaceIndex.test.ts` (from `frontend/`) — 5 tests passed. Full `npm test` not re-run.
 
 ## Entry Template
 

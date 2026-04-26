@@ -231,11 +231,15 @@ const compareB = ref<number | null>(null)
 const comparing = ref(false)
 const diffResult = ref<SegmentVersionDiffResult | null>(null)
 
-watch(() => props.modelValue, async (val) => {
-  if (val && props.segmentName) {
-    await loadVersions()
-  }
-})
+watch(
+  () => props.modelValue,
+  async (val) => {
+    if (val && props.segmentName) {
+      await loadVersions()
+    }
+  },
+  { immediate: true },
+)
 
 async function loadVersions() {
   loadingVersions.value = true
@@ -383,7 +387,10 @@ function loadMoreLines() {
 
 function expandGroup(gid: number | undefined) {
   if (gid == null) return
-  expandedGroups.value.add(gid)
+  // Replace Set so Vue tracks the dependency (mutating Set in-place does not trigger computed refresh).
+  const next = new Set(expandedGroups.value)
+  next.add(gid)
+  expandedGroups.value = next
 }
 
 function diffLineClass(type: string) {
