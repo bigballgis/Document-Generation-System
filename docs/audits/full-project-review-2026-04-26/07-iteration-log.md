@@ -297,6 +297,7 @@ Files changed:
 - `docs/audits/full-project-review-2026-04-26/19-docx-identical-diff-contract.md`
 - `docs/audits/full-project-review-2026-04-26/README.md`
 - `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`
+- `docs/audits/full-project-review-2026-04-26/05-traceability-matrix.md`
 - `docs/segment-version-api.md`
 - `.kiro/specs/docx-content-diff/requirements.md`
 Validation commands:
@@ -384,6 +385,11 @@ Validation: `mvn -q compile test "-Dtest=TemplateGenerationEligibilityServiceTes
 
 Summary: Completed **WS-05-T03**. Added `DynamicApiServiceVersionParameterTest` covering null `version` (no `TemplateVersionRepository` calls), history disallowed + non-latest (`GENERATE_VERSION_NOT_ALLOWED`), latest-only success, history-allowed success, missing version (`TEMPLATE_VERSION_NOT_FOUND`), and proof that `GenerateDocumentRequest` is passed through unchanged (no version field). Documented observed behavior: `?version=n` does not alter the render file path — `DocumentGeneratorService` always uses `Template.templateFilePath`; version rows are validation-only. Audit note: [18-generate-api-version-parameter-behavior.md](18-generate-api-version-parameter-behavior.md); traceability `REQ-GEN-VERSION-CHAR-001`.  
 Validation: `mvn -q test "-Dtest=DynamicApiServiceVersionParameterTest"` (from `backend/`) — BUILD SUCCESS.
+
+## 2026-04-26: WS-05-T04 Versioned rendering contract (documentation)
+
+Summary: Completed **WS-05-T04** (no production code). Decided and documented normative contract: synchronous `POST /api/generate/{templateId}?version=n` — `version` is **supported for validation and policy only**; **historical `template_versions` file paths are not used** for render output; generation **always** uses current `templates.template_file_path` unless WS-05-T05 supersedes. Async/batch have no `version` parameter. Added canonical English spec `docs/versioned-template-generation-contract.md`; linked from audit `18-generate-api-version-parameter-behavior.md` and `README.md`; traceability `REQ-GEN-VERSION-CONTRACT-001`.  
+Validation: `rg "[\\p{Han}]" docs/versioned-template-generation-contract.md` — no matches (ASCII / English only in new file).
 
 ## Entry Template
 
