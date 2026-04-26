@@ -30,10 +30,14 @@ import java.util.List;
  *   <li>{@link TenantIsolationFilter} — extracts tenant ID from the authenticated principal</li>
  * </ol>
  *
- * <p>Public endpoints: {@code /api/auth/**}, {@code /actuator/health},
- * {@code /swagger-ui/**}, {@code /api-docs/**}, {@code /v3/api-docs/**}.
- * The {@code /api/tenants/**} endpoints require the {@code SUPER_ADMIN} role.
- * All other {@code /api/**} endpoints require authentication.
+ * <p>Public endpoints include {@code /api/auth/}, Ant-style path patterns for actuator health and
+ * metrics, Swagger and OpenAPI routes, and OnlyOffice Document Server callbacks under
+ * {@code /api/templates/{templateId}/onlyoffice-callback} and composite segment callbacks.
+ * Those callback paths are {@code permitAll} because Document Server cannot authenticate as an
+ * application user; requests are protected by OnlyOffice JWT validation and outbound URL policy
+ * inside the service layer, and return a non-zero JSON {@code error} field when validation fails.
+ * Tenant administration routes require the {@code SUPER_ADMIN} role; other {@code /api/} routes
+ * require authentication.
  */
 @Configuration
 @EnableWebSecurity

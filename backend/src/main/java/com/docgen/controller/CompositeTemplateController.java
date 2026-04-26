@@ -19,7 +19,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
@@ -47,8 +46,10 @@ public class CompositeTemplateController {
     private final CompositeCoverageService compositeCoverageService;
     private final CompositeImportExportService compositeImportExportService;
     private final ContentIsolationValidator contentIsolationValidator;
+    private final SegmentVersionService segmentVersionService;
+    private final OnlyOfficeService onlyOfficeService;
     private final MinioClient minioClient;
-    private final RestTemplate restTemplate;
+    private final CallbackDocumentDownloadHelper callbackDocumentDownloadHelper;
 
     @Value("${minio.bucket-name:docgen}")
     private String bucketName;
@@ -59,18 +60,25 @@ public class CompositeTemplateController {
     @Value("${minio.external-endpoint:${minio.endpoint:http://localhost:9000}}")
     private String minioExternalEndpoint;
 
+    @Value("${onlyoffice.callback.max-download-bytes:20971520}")
+    private long onlyOfficeCallbackMaxDownloadBytes;
+
     public CompositeTemplateController(CompositeTemplateService compositeTemplateService,
                                        CompositeCoverageService compositeCoverageService,
                                        CompositeImportExportService compositeImportExportService,
                                        ContentIsolationValidator contentIsolationValidator,
+                                       SegmentVersionService segmentVersionService,
+                                       OnlyOfficeService onlyOfficeService,
                                        MinioClient minioClient,
-                                       RestTemplate restTemplate) {
+                                       CallbackDocumentDownloadHelper callbackDocumentDownloadHelper) {
         this.compositeTemplateService = compositeTemplateService;
         this.compositeCoverageService = compositeCoverageService;
         this.compositeImportExportService = compositeImportExportService;
         this.contentIsolationValidator = contentIsolationValidator;
+        this.segmentVersionService = segmentVersionService;
+        this.onlyOfficeService = onlyOfficeService;
         this.minioClient = minioClient;
-        this.restTemplate = restTemplate;
+        this.callbackDocumentDownloadHelper = callbackDocumentDownloadHelper;
     }
 
     // ── Create ──
@@ -312,12 +320,16 @@ public class CompositeTemplateController {
     /**
      * Handle OnlyOffice callback for a specific segment.
      * Downloads the edited .docx, validates content isolation, and saves to MinIO.
+     *
+     * <p>Returns {@code {"error":0}} when the callback is accepted (including benign no-ops) and
+     * {@code {"error":1}} when a save was not performed due to validation, isolation, or download issues.
      */
     @PostMapping("/{id}/segments/{segmentIndex}/onlyoffice-callback")
     public ResponseEntity<Map<String, Integer>> handleSegmentCallback(
             @PathVariable Long id,
             @PathVariable int segmentIndex,
             @RequestParam(defaultValue = "body") String contentType,
+            @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestBody Map<String, Object> body) {
         log.info("OnlyOffice segment callback for template {}, segment {}: status={}",
                 id, segmentIndex, body.get("status"));
@@ -336,28 +348,53 @@ public class CompositeTemplateController {
                     id, segmentIndex);
             return ResponseEntity.ok(Map.of("error", 0));
         }
+        if (!onlyOfficeService.isAllowedCallbackDownloadUrl(downloadUrl)) {
+            log.warn("OnlyOffice segment callback download URL is not allowed for template {}, segment {}",
+                    id, segmentIndex);
+            return ResponseEntity.ok(Map.of("error", 1));
+        }
+        String callbackToken = body.get("token") instanceof String s ? s : authorization;
+        if (callbackToken != null && callbackToken.startsWith("Bearer ")) {
+            callbackToken = callbackToken.substring("Bearer ".length()).trim();
+        }
+        if (onlyOfficeService.isCallbackJwtRequired()
+                && (callbackToken == null || callbackToken.isBlank()
+                || !onlyOfficeService.isValidOnlyOfficeJwt(callbackToken))) {
+            log.warn("OnlyOffice segment callback JWT validation failed for template {}, segment {}",
+                    id, segmentIndex);
+            return ResponseEntity.ok(Map.of("error", 1));
+        }
 
-        AssemblyConfigDTO config = compositeTemplateService.getAssemblyConfig(id);
+        final AssemblyConfigDTO config;
+        try {
+            config = compositeTemplateService.getAssemblyConfig(id);
+        } catch (BusinessException e) {
+            log.warn("OnlyOffice segment callback assembly lookup failed for template {}: {}",
+                    id, e.getMessage());
+            return ResponseEntity.ok(Map.of("error", 1));
+        }
+
         List<AssemblySegmentEntry> segments = config.getSegments();
 
         if (segments == null || segmentIndex < 0 || segmentIndex >= segments.size()) {
-            throw new BusinessException(ErrorCode.SEGMENT_FILE_NOT_FOUND,
-                    "片段索引无效: " + segmentIndex, HttpStatus.NOT_FOUND);
+            log.warn("OnlyOffice segment callback invalid segment index {} for template {}", segmentIndex, id);
+            return ResponseEntity.ok(Map.of("error", 1));
         }
 
         String filePath = segments.get(segmentIndex).getFilePath();
         if (filePath == null || filePath.isBlank()) {
-            throw new BusinessException(ErrorCode.SEGMENT_FILE_NOT_FOUND,
-                    "片段文件路径为空", HttpStatus.NOT_FOUND);
+            log.warn("OnlyOffice segment callback empty file path for template {}, segment {}", id, segmentIndex);
+            return ResponseEntity.ok(Map.of("error", 1));
         }
 
         try {
-            // Download edited .docx from OnlyOffice
-            byte[] editedContent = restTemplate.getForObject(downloadUrl, byte[].class);
+            // Download edited .docx from OnlyOffice with bounded reads (same limits as main template callback)
+            byte[] editedContent = callbackDocumentDownloadHelper.downloadOnlyOfficeDocx(
+                    downloadUrl, onlyOfficeCallbackMaxDownloadBytes);
             if (editedContent == null || editedContent.length == 0) {
                 log.warn("Downloaded empty content from OnlyOffice for template {}, segment {}",
                         id, segmentIndex);
-                return ResponseEntity.ok(Map.of("error", 0));
+                return ResponseEntity.ok(Map.of("error", 1));
             }
 
             // Validate content isolation before saving
@@ -374,7 +411,9 @@ public class CompositeTemplateController {
             log.info("Saved edited segment from OnlyOffice for template {}, segment {}, size={} bytes",
                     id, segmentIndex, editedContent.length);
         } catch (BusinessException e) {
-            throw e;
+            log.warn("OnlyOffice segment callback rejected for template {}, segment {}: {} ({})",
+                    id, segmentIndex, e.getErrorCode(), e.getMessage());
+            return ResponseEntity.ok(Map.of("error", 1));
         } catch (Exception e) {
             log.error("Failed to save OnlyOffice edited segment for template {}, segment {}: {}",
                     id, segmentIndex, e.getMessage(), e);
@@ -383,5 +422,56 @@ public class CompositeTemplateController {
         }
 
         return ResponseEntity.ok(Map.of("error", 0));
+    }
+
+    // ── Segment Version Management ──
+
+    /**
+     * Publish (snapshot) a segment version.
+     */
+    @PostMapping("/{id}/segments/publish")
+    public ResponseEntity<SegmentVersionDTO> publishSegment(
+            @PathVariable Long id,
+            @Valid @RequestBody PublishSegmentRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        SegmentVersionDTO version = segmentVersionService.publishSegment(id, request, principal.getUserId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(version);
+    }
+
+    /**
+     * Get all versions for a specific segment.
+     */
+    @GetMapping("/{id}/segments/{segmentName}/versions")
+    public ResponseEntity<List<SegmentVersionDTO>> getSegmentVersions(
+            @PathVariable Long id,
+            @PathVariable String segmentName) {
+        return ResponseEntity.ok(segmentVersionService.getSegmentVersions(id, segmentName));
+    }
+
+    /**
+     * Compare two versions of a segment.
+     */
+    @GetMapping("/{id}/segments/{segmentName}/versions/diff")
+    public ResponseEntity<SegmentVersionDiffResult> compareSegmentVersions(
+            @PathVariable Long id,
+            @PathVariable String segmentName,
+            @RequestParam int versionA,
+            @RequestParam int versionB,
+            @RequestParam(defaultValue = "false") boolean includeContentDiff) {
+        return ResponseEntity.ok(
+                segmentVersionService.compareSegmentVersions(
+                    id, segmentName, versionA, versionB, includeContentDiff));
+    }
+
+    /**
+     * Rollback a segment to a specific version.
+     */
+    @PostMapping("/{id}/segments/{segmentName}/rollback/{targetVersion}")
+    public ResponseEntity<SegmentVersionDTO> rollbackSegment(
+            @PathVariable Long id,
+            @PathVariable String segmentName,
+            @PathVariable int targetVersion) {
+        return ResponseEntity.ok(
+                segmentVersionService.rollbackSegment(id, segmentName, targetVersion));
     }
 }

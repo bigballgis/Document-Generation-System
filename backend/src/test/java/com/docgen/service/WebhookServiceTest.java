@@ -6,6 +6,8 @@ import com.docgen.entity.WebhookLog;
 import com.docgen.exception.ResourceNotFoundException;
 import com.docgen.repository.WebhookConfigRepository;
 import com.docgen.repository.WebhookLogRepository;
+import com.docgen.security.url.OutboundUrlPolicy;
+import com.docgen.security.url.UrlPolicyProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,7 +48,14 @@ class WebhookServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new WebhookService(configRepository, logRepository, restTemplate, objectMapper);
+        UrlPolicyProperties urlPolicyProperties = new UrlPolicyProperties();
+        urlPolicyProperties.setAllowPrivateAddresses(false);
+        urlPolicyProperties.setAllowedHosts(List.of());
+        urlPolicyProperties.setAllowedPorts(List.of(80, 443));
+        urlPolicyProperties.setWebhookRequireHttps(true);
+        OutboundUrlPolicy outboundUrlPolicy = new OutboundUrlPolicy(urlPolicyProperties);
+
+        service = new WebhookService(configRepository, logRepository, restTemplate, objectMapper, outboundUrlPolicy);
     }
 
     // ── createWebhook ──
@@ -286,6 +295,34 @@ class WebhookServiceTest {
         assertEquals("BATCH_COMPLETED", savedLog.getEventType());
         assertEquals(200, savedLog.getResponseStatus());
         assertEquals("{\"ok\":true}", savedLog.getResponseBody());
+    }
+
+    @Test
+    void sendWithRetry_rejectsDisallowedUrl_withoutCallingRestTemplate() {
+        WebhookConfig config = createSampleConfig(1L, 100L);
+        config.setUrl("https://127.0.0.1/hook");
+        Map<String, Object> payload = Map.of("event", "test");
+
+        when(logRepository.save(any(WebhookLog.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.sendWithRetry(config, "DOCUMENT_GENERATED", payload);
+
+        verifyNoInteractions(restTemplate);
+        verify(logRepository).save(any(WebhookLog.class));
+    }
+
+    @Test
+    void sendWithRetry_rejectsHttpUrl_whenHttpsRequired() {
+        WebhookConfig config = createSampleConfig(1L, 100L);
+        config.setUrl("http://example.com/hook");
+        Map<String, Object> payload = Map.of("event", "test");
+
+        when(logRepository.save(any(WebhookLog.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.sendWithRetry(config, "DOCUMENT_GENERATED", payload);
+
+        verifyNoInteractions(restTemplate);
+        verify(logRepository).save(any(WebhookLog.class));
     }
 
     // ── sendNotifications ──

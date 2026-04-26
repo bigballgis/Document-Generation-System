@@ -1,6 +1,23 @@
 server:
   port: ${SERVER_PORT:8080}
 
+# Outbound HTTP client defaults (used by the shared RestTemplate bean)
+http:
+  client:
+    connect-timeout-ms: ${HTTP_CLIENT_CONNECT_TIMEOUT_MS:5000}
+    read-timeout-ms: ${HTTP_CLIENT_READ_TIMEOUT_MS:120000}
+
+# Outbound URL policy for mitigating SSRF in server-side HTTP fetches (deny-by-default host allowlist).
+# Integrate this policy at call sites (OnlyOffice callbacks, webhooks, etc.) in dedicated task cards.
+url-policy:
+  allow-private-addresses: ${URL_POLICY_ALLOW_PRIVATE_ADDRESSES:false}
+  # Deny-by-default: populate allowed hosts in environment-specific configuration.
+  allowed-hosts: []
+  allowed-ports:
+    - 80
+    - 443
+  webhook-require-https: ${URL_POLICY_WEBHOOK_REQUIRE_HTTPS:true}
+
 spring:
   application:
     name: docgen-backend
@@ -63,7 +80,7 @@ spring:
           starttls:
             enable: true
 
-# MinIO
+# MinIO (minioadmin defaults are rejected in prod profile; see ProductionSecretGuard)
 minio:
   endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
   # External endpoint used for presigned URLs (must be reachable by OnlyOffice)
@@ -72,7 +89,7 @@ minio:
   secret-key: ${MINIO_SECRET_KEY:minioadmin}
   bucket-name: ${MINIO_BUCKET:docgen}
 
-# JWT
+# JWT (defaults are rejected when spring.profiles.active includes prod or production; see ProductionSecretGuard)
 jwt:
   secret: ${JWT_SECRET:your-256-bit-secret-key-change-in-production}
   access-token-expiration: ${JWT_ACCESS_EXPIRATION:7200000}
@@ -84,7 +101,7 @@ oauth2:
   issuer-uri: ${OAUTH2_ISSUER_URI:}
   jwk-set-uri: ${OAUTH2_JWK_SET_URI:}
 
-# Encryption
+# Encryption (defaults are rejected in prod profile; see ProductionSecretGuard)
 encryption:
   key: ${ENCRYPTION_KEY:your-aes-256-encryption-key-change-me}
 
@@ -92,9 +109,18 @@ encryption:
 docxtemplater:
   service-url: ${DOCXTEMPLATER_SERVICE_URL:http://localhost:3000}
 
-# OnlyOffice
+# OnlyOffice (default jwt-secret is rejected in prod profile; see ProductionSecretGuard)
 onlyoffice:
   url: ${ONLYOFFICE_URL:http://localhost}
+  jwt-secret: ${ONLYOFFICE_JWT_SECRET:my_jwt_secret}
+  callback:
+    require-jwt: ${ONLYOFFICE_CALLBACK_REQUIRE_JWT:true}
+    # Comma-separated list is supported by Spring when bound as List<String>.
+    # Keep this aligned with your OnlyOffice Document Server base URL host.
+    allowed-hosts: ${ONLYOFFICE_CALLBACK_ALLOWED_HOSTS:}
+    max-download-bytes: ${ONLYOFFICE_CALLBACK_MAX_DOWNLOAD_BYTES:20971520}
+    # Main template callback returns JSON {"error":0} on success/ack and {"error":1} when a save
+    # was rejected (invalid JWT, disallowed download URL, empty download, missing template).
 
 # Document Storage
 document:

@@ -30,7 +30,12 @@ jwt:
   refresh-token-expiration: 604800000
 
 encryption:
-  key: test-encryption-key-for-testing
+  # Base64-encoded 32-byte AES-256 key (required by EncryptionServiceImpl).
+  key: MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI=
 
 docxtemplater:
   service-url: http://localhost:3000
+
+# OnlyOffice JWT signing key must meet JJWT HMAC minimum length (>= 256 bits).
+onlyoffice:
+  jwt-secret: test-onlyoffice-jwt-hmac-key-32bytes-minimum!!

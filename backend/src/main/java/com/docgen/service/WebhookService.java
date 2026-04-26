@@ -5,6 +5,8 @@ import com.docgen.entity.WebhookConfig;
 import com.docgen.entity.WebhookLog;
 import com.docgen.exception.ErrorCode;
 import com.docgen.exception.ResourceNotFoundException;
+import com.docgen.security.url.OutboundUrlPolicy;
+import com.docgen.security.url.UrlValidationResult;
 import com.docgen.repository.WebhookConfigRepository;
 import com.docgen.repository.WebhookLogRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -43,15 +45,18 @@ public class WebhookService {
     private final WebhookLogRepository logRepository;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final OutboundUrlPolicy outboundUrlPolicy;
 
     public WebhookService(WebhookConfigRepository configRepository,
                           WebhookLogRepository logRepository,
                           RestTemplate restTemplate,
-                          ObjectMapper objectMapper) {
+                          ObjectMapper objectMapper,
+                          OutboundUrlPolicy outboundUrlPolicy) {
         this.configRepository = configRepository;
         this.logRepository = logRepository;
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
+        this.outboundUrlPolicy = outboundUrlPolicy;
     }
 
     // ── CRUD operations ──
@@ -175,6 +180,13 @@ public class WebhookService {
         } catch (Exception e) {
             log.error("Failed to serialize webhook payload for config {}: {}", config.getId(), e.getMessage());
             recordLog(config.getId(), eventType, "{}", null, "Payload serialization failed: " + e.getMessage());
+            return;
+        }
+
+        UrlValidationResult urlCheck = outboundUrlPolicy.validatePublicEgressHttpUrl(config.getUrl());
+        if (!urlCheck.allowed()) {
+            recordLog(config.getId(), eventType, payloadJson, null,
+                    "Webhook URL rejected: " + urlCheck.reasonCode());
             return;
         }
 
