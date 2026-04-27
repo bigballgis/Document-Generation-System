@@ -1,5 +1,5 @@
 {
-  "__use": "templates/international-bank-fol/sample-data.json",
+  "__use": "templates/international-bank-fol/data/sample-data.json",
   "facilities": [
     { "facility_name": "Term Loan A", "facility_type": "TERM_LOAN", "currency": "USD", "amount": 10000000, "interest_rate": 0.0525, "tenor_months": 60, "repayment_schedule": [] },
     { "facility_name": "Term Loan B", "facility_type": "TERM_LOAN", "currency": "USD", "amount": 8000000, "interest_rate": 0.0550, "tenor_months": 48, "repayment_schedule": [] },

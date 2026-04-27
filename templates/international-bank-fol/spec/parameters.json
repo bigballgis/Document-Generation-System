@@ -600,7 +600,7 @@
       "parameterType": "DERIVED",
       "required": false,
       "description": "总贷款额度 (自动计算)",
-      "expressionText": "data.facilities.reduce((sum, f) => sum + (f.amount || 0), 0)",
+      "expressionText": "(data.facilities || []).reduce((sum, f) => sum + (f.amount || 0), 0)",
       "expressionType": "JAVASCRIPT"
     },
     {
@@ -609,7 +609,7 @@
       "parameterType": "DERIVED",
       "required": false,
       "description": "总费用金额 (自动计算)",
-      "expressionText": "data.fees.reduce((sum, f) => sum + (f.amount || 0), 0)",
+      "expressionText": "(data.fees || []).reduce((sum, f) => sum + (f.amount || 0), 0)",
       "expressionType": "JAVASCRIPT"
     },
     {
@@ -618,7 +618,7 @@
       "parameterType": "DERIVED",
       "required": false,
       "description": "加权平均利率 (自动计算)",
-      "expressionText": "data.facilities.reduce((s, f) => s + f.amount * f.interest_rate, 0) / data.facilities.reduce((s, f) => s + f.amount, 0)",
+      "expressionText": "(() => { const facList = (data.facilities || []); const denom = facList.reduce((s, f) => s + (f.amount || 0), 0); if (!denom) return 0; const numer = facList.reduce((s, f) => s + (f.amount || 0) * (f.interest_rate || 0), 0); return numer / denom; })()",
       "expressionType": "JAVASCRIPT"
     },
     {
@@ -654,7 +654,7 @@
       "parameterType": "DERIVED",
       "required": false,
       "description": "最长期限 (月)",
-      "expressionText": "Math.max(...data.facilities.map(f => f.tenor_months))",
+      "expressionText": "(data.facilities || []).reduce((m, f) => ((f.tenor_months || 0) > m ? (f.tenor_months || 0) : m), 0)",
       "expressionType": "JAVASCRIPT"
     },
     {

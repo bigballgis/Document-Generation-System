@@ -115,7 +115,7 @@ $footer = (Invoke-Json -Method "POST" -Url "$backendBaseUrl/api/composite-templa
 Write-Host "Blank header/footer created."
 
 # 4) Create blank segments according to reference assembly-config.json
-$assemblyRef = Load-JsonFile -Path (Join-Path $dir "assembly-config.json")
+$assemblyRef = Load-JsonFile -Path (Join-Path $dir "../spec/assembly-config.json")
 $segments = @()
 
 foreach ($seg in $assemblyRef.segments) {
@@ -154,7 +154,7 @@ Invoke-Json -Method "PUT" -Url "$backendBaseUrl/api/composite-templates/$templat
 Write-Host "Assembly config applied."
 
 # 6) Import parameter table using parameters.json (create tree with validation + derived expressions)
-$parametersSpec = Load-JsonFile -Path (Join-Path $dir "parameters.json")
+$parametersSpec = Load-JsonFile -Path (Join-Path $dir "../spec/parameters.json")
 
 function Create-ParamTree {
   param(
@@ -216,7 +216,7 @@ try {
 }
 
 # 7) Import demo test cases (resolve __use against sample-data.json)
-$sampleData = Load-JsonFile -Path (Join-Path $dir "sample-data.json")
+$sampleData = Load-JsonFile -Path (Join-Path $dir "../data/sample-data.json")
 $testCases = Load-JsonFile -Path (Join-Path $dir "demo-test-cases.json")
 
 $importPayload = @()
@@ -233,7 +233,10 @@ foreach ($tc in $testCases) {
 }
 
 $importJson = $importPayload | ConvertTo-Json -Depth 100
-Invoke-RestMethod -Method "POST" -Uri "$backendBaseUrl/api/templates/$templateId/test-cases/import" -Headers @{ "Content-Type"="application/json" } -Body $importJson | Out-Null
+Invoke-RestMethod -Method "POST" -Uri "$backendBaseUrl/api/templates/$templateId/test-cases/import" -Headers @{
+  "Content-Type" = "application/json"
+  "Authorization" = "Bearer $token"
+} -Body $importJson | Out-Null
 Write-Host "Test cases imported."
 
 # 8) Run all tests
@@ -244,8 +247,11 @@ Write-Host ("Test report: total={0}, passed={1}, failed={2}" -f $report.totalCou
 Write-Host ""
 Write-Host "Next authoring step (OnlyOffice):"
 Write-Host "- Open Admin/Template Workspace and locate the new composite template."
-Write-Host "- For each segment, open the OnlyOffice editor and paste the corresponding content from template-content.md."
-Write-Host "- Then preview/generate using render-request-example.json (watermark/barcode/qrcode)."
+Write-Host "- For each segment, open the OnlyOffice editor and paste the corresponding content from docs/template-content.md."
+Write-Host "- Then preview/generate using spec/render-request-example.json (watermark/barcode/qrcode)."
 Write-Host ""
-Write-Host "TemplateId=$templateId"
+$outRoot = Join-Path $dir "../out"
+New-Item -ItemType Directory -Force -Path $outRoot | Out-Null
+Set-Content -Path (Join-Path $outRoot "last-template-id.txt") -Value "$templateId" -NoNewline
+Write-Output "TemplateId=$templateId"
 

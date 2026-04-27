@@ -17,7 +17,7 @@ This runbook turns the `international-bank-fol` folder into a **repeatable, cust
 
 ```powershell
 cd "D:\working\Document Generation System\templates\international-bank-fol"
-.\demo-bootstrap.ps1
+.\scripts\demo-bootstrap.ps1
 ```
 
 Environment variables (optional):
@@ -29,8 +29,8 @@ Environment variables (optional):
 Outputs:
 - A newly created COMPOSITE template
 - Blank segment/header/footer DOCX objects in MinIO
-- Parameter table imported from `parameters.json`
-- Test cases imported from `demo-test-cases.json`
+- Parameter table imported from `spec/parameters.json`
+- Test cases imported from `scripts/demo-test-cases.json`
 
 ## Phase 2 — Design / Authoring (OnlyOffice)
 
@@ -39,7 +39,7 @@ The bootstrap creates **blank** DOCX files. Authoring is done via OnlyOffice:
 1. Open the template workspace in the UI.
 2. For each segment:
    - Open the segment in OnlyOffice editor.
-   - Copy/paste the corresponding tag spec section from `template-content.md`.
+   - Copy/paste the corresponding tag spec section from `docs/template-content.md`.
    - Save (the callback writes the updated DOCX back to MinIO).
 3. Repeat for header/footer if you want visible bank branding on every page.
 
@@ -71,7 +71,7 @@ Tip: For a high-stakes demo, pre-author only the most visible segments:
    - Highlight DERIVED parameters (JS + Excel formula examples).
 2. Open a segment in **OnlyOffice** and edit a visible field (borrower name / date).
 3. Preview/generate a document with watermark + barcode + qrcode:
-   - Use the structure from `render-request-example.json`.
+   - Use the structure from `spec/render-request-example.json`.
 4. Toggle `has_security` / `has_guarantor` and regenerate:
    - Show segments appearing/disappearing deterministically.
 
@@ -82,6 +82,6 @@ Tip: For a high-stakes demo, pre-author only the most visible segments:
 
 ## Quick links
 
-- Talk track: `DEMO-SHOWCASE-SCRIPT.md`
-- API quick calls: `demo-api.http`
+- Talk track: `docs/DEMO-SHOWCASE-SCRIPT.md`
+- API quick calls: `scripts/demo-api.http`
 

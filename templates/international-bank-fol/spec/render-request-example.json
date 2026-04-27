@@ -1,8 +1,8 @@
 {
-  "description": "完整的渲染请求示例 — 包含水印、条码、二维码配置",
+  "description": "Full render request example — includes watermark, barcode, and qrcode configs",
   "endpoint": "POST /api/generate/{templateId}",
   "request_body": {
-    "data": "参见 sample-data.json",
+    "data": "See data/sample-data.json",
     "watermark": {
       "type": "text",
       "text": "CONFIDENTIAL - DRAFT",
@@ -34,10 +34,10 @@
     }
   },
   "notes": {
-    "composite_template": "此模板为 COMPOSITE 类型，渲染时 AssemblyEngineService 会按 assembly-config.json 中的 segment 顺序逐一渲染并合并",
-    "conditional_segments": "Part H (Security) 和 Part I (Guarantee) 为条件 Segment，根据 has_security 和 has_guarantor 决定是否包含",
-    "data_scope": "部分 Segment 配置了 dataScope，只传递所需数据子集，实现数据隔离",
-    "derived_parameters": "total_facility_amount, total_fee_amount, weighted_avg_rate, total_security_value, overall_ltv 等为 DERIVED 参数，由表达式引擎自动计算",
-    "aggregations": "facilities.$sum_amount, facilities.$avg_interest_rate, fees.$sum_amount 等聚合属性由 AggregationResolver 自动注入"
+    "composite_template": "This template is COMPOSITE. AssemblyEngineService renders segments in spec/assembly-config.json order and merges outputs.",
+    "conditional_segments": "Part H (Security) and Part I (Guarantee) are conditional segments controlled by has_security and has_guarantor.",
+    "data_scope": "Some segments define dataScope to only expose the minimum required fields.",
+    "derived_parameters": "total_facility_amount, total_fee_amount, weighted_avg_rate, total_security_value, overall_ltv are DERIVED parameters computed by the expression engine.",
+    "aggregations": "facilities.$sum_amount, facilities.$avg_interest_rate, fees.$sum_amount are injected by AggregationResolver."
   }
 }

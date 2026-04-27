@@ -57,7 +57,7 @@ Say:
 ### 4) Generation features buyers care about (2 minutes)
 
 Show:
-- Generate with watermark + barcode + QR code (from `render-request-example.json` structure).
+- Generate with watermark + barcode + QR code (from `spec/render-request-example.json` structure).
 
 Say:
 - “In regulated environments, every document should carry traceability primitives: watermark, barcode, and verification QR.”
