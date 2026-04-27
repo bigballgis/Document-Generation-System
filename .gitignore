@@ -7,6 +7,7 @@ docxtemplater-service/node_modules/
 backend/target/
 frontend/dist/
 backend/.jqwik-database
+templates/international-bank-fol/out/
 
 # IDE
 .idea/
