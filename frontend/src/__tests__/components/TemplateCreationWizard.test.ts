@@ -35,7 +35,25 @@ describe('TemplateCreationWizard', () => {
   it('renders step 1 by default', () => {
     const wrapper = mount(TemplateCreationWizard, {
       props: { visible: true, categories: [], tags: [] },
-      global: { plugins: [i18n] },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          teleport: true,
+          'el-dialog': { template: '<div><slot /><slot name="footer" /></div>' },
+          'el-steps': { template: '<div><slot /></div>' },
+          'el-step': { template: '<div />' },
+          'el-form': { template: '<form><slot /></form>' },
+          'el-form-item': { props: ['label'], template: '<div><label>{{ label }}</label><slot /></div>' },
+          'el-input': { template: '<input />' },
+          'el-tree-select': { template: '<div />' },
+          'el-select': { template: '<select><slot /></select>' },
+          'el-option': { template: '<option />' },
+          'el-radio-group': { template: '<div><slot /></div>' },
+          'el-radio': { template: '<div><slot /></div>' },
+          'el-alert': { template: '<div />' },
+          'el-button': { template: '<button><slot /></button>' },
+        },
+      },
     })
     expect(wrapper.text()).toContain('Name')
     expect(wrapper.text()).toContain('Next')
@@ -44,7 +62,25 @@ describe('TemplateCreationWizard', () => {
   it('shows cancel button', () => {
     const wrapper = mount(TemplateCreationWizard, {
       props: { visible: true, categories: [], tags: [] },
-      global: { plugins: [i18n] },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          teleport: true,
+          'el-dialog': { template: '<div><slot /><slot name="footer" /></div>' },
+          'el-steps': { template: '<div><slot /></div>' },
+          'el-step': { template: '<div />' },
+          'el-form': { template: '<form><slot /></form>' },
+          'el-form-item': { props: ['label'], template: '<div><label>{{ label }}</label><slot /></div>' },
+          'el-input': { template: '<input />' },
+          'el-tree-select': { template: '<div />' },
+          'el-select': { template: '<select><slot /></select>' },
+          'el-option': { template: '<option />' },
+          'el-radio-group': { template: '<div><slot /></div>' },
+          'el-radio': { template: '<div><slot /></div>' },
+          'el-alert': { template: '<div />' },
+          'el-button': { template: '<button><slot /></button>' },
+        },
+      },
     })
     expect(wrapper.text()).toContain('Cancel')
   })

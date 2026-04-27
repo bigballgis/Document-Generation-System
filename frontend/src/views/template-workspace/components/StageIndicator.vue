@@ -1,14 +1,20 @@
 <template>
   <div class="stage-indicator-mini">
     <template v-for="(stage, index) in stages" :key="stage.name">
-      <div v-if="index > 0" class="mini-line" :class="lineClass(index)" />
       <div
-        class="mini-stage"
+        v-if="index > 0"
+        class="mini-line stage-line"
+        data-testid="stage-line"
+        :class="lineClass(index)"
+      />
+      <div
+        class="mini-stage stage-item"
+        :data-testid="`stage-${stage.name}`"
         :class="stageItemClass(stage)"
         :title="stage.label"
         @click="handleClick(stage)"
       >
-        <div class="mini-circle" :class="stageCircleClass(stage)">
+        <div class="mini-circle stage-circle" :class="stageCircleClass(stage)">
           <el-icon v-if="isCompleted(stage)" :size="10"><Check /></el-icon>
           <span v-else class="mini-number">{{ index + 1 }}</span>
         </div>
@@ -55,7 +61,8 @@ function lineClass(index: number) {
   const prev = props.stages[index - 1]
   const curr = props.stages[index]
   const bothDone = (prev.status === 'completed' || prev.status === 'readonly') && (curr.status === 'completed' || curr.status === 'readonly')
-  return bothDone ? 'line-done' : 'line-pending'
+  // Keep legacy class for unit tests.
+  return bothDone ? ['line-done', 'line-completed'] : 'line-pending'
 }
 </script>
 
