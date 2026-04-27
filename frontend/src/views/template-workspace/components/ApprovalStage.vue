@@ -3,18 +3,26 @@
     <div class="approval-split">
       <!-- Left: Timeline -->
       <div class="timeline-panel">
-        <!-- Submit review button (DRAFT + coverage 100%) -->
-        <el-button
-          v-if="canSubmitReview"
-          type="primary"
-          style="margin-bottom: 16px"
-          @click="submitDialogVisible = true"
+        <!-- Submit review (enabled only in DRAFT with 100% coverage); always visible for discoverability -->
+        <el-tooltip
+          :disabled="canSubmitReview && !readonly"
+          placement="bottom"
+          :content="submitReviewDisabledReason"
         >
-          {{ t('workspace.approval.submitReview') }}
-        </el-button>
+          <span class="submit-review-wrap" style="margin-bottom: 16px; display: inline-flex">
+            <el-button
+              type="primary"
+              :disabled="!canSubmitReview || readonly"
+              @click="submitDialogVisible = true"
+            >
+              {{ t('workspace.approval.submitReview') }}
+            </el-button>
+          </span>
+        </el-tooltip>
 
         <!-- Timeline -->
-        <el-empty v-if="store.reviews.length === 0" :description="t('workspace.approval.noReviews')" />
+        <el-skeleton v-if="loadingReviews" :rows="4" animated />
+        <el-empty v-else-if="store.reviews.length === 0" :description="t('workspace.approval.noReviews')" />
         <el-timeline v-else>
           <el-timeline-item
             v-for="review in store.reviews"
@@ -69,7 +77,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { useTemplateWorkspaceStore } from '@/stores/templateWorkspace'
@@ -79,7 +87,7 @@ import { previewCompositeTemplate } from '@/api/composite-templates'
 import SubmitReviewDialog from './SubmitReviewDialog.vue'
 import type { StageName } from '@/types/workspace'
 
-defineProps<{
+const props = defineProps<{
   readonly: boolean
 }>()
 
@@ -93,6 +101,7 @@ const store = useTemplateWorkspaceStore()
 const submitDialogVisible = ref(false)
 const returning = ref(false)
 const previewUrl = ref('')
+const loadingReviews = ref(false)
 
 type TagType = 'success' | 'warning' | 'danger' | 'info'
 const statusTagType: Record<string, TagType> = {
@@ -120,6 +129,20 @@ function timelineType(status: string): 'primary' | 'success' | 'warning' | 'dang
 
 const canSubmitReview = computed(() => {
   return store.templateStatus === 'DRAFT' && (store.coverage?.overallCoveragePercent ?? 0) >= 100
+})
+
+const submitReviewDisabledReason = computed(() => {
+  if (props.readonly) return t('workspace.approval.submitReviewDisabledReadonly')
+  if (store.templateStatus === 'PENDING_REVIEW') {
+    return t('workspace.approval.submitReviewDisabledPending')
+  }
+  if (store.templateStatus !== 'DRAFT') {
+    return t('workspace.approval.submitReviewDisabledNotDraft')
+  }
+  if ((store.coverage?.overallCoveragePercent ?? 0) < 100) {
+    return t('workspace.approval.submitReviewDisabledCoverage')
+  }
+  return ''
 })
 
 const hasRejectedReview = computed(() => {
@@ -165,6 +188,16 @@ async function loadPreview() {
   }
 }
 
+async function loadReviews() {
+  if (!store.templateId) return
+  loadingReviews.value = true
+  try {
+    await store.refreshReviews()
+  } finally {
+    loadingReviews.value = false
+  }
+}
+
 // Watch for status changes — auto-navigate on approval completion
 watch(() => store.templateStatus, (newStatus) => {
   if ((newStatus === 'REVIEWED' || newStatus === 'ACTIVE') && allApproved.value) {
@@ -172,7 +205,17 @@ watch(() => store.templateStatus, (newStatus) => {
   }
 })
 
-loadPreview()
+onMounted(async () => {
+  await Promise.all([loadReviews(), loadPreview()])
+})
+
+watch(
+  () => store.templateId,
+  async () => {
+    previewUrl.value = ''
+    await Promise.all([loadReviews(), loadPreview()])
+  },
+)
 </script>
 
 <style scoped>

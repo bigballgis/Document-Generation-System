@@ -789,6 +789,11 @@
       "statusReady": "通過",
       "statusNeedsFix": "需修正",
       "readinessOverall": "整體就緒度",
+      "coverageOverall": "整體覆蓋率",
+      "coverageFromSituations": "基於 {total} 個情形",
+      "coverageBranch": "分支覆蓋率",
+      "coverageLoop": "迴圈覆蓋率",
+      "coverageParam": "參數覆蓋率",
       "readinessBand90": "可提交審查",
       "readinessBand70": "接近就緒",
       "readinessBand1": "需補充場景",
@@ -818,7 +823,11 @@
         "pending": "待審核"
       },
       "submitReview": "提交審核",
-      "returnToEdit": "返回修改"
+      "returnToEdit": "返回修改",
+      "submitReviewDisabledReadonly": "工作區為唯讀模式。",
+      "submitReviewDisabledPending": "此範本已提交審核。請在「審批」步驟查看時間軸。",
+      "submitReviewDisabledNotDraft": "僅在範本為「草稿」狀態時可提交審核。",
+      "submitReviewDisabledCoverage": "整體測試覆蓋率需達 100% 後才能提交審核。"
     },
     "publish": {
       "summary": {
@@ -875,7 +884,7 @@
       "rollback": "回滾",
       "rollbackConfirm": "確定要回滾到此版本嗎？當前內容將被覆蓋。",
       "rollbackSuccess": "片段已回滾成功",
-      "fileChanged": "檔案內容已變更",
+      "fileChanged": "檔案路徑已變更",
       "noDifferences": "無差異",
       "diffField": "欄位",
       "diffType": "變更類型",

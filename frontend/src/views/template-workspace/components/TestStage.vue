@@ -16,6 +16,21 @@
         <el-icon><VideoPlay /></el-icon>
         {{ t('workspace.validation.runAllTrials') }}
       </el-button>
+      <el-tooltip
+        :disabled="canSubmitReview && !readonly"
+        placement="bottom"
+        :content="submitReviewDisabledReason"
+      >
+        <span class="toolbar-submit-wrap">
+          <el-button
+            type="success"
+            :disabled="!canSubmitReview || readonly"
+            @click="submitDialogVisible = true"
+          >
+            {{ t('workspace.approval.submitReview') }}
+          </el-button>
+        </span>
+      </el-tooltip>
     </div>
 
     <div v-if="store.warnings.testCases" class="inline-warn">
@@ -86,6 +101,11 @@
       </div>
     </div>
 
+    <SubmitReviewDialog
+      v-model:visible="submitDialogVisible"
+      @submit="handleSubmitReview"
+    />
+
     <el-drawer
       v-model="trialRecordsVisible"
       :title="t('workspace.validation.trialRecordsTitle')"
@@ -103,11 +123,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { VideoPlay, Close } from '@element-plus/icons-vue'
 import { useTemplateWorkspaceStore } from '@/stores/templateWorkspace'
+import { submitForReview } from '@/api/admin'
+import { submitReview } from '@/api/templates'
 import { runAllTestCases, runTestCase, isTestPassed, type TestCaseDTO } from '@/api/market'
 import { getScenarioReadiness } from '@/api/templates'
 import type { ScenarioReadinessReportDTO } from '@/types/scenarioReadiness'
@@ -115,13 +137,47 @@ import BusinessScenarioListPanel from './BusinessScenarioListPanel.vue'
 import BusinessScenarioEditorTabContent from './BusinessScenarioEditorTabContent.vue'
 import TemplateReadinessDashboard from './TemplateReadinessDashboard.vue'
 import TrialRecordsPanel from './TrialRecordsPanel.vue'
+import SubmitReviewDialog from './SubmitReviewDialog.vue'
 
-defineProps<{
+const props = defineProps<{
   readonly: boolean
 }>()
 
 const { t } = useI18n()
 const store = useTemplateWorkspaceStore()
+
+const submitDialogVisible = ref(false)
+
+const canSubmitReview = computed(() => {
+  return store.templateStatus === 'DRAFT' && (store.coverage?.overallCoveragePercent ?? 0) >= 100
+})
+
+const submitReviewDisabledReason = computed(() => {
+  if (props.readonly) return t('workspace.approval.submitReviewDisabledReadonly')
+  if (store.templateStatus === 'PENDING_REVIEW') {
+    return t('workspace.approval.submitReviewDisabledPending')
+  }
+  if (store.templateStatus !== 'DRAFT') {
+    return t('workspace.approval.submitReviewDisabledNotDraft')
+  }
+  if ((store.coverage?.overallCoveragePercent ?? 0) < 100) {
+    return t('workspace.approval.submitReviewDisabledCoverage')
+  }
+  return ''
+})
+
+async function handleSubmitReview(reviewerIds: number[], reviewLevel: number) {
+  if (!store.templateId) return
+  try {
+    await submitForReview(store.templateId, { reviewerIds, reviewLevel })
+    await submitReview(store.templateId)
+    await Promise.all([store.refreshTemplate(), store.refreshReviews()])
+    submitDialogVisible.value = false
+    ElMessage.success(t('workspace.reviewPublish.submitSuccess'))
+  } catch (e: any) {
+    ElMessage.error(e.response?.data?.message || e.message || t('workspace.reviewPublish.submitFailed'))
+  }
+}
 
 interface OpenTab {
   key: string
@@ -361,6 +417,10 @@ watch(
   gap: 8px;
   flex-shrink: 0;
   flex-wrap: wrap;
+}
+.toolbar-submit-wrap {
+  display: inline-flex;
+  vertical-align: middle;
 }
 .inline-warn {
   flex-shrink: 0;

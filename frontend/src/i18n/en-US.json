@@ -790,6 +790,11 @@
       "statusReady": "Ready",
       "statusNeedsFix": "Needs fix",
       "readinessOverall": "Overall readiness",
+      "coverageOverall": "Overall coverage",
+      "coverageFromSituations": "From {total} situations",
+      "coverageBranch": "Branch coverage",
+      "coverageLoop": "Loop coverage",
+      "coverageParam": "Parameter coverage",
       "readinessBand90": "Ready for review",
       "readinessBand70": "Almost ready",
       "readinessBand1": "Needs more scenarios",
@@ -819,7 +824,11 @@
         "pending": "Pending"
       },
       "submitReview": "Submit for Review",
-      "returnToEdit": "Return to Edit"
+      "returnToEdit": "Return to Edit",
+      "submitReviewDisabledReadonly": "This workspace is read-only.",
+      "submitReviewDisabledPending": "This template is already submitted for review. Check the Approval step for the review timeline.",
+      "submitReviewDisabledNotDraft": "Submit is only available when the template is in Draft status.",
+      "submitReviewDisabledCoverage": "Overall test coverage must reach 100% before you can submit for review."
     },
     "publish": {
       "summary": {
@@ -876,7 +885,7 @@
       "rollback": "Rollback",
       "rollbackConfirm": "Are you sure you want to rollback to this version? Current content will be overwritten.",
       "rollbackSuccess": "Segment rolled back successfully",
-      "fileChanged": "File content changed",
+      "fileChanged": "File path changed",
       "noDifferences": "No differences",
       "diffField": "Field",
       "diffType": "Change Type",

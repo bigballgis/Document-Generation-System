@@ -9,7 +9,7 @@ const ImageModule = require('docxtemplater-image-module-free');
  * Angular parser with built-in filters for template expressions.
  * Enables: {user.name}, {price * 1.2}, {name | upper}, {items | sumBy:'price'}, etc.
  */
-const parser = expressionParser.configure({
+const angularParser = expressionParser.configure({
   filters: {
     // ── String filters ──
     upper(input) { return input ? String(input).toUpperCase() : input; },
@@ -122,6 +122,29 @@ const parser = expressionParser.configure({
     },
   },
 });
+
+/**
+ * Wrapper to tolerate image-style tags (ex: "%bank_logo") even when the image module
+ * isn't used (scan-variables) or when we fall back to rendering without the image module.
+ *
+ * Docxtemplater image tags use a leading '%' which is not valid in angular-expressions.
+ * Stripping the prefix keeps placeholder discovery and fallback render working.
+ */
+function parser(tag) {
+  if (typeof tag === 'string' && tag.startsWith('%')) {
+    return angularParser(tag.slice(1));
+  }
+  if (typeof tag === 'string') {
+    // Legacy templates sometimes use "x | count + 1" (invalid for angular-expressions).
+    // Rewrite to "(x | count) + 1" which parses correctly.
+    const countPlusRe = /^(.+?\|\s*count)\s*\+\s*(\d+)\s*$/;
+    const m = tag.match(countPlusRe);
+    if (m) {
+      return angularParser(`(${m[1].trim()}) + ${m[2]}`);
+    }
+  }
+  return angularParser(tag);
+}
 
 function createImageModule() {
   return new ImageModule({

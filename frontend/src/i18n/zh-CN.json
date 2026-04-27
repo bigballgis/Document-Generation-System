@@ -789,6 +789,11 @@
       "statusReady": "通过",
       "statusNeedsFix": "需修正",
       "readinessOverall": "整体就绪度",
+      "coverageOverall": "整体覆盖率",
+      "coverageFromSituations": "基于 {total} 个情形",
+      "coverageBranch": "分支覆盖率",
+      "coverageLoop": "循环覆盖率",
+      "coverageParam": "参数覆盖率",
       "readinessBand90": "可提交评审",
       "readinessBand70": "接近就绪",
       "readinessBand1": "需补充场景",
@@ -818,7 +823,11 @@
         "pending": "待审核"
       },
       "submitReview": "提交审核",
-      "returnToEdit": "返回修改"
+      "returnToEdit": "返回修改",
+      "submitReviewDisabledReadonly": "工作区为只读模式。",
+      "submitReviewDisabledPending": "该模板已提交审核。请在「审批」步骤查看时间线。",
+      "submitReviewDisabledNotDraft": "仅在模板为「草稿」状态时可提交审核。",
+      "submitReviewDisabledCoverage": "总体测试覆盖率需达到 100% 后才能提交审核。"
     },
     "publish": {
       "summary": {
@@ -875,7 +884,7 @@
       "rollback": "回滚",
       "rollbackConfirm": "确定要回滚到此版本吗？当前内容将被覆盖。",
       "rollbackSuccess": "片段已回滚成功",
-      "fileChanged": "文件内容已变更",
+      "fileChanged": "文件路径已变更",
       "noDifferences": "无差异",
       "diffField": "字段",
       "diffType": "变更类型",

@@ -1,7 +1,10 @@
 <template>
   <div class="readiness-dashboard">
     <div class="panel-header">
-      <span class="panel-title">{{ t('workspace.validation.readinessDashboard') }}</span>
+      <div class="header-left">
+        <span class="panel-title">{{ t('workspace.validation.readinessDashboard') }}</span>
+        <span v-if="report?.checkedAt" class="panel-subtitle">{{ formatWhen(report.checkedAt) }}</span>
+      </div>
       <el-button size="small" :loading="refreshing || loading" @click="onRefreshClick">
         {{ t('workspace.testing.refreshCoverage') }}
       </el-button>
@@ -9,16 +12,49 @@
     <div class="dashboard-body">
       <el-skeleton v-if="loading && !report" :rows="3" animated />
       <template v-else-if="report">
-        <div v-if="overallBand" class="overall-row">
-          <span class="overall-label">{{ t('workspace.validation.readinessOverall') }}</span>
-          <el-tag :type="overallTagType" size="small">{{ overallBand }}</el-tag>
-          <span class="overall-pct">{{ formatPct(report.readiness.overallReadiness) }}</span>
-        </div>
-        <CoverageBar
-          :branch-coverage="report.readiness.conditionalClauseReadiness"
-          :loop-coverage="report.readiness.repeatingDetailReadiness"
-          :parameter-coverage="report.readiness.requiredInformationReadiness"
-        />
+        <el-card shadow="never" class="hero-card">
+          <div class="hero-top">
+            <div class="hero-metric">
+              <div class="hero-metric-label">{{ t('workspace.validation.readinessOverall') }}</div>
+              <div class="hero-metric-value">
+                <span class="hero-pct">{{ formatPct(report.readiness.overallReadiness) }}</span>
+                <el-tag :type="overallTagType" size="small">{{ overallBand }}</el-tag>
+              </div>
+            </div>
+            <div v-if="coverageOverallLabel" class="hero-metric">
+              <div class="hero-metric-label">{{ t('workspace.validation.coverageOverall') }}</div>
+              <div class="hero-metric-value">
+                <span class="hero-pct">{{ formatPct(coverageOverallPct) }}</span>
+                <el-tag type="info" size="small">{{ coverageOverallLabel }}</el-tag>
+              </div>
+            </div>
+          </div>
+          <CoverageBar
+            :branch-coverage="report.readiness.conditionalClauseReadiness"
+            :loop-coverage="report.readiness.repeatingDetailReadiness"
+            :parameter-coverage="report.readiness.requiredInformationReadiness"
+          />
+          <div v-if="hasAnyCoverageTotals" class="coverage-detail">
+            <div class="coverage-detail-row">
+              <span class="coverage-detail-label">{{ t('workspace.validation.coverageBranch') }}</span>
+              <span class="coverage-detail-value">
+                {{ coverageLabel(report.readiness.coveredBranches, report.readiness.totalBranches) }}
+              </span>
+            </div>
+            <div class="coverage-detail-row">
+              <span class="coverage-detail-label">{{ t('workspace.validation.coverageLoop') }}</span>
+              <span class="coverage-detail-value">
+                {{ coverageLabel(report.readiness.coveredLoopScenarios, report.readiness.totalLoopScenarios) }}
+              </span>
+            </div>
+            <div class="coverage-detail-row">
+              <span class="coverage-detail-label">{{ t('workspace.validation.coverageParam') }}</span>
+              <span class="coverage-detail-value">
+                {{ coverageLabel(report.readiness.coveredParameters, report.readiness.totalParameters) }}
+              </span>
+            </div>
+          </div>
+        </el-card>
         <el-alert
           v-for="(w, idx) in localizedWarnings"
           :key="`w-${idx}`"
@@ -92,6 +128,26 @@ function formatPct(v: number) {
   return `${Math.round(v * 100) / 100}%`
 }
 
+function formatWhen(iso: string) {
+  try {
+    return new Date(iso).toLocaleString()
+  } catch {
+    return iso
+  }
+}
+
+function safeRatioPct(covered: number, total: number): number {
+  const c = Number.isFinite(covered) ? covered : 0
+  const t = Number.isFinite(total) ? total : 0
+  if (t <= 0) return 0
+  return Math.round((c / t) * 10000) / 100
+}
+
+function coverageLabel(covered: number, total: number): string {
+  const pct = safeRatioPct(covered, total)
+  return `${covered}/${total} (${formatPct(pct)})`
+}
+
 function overallBandLabel(pct: number): string {
   if (pct >= 90) return t('workspace.validation.readinessBand90')
   if (pct >= 70) return t('workspace.validation.readinessBand70')
@@ -102,6 +158,28 @@ function overallBandLabel(pct: number): string {
 const overallBand = computed(() => {
   if (!report.value) return ''
   return overallBandLabel(report.value.readiness.overallReadiness)
+})
+
+const hasAnyCoverageTotals = computed(() => {
+  const r = report.value?.readiness
+  if (!r) return false
+  return (r.totalBranches ?? 0) > 0 || (r.totalLoopScenarios ?? 0) > 0 || (r.totalParameters ?? 0) > 0
+})
+
+const coverageOverallPct = computed(() => {
+  const r = report.value?.readiness
+  if (!r) return 0
+  const covered = (r.coveredBranches ?? 0) + (r.coveredLoopScenarios ?? 0) + (r.coveredParameters ?? 0)
+  const total = (r.totalBranches ?? 0) + (r.totalLoopScenarios ?? 0) + (r.totalParameters ?? 0)
+  return safeRatioPct(covered, total)
+})
+
+const coverageOverallLabel = computed(() => {
+  const r = report.value?.readiness
+  if (!r) return ''
+  const total = (r.totalBranches ?? 0) + (r.totalLoopScenarios ?? 0) + (r.totalParameters ?? 0)
+  if (total <= 0) return ''
+  return t('workspace.validation.coverageFromSituations', { total })
 })
 
 const overallTagType = computed(() => {
@@ -211,6 +289,19 @@ watch(
   font-weight: 600;
   font-size: 13px;
 }
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.panel-subtitle {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .dashboard-body {
   flex: 1;
   min-height: 0;
@@ -233,6 +324,55 @@ watch(
 }
 .overall-pct {
   color: var(--el-text-color-secondary);
+}
+.hero-card {
+  border-radius: 10px;
+}
+.hero-top {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.hero-metric-label {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+.hero-metric-value {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.hero-pct {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+.coverage-detail {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px dashed var(--el-border-color-lighter);
+  background: var(--el-fill-color-lighter);
+  margin-top: 10px;
+}
+.coverage-detail-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.coverage-detail-label {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+.coverage-detail-value {
+  font-size: 12px;
+  color: var(--el-text-color-regular);
+  font-variant-numeric: tabular-nums;
 }
 .warn-alert {
   flex-shrink: 0;

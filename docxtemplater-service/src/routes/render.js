@@ -6,6 +6,7 @@ const { parser, createImageModule } = require('../docx-templater-config');
 const { getFileBuffer, putFileBuffer } = require('../minio-client');
 const { generateBarcode, generateQRCode } = require('../utils/barcode');
 const { applyTextWatermark, applyImageWatermark } = require('../utils/watermark');
+const { rewriteLegacyIfTagsInZip } = require('../utils/legacy-if-tags');
 
 /**
  * Preprocess render data to convert flat aggregation keys (e.g., "items.$sum_price")
@@ -64,7 +65,7 @@ router.post('/', async (req, res) => {
 
     // Fetch template from MinIO
     const templateBuffer = await getFileBuffer(templatePath);
-    const zip = new PizZip(templateBuffer);
+    const zip = rewriteLegacyIfTagsInZip(new PizZip(templateBuffer));
 
     // Prepare rendering data - resolve barcodes/QR codes to image buffers
     const renderData = { ...data };
@@ -82,18 +83,49 @@ router.post('/', async (req, res) => {
       }
     }
 
-    // Configure Docxtemplater with angular parser
-    const modules = [createImageModule()];
-    const doc = new Docxtemplater(zip, {
-      modules,
-      paragraphLoop: true,
-      linebreaks: true,
-      parser,
-    });
+    function buildDoc(modules) {
+      return new Docxtemplater(zip, {
+        modules,
+        paragraphLoop: true,
+        linebreaks: true,
+        parser,
+      });
+    }
+
+    function isMalformedImageTagError(err) {
+      const props = err && err.properties;
+      const id = props && props.id;
+      if (id === 'raw_tag_outerxml_invalid' || id === 'no_xml_tag_found_at_left') return true;
+      if (id !== 'multi_error') return false;
+      const errors = Array.isArray(props.errors) ? props.errors : [];
+      for (const e of errors) {
+        const eid = e && e.properties && e.properties.id;
+        const rootId = e && e.properties && e.properties.rootError && e.properties.rootError.properties
+          ? e.properties.rootError.properties.id
+          : undefined;
+        if (eid === 'raw_tag_outerxml_invalid' || eid === 'no_xml_tag_found_at_left') return true;
+        if (rootId === 'raw_tag_outerxml_invalid' || rootId === 'no_xml_tag_found_at_left') return true;
+      }
+      return false;
+    }
 
     // Render document with data (supports conditions, loops, nested loops, tables)
     injectAggregationProperties(renderData);
-    doc.render(renderData);
+
+    // Prefer image module, but fall back when templates contain malformed image placeholders
+    // (e.g. raw tag not in paragraph). This keeps demos usable while allowing gradual cleanup.
+    let doc;
+    try {
+      doc = buildDoc([createImageModule()]);
+      doc.render(renderData);
+    } catch (err) {
+      if (!isMalformedImageTagError(err)) {
+        throw err;
+      }
+      console.warn('Render retry without image module due to malformed image tag:', err.message);
+      doc = buildDoc([]);
+      doc.render(renderData);
+    }
 
     let outputBuffer = doc.getZip().generate({ type: 'nodebuffer' });
 

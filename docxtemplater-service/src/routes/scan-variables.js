@@ -4,6 +4,7 @@ const PizZip = require('pizzip');
 const { getTags } = require('docxtemplater/js/get-tags');
 const { parser, createImageModule } = require('../docx-templater-config');
 const { getFileBuffer } = require('../minio-client');
+const { rewriteLegacyIfTagsInZip } = require('../utils/legacy-if-tags');
 
 const router = express.Router();
 
@@ -85,9 +86,12 @@ router.post('/', async (req, res) => {
       throw err;
     }
 
-    const zip = new PizZip(templateBuffer);
+    const zip = rewriteLegacyIfTagsInZip(new PizZip(templateBuffer));
+    // For variable discovery, images are not required and the image module can fail
+    // on templates that place raw image tags outside of a paragraph. Avoid breaking
+    // readiness/coverage when only image placeholders are malformed.
     const doc = new Docxtemplater(zip, {
-      modules: [createImageModule()],
+      modules: [],
       paragraphLoop: true,
       linebreaks: true,
       parser,
