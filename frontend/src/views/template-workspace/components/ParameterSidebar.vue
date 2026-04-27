@@ -209,14 +209,12 @@
         </div>
       </div>
 
-      <!-- Save & Publish (pinned to bottom) -->
+      <!-- Save draft (pinned to bottom). Template review is submitted from Test/Approval, not here. -->
       <div v-if="!readonly && store.isDraft" class="sidebar-actions">
-        <el-button type="primary" :loading="saving" style="flex: 1" @click="handleSave">
+        <el-button type="primary" :loading="saving" class="sidebar-save-btn" @click="handleSave">
           {{ t('workspace.design.sidebar.save') }}
         </el-button>
-        <el-button type="success" :loading="publishing" style="flex: 1" @click="handlePublish">
-          {{ t('workspace.design.sidebar.publish') }}
-        </el-button>
+        <p class="sidebar-workflow-hint">{{ t('workspace.design.sidebar.reviewWorkflowHint') }}</p>
       </div>
     </div>
   </div>
@@ -229,7 +227,6 @@ import { ElMessage } from 'element-plus'
 import { List, ArrowRight, Search, Plus, RefreshRight } from '@element-plus/icons-vue'
 import { useTemplateWorkspaceStore } from '@/stores/templateWorkspace'
 import { createParameter } from '@/api/parameters'
-import { submitReview } from '@/api/templates'
 import { updateAssemblyConfig } from '@/api/composite-templates'
 import type { ParameterDTO, DataType } from '@/types/parameter'
 
@@ -474,9 +471,8 @@ async function handleCreateParameter() {
   } finally { creating.value = false }
 }
 
-// ── Save & Publish ──
+// ── Save draft (assembly) ──
 const saving = ref(false)
-const publishing = ref(false)
 
 async function handleSave() {
   saving.value = true
@@ -493,22 +489,6 @@ async function handleSave() {
   }
 }
 
-async function handlePublish() {
-  publishing.value = true
-  try {
-    // Save first, then submit for review
-    if (store.assemblyConfig) {
-      await updateAssemblyConfig(store.templateId, store.assemblyConfig)
-    }
-    await submitReview(store.templateId)
-    await Promise.all([store.refreshTemplate(), store.refreshTransitions()])
-    ElMessage.success(t('workspace.design.sidebar.publishSuccess'))
-  } catch (e: any) {
-    ElMessage.error(e.response?.data?.message || e.message || t('message.operationFailed'))
-  } finally {
-    publishing.value = false
-  }
-}
 </script>
 
 <style scoped>
@@ -588,5 +568,20 @@ async function handlePublish() {
 .creator-form .el-input { flex: 1; min-width: 80px; }
 
 /* ── Save & Publish ── */
-.sidebar-actions { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--el-border-color-lighter); flex-shrink: 0; background: var(--el-bg-color); }
+.sidebar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--el-border-color-lighter);
+  flex-shrink: 0;
+  background: var(--el-bg-color);
+}
+.sidebar-save-btn { width: 100%; }
+.sidebar-workflow-hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--el-text-color-secondary);
+}
 </style>

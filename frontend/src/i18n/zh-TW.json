@@ -1140,8 +1140,7 @@
         "filterGroupDate": "日期",
         "filterUsageHint": "點擊複製過濾器語法，在範本中使用 {變數 | 過濾器} 格式",
         "save": "儲存",
-        "publish": "發佈",
-        "publishSuccess": "已提交審核",
+        "reviewWorkflowHint": "範本提交審核請使用「測試」與「審批」階段；片段版本請在片段畫布上發佈，而非此處。",
         "rowExpression": "行級表達式 — 僅可引用當前行欄位",
         "objectExpression": "物件級表達式 — 僅可引用同級欄位"
       },

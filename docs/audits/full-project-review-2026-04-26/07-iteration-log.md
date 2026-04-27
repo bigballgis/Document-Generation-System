@@ -824,6 +824,21 @@ Remaining risks: Word field refresh (TOC/PAGE) still requires client-side Update
 Related tracking items: —  
 Next step: —  
 
+## 2026-04-28 — WP-01: Parameter sidebar no longer submits whole template for review
+
+Date: 2026-04-28  
+Workstream: Template workflow (WP-01)  
+Summary: Removed the misleading **Publish** control from `ParameterSidebar` that called `submitReview` (whole-template review) while users work in the segment editor context. The sidebar now only saves the assembly draft and shows a short hint that review is started from Test/Approval and segment versions are published from the segment canvas.  
+Files changed:
+- `frontend/src/views/template-workspace/components/ParameterSidebar.vue`
+- `frontend/src/i18n/en-US.json`, `zh-CN.json`, `zh-TW.json`
+- `frontend/src/__tests__/components/ParameterSidebar.workflow.test.ts`  
+Validation commands: `npx vitest --run src/__tests__/components/ParameterSidebar.workflow.test.ts`; `npm run type-check` (from `frontend/`).  
+Validation result: Vitest 4 passed; type-check OK.  
+Remaining risks: Users must use Test/Approval (and future submit-to-test flow) for template review; no backend `IN_TEST` state yet.  
+Related tracking items: —  
+Next step: WP-02+ (team, state machine, unified review API) per workflow plan.  
+
 ## Entry Template
 
 ```text

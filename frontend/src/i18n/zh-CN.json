@@ -1140,8 +1140,7 @@
         "filterGroupDate": "日期",
         "filterUsageHint": "点击复制过滤器语法，在模板中使用 {变量 | 过滤器} 格式",
         "save": "保存",
-        "publish": "发布",
-        "publishSuccess": "已提交审核",
+        "reviewWorkflowHint": "模板提交审核请使用「测试」与「审批」阶段；片段版本请在片段画布上发布，而非此处。",
         "rowExpression": "行级表达式 — 仅可引用当前行字段",
         "objectExpression": "对象级表达式 — 仅可引用同级字段"
       },

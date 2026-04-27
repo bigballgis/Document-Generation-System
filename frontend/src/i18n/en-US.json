@@ -1141,8 +1141,7 @@
         "filterGroupDate": "Date",
         "filterUsageHint": "Click to copy filter syntax. Use {variable | filter} format in templates",
         "save": "Save",
-        "publish": "Publish",
-        "publishSuccess": "Submitted for review",
+        "reviewWorkflowHint": "Use the Test and Approval stages to run validation and submit the template for review. Segment versions are published from the segment canvas, not here.",
         "rowExpression": "Row-level expression — can only reference current row fields",
         "objectExpression": "Object-level expression — can only reference sibling fields"
       },
