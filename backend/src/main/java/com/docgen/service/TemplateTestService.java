@@ -225,14 +225,18 @@ public class TemplateTestService {
         };
     }
 
-    private String truncateJson(String json) {
+    private String truncateJson(String json) throws JsonProcessingException {
         if (json == null) {
             return "{}";
         }
         if (json.length() <= MAX_ACTUAL_JSON_CHARS) {
             return json;
         }
-        return json.substring(0, MAX_ACTUAL_JSON_CHARS) + "\n...[truncated]";
+        Map<String, Object> truncated = new LinkedHashMap<>();
+        truncated.put("_truncated", true);
+        truncated.put("_jsonPrefix", json.substring(0, MAX_ACTUAL_JSON_CHARS));
+        truncated.put("_originalLength", json.length());
+        return objectMapper.writeValueAsString(truncated);
     }
 
     @Transactional
