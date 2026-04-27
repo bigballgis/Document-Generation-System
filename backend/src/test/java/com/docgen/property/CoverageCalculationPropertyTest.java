@@ -143,6 +143,7 @@ class CoverageCalculationPropertyTest {
         when(paramRepo.findByTemplateIdOrderBySortOrderAsc(TEMPLATE_ID)).thenReturn(params);
         when(testCaseRepo.findByTemplateIdOrderByCreatedAtDesc(TEMPLATE_ID)).thenReturn(testCases);
 
-        return new CoverageCheckService(templateRepo, scanService, paramRepo, testCaseRepo, MAPPER);
+        return new CoverageCheckService(templateRepo, scanService, paramRepo, testCaseRepo, MAPPER,
+                new com.docgen.service.TemplateCoverageAnalyzer());
     }
 }

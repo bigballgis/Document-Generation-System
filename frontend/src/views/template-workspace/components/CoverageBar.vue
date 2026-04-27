@@ -3,30 +3,30 @@
     <div class="coverage-item">
       <span class="coverage-label">{{ t('workspace.coverageBar.branch') }}</span>
       <el-progress
-        :percentage="coverageData?.branchCoverage ?? 0"
+        :percentage="branchCoverage"
         :stroke-width="8"
         :text-inside="true"
-        :status="(coverageData?.branchCoverage ?? 0) >= 100 ? 'success' : ''"
+        :status="branchCoverage >= 100 ? 'success' : ''"
         style="width: 140px"
       />
     </div>
     <div class="coverage-item">
       <span class="coverage-label">{{ t('workspace.coverageBar.loop') }}</span>
       <el-progress
-        :percentage="coverageData?.loopCoverage ?? 0"
+        :percentage="loopCoverage"
         :stroke-width="8"
         :text-inside="true"
-        :status="(coverageData?.loopCoverage ?? 0) >= 100 ? 'success' : ''"
+        :status="loopCoverage >= 100 ? 'success' : ''"
         style="width: 140px"
       />
     </div>
     <div class="coverage-item">
       <span class="coverage-label">{{ t('workspace.coverageBar.param') }}</span>
       <el-progress
-        :percentage="coverageData?.parameterCoverage ?? 0"
+        :percentage="parameterCoverage"
         :stroke-width="8"
         :text-inside="true"
-        :status="(coverageData?.parameterCoverage ?? 0) >= 100 ? 'success' : ''"
+        :status="parameterCoverage >= 100 ? 'success' : ''"
         style="width: 140px"
       />
     </div>
@@ -37,35 +37,34 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useTemplateWorkspaceStore } from '@/stores/templateWorkspace'
-import request from '@/api/request'
-import type { CoverageReport as ParameterCoverageReport } from '@/types/parameter'
+
+const props = withDefaults(
+  defineProps<{
+    branchCoverage?: number
+    loopCoverage?: number
+    parameterCoverage?: number
+  }>(),
+  {
+    branchCoverage: 0,
+    loopCoverage: 0,
+    parameterCoverage: 0,
+  },
+)
 
 const { t } = useI18n()
-const store = useTemplateWorkspaceStore()
 
-const coverageData = ref<ParameterCoverageReport | null>(null)
+const branchCoverage = computed(() => Math.round(props.branchCoverage * 100) / 100)
+const loopCoverage = computed(() => Math.round(props.loopCoverage * 100) / 100)
+const parameterCoverage = computed(() => Math.round(props.parameterCoverage * 100) / 100)
 
-const allCovered = computed(() => {
-  if (!coverageData.value) return false
-  return (
-    coverageData.value.branchCoverage >= 100 &&
-    coverageData.value.loopCoverage >= 100 &&
-    coverageData.value.parameterCoverage >= 100
-  )
-})
-
-onMounted(async () => {
-  try {
-    coverageData.value = await request.get<any, ParameterCoverageReport>(`/templates/${store.templateId}/coverage`)
-  } catch {
-    // silent — coverage data is optional
-  }
-})
-
-defineExpose({ coverageData })
+const allCovered = computed(
+  () =>
+    branchCoverage.value >= 100 &&
+    loopCoverage.value >= 100 &&
+    parameterCoverage.value >= 100,
+)
 </script>
 
 <style scoped>

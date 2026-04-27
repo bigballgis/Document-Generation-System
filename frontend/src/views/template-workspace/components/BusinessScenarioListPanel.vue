@@ -27,7 +27,12 @@
         >
           <div class="row-main">
             <span class="row-name" :title="row.name">{{ row.name }}</span>
-            <el-tag size="small" :type="statusTagType(row)">{{ statusLabel(row) }}</el-tag>
+            <div class="row-badges">
+              <el-tag v-if="readinessPct(row) != null" size="small" type="info">
+                {{ readinessPct(row) }}%
+              </el-tag>
+              <el-tag size="small" :type="statusTagType(row)">{{ statusLabel(row) }}</el-tag>
+            </div>
           </div>
           <div class="row-meta">
             <span v-if="row.lastRun" class="meta-time">{{ formatTime(row.lastRun.executedAt) }}</span>
@@ -69,6 +74,7 @@ const props = defineProps<{
   loading: boolean
   runningId: number | null
   readonly: boolean
+  readinessByTestCaseId?: Record<number, number | null | undefined>
 }>()
 
 defineEmits<{
@@ -101,6 +107,13 @@ function statusLabel(row: TestCaseDTO): string {
 function statusTagType(row: TestCaseDTO): 'success' | 'warning' | 'info' | 'danger' {
   if (!row.lastRun) return 'info'
   return isTestPassed(row.lastRun) ? 'success' : 'danger'
+}
+
+function readinessPct(row: TestCaseDTO): number | null {
+  const v = props.readinessByTestCaseId?.[row.id]
+  if (v == null) return null
+  if (Number.isNaN(Number(v))) return null
+  return Math.round(Number(v) * 100) / 100
 }
 </script>
 
@@ -159,6 +172,12 @@ function statusTagType(row: TestCaseDTO): 'success' | 'warning' | 'info' | 'dang
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 4px;
+}
+.row-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 .row-name {
   font-size: 13px;

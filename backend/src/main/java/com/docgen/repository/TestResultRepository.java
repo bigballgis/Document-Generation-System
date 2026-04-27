@@ -1,6 +1,8 @@
 package com.docgen.repository;
 
 import com.docgen.entity.TestResult;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,6 +21,13 @@ public interface TestResultRepository extends JpaRepository<TestResult, Long> {
     List<TestResult> findByTestCaseIdOrderByExecutedAtDesc(Long testCaseId);
 
     Optional<TestResult> findFirstByTestCaseIdOrderByExecutedAtDesc(Long testCaseId);
+
+    /**
+     * Paged trial history for one test case. Sort must be supplied via {@link Pageable}
+     * (typically {@code executedAt DESC, id DESC}).
+     */
+    @Query("SELECT r FROM TestResult r WHERE r.testCaseId = :testCaseId")
+    Page<TestResult> pageByTestCaseId(@Param("testCaseId") Long testCaseId, Pageable pageable);
 
     /**
      * One row per test case: latest execution (PostgreSQL DISTINCT ON).

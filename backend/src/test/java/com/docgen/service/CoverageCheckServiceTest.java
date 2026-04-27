@@ -48,7 +48,8 @@ class CoverageCheckServiceTest {
     void setUp() {
         service = new CoverageCheckService(
                 templateRepository, templateScanService,
-                parameterRepository, testCaseRepository, objectMapper);
+                parameterRepository, testCaseRepository, objectMapper,
+                new TemplateCoverageAnalyzer());
 
         template = new Template();
         template.setId(1L);

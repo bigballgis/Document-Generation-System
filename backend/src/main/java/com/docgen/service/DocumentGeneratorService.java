@@ -126,7 +126,7 @@ public class DocumentGeneratorService {
 
     /**
      * Validates parameters, runs the pipeline, and renders DOCX in memory for template test execution.
-     * Does not persist a document record or upload output to storage.
+     * {@link TemplateTestService} may persist a TEMP sample via {@link DocumentStorageService} after a successful render.
      */
     public TemplateTestRenderOutcome renderForTemplateTest(long templateId, Map<String, Object> parameters) {
         Template template = templateRepository.findById(templateId)

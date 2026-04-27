@@ -6,6 +6,7 @@ import com.docgen.exception.BusinessException;
 import com.docgen.exception.ErrorCode;
 import com.docgen.exception.ResourceNotFoundException;
 import com.docgen.repository.TestCaseRepository;
+import com.docgen.repository.TemplateRepository;
 import com.docgen.repository.TestResultRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -16,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,23 +41,31 @@ public class TemplateTestService {
     private static final int MAX_DOCX_EXTRACT_BYTES = 512_000;
     /** Maximum page size for listing test cases (abuse prevention). */
     private static final int MAX_TEST_CASE_PAGE_SIZE = 500;
+    /** Maximum page size for listing trial (test) results per scenario. */
+    private static final int MAX_TEST_RESULT_PAGE_SIZE = 100;
 
     private final TestCaseRepository testCaseRepository;
     private final TestResultRepository testResultRepository;
     private final ObjectMapper objectMapper;
     private final DocumentGeneratorService documentGeneratorService;
     private final DocxTextExtractor docxTextExtractor;
+    private final TemplateRepository templateRepository;
+    private final DocumentStorageService documentStorageService;
 
     public TemplateTestService(TestCaseRepository testCaseRepository,
                                TestResultRepository testResultRepository,
                                ObjectMapper objectMapper,
                                DocumentGeneratorService documentGeneratorService,
-                               DocxTextExtractor docxTextExtractor) {
+                               DocxTextExtractor docxTextExtractor,
+                               TemplateRepository templateRepository,
+                               DocumentStorageService documentStorageService) {
         this.testCaseRepository = testCaseRepository;
         this.testResultRepository = testResultRepository;
         this.objectMapper = objectMapper;
         this.documentGeneratorService = documentGeneratorService;
         this.docxTextExtractor = docxTextExtractor;
+        this.templateRepository = templateRepository;
+        this.documentStorageService = documentStorageService;
     }
 
     // ── CRUD operations ──
@@ -144,6 +154,30 @@ public class TemplateTestService {
         testCaseRepository.delete(testCase);
     }
 
+    /**
+     * Paged trial run history for a test case, newest first ({@code executedAt DESC, id DESC}).
+     */
+    @Transactional(readOnly = true)
+    public Page<TestResultDTO> listTestResults(Long testCaseId, Pageable pageable) {
+        TestCase testCase = findTestCaseOrThrow(testCaseId);
+        Pageable safe = capTestResultPageable(pageable);
+        Page<TestResult> page = testResultRepository.pageByTestCaseId(testCaseId, safe);
+        return page.map(r -> toTestResultDTO(r, testCase.getName()));
+    }
+
+    /** Visible for unit tests. */
+    static Pageable capTestResultPageable(Pageable pageable) {
+        int page = Math.max(0, pageable.getPageNumber());
+        int size = pageable.getPageSize();
+        if (size < 1) {
+            size = 20;
+        } else if (size > MAX_TEST_RESULT_PAGE_SIZE) {
+            size = MAX_TEST_RESULT_PAGE_SIZE;
+        }
+        Sort sort = Sort.by(Sort.Order.desc("executedAt"), Sort.Order.desc("id"));
+        return PageRequest.of(page, size, sort);
+    }
+
     // ── Test execution ──
 
     @Transactional
@@ -159,12 +193,45 @@ public class TemplateTestService {
 
             ComparisonResult comparison = runComparison(testCase.getComparisonType(), render, expectedResult);
 
+            Template template = templateRepository.findById(testCase.getTemplateId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            ErrorCode.TEMPLATE_NOT_FOUND,
+                            "Template not found: " + testCase.getTemplateId()));
+
+            byte[] docx = render.docxBytes();
+            boolean hasRenderableOutput = docx != null && docx.length > 0;
+            Long sampleDocumentId = null;
+            if (hasRenderableOutput) {
+                try {
+                    GenerateDocumentResponse stored =
+                            documentStorageService.store(template, docx, "DOCX", "TEMP");
+                    if (stored.getDocumentId() != null) {
+                        sampleDocumentId = stored.getDocumentId();
+                    }
+                } catch (Exception e) {
+                    log.warn("Trial sample document storage failed testCaseId={}: {}", testCaseId, e.getMessage());
+                }
+            }
+
+            String diff = comparison.diffDetails();
+            TestStatus finalStatus;
+            boolean storageRequired = hasRenderableOutput;
+            boolean storageOk = sampleDocumentId != null;
+            if (storageRequired && !storageOk) {
+                finalStatus = TestStatus.FAILED;
+                String storageMsg = "Sample document could not be registered for download.";
+                diff = (diff != null && !diff.isBlank()) ? (diff + "\n\n" + storageMsg) : storageMsg;
+            } else {
+                finalStatus = comparison.passed() ? TestStatus.PASSED : TestStatus.FAILED;
+            }
+
             TestResult result = new TestResult();
             result.setTestCaseId(testCaseId);
-            result.setStatus(comparison.passed() ? TestStatus.PASSED : TestStatus.FAILED);
+            result.setStatus(finalStatus);
             result.setActualResultJson(buildActualResultJson(testCase.getComparisonType(), render));
-            result.setDiffDetails(comparison.diffDetails());
+            result.setDiffDetails(diff);
             result.setExecutedAt(Instant.now());
+            result.setGeneratedDocumentId(sampleDocumentId);
             result = testResultRepository.save(result);
             return toTestResultDTO(result, testCase.getName());
         } catch (BusinessException e) {
@@ -411,6 +478,11 @@ public class TemplateTestService {
         dto.setActualResultJson(entity.getActualResultJson());
         dto.setDiffDetails(entity.getDiffDetails());
         dto.setExecutedAt(entity.getExecutedAt());
+        if (entity.getGeneratedDocumentId() != null) {
+            dto.setSampleDocumentId(entity.getGeneratedDocumentId());
+            dto.setSampleDocumentDownloadUrl(
+                    String.format("/api/documents/%d/download", entity.getGeneratedDocumentId()));
+        }
         return dto;
     }
 

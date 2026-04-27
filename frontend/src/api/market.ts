@@ -64,6 +64,9 @@ export interface TestResultDTO {
   actualResultJson?: string | null
   diffDetails?: string | null
   executedAt: string
+  /** Set when the trial stored a temp sample document in MinIO. */
+  sampleDocumentId?: number | null
+  sampleDocumentDownloadUrl?: string | null
 }
 
 export interface TestReportDTO {
@@ -167,6 +170,13 @@ export function deleteTestCase(testCaseId: number) {
 
 export function runTestCase(testCaseId: number) {
   return request.post<any, TestResultDTO>(`/test-cases/${testCaseId}/run`)
+}
+
+/** Paged trial run history for a business scenario (test case). Newest first. */
+export function getTestCaseResults(testCaseId: number, page = 0, size = 20) {
+  return request.get<any, PageResult<TestResultDTO>>(`/test-cases/${testCaseId}/results`, {
+    params: { page, size },
+  })
 }
 
 export function runAllTestCases(templateId: number) {

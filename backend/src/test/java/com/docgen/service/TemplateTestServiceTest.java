@@ -45,15 +45,32 @@ class TemplateTestServiceTest {
     @Mock
     private DocxTextExtractor docxTextExtractor;
 
+    @Mock
+    private com.docgen.repository.TemplateRepository templateRepository;
+
+    @Mock
+    private DocumentStorageService documentStorageService;
+
     private TemplateTestService service;
     private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
     @BeforeEach
     void setUp() {
         service = new TemplateTestService(testCaseRepository, testResultRepository, objectMapper,
-                documentGeneratorService, docxTextExtractor);
+                documentGeneratorService, docxTextExtractor, templateRepository, documentStorageService);
         lenient().when(testResultRepository.findLatestResultsForTestCaseIds(anyList()))
                 .thenReturn(Collections.emptyList());
+        Template stubTemplate = new Template();
+        stubTemplate.setId(100L);
+        stubTemplate.setTenantId(1L);
+        lenient().when(templateRepository.findById(100L)).thenReturn(Optional.of(stubTemplate));
+        lenient().when(documentStorageService.store(any(Template.class), any(byte[].class), eq("DOCX"), eq("TEMP")))
+                .thenAnswer(inv -> {
+                    GenerateDocumentResponse g = new GenerateDocumentResponse();
+                    g.setDocumentId(500L);
+                    g.setDownloadUrl("/api/documents/500/download");
+                    return g;
+                });
     }
 
     // ── createTestCase ──
@@ -324,6 +341,8 @@ class TemplateTestServiceTest {
         assertEquals(TestStatus.PASSED, result.getStatus());
         assertEquals("TC", result.getTestCaseName());
         assertNull(result.getDiffDetails());
+        assertEquals(500L, result.getSampleDocumentId());
+        assertEquals("/api/documents/500/download", result.getSampleDocumentDownloadUrl());
     }
 
     @Test
@@ -429,6 +448,29 @@ class TemplateTestServiceTest {
         TestResultDTO result = service.runTestCase(1L);
         assertEquals(TestStatus.FAILED, result.getStatus());
         assertTrue(result.getDiffDetails().contains("File snapshot mismatch"));
+    }
+
+    @Test
+    void runTestCase_storageDoesNotReturnDocumentId_marksFailedWhenBytesPresent() {
+        when(documentStorageService.store(any(Template.class), any(byte[].class), eq("DOCX"), eq("TEMP")))
+                .thenReturn(new GenerateDocumentResponse());
+        TestCase tc = createSampleTestCase(1L, 100L, "TC");
+        tc.setTestDataJson("{\"name\":\"John\"}");
+        tc.setExpectedResultJson("{\"name\":\"John\"}");
+        tc.setComparisonType(ComparisonType.VARIABLE_VALUE);
+        when(testCaseRepository.findById(1L)).thenReturn(Optional.of(tc));
+        when(documentGeneratorService.renderForTemplateTest(eq(100L), any()))
+                .thenReturn(new TemplateTestRenderOutcome(Map.of("name", "John"), new byte[]{1}));
+        when(testResultRepository.save(any(TestResult.class))).thenAnswer(inv -> {
+            TestResult r = inv.getArgument(0);
+            r.setId(20L);
+            return r;
+        });
+
+        TestResultDTO result = service.runTestCase(1L);
+        assertEquals(TestStatus.FAILED, result.getStatus());
+        assertTrue(result.getDiffDetails().contains("Sample document could not be registered"));
+        assertNull(result.getSampleDocumentId());
     }
 
     @Test

@@ -59,6 +59,16 @@ public class TemplateTestController {
         return ResponseEntity.ok(templateTestService.runTestCase(testCaseId));
     }
 
+    /**
+     * Paged trial run history for a test case (read-only). Ordered by {@code executedAt DESC, id DESC}.
+     */
+    @GetMapping("/api/test-cases/{testCaseId}/results")
+    public ResponseEntity<Page<TestResultDTO>> listTestResults(
+            @PathVariable Long testCaseId,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(templateTestService.listTestResults(testCaseId, pageable));
+    }
+
     @PostMapping("/api/templates/{templateId}/test-cases/run-all")
     public ResponseEntity<TestReportDTO> runAllTests(@PathVariable Long templateId) {
         return ResponseEntity.ok(templateTestService.runAllTests(templateId));

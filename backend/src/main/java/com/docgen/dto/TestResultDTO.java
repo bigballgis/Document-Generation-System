@@ -17,6 +17,9 @@ public class TestResultDTO {
     private String actualResultJson;
     private String diffDetails;
     private Instant executedAt;
+    /** Populated when the trial stored a sample rendered document. */
+    private Long sampleDocumentId;
+    private String sampleDocumentDownloadUrl;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -38,4 +41,10 @@ public class TestResultDTO {
 
     public Instant getExecutedAt() { return executedAt; }
     public void setExecutedAt(Instant executedAt) { this.executedAt = executedAt; }
+
+    public Long getSampleDocumentId() { return sampleDocumentId; }
+    public void setSampleDocumentId(Long sampleDocumentId) { this.sampleDocumentId = sampleDocumentId; }
+
+    public String getSampleDocumentDownloadUrl() { return sampleDocumentDownloadUrl; }
+    public void setSampleDocumentDownloadUrl(String sampleDocumentDownloadUrl) { this.sampleDocumentDownloadUrl = sampleDocumentDownloadUrl; }
 }

@@ -36,6 +36,9 @@ public class TestResult {
     @Column(name = "executed_at", nullable = false)
     private Instant executedAt;
 
+    @Column(name = "generated_document_id")
+    private Long generatedDocumentId;
+
     @PrePersist
     protected void onCreate() {
         if (this.executedAt == null) {
@@ -62,4 +65,7 @@ public class TestResult {
 
     public Instant getExecutedAt() { return executedAt; }
     public void setExecutedAt(Instant executedAt) { this.executedAt = executedAt; }
+
+    public Long getGeneratedDocumentId() { return generatedDocumentId; }
+    public void setGeneratedDocumentId(Long generatedDocumentId) { this.generatedDocumentId = generatedDocumentId; }
 }

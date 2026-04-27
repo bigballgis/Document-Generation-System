@@ -31,6 +31,7 @@
           :loading="listLoading"
           :running-id="runningId"
           :readonly="readonly"
+          :readiness-by-test-case-id="readinessByTestCaseId"
           @select="onListSelect"
           @run-trial="onRunTrialFromList"
           @open="onOpenFromList"
@@ -88,11 +89,15 @@
     <el-drawer
       v-model="trialRecordsVisible"
       :title="t('workspace.validation.trialRecordsTitle')"
-      size="420px"
+      size="480px"
       destroy-on-close
     >
-      <p v-if="trialRecordsContext" class="drawer-case-name">{{ trialRecordsContext.name }}</p>
-      <el-empty :description="t('workspace.validation.trialRecordsPlaceholder')" />
+      <TrialRecordsPanel
+        v-if="trialRecordsVisible && trialRecordsContext"
+        :key="trialRecordsKey"
+        :test-case-id="trialRecordsContext.id"
+        :scenario-name="trialRecordsContext.name"
+      />
     </el-drawer>
   </div>
 </template>
@@ -104,9 +109,12 @@ import { ElMessage } from 'element-plus'
 import { VideoPlay, Close } from '@element-plus/icons-vue'
 import { useTemplateWorkspaceStore } from '@/stores/templateWorkspace'
 import { runAllTestCases, runTestCase, isTestPassed, type TestCaseDTO } from '@/api/market'
+import { getScenarioReadiness } from '@/api/templates'
+import type { ScenarioReadinessReportDTO } from '@/types/scenarioReadiness'
 import BusinessScenarioListPanel from './BusinessScenarioListPanel.vue'
 import BusinessScenarioEditorTabContent from './BusinessScenarioEditorTabContent.vue'
 import TemplateReadinessDashboard from './TemplateReadinessDashboard.vue'
+import TrialRecordsPanel from './TrialRecordsPanel.vue'
 
 defineProps<{
   readonly: boolean
@@ -130,8 +138,27 @@ const runningId = ref<number | null>(null)
 const runAllLoading = ref(false)
 const trialRecordsVisible = ref(false)
 const trialRecordsContext = ref<TestCaseDTO | null>(null)
+const trialRecordsKey = ref(0)
 const readinessKey = ref(0)
 const readinessRefreshing = ref(false)
+const readinessByTestCaseId = ref<Record<number, number>>({})
+
+async function refreshScenarioReadiness() {
+  if (!store.templateId) {
+    readinessByTestCaseId.value = {}
+    return
+  }
+  try {
+    const rpt = await getScenarioReadiness(store.templateId)
+    const map: Record<number, number> = {}
+    for (const s of (rpt as ScenarioReadinessReportDTO).scenarios ?? []) {
+      map[s.testCaseId] = s.overallReadiness
+    }
+    readinessByTestCaseId.value = map
+  } catch {
+    readinessByTestCaseId.value = {}
+  }
+}
 
 function testCaseForTab(tab: OpenTab): TestCaseDTO | null {
   if (tab.isNew || tab.testCaseId == null) return null
@@ -177,6 +204,10 @@ async function runSingleTrial(row: TestCaseDTO) {
       isTestPassed(result) ? t('test.passed') : t('test.failed'),
     )
     await store.refreshTestCases()
+    await refreshScenarioReadiness()
+    if (trialRecordsVisible.value && trialRecordsContext.value?.id === row.id) {
+      trialRecordsKey.value += 1
+    }
   } catch {
     /* interceptor */
   } finally {
@@ -222,6 +253,7 @@ function onScenarioSaved(payload: { id: number; previousKey: string }) {
   }
   selectedScenarioId.value = payload.id
   void store.refreshTestCases()
+  void refreshScenarioReadiness()
   readinessKey.value += 1
 }
 
@@ -235,11 +267,20 @@ function onScenarioDeleted(id: number) {
   if (selectedScenarioId.value === id) {
     selectedScenarioId.value = null
   }
+  if (trialRecordsContext.value?.id === id) {
+    trialRecordsVisible.value = false
+    trialRecordsContext.value = null
+  }
+  void refreshScenarioReadiness()
   readinessKey.value += 1
 }
 
 function onRunComplete() {
   void store.refreshTestCases()
+  void refreshScenarioReadiness()
+  if (trialRecordsVisible.value && trialRecordsContext.value?.id != null) {
+    trialRecordsKey.value += 1
+  }
   readinessKey.value += 1
 }
 
@@ -250,6 +291,10 @@ async function handleRunAllTrials() {
     const rpt = await runAllTestCases(store.templateId)
     ElMessage.success(`${rpt.passedCount}/${rpt.totalCount} ${t('test.passed')}`)
     await store.refreshTestCases()
+    await refreshScenarioReadiness()
+    if (trialRecordsVisible.value) {
+      trialRecordsKey.value += 1
+    }
     readinessKey.value += 1
   } catch {
     /* interceptor */
@@ -263,7 +308,7 @@ async function onRefreshReadiness() {
   try {
     await store.refreshParameters()
     await store.refreshCoverage()
-    readinessKey.value += 1
+    await refreshScenarioReadiness()
   } catch {
     /* best effort */
   } finally {
@@ -274,12 +319,14 @@ async function onRefreshReadiness() {
 function openTrialRecords(row: TestCaseDTO) {
   trialRecordsContext.value = row
   trialRecordsVisible.value = true
+  trialRecordsKey.value += 1
 }
 
 onMounted(async () => {
   listLoading.value = true
   try {
     await store.refreshTestCases()
+    await refreshScenarioReadiness()
   } finally {
     listLoading.value = false
   }
@@ -294,6 +341,8 @@ watch(
     listSearch.value = ''
     trialRecordsVisible.value = false
     trialRecordsContext.value = null
+    trialRecordsKey.value = 0
+    readinessByTestCaseId.value = {}
   },
 )
 </script>
@@ -410,10 +459,5 @@ watch(
   flex: 1;
   min-height: 200px;
   padding: 24px;
-}
-.drawer-case-name {
-  font-weight: 600;
-  margin: 0 0 12px 0;
-  font-size: 14px;
 }
 </style>

@@ -1,5 +1,6 @@
 import request from './request'
 import type { PageResult } from '@/types'
+import type { ScenarioReadinessReportDTO } from '@/types/scenarioReadiness'
 
 // --- Types ---
 
@@ -267,4 +268,9 @@ export function getTemplateTags(templateId: number) {
 /** Create a new draft version from an ACTIVE template */
 export function createDraftVersion(templateId: number) {
   return request.post<any, TemplateDTO>(`/templates/${templateId}/create-draft-version`)
+}
+
+/** Scenario validation workspace: aggregate + per-scenario readiness (branch/loop/parameter semantics). */
+export function getScenarioReadiness(templateId: number) {
+  return request.get<any, ScenarioReadinessReportDTO>(`/templates/${templateId}/scenario-readiness`)
 }
