@@ -137,15 +137,13 @@
         <el-table-column prop="version" :label="$t('template.version')" width="90" align="center">
           <template #default="{ row }">v{{ row.version }}</template>
         </el-table-column>
-        <el-table-column prop="updatedAt" :label="$t('common.updatedAt')" width="170" />
+        <el-table-column prop="updatedAt" :label="$t('common.updatedAt')" width="170">
+          <template #default="{ row }">
+            {{ formatDateTime(row.updatedAt) }}
+          </template>
+        </el-table-column>
         <el-table-column :label="$t('common.actions')" width="300" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="router.push(`/templates/${row.id}/workspace`)">
-              {{ $t('workspace.workspaceAction') }}
-            </el-button>
-            <el-button link type="primary" size="small" @click="openEditDialog(row)">
-              {{ $t('common.edit') }}
-            </el-button>
             <el-button link type="primary" size="small" @click="handleClone(row)">
               {{ $t('common.clone') }}
             </el-button>
@@ -186,15 +184,6 @@
       </div>
     </el-card>
 
-    <!-- Create/Edit Dialog -->
-    <TemplateFormDialog
-      v-model:visible="formDialogVisible"
-      :template-data="editingTemplate"
-      :categories="categoryTree"
-      :tags="tagList"
-      @saved="onFormSaved"
-    />
-
     <!-- Creation Wizard -->
     <TemplateCreationWizard
       v-model:visible="wizardVisible"
@@ -215,7 +204,6 @@ import {
   getCategories, getTags,
   type TemplateDTO, type TemplateQuery, type CategoryDTO, type TagDTO,
 } from '@/api/templates'
-import TemplateFormDialog from './components/TemplateFormDialog.vue'
 import TemplateCreationWizard from '@/views/template-workspace/components/TemplateCreationWizard.vue'
 import { importDocx, importConfig } from '@/api/import-export'
 import { importCompositeFromZip } from '@/api/composite-templates'
@@ -228,8 +216,6 @@ const templates = ref<TemplateDTO[]>([])
 const total = ref(0)
 const categoryTree = ref<CategoryDTO[]>([])
 const tagList = ref<TagDTO[]>([])
-const formDialogVisible = ref(false)
-const editingTemplate = ref<TemplateDTO | null>(null)
 const wizardVisible = ref(false)
 
 const importDocxInput = ref<HTMLInputElement | null>(null)
@@ -246,6 +232,25 @@ const query = reactive<TemplateQuery>({
 })
 
 type TagType = 'primary' | 'success' | 'info' | 'warning' | 'danger'
+
+function formatDateTime(value: unknown): string {
+  if (value === null || value === undefined || value === '') return '-'
+  const date = value instanceof Date ? value : new Date(value as any)
+  if (Number.isNaN(date.getTime())) return String(value)
+
+  const parts = new Intl.DateTimeFormat(undefined, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).formatToParts(date)
+
+  const map = Object.fromEntries(parts.map((p) => [p.type, p.value]))
+  return `${map.year}-${map.month}-${map.day} ${map.hour}:${map.minute}:${map.second}`
+}
 
 function statusTagType(status: string): TagType {
   const map: Record<string, TagType> = {
@@ -299,16 +304,6 @@ function resetFilters() {
   query.tagId = null
   query.status = ''
   handleSearch()
-}
-
-function openEditDialog(row: TemplateDTO) {
-  editingTemplate.value = { ...row }
-  formDialogVisible.value = true
-}
-
-function onFormSaved() {
-  formDialogVisible.value = false
-  fetchTemplates()
 }
 
 function onWizardCreated(template: TemplateDTO) {

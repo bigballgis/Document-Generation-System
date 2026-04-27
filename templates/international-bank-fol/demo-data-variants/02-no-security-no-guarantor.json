@@ -1,0 +1,6 @@
+{
+  "__use": "templates/international-bank-fol/sample-data.json",
+  "has_security": false,
+  "has_guarantor": false
+}
+
