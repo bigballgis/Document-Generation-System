@@ -64,7 +64,10 @@ export const useTemplateWorkspaceStore = defineStore('templateWorkspace', () => 
     try {
       const [tmpl, config] = await criticalPromises
       template.value = tmpl
-      assemblyConfig.value = config
+      assemblyConfig.value = {
+        ...config,
+        segments: (config?.segments ?? []).slice().sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0)),
+      }
     } catch (e: any) {
       criticalError.value = e.message || 'Failed to load workspace'
       loading.value = false
@@ -100,7 +103,11 @@ export const useTemplateWorkspaceStore = defineStore('templateWorkspace', () => 
   async function refreshAssemblyConfig(): Promise<void> {
     if (!templateId.value) return
     try {
-      assemblyConfig.value = await getAssemblyConfig(templateId.value)
+      const config = await getAssemblyConfig(templateId.value)
+      assemblyConfig.value = {
+        ...config,
+        segments: (config?.segments ?? []).slice().sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0)),
+      }
     } catch (e: any) {
       warnings.value.assemblyConfig = e.message || 'Refresh failed'
     }

@@ -107,7 +107,10 @@ const segments = computed<AssemblySegmentEntry[]>(() => {
 })
 
 const enabledSegments = computed(() => {
-  return segments.value.filter(s => s.enabled && s.filePath)
+  return segments.value
+    .filter(s => s.enabled && s.filePath)
+    .slice()
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
 })
 
 const currentSegment = computed(() => {
