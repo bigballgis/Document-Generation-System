@@ -4,7 +4,7 @@ Auto-fill all COMPOSITE template segments with tag content.
 
 .DESCRIPTION
 - Reads tag specs from: templates/international-bank-fol/docs/template-content.md
-- Generates minimal text-only DOCX files (sufficient for OnlyOffice + docxtemplater tags)
+- Generates styled DOCX (styles, optional header/footer, box tables, optional Word TOC on segment 02)
 - Uploads each segment DOCX via /api/composite-templates/{id}/upload-segment
 - Updates assembly config to point to the uploaded filePath for every segment
 
@@ -79,7 +79,7 @@ function ConvertTo-XmlText([string]$s) {
   return ($e -replace $dq, '&quot;' -replace $sq, '&apos;')
 }
 
-function New-StyledDocxBytesFromText([string]$Text) {
+function New-StyledDocxBytesFromText([string]$Text, [string]$SegmentId) {
   Add-Type -AssemblyName 'System.IO.Compression'
   Add-Type -AssemblyName 'System.IO.Compression.FileSystem'
 
@@ -218,17 +218,53 @@ function New-StyledDocxBytesFromText([string]$Text) {
     $i++
   }
 
+  # Word TOC (segment 02): insert after "TABLE OF CONTENTS" title; keeps static list below for demo/backup
+  if ($SegmentId -eq '02') {
+    $nl = [Environment]::NewLine
+    $notePara =
+      '<w:p><w:pPr><w:spacing w:before="0" w:after="80"/></w:pPr>' +
+      '<w:r><w:rPr><w:sz w:val="18"/><w:color w:val="666666"/></w:rPr>' +
+      '<w:t xml:space="preserve">Auto ToC field (in Word, right-click and Update Field; after a full one-file merge it lists outlined headings. This segment may show a short list until merge).</w:t></w:r></w:p>'
+    $tocFieldPara =
+      '<w:p><w:pPr><w:spacing w:after="160"/></w:pPr>' +
+      '<w:r><w:fldChar w:fldCharType="begin"/></w:r>' +
+      '<w:r><w:instrText xml:space="preserve"> TOC \o "1-3" \h \z \u </w:instrText></w:r>' +
+      '<w:r><w:fldChar w:fldCharType="separate"/></w:r>' +
+      '<w:r><w:t>Update field</w:t></w:r>' +
+      '<w:r><w:fldChar w:fldCharType="end"/></w:r></w:p>'
+    $ins = $false
+    $merged = [System.Collections.Generic.List[string]]::new()
+    foreach ($b in $bodyXml) {
+      $merged.Add($b) | Out-Null
+      if (-not $ins -and $b -match 'TABLE OF CONTENTS' -and $b -match 'DocGenTitle') {
+        $merged.Add($notePara) | Out-Null
+        $merged.Add($tocFieldPara) | Out-Null
+        $ins = $true
+      }
+    }
+    if (-not $ins) { $bodyXml = @($notePara, $tocFieldPara) + $bodyXml } else { $bodyXml = $merged }
+  }
+
   $nl = [Environment]::NewLine
+  $includeHeaderFooter = ($SegmentId -ne '01')
+
+  $rootNs = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
+  if ($includeHeaderFooter) { $rootNs += ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"' }
+  $sectPrInner =
+    '      <w:pgSz w:w="11906" w:h="16838"/>' + $nl + # A4
+    '      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>' + $nl
+  if ($includeHeaderFooter) {
+    $sectPrInner =
+    '      <w:headerReference w:type="default" r:id="rId2"/>' + $nl +
+    '      <w:footerReference w:type="default" r:id="rId3"/>' + $nl + $sectPrInner
+  }
+
   $documentXml =
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' + $nl +
-    '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' + $nl +
+    '<w:document ' + $rootNs + '>' + $nl +
     '  <w:body>' + $nl +
     ($bodyXml -join $nl) + $nl +
-    '    <w:sectPr>' + $nl +
-    '      <w:headerReference w:type="default" r:id="rId2"/>' + $nl +
-    '      <w:footerReference w:type="default" r:id="rId3"/>' + $nl +
-    '      <w:pgSz w:w="11906" w:h="16838"/>' + $nl + # A4 portrait (twips)
-    '      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>' + $nl +
+    '    <w:sectPr>' + $nl + $sectPrInner +
     '    </w:sectPr>' + $nl +
     '  </w:body>' + $nl +
     '</w:document>'
@@ -239,10 +275,13 @@ function New-StyledDocxBytesFromText([string]$Text) {
     '  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' + $nl +
     '  <Default Extension="xml" ContentType="application/xml"/>' + $nl +
     '  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' + $nl +
-      '  <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>' + $nl +
+    '  <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>' + $nl
+  if ($includeHeaderFooter) {
+    $contentTypes +=
       '  <Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>' + $nl +
-      '  <Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>' + $nl +
-    '</Types>'
+      '  <Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>' + $nl
+  }
+  $contentTypes += '</Types>'
 
   $rels =
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' + $nl +
@@ -253,12 +292,15 @@ function New-StyledDocxBytesFromText([string]$Text) {
   $docRels =
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' + $nl +
     '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' + $nl +
-    '  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' + $nl +
+    '  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' + $nl
+  if ($includeHeaderFooter) {
+    $docRels +=
     '  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/>' + $nl +
-    '  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>' + $nl +
-    '</Relationships>'
+    '  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>' + $nl
+  }
+  $docRels += '</Relationships>'
 
-  # Minimal styles: Normal + Title + Heading1 with classic banking look
+  # Normal + Title + Heading1; Heading1 has outline level 0 for Word/merged-document TOC
   $styles =
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' + $nl +
     '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' + $nl +
@@ -276,7 +318,7 @@ function New-StyledDocxBytesFromText([string]$Text) {
     '  <w:style w:type="paragraph" w:styleId="DocGenHeading1">' + $nl +
     '    <w:name w:val="DocGenHeading1"/>' + $nl +
     '    <w:basedOn w:val="Normal"/>' + $nl +
-    '    <w:pPr><w:keepNext/><w:spacing w:before="240" w:after="120"/></w:pPr>' + $nl +
+    '    <w:pPr><w:outlineLvl w:val="0"/><w:keepNext/><w:spacing w:before="240" w:after="120"/></w:pPr>' + $nl +
     '    <w:rPr><w:b/><w:sz w:val="26"/></w:rPr>' + $nl +
     '  </w:style>' + $nl +
     '</w:styles>'
@@ -286,6 +328,7 @@ function New-StyledDocxBytesFromText([string]$Text) {
     '<w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">' + $nl +
     '  <w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:t xml:space="preserve">{bank.legal_name | upper}</w:t></w:r></w:p>' + $nl +
     '  <w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:t xml:space="preserve">FACILITY OFFER LETTER</w:t></w:r></w:p>' + $nl +
+    '  <w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:color w:val="C0C0C0"/><w:sz w:val="16"/></w:rPr><w:t xml:space="preserve">CONFIDENTIAL</w:t></w:r></w:p>' + $nl +
     '</w:hdr>'
 
   $footer =
@@ -301,15 +344,18 @@ function New-StyledDocxBytesFromText([string]$Text) {
   $ms = New-Object System.IO.MemoryStream
   $zip = New-Object System.IO.Compression.ZipArchive($ms, [System.IO.Compression.ZipArchiveMode]::Create, $true)
 
-  foreach ($pair in @(
-      @{ Path = '[Content_Types].xml'; Content = $contentTypes },
-      @{ Path = '_rels/.rels'; Content = $rels },
-      @{ Path = 'word/document.xml'; Content = $documentXml },
-      @{ Path = 'word/styles.xml'; Content = $styles },
-      @{ Path = 'word/_rels/document.xml.rels'; Content = $docRels },
-      @{ Path = 'word/header1.xml'; Content = $header },
-      @{ Path = 'word/footer1.xml'; Content = $footer }
-    )) {
+  $entries = [System.Collections.Generic.List[object]]::new()
+  $entries.Add(@{ Path = '[Content_Types].xml'; Content = $contentTypes }) | Out-Null
+  $entries.Add(@{ Path = '_rels/.rels'; Content = $rels }) | Out-Null
+  $entries.Add(@{ Path = 'word/document.xml'; Content = $documentXml }) | Out-Null
+  $entries.Add(@{ Path = 'word/styles.xml'; Content = $styles }) | Out-Null
+  $entries.Add(@{ Path = 'word/_rels/document.xml.rels'; Content = $docRels }) | Out-Null
+  if ($includeHeaderFooter) {
+    $entries.Add(@{ Path = 'word/header1.xml'; Content = $header }) | Out-Null
+    $entries.Add(@{ Path = 'word/footer1.xml'; Content = $footer }) | Out-Null
+  }
+
+  foreach ($pair in $entries) {
     $entry = $zip.CreateEntry($pair.Path)
     $sw = New-Object System.IO.StreamWriter($entry.Open())
     $sw.Write($pair.Content)
@@ -366,7 +412,7 @@ foreach ($seg in ($cfg.segments | Sort-Object position)) {
   $block = Read-SegmentCodeBlock -MarkdownText $md -SegmentNumber $nn
   if (-not $block) { throw ('No code block found for Segment ' + $nn + ' (' + $name + ')') }
 
-  $docxBytes = New-StyledDocxBytesFromText $block
+  $docxBytes = New-StyledDocxBytesFromText -Text $block -SegmentId $nn
   $tmp = Join-Path $env:TEMP ('fol_seg_' + $nn + '.docx')
   [IO.File]::WriteAllBytes($tmp, $docxBytes)
 
