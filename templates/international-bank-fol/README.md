@@ -18,7 +18,9 @@ This directory contains a **COMPOSITE** demo template designed for **enterprise-
   - `demo-data-variants/`: scenario toggles and stress variants.
 - `scripts/`: bootstrap + API helpers
   - `scripts/demo-bootstrap.ps1`: creates the template, creates blank segments, imports parameters, imports test cases, runs tests, exports backup.
+  - `scripts/fill-all-segments.ps1`: optional bulk author — reads `docs/template-content.md`, generates styled per-segment DOCX, uploads each segment, updates `assembly-config` paths (use after bootstrap for a full 18-segment demo).
   - `scripts/package-and-import.ps1`: produces a system-compatible ZIP via export, then imports it back (proves importability).
+  - `scripts/reset-all-templates-and-import.ps1`: deletes **all** templates for the tenant, then imports one golden composite ZIP (use `-ExportGoldFromTemplateId` to export before wipe, or `-ZipPath` for a fixed file).
   - `scripts/demo-test-cases.json`: ready-to-import test cases for the template test runner.
   - `scripts/demo-api.http`: quick API calls (REST Client).
 
@@ -30,7 +32,7 @@ This directory contains a **COMPOSITE** demo template designed for **enterprise-
 - Filters: `upper`, `currency`, `percent`, `dateFormat`, `default`
 - Aggregations: `facilities.$sum_amount`, `fees.$sum_amount`, etc.
 - Derived parameters: `total_facility_amount`, `weighted_avg_rate`, `overall_ltv` (JS + Excel formula examples)
-- Composite assembly: segment ordering, `pageBreakBefore`, conditional segments, `dataScope`, headers/footers
+- Composite assembly: segment ordering, `pageBreakBefore`, conditional segments, `dataScope`, headers/footers (workspace = per-segment DOCX; **tests and generation merge segments into one DOCX** in the backend)
 - Generate-time features: watermark, barcode, qrcode
 - Test runner: variable-value assertions against derived fields and scenario toggles
 

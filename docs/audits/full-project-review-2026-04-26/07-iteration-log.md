@@ -800,6 +800,30 @@ Files changed:
 Validation: **`docker compose config`** OK; **`docker compose up -d`** OK; **`http://localhost:8080/actuator/health/ping`** → 200; **`http://localhost:3000/health`** → 200; **`http://localhost/`** → 200 after pid fix.  
 Remaining risks: retagged MinIO/Redis may differ from pinned releases; restore official pulls for reproducible tests.
 
+## 2026-04-27 — reset-all-templates-and-import script (international-bank-fol)
+
+Date: 2026-04-27  
+Workstream: Demo tooling  
+Summary: Added `templates/international-bank-fol/scripts/reset-all-templates-and-import.ps1` to export a golden composite ZIP (optional), delete all templates via API, import one ZIP, and write `out/last-template-id.txt`. Documented in README and DEMO-RUNBOOK.  
+Files changed: `templates/international-bank-fol/scripts/reset-all-templates-and-import.ps1`, `templates/international-bank-fol/README.md`, `templates/international-bank-fol/docs/DEMO-RUNBOOK.md`  
+Validation commands: Ran script locally with `-ExportGoldFromTemplateId 31 -Force` (export → delete 4 templates → import → new id=32).  
+Validation result: OK.  
+Remaining risks: Destructive for entire tenant template list; requires explicit `-Force` or `DELETE-ALL` confirmation.  
+Related tracking items: —  
+Next step: —  
+
+## 2026-04-27 — international-bank-fol demo docs (segment vs merged DOCX)
+
+Date: 2026-04-27  
+Workstream: Demo / documentation (international-bank-fol)  
+Summary: Updated `templates/international-bank-fol/docs/DEMO-RUNBOOK.md`, `README.md`, and `DEMO-SHOWCASE-SCRIPT.md` to document that authors edit per-segment DOCX while template tests and composite generation assemble one merged DOCX; clarified Word TOC field behavior and optional `fill-all-segments.ps1` bulk authoring.  
+Files changed: `templates/international-bank-fol/docs/DEMO-RUNBOOK.md`, `templates/international-bank-fol/README.md`, `templates/international-bank-fol/docs/DEMO-SHOWCASE-SCRIPT.md`, `templates/international-bank-fol/scripts/fill-all-segments.ps1` (script header only).  
+Validation commands: N/A (documentation only).  
+Validation result: N/A.  
+Remaining risks: Word field refresh (TOC/PAGE) still requires client-side Update Fields when reviewing merged output.  
+Related tracking items: —  
+Next step: —  
+
 ## Entry Template
 
 ```text

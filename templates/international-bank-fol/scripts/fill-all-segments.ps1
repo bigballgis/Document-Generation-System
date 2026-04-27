@@ -4,7 +4,7 @@ Auto-fill all COMPOSITE template segments with tag content.
 
 .DESCRIPTION
 - Reads tag specs from: templates/international-bank-fol/docs/template-content.md
-- Generates styled DOCX (styles, optional header/footer, box tables, optional Word TOC on segment 02)
+- Generates styled DOCX (styles, optional header/footer, box-drawing tables to real w:tbl, optional Word TOC field on segment 02; see docs/DEMO-RUNBOOK.md for segment vs merged-output behavior)
 - Uploads each segment DOCX via /api/composite-templates/{id}/upload-segment
 - Updates assembly config to point to the uploaded filePath for every segment
 

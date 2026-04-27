@@ -13,6 +13,7 @@ Use this as a **talk track** (what to say) + **click path** (what to do). It is 
 1. Open `http://localhost/` and login.
 2. Confirm backend health: `http://localhost:8080/actuator/health/ping` returns 200.
 3. Run all tests on the template (UI → Template → Test Cases → Run All).
+   - For **COMPOSITE** templates, the test runner still evaluates the **fully merged DOCX** (segments assembled in order), even though authors edit **one segment at a time** in OnlyOffice. Use that fact when a buyer asks “how do we see the whole deal before go-live?”.
 4. Have the following ready to paste:
    - A borrower legal name change
    - Toggle `has_security` / `has_guarantor`
@@ -29,6 +30,7 @@ Show:
 
 Say:
 - “We model this like a real bank facility offer letter, but split into governed segments so teams can evolve parts independently.”
+- “When you run tests or generate the letter, the platform still assembles **one merged Word document** — so reviewers see the full output while authors keep working segment-by-segment.”
 
 ### 2) Parameter table as governance (3 minutes)
 
