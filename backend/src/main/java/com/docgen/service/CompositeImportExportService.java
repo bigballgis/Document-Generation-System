@@ -26,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -513,7 +512,7 @@ public class CompositeImportExportService {
 
         if (exportConfig.getSegments() != null) {
             for (CompositeExportConfig.SegmentExportEntry exportEntry : exportConfig.getSegments()) {
-                String filePath = nameToFilePath.get(exportEntry.getSegmentName());
+                String filePath = resolveImportedSegmentFilePath(nameToFilePath, exportEntry.getSegmentName());
                 if (filePath == null) continue;
 
                 AssemblySegmentEntry entry = new AssemblySegmentEntry();
@@ -543,6 +542,18 @@ public class CompositeImportExportService {
         }
         config.setSegments(entries);
         return config;
+    }
+
+    private String resolveImportedSegmentFilePath(Map<String, String> nameToFilePath, String exportSegmentName) {
+        if (exportSegmentName == null || exportSegmentName.isBlank()) {
+            return null;
+        }
+        String direct = nameToFilePath.get(exportSegmentName);
+        if (direct != null) {
+            return direct;
+        }
+        String normalized = exportSegmentName.replaceAll("[^a-zA-Z0-9\\u4e00-\\u9fff_\\-]", "_");
+        return nameToFilePath.get(normalized);
     }
 
     private byte[] downloadFromMinio(String filePath) {
@@ -632,7 +643,6 @@ public class CompositeImportExportService {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private void importParametersFromBytes(byte[] bytes, Long templateId) {
         try {
             List<ParameterExportEntry> entries = objectMapper.readValue(bytes,
