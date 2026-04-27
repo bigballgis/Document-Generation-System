@@ -759,7 +759,27 @@
     "coverageBar": {
       "branch": "分支覆盖率",
       "loop": "循环覆盖率",
-      "param": "参数覆盖率"
+      "param": "参数覆盖率",
+      "allCovered": "全部覆盖"
+    },
+    "validation": {
+      "newScenario": "新建业务场景",
+      "runAllTrials": "全部试算",
+      "runTrial": "试算",
+      "scenarioList": "业务场景",
+      "searchPlaceholder": "搜索业务场景...",
+      "open": "打开",
+      "trialRecords": "试算记录",
+      "trialRecordsTitle": "试算记录",
+      "trialRecordsPlaceholder": "完整试算历史将在后续版本提供。",
+      "readinessDashboard": "模板就绪度",
+      "readinessDetailTitle": "场景就绪度（明细）",
+      "readinessPlaceholder": "分场景就绪度与引导建议将在后续版本提供。上方进度条为基于当前模板的分析占位。",
+      "noOpenScenario": "请在左侧选择业务场景，或点击「新建业务场景」。",
+      "lastTrial": "最近试算",
+      "statusDraft": "未试算",
+      "statusReady": "通过",
+      "statusNeedsFix": "需修正"
     },
     "approval": {
       "timeline": {

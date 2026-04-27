@@ -1,93 +1,112 @@
 <template>
-  <div class="test-stage">
-    <!-- Coverage Bar -->
-    <CoverageBar ref="coverageBarRef" />
-
-    <!-- Smart Guidance -->
-    <div v-if="uncoveredItems.length > 0" class="guidance-section">
-      <div class="guidance-header">
-        <el-icon><InfoFilled /></el-icon>
-        <span>{{ t('workspace.testForm.guidance') }}</span>
-        <el-tag size="small" type="danger" round>{{ uncoveredItems.length }}</el-tag>
-      </div>
-
-      <!-- Grouped by type -->
-      <div v-for="group in groupedUncovered" :key="group.type" class="guidance-group">
-        <div class="guidance-group-header" @click="toggleGroup(group.type)">
-          <el-icon class="group-arrow" :class="{ expanded: expandedGroups[group.type] }"><ArrowRight /></el-icon>
-          <el-tag size="small" :type="groupTagType(group.type)">{{ group.type }}</el-tag>
-          <span class="group-summary">{{ group.items.length }} {{ t('workspace.testForm.uncoveredCount') }}</span>
-        </div>
-        <transition name="collapse">
-          <div v-show="expandedGroups[group.type]" class="guidance-group-body">
-            <div
-              v-for="item in group.items"
-              :key="item.missingPath"
-              class="guidance-item"
-              @click="highlightParam(item)"
-            >
-              <span class="item-name">{{ item.name }}</span>
-              <span class="item-path">{{ item.missingPath }}</span>
-            </div>
-          </div>
-        </transition>
-      </div>
-    </div>
-    <div v-else-if="coverageBarRef?.coverageData" class="guidance-section guidance-success">
-      <el-icon color="var(--el-color-success)"><CircleCheckFilled /></el-icon>
-      <span>{{ t('workspace.testForm.noUncovered') }}</span>
+  <div class="validation-workspace">
+    <div class="validation-toolbar">
+      <el-button
+        type="primary"
+        :disabled="readonly"
+        @click="openNewScenarioTab"
+      >
+        {{ t('workspace.validation.newScenario') }}
+      </el-button>
+      <el-button
+        :loading="runAllLoading"
+        :disabled="readonly"
+        @click="handleRunAllTrials"
+      >
+        <el-icon><VideoPlay /></el-icon>
+        {{ t('workspace.validation.runAllTrials') }}
+      </el-button>
     </div>
 
-    <el-collapse v-if="store.templateId" class="saved-tests-collapse">
-      <el-collapse-item :title="t('workspace.testing.savedTestCasesTitle')" name="saved">
-        <div class="saved-tests-body">
-          <TestCaseManagement :template-id="store.templateId" hide-intro />
-        </div>
-      </el-collapse-item>
-    </el-collapse>
+    <div v-if="store.warnings.testCases" class="inline-warn">
+      <el-alert type="warning" :title="store.warnings.testCases" show-icon :closable="false" />
+    </div>
 
-    <!-- Split layout: Form (40%) + Preview (60%) -->
-    <div class="test-split">
-      <div class="test-form-panel">
-        <TestDataForm
-          :parameters="store.parameters"
+    <div class="validation-body">
+      <div class="col-left">
+        <BusinessScenarioListPanel
+          v-model:search="listSearch"
+          :scenarios="store.testCases"
+          :selected-id="selectedScenarioId"
+          :loading="listLoading"
+          :running-id="runningId"
           :readonly="readonly"
-          :highlighted-paths="highlightedPaths"
-          @update:form-data="handleFormDataChange"
+          @select="onListSelect"
+          @run-trial="onRunTrialFromList"
+          @open="onOpenFromList"
+          @trial-records="openTrialRecords"
         />
       </div>
-      <div class="test-preview-panel">
-        <div v-if="previewLoading" class="preview-loading">
-          <el-skeleton :rows="8" animated />
+      <div class="col-center">
+        <div v-if="openTabs.length > 0" class="center-tabs">
+          <div class="tab-bar">
+            <div
+              v-for="tab in openTabs"
+              :key="tab.key"
+              class="tab-item"
+              :class="{ active: activeTabKey === tab.key }"
+              @click="activeTabKey = tab.key"
+            >
+              <span class="tab-title">{{ tabTitle(tab) }}</span>
+              <el-icon class="tab-close" @click.stop="closeTab(tab.key)"><Close /></el-icon>
+            </div>
+          </div>
+          <div class="tab-panels">
+            <div
+              v-for="tab in openTabs"
+              :key="`panel-${tab.key}`"
+              v-show="activeTabKey === tab.key"
+              class="tab-panel"
+            >
+              <BusinessScenarioEditorTabContent
+                v-if="store.templateId"
+                :template-id="store.templateId"
+                :tab-key="tab.key"
+                :is-new="tab.isNew"
+                :test-case="testCaseForTab(tab)"
+                :readonly="readonly"
+                @saved="onScenarioSaved"
+                @deleted="onScenarioDeleted"
+                @run-complete="onRunComplete"
+              />
+            </div>
+          </div>
         </div>
-        <div v-else-if="previewError" class="preview-error">
-          <el-result icon="error" :title="t('workspace.testForm.previewFailed')" :sub-title="previewError">
-            <template #extra>
-              <el-button type="primary" @click="triggerPreview">{{ t('workspace.testForm.retryPreview') }}</el-button>
-            </template>
-          </el-result>
-        </div>
-        <div v-else-if="previewUrl" class="preview-frame">
-          <iframe :src="previewUrl" class="preview-iframe" />
-        </div>
-        <div v-else class="preview-placeholder">
-          <el-empty :description="t('common.noData')" />
+        <div v-else class="empty-center">
+          <el-empty :description="t('workspace.validation.noOpenScenario')" />
         </div>
       </div>
+      <div class="col-right">
+        <TemplateReadinessDashboard
+          :key="readinessKey"
+          :refreshing="readinessRefreshing"
+          @refresh="onRefreshReadiness"
+        />
+      </div>
     </div>
+
+    <el-drawer
+      v-model="trialRecordsVisible"
+      :title="t('workspace.validation.trialRecordsTitle')"
+      size="420px"
+      destroy-on-close
+    >
+      <p v-if="trialRecordsContext" class="drawer-case-name">{{ trialRecordsContext.name }}</p>
+      <el-empty :description="t('workspace.validation.trialRecordsPlaceholder')" />
+    </el-drawer>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { InfoFilled, CircleCheckFilled, ArrowRight } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { VideoPlay, Close } from '@element-plus/icons-vue'
 import { useTemplateWorkspaceStore } from '@/stores/templateWorkspace'
-import { previewCompositeTemplate } from '@/api/composite-templates'
-import type { UncoveredItem } from '@/types/parameter'
-import CoverageBar from './CoverageBar.vue'
-import TestDataForm from './TestDataForm.vue'
-import TestCaseManagement from '@/views/templates/components/TestCaseManagement.vue'
+import { runAllTestCases, runTestCase, isTestPassed, type TestCaseDTO } from '@/api/market'
+import BusinessScenarioListPanel from './BusinessScenarioListPanel.vue'
+import BusinessScenarioEditorTabContent from './BusinessScenarioEditorTabContent.vue'
+import TemplateReadinessDashboard from './TemplateReadinessDashboard.vue'
 
 defineProps<{
   readonly: boolean
@@ -96,231 +115,305 @@ defineProps<{
 const { t } = useI18n()
 const store = useTemplateWorkspaceStore()
 
-const coverageBarRef = ref<InstanceType<typeof CoverageBar> | null>(null)
-const previewUrl = ref('')
-const previewLoading = ref(false)
-const previewError = ref('')
-const highlightedPaths = ref<string[]>([])
-let debounceTimer: ReturnType<typeof setTimeout> | null = null
-
-const uncoveredItems = computed<UncoveredItem[]>(() => {
-  return coverageBarRef.value?.coverageData?.uncoveredItems ?? []
-})
-
-interface UncoveredGroup {
-  type: string
-  items: UncoveredItem[]
+interface OpenTab {
+  key: string
+  testCaseId: number | null
+  isNew: boolean
 }
 
-const groupedUncovered = computed<UncoveredGroup[]>(() => {
-  const map = new Map<string, UncoveredItem[]>()
-  for (const item of uncoveredItems.value) {
-    const list = map.get(item.type) || []
-    list.push(item)
-    map.set(item.type, list)
+const listSearch = ref('')
+const listLoading = ref(false)
+const openTabs = ref<OpenTab[]>([])
+const activeTabKey = ref('')
+const selectedScenarioId = ref<number | null>(null)
+const runningId = ref<number | null>(null)
+const runAllLoading = ref(false)
+const trialRecordsVisible = ref(false)
+const trialRecordsContext = ref<TestCaseDTO | null>(null)
+const readinessKey = ref(0)
+const readinessRefreshing = ref(false)
+
+function testCaseForTab(tab: OpenTab): TestCaseDTO | null {
+  if (tab.isNew || tab.testCaseId == null) return null
+  return store.testCases.find(c => c.id === tab.testCaseId) ?? null
+}
+
+function tabTitle(tab: OpenTab): string {
+  if (tab.isNew) return t('workspace.validation.newScenario')
+  const tc = testCaseForTab(tab)
+  return tc?.name || `Case ${tab.testCaseId}`
+}
+
+function openOrFocusCase(tc: TestCaseDTO) {
+  const key = `case-${tc.id}`
+  const exist = openTabs.value.find(t => t.key === key)
+  if (exist) {
+    activeTabKey.value = key
+  } else {
+    openTabs.value = [...openTabs.value, { key, testCaseId: tc.id, isNew: false }]
+    activeTabKey.value = key
   }
-  // Order: BRANCH → LOOP → PARAMETER
-  const order = ['BRANCH', 'LOOP', 'PARAMETER']
-  return order
-    .filter(t => map.has(t))
-    .map(t => ({ type: t, items: map.get(t)! }))
-})
-
-const expandedGroups = reactive<Record<string, boolean>>({})
-
-function toggleGroup(type: string) {
-  expandedGroups[type] = !expandedGroups[type]
+  selectedScenarioId.value = tc.id
 }
 
-function groupTagType(type: string): 'warning' | 'success' | 'info' {
-  if (type === 'BRANCH') return 'warning'
-  if (type === 'LOOP') return 'success'
-  return 'info'
+function onListSelect(row: TestCaseDTO) {
+  selectedScenarioId.value = row.id
+  openOrFocusCase(row)
 }
 
-function highlightParam(item: UncoveredItem) {
-  highlightedPaths.value = [item.missingPath]
-  // Auto-clear after 5s
-  setTimeout(() => {
-    highlightedPaths.value = []
-  }, 5000)
+function onOpenFromList(row: TestCaseDTO) {
+  openOrFocusCase(row)
 }
 
-function handleFormDataChange(_data: Record<string, unknown>) {
-  // Debounce 500ms before triggering preview
-  if (debounceTimer) clearTimeout(debounceTimer)
-  debounceTimer = setTimeout(() => {
-    triggerPreview()
-  }, 500)
+function onRunTrialFromList(row: TestCaseDTO) {
+  runSingleTrial(row)
 }
 
-async function triggerPreview() {
-  previewLoading.value = true
-  previewError.value = ''
+async function runSingleTrial(row: TestCaseDTO) {
+  runningId.value = row.id
   try {
-    const result = await previewCompositeTemplate(store.templateId)
-    previewUrl.value = result.previewUrl
-  } catch (e: any) {
-    previewError.value = e.response?.data?.message || e.message || t('workspace.testForm.previewFailed')
+    const result = await runTestCase(row.id)
+    ElMessage[isTestPassed(result) ? 'success' : 'warning'](
+      isTestPassed(result) ? t('test.passed') : t('test.failed'),
+    )
+    await store.refreshTestCases()
+  } catch {
+    /* interceptor */
   } finally {
-    previewLoading.value = false
+    runningId.value = null
   }
 }
+
+function openNewScenarioTab() {
+  const key = `new-${Date.now()}`
+  openTabs.value = [...openTabs.value, { key, testCaseId: null, isNew: true }]
+  activeTabKey.value = key
+  selectedScenarioId.value = null
+}
+
+function closeTab(key: string) {
+  const idx = openTabs.value.findIndex(t => t.key === key)
+  if (idx < 0) return
+  const tab = openTabs.value[idx]!
+  const next = openTabs.value.filter(t => t.key !== key)
+  openTabs.value = next
+  if (activeTabKey.value === key) {
+    activeTabKey.value = next[0]?.key ?? ''
+  }
+  if (tab.testCaseId != null && selectedScenarioId.value === tab.testCaseId) {
+    const still = next.some(
+      t => t.testCaseId === tab.testCaseId,
+    )
+    if (!still) {
+      selectedScenarioId.value = null
+    }
+  }
+}
+
+function onScenarioSaved(payload: { id: number; previousKey: string }) {
+  const prev = payload.previousKey
+  const idx = openTabs.value.findIndex(t => t.key === prev)
+  if (idx >= 0) {
+    const nextKey = `case-${payload.id}`
+    const next = [...openTabs.value]
+    next[idx] = { key: nextKey, testCaseId: payload.id, isNew: false }
+    openTabs.value = next
+    activeTabKey.value = nextKey
+  }
+  selectedScenarioId.value = payload.id
+  void store.refreshTestCases()
+  readinessKey.value += 1
+}
+
+function onScenarioDeleted(id: number) {
+  const nextKey = `case-${id}`
+  void store.refreshTestCases()
+  openTabs.value = openTabs.value.filter(t => t.key !== nextKey && t.testCaseId !== id)
+  if (activeTabKey.value === nextKey) {
+    activeTabKey.value = openTabs.value[0]?.key ?? ''
+  }
+  if (selectedScenarioId.value === id) {
+    selectedScenarioId.value = null
+  }
+  readinessKey.value += 1
+}
+
+function onRunComplete() {
+  void store.refreshTestCases()
+  readinessKey.value += 1
+}
+
+async function handleRunAllTrials() {
+  if (!store.templateId) return
+  runAllLoading.value = true
+  try {
+    const rpt = await runAllTestCases(store.templateId)
+    ElMessage.success(`${rpt.passedCount}/${rpt.totalCount} ${t('test.passed')}`)
+    await store.refreshTestCases()
+    readinessKey.value += 1
+  } catch {
+    /* interceptor */
+  } finally {
+    runAllLoading.value = false
+  }
+}
+
+async function onRefreshReadiness() {
+  readinessRefreshing.value = true
+  try {
+    await store.refreshParameters()
+    await store.refreshCoverage()
+    readinessKey.value += 1
+  } catch {
+    /* best effort */
+  } finally {
+    readinessRefreshing.value = false
+  }
+}
+
+function openTrialRecords(row: TestCaseDTO) {
+  trialRecordsContext.value = row
+  trialRecordsVisible.value = true
+}
+
+onMounted(async () => {
+  listLoading.value = true
+  try {
+    await store.refreshTestCases()
+  } finally {
+    listLoading.value = false
+  }
+})
+
+watch(
+  () => store.templateId,
+  () => {
+    openTabs.value = []
+    activeTabKey.value = ''
+    selectedScenarioId.value = null
+    listSearch.value = ''
+    trialRecordsVisible.value = false
+    trialRecordsContext.value = null
+  },
+)
 </script>
 
 <style scoped>
-.test-stage {
+.validation-workspace {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   height: calc(100vh - 200px);
   min-height: 500px;
 }
-.saved-tests-collapse {
-  flex-shrink: 0;
-}
-.saved-tests-body {
-  max-height: min(480px, 45vh);
-  overflow: auto;
-}
-.guidance-section {
-  flex-shrink: 0;
+.validation-toolbar {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 10px 14px;
-  background: var(--el-color-warning-light-9);
-  border-radius: 6px;
-  font-size: 13px;
-  max-height: 240px;
-  overflow-y: auto;
-}
-.guidance-section.guidance-success {
-  flex-direction: row;
   align-items: center;
   gap: 8px;
-  background: var(--el-color-success-light-9);
-  max-height: none;
-  overflow: visible;
+  flex-shrink: 0;
+  flex-wrap: wrap;
 }
-.guidance-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
-  margin-bottom: 2px;
+.inline-warn {
+  flex-shrink: 0;
 }
-.guidance-group {
-  border-radius: 4px;
-  overflow: hidden;
-}
-.guidance-group-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 6px;
-  cursor: pointer;
-  border-radius: 4px;
-  user-select: none;
-  transition: background 0.15s;
-}
-.guidance-group-header:hover {
-  background: var(--el-color-warning-light-7);
-}
-.group-arrow {
-  transition: transform 0.2s;
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
-}
-.group-arrow.expanded {
-  transform: rotate(90deg);
-}
-.group-summary {
-  color: var(--el-text-color-secondary);
-  font-size: 12px;
-}
-.guidance-group-body {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 4px;
-  padding: 4px 0 4px 22px;
-}
-.guidance-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  padding: 3px 8px;
-  border-radius: 4px;
-  transition: background 0.15s;
-  overflow: hidden;
-  font-size: 12px;
-}
-.guidance-item:hover {
-  background: var(--el-color-warning-light-7);
-}
-.item-name {
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 120px;
-}
-.item-path {
-  color: var(--el-text-color-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.collapse-enter-active,
-.collapse-leave-active {
-  transition: all 0.2s ease;
-  overflow: hidden;
-}
-.collapse-enter-from,
-.collapse-leave-to {
-  opacity: 0;
-  max-height: 0;
-}
-.collapse-enter-to,
-.collapse-leave-from {
-  opacity: 1;
-  max-height: 500px;
-}
-.test-split {
+.validation-body {
   flex: 1;
   display: flex;
   gap: 12px;
   min-height: 0;
 }
-.test-form-panel {
-  flex: 4;
+.col-left {
+  flex: 0 0 min(28%, 320px);
+  min-width: 240px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.col-center {
+  flex: 1;
   min-width: 0;
-  overflow: hidden;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--el-border-color-lighter);
   border-radius: 4px;
-  padding: 12px;
-}
-.test-preview-panel {
-  flex: 6;
-  min-width: 0;
-  border: 1px solid var(--el-border-color-lighter);
-  border-radius: 4px;
+  background: var(--el-bg-color);
   overflow: hidden;
 }
-.preview-loading, .preview-error, .preview-placeholder {
+.col-right {
+  flex: 0 0 min(30%, 360px);
+  min-width: 260px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.center-tabs {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+.tab-bar {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+  background: var(--el-bg-color);
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+.tab-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  color: var(--el-text-color-secondary);
+  font-weight: 500;
+  max-width: 220px;
+}
+.tab-item:hover {
+  color: var(--el-color-primary);
+  background: var(--el-fill-color-light);
+}
+.tab-item.active {
+  color: var(--el-color-primary);
+  border-bottom-color: var(--el-color-primary);
+}
+.tab-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.tab-close {
+  font-size: 12px;
+  border-radius: 50%;
+  padding: 2px;
+  flex-shrink: 0;
+}
+.tab-close:hover {
+  background: var(--el-fill-color);
+}
+.tab-panels {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 16px 16px;
+}
+.empty-center {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
+  flex: 1;
+  min-height: 200px;
   padding: 24px;
 }
-.preview-frame {
-  height: 100%;
-}
-.preview-iframe {
-  width: 100%;
-  height: 100%;
-  border: none;
+.drawer-case-name {
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  font-size: 14px;
 }
 </style>

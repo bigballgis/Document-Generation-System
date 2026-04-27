@@ -760,7 +760,27 @@
     "coverageBar": {
       "branch": "Branch Coverage",
       "loop": "Loop Coverage",
-      "param": "Parameter Coverage"
+      "param": "Parameter Coverage",
+      "allCovered": "All covered"
+    },
+    "validation": {
+      "newScenario": "New scenario",
+      "runAllTrials": "Run all trials",
+      "runTrial": "Run trial",
+      "scenarioList": "Business scenarios",
+      "searchPlaceholder": "Search scenarios...",
+      "open": "Open",
+      "trialRecords": "Trial records",
+      "trialRecordsTitle": "Trial records",
+      "trialRecordsPlaceholder": "Full trial history will be available in a later update.",
+      "readinessDashboard": "Template readiness",
+      "readinessDetailTitle": "Scenario readiness (detail)",
+      "readinessPlaceholder": "Detailed per-scenario readiness and guided suggestions will be added in a following release. The coverage bars above show placeholder analysis from the current template.",
+      "noOpenScenario": "Select a scenario on the left or create a new one.",
+      "lastTrial": "Last trial",
+      "statusDraft": "Not run",
+      "statusReady": "Ready",
+      "statusNeedsFix": "Needs fix"
     },
     "approval": {
       "timeline": {

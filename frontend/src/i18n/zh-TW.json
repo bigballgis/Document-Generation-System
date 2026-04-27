@@ -759,7 +759,27 @@
     "coverageBar": {
       "branch": "分支覆蓋率",
       "loop": "循環覆蓋率",
-      "param": "參數覆蓋率"
+      "param": "參數覆蓋率",
+      "allCovered": "全部覆蓋"
+    },
+    "validation": {
+      "newScenario": "新增業務場景",
+      "runAllTrials": "全部試算",
+      "runTrial": "試算",
+      "scenarioList": "業務場景",
+      "searchPlaceholder": "搜尋業務場景...",
+      "open": "開啟",
+      "trialRecords": "試算紀錄",
+      "trialRecordsTitle": "試算紀錄",
+      "trialRecordsPlaceholder": "完整試算歷史將於後續版本提供。",
+      "readinessDashboard": "範本就緒度",
+      "readinessDetailTitle": "場景就緒度（明細）",
+      "readinessPlaceholder": "分場景就緒度與引導建議將於後續版本提供。上方進度條為以目前範本為基礎的占位分析。",
+      "noOpenScenario": "請在左側選擇業務場景，或點擊「新增業務場景」。",
+      "lastTrial": "最近試算",
+      "statusDraft": "未試算",
+      "statusReady": "通過",
+      "statusNeedsFix": "需修正"
     },
     "approval": {
       "timeline": {
