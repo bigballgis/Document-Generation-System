@@ -790,6 +790,16 @@ Files changed:
 Validation commands: not required (documentation-only).  
 Remaining risks: list-style binding from a single comma env var depends on Spring Boot relaxed binding for `List<String>` — verify in target deployment profile if used.
 
+## 2026-04-26: Local Docker Compose — host builds, frontend non-root pid fix
+
+Task ID: local-deployment-operations (user-requested test stack)  
+Summary: Documented operational notes from a full local path: **`mvn clean package -DskipTests`** in **`backend/`**, **`npm ci` + `npm run build`** in **`frontend/`**, then **`docker compose build`** and **`docker compose up -d`**. Docker Hub pulls for **`redis:7.2.7-alpine`** and **`minio/minio:RELEASE.2025-04-08T15-41-24Z`** failed on this host (registry timeout); stack was started after **tagging existing local images** to those names (acceptable only for isolated local smoke — re-pull pinned tags when network allows). **`frontend/Dockerfile.local`**: non-root **`nginx`** could not write **`/var/run/nginx.pid`** — **`sed`** now points **`pid`** to **`/var/cache/nginx/nginx.pid`** (directory already **`chown nginx`**).  
+Files changed:
+- `frontend/Dockerfile.local`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`  
+Validation: **`docker compose config`** OK; **`docker compose up -d`** OK; **`http://localhost:8080/actuator/health/ping`** → 200; **`http://localhost:3000/health`** → 200; **`http://localhost/`** → 200 after pid fix.  
+Remaining risks: retagged MinIO/Redis may differ from pinned releases; restore official pulls for reproducible tests.
+
 ## Entry Template
 
 ```text

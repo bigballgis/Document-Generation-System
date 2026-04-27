@@ -12,7 +12,8 @@ RUN apk add --no-cache libcap \
         /var/cache/nginx/fastcgi_temp /var/cache/nginx/uwsgi_temp /var/cache/nginx/scgi_temp \
         /etc/nginx/templates \
     && chown -R nginx:nginx /var/cache/nginx /var/run /var/log/nginx \
-        /etc/nginx/conf.d /etc/nginx/templates
+        /etc/nginx/conf.d /etc/nginx/templates \
+    && sed -i 's|pid        /var/run/nginx.pid;|pid        /var/cache/nginx/nginx.pid;|' /etc/nginx/nginx.conf
 
 COPY dist /usr/share/nginx/html
 RUN chown -R nginx:nginx /usr/share/nginx/html
