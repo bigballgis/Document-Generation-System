@@ -39,7 +39,6 @@
       </div>
     </div>
 
-    <!-- Filters -->
     <el-card class="filter-card" shadow="never">
       <el-form :inline="true" @submit.prevent="handleSearch">
         <el-form-item :label="$t('common.search')">
@@ -103,7 +102,6 @@
       </el-form>
     </el-card>
 
-    <!-- Table -->
     <el-card shadow="never" style="margin-top: 16px">
       <el-table :data="templates" v-loading="loading" stripe>
         <el-table-column prop="name" :label="$t('template.name')" min-width="180">
@@ -143,13 +141,26 @@
             {{ formatDateTime(row.updatedAt) }}
           </template>
         </el-table-column>
-        <el-table-column :label="$t('common.actions')" width="300" fixed="right">
+        <el-table-column :label="$t('common.actions')" width="380" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="handleClone(row)">
               {{ $t('common.clone') }}
             </el-button>
             <el-button link type="primary" size="small" @click="router.push(`/templates/${row.id}/api`)">
               {{ $t('workspace.api.apiButton') }}
+            </el-button>
+            <el-button
+              v-if="row.status === 'ACTIVE'"
+              link type="primary" size="small"
+              @click="
+                router.push({
+                  name: 'TemplateIntegrations',
+                  params: { id: String(row.id) },
+                  query: { tab: 'webhooks' },
+                })
+              "
+            >
+              {{ $t('workspace.publish.openIntegrations') }}
             </el-button>
             <el-button
               v-if="row.status === 'DRAFT' || row.status === 'REVIEWED'"
@@ -185,7 +196,6 @@
       </div>
     </el-card>
 
-    <!-- Creation Wizard -->
     <TemplateCreationWizard
       v-model:visible="wizardVisible"
       :categories="categoryTree"
@@ -283,7 +293,7 @@ async function fetchTemplates() {
     const res = await getTemplates(query)
     templates.value = res.content
     total.value = res.totalElements
-  } catch { /* handled by interceptor */ } finally {
+  } catch {} finally {
     loading.value = false
   }
 }
@@ -293,7 +303,7 @@ async function fetchFilters() {
     const [cats, tags] = await Promise.all([getCategories(), getTags()])
     categoryTree.value = cats
     tagList.value = tags
-  } catch { /* ignore */ }
+  } catch {}
 }
 
 function handleSearch() {
@@ -427,3 +437,4 @@ onMounted(() => {
   text-decoration: underline;
 }
 </style>
+

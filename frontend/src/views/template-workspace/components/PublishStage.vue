@@ -38,6 +38,9 @@
       </el-button>
 
       <template v-if="store.templateStatus === 'ACTIVE'">
+        <el-button size="large" type="success" @click="generateVisible = true">
+          {{ t('document.generate') }}
+        </el-button>
         <el-button size="large" @click="handleExportZip" :loading="exporting">
           {{ t('workspace.publish.exportZip') }}
         </el-button>
@@ -46,6 +49,12 @@
         </el-button>
       </template>
     </div>
+
+    <GenerateDialog
+      v-if="store.isActive"
+      v-model:visible="generateVisible"
+      :template-id="store.templateId"
+    />
 
     <el-card v-if="store.isActive" class="capabilities-card">
       <template #header>
@@ -75,6 +84,7 @@ import { ElMessage } from 'element-plus'
 import { useTemplateWorkspaceStore } from '@/stores/templateWorkspace'
 import { activateTemplate, createDraftVersion } from '@/api/templates'
 import { exportCompositeAsZip } from '@/api/composite-templates'
+import GenerateDialog from '@/views/templates/components/GenerateDialog.vue'
 import type { StageName } from '@/types/workspace'
 
 defineProps<{
@@ -92,6 +102,7 @@ const store = useTemplateWorkspaceStore()
 const activating = ref(false)
 const exporting = ref(false)
 const creatingVersion = ref(false)
+const generateVisible = ref(false)
 
 type TagType = 'info' | 'warning' | 'primary' | 'success' | 'danger'
 const statusTagType: Record<string, TagType> = {

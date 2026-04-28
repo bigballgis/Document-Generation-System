@@ -897,6 +897,14 @@ Summary: Added authenticated route **`/templates/:id/integrations`** (`TemplateI
 Files changed: `frontend/src/router/index.ts`, `frontend/src/views/templates/Integrations.vue`, `frontend/src/views/template-workspace/components/PublishStage.vue`, `frontend/src/i18n/en-US.json`, `zh-CN.json`, `zh-TW.json`.  
 Validation: `npm run type-check` (OK).  
 
+## 2026-04-28 — List + publish: integrations link and generate dialog
+
+Date: 2026-04-28  
+Workstream: Template workflow (UX follow-up)  
+Summary: **Templates** table: for **ACTIVE** rows, added a link to **`TemplateIntegrations`** (same label as `workspace.publish.openIntegrations`); widened actions column. **Publish** stage: for **ACTIVE** templates, added **Generate document** using existing `GenerateDialog` (sync/async/batch) with `v-if="store.isActive"`.  
+Files changed: `frontend/src/views/templates/Index.vue`, `frontend/src/views/template-workspace/components/PublishStage.vue`, `07-iteration-log.md`.  
+Validation: `npm run type-check` (OK).  
+
 ## 2026-04-28 — Ad-hoc: code comment cleanup / slimming (no task card ID)
 
 Date: 2026-04-28  
