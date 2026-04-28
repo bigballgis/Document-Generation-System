@@ -983,6 +983,7 @@
       "submitSuccess": "審核提交成功",
       "submitFailed": "審核提交失敗",
       "selectReviewers": "請選擇審核人",
+      "reviewerCandidatesLoadFailed": "無法載入此範本的審核候選人清單。",
       "reviewer": "審核人",
       "reviewLevel": "審核級別",
       "initialReview": "初審",

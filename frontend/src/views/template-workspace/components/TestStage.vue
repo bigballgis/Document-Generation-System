@@ -110,6 +110,7 @@
 
     <SubmitReviewDialog
       v-model:visible="submitDialogVisible"
+      :template-id="store.templateId"
       @submit="handleSubmitReview"
     />
 

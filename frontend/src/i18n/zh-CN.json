@@ -983,6 +983,7 @@
       "submitSuccess": "审核提交成功",
       "submitFailed": "审核提交失败",
       "selectReviewers": "请选择审核人",
+      "reviewerCandidatesLoadFailed": "无法加载本模板的审核候选人列表。",
       "reviewer": "审核人",
       "reviewLevel": "审核级别",
       "initialReview": "初审",

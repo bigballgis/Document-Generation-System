@@ -860,6 +860,17 @@ Validation result: type-check OK; Vitest 24 passed (files 2).
 Remaining risks: `SubmitReviewDialog` may still use manual reviewer IDs until WP-04 wires `getReviewerCandidates`; legacy `submitReview` API remains for compatibility but is deprecated.  
 Next step: WP-04 (unified review entry + candidate picker) per workflow plan.  
 
+## 2026-04-28 — WP-04: SubmitReviewDialog uses team-scoped reviewer candidates API
+
+Date: 2026-04-28  
+Workstream: Template workflow (WP-04)  
+Summary: Replaced tenant-wide `getUsers` paging in `SubmitReviewDialog` with `GET /api/templates/{id}/reviewers/candidates` (`getReviewerCandidates`): same-tenant, same-team reviewers excluding the template author, aligned with `TemplateReviewService.submitForReview`. Dialog now requires `templateId`; `TestStage` and `ApprovalStage` pass `store.templateId`. Candidates refetch whenever the dialog opens; load failures surface via i18n-backed `ElMessage.error`.  
+Files changed: `frontend/src/views/template-workspace/components/SubmitReviewDialog.vue`, `TestStage.vue`, `ApprovalStage.vue`, `frontend/src/__tests__/SubmitReviewDialog.test.ts`, `frontend/src/i18n/en-US.json`, `zh-CN.json`, `zh-TW.json`.  
+Validation commands: `npm run type-check`; `npx vitest run src/__tests__/SubmitReviewDialog.test.ts` (from `frontend/`).  
+Validation result: type-check OK; Vitest 7 passed.  
+Remaining risks: Template detail page still uses manual comma-separated reviewer IDs for `submitForReview`; workspace flow is now candidate-driven. Empty candidate list means no eligible reviewers in team (backend contract).  
+Next step: Optional — align template `Detail.vue` admin submit UX with candidates or deep-link to workspace.  
+
 ## Entry Template
 
 ```text

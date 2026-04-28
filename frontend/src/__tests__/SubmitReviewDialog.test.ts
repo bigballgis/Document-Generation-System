@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 
-const mockGetUsers = vi.fn()
+const mockGetReviewerCandidates = vi.fn()
 
-vi.mock('@/api/admin', () => ({
-  getUsers: (...args: any[]) => mockGetUsers(...args),
+vi.mock('@/api/templates', () => ({
+  getReviewerCandidates: (...args: any[]) => mockGetReviewerCandidates(...args),
 }))
 
 vi.mock('vue-router', () => ({
@@ -12,7 +12,6 @@ vi.mock('vue-router', () => ({
   useRoute: () => ({ params: { id: '1' } }),
 }))
 
-// Mock ElMessage
 vi.mock('element-plus', async (importOriginal) => {
   const actual = await importOriginal<any>()
   return {
@@ -24,48 +23,48 @@ vi.mock('element-plus', async (importOriginal) => {
 import SubmitReviewDialog from '@/views/template-workspace/components/SubmitReviewDialog.vue'
 import { ElMessage } from 'element-plus'
 
-const sampleUsers = {
-  content: [
-    { id: 1, username: 'alice', email: 'alice@test.com' },
-    { id: 2, username: 'bob', email: 'bob@test.com' },
-  ],
-  totalElements: 2,
-}
+const sampleCandidates = [
+  { id: 1, username: 'alice', email: 'alice@test.com', teamId: 10, role: 'USER' },
+  { id: 2, username: 'bob', email: 'bob@test.com', teamId: 10, role: 'USER' },
+]
 
-function mountDialog(visible = true) {
+function mountDialog(visible = true, templateId = 1) {
   return mount(SubmitReviewDialog, {
-    props: { visible },
+    props: { visible, templateId },
   })
 }
 
 describe('SubmitReviewDialog', () => {
   beforeEach(() => {
-    mockGetUsers.mockReset()
-    mockGetUsers.mockResolvedValue(sampleUsers)
+    mockGetReviewerCandidates.mockReset()
+    mockGetReviewerCandidates.mockResolvedValue(sampleCandidates)
     vi.mocked(ElMessage.warning).mockReset()
+    vi.mocked(ElMessage.error).mockReset()
   })
 
-  // Requirement 4.3: Opens and loads user list
-  it('loads user list when dialog becomes visible', async () => {
-    const wrapper = mountDialog(false)
+  it('loads reviewer candidates when dialog becomes visible', async () => {
+    const wrapper = mount(SubmitReviewDialog, { props: { visible: false, templateId: 42 } })
     await flushPromises()
-    // Trigger the watch by setting visible to true
     await wrapper.setProps({ visible: true })
     await flushPromises()
-    expect(mockGetUsers).toHaveBeenCalledWith({ page: 0, size: 100 })
+    expect(mockGetReviewerCandidates).toHaveBeenCalledWith(42)
   })
 
-  // Requirement 4.3: Review level select defaults to 1
+  it('does not request candidates when templateId is missing', async () => {
+    mount(SubmitReviewDialog, { props: { visible: true, templateId: 0 } })
+    await flushPromises()
+    expect(mockGetReviewerCandidates).not.toHaveBeenCalled()
+  })
+
   it('defaults review level to 1 (Initial Review)', async () => {
-    const wrapper = mountDialog(true)
+    const wrapper = mountDialog(true, 1)
     await flushPromises()
     const vm = wrapper.vm as any
     expect(vm.form.reviewLevel).toBe(1)
   })
 
-  // Requirement 4.3: No reviewers selected → warning
   it('shows warning when submitting without selecting reviewers', async () => {
-    const wrapper = mountDialog(true)
+    const wrapper = mountDialog(true, 1)
     await flushPromises()
     const vm = wrapper.vm as any
     vm.handleSubmit()
@@ -73,9 +72,8 @@ describe('SubmitReviewDialog', () => {
     expect(wrapper.emitted('submit')).toBeFalsy()
   })
 
-  // Requirement 4.3: Submit emits event with reviewerIds and reviewLevel
   it('emits submit event with reviewerIds and reviewLevel', async () => {
-    const wrapper = mountDialog(true)
+    const wrapper = mountDialog(true, 1)
     await flushPromises()
     const vm = wrapper.vm as any
     vm.form.reviewerIds = [1, 2]
@@ -86,9 +84,8 @@ describe('SubmitReviewDialog', () => {
     expect(emitted).toEqual([[1, 2], 2])
   })
 
-  // Resets form when reopened
   it('resets form when dialog is reopened', async () => {
-    const wrapper = mountDialog(true)
+    const wrapper = mountDialog(true, 1)
     await flushPromises()
     const vm = wrapper.vm as any
     vm.form.reviewerIds = [1]
@@ -100,5 +97,17 @@ describe('SubmitReviewDialog', () => {
 
     expect(vm.form.reviewerIds).toEqual([])
     expect(vm.form.reviewLevel).toBe(1)
+  })
+
+  it('refetches candidates each time the dialog opens', async () => {
+    const wrapper = mountDialog(false, 7)
+    await flushPromises()
+    await wrapper.setProps({ visible: true })
+    await flushPromises()
+    await wrapper.setProps({ visible: false })
+    await wrapper.setProps({ visible: true })
+    await flushPromises()
+    expect(mockGetReviewerCandidates).toHaveBeenCalledTimes(2)
+    expect(mockGetReviewerCandidates).toHaveBeenLastCalledWith(7)
   })
 })

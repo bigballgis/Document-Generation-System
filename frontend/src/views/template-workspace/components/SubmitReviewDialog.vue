@@ -11,15 +11,15 @@
           v-model="form.reviewerIds"
           multiple
           filterable
-          :loading="loadingUsers"
+          :loading="loadingCandidates"
           :placeholder="t('workspace.reviewPublish.selectReviewers')"
           style="width: 100%"
         >
           <el-option
-            v-for="user in users"
-            :key="user.id"
-            :label="user.username"
-            :value="user.id"
+            v-for="c in candidates"
+            :key="c.id"
+            :label="candidateLabel(c)"
+            :value="c.id"
           />
         </el-select>
       </el-form-item>
@@ -32,7 +32,7 @@
     </el-form>
     <template #footer>
       <el-button @click="emit('update:visible', false)">{{ t('common.cancel') }}</el-button>
-      <el-button type="primary" :loading="submitting" @click="handleSubmit">{{ t('common.submit') }}</el-button>
+      <el-button type="primary" @click="handleSubmit">{{ t('common.submit') }}</el-button>
     </template>
   </el-dialog>
 </template>
@@ -41,11 +41,12 @@
 import { reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
-import { getUsers } from '@/api/admin'
-import type { UserDTO } from '@/api/admin'
+import { getReviewerCandidates, type ReviewerCandidateDTO } from '@/api/templates'
 
 const props = defineProps<{
   visible: boolean
+  /** Composite template id; candidates are same-tenant, same-team, excluding the author. */
+  templateId: number
 }>()
 
 const emit = defineEmits<{
@@ -60,24 +61,37 @@ const form = reactive({
   reviewLevel: 1,
 })
 
-const users = ref<UserDTO[]>([])
-const loadingUsers = ref(false)
-const submitting = ref(false)
+const candidates = ref<ReviewerCandidateDTO[]>([])
+const loadingCandidates = ref(false)
 
-watch(() => props.visible, async (val) => {
-  if (val && users.value.length === 0) {
-    loadingUsers.value = true
-    try {
-      const result = await getUsers({ page: 0, size: 100 })
-      users.value = result.content
-    } catch { /* silent */ }
-    finally { loadingUsers.value = false }
-  }
-  if (val) {
+function candidateLabel(c: ReviewerCandidateDTO): string {
+  if (c.email) return `${c.username} (${c.email})`
+  return c.username
+}
+
+watch(
+  () => [props.visible, props.templateId] as const,
+  async ([visible, templateId]) => {
+    if (!visible) return
     form.reviewerIds = []
     form.reviewLevel = 1
-  }
-})
+    if (!templateId || templateId <= 0) {
+      candidates.value = []
+      return
+    }
+    loadingCandidates.value = true
+    try {
+      candidates.value = await getReviewerCandidates(templateId)
+    } catch (e: any) {
+      candidates.value = []
+      ElMessage.error(
+        e.response?.data?.message || e.message || t('workspace.reviewPublish.reviewerCandidatesLoadFailed'),
+      )
+    } finally {
+      loadingCandidates.value = false
+    }
+  },
+)
 
 function handleSubmit() {
   if (form.reviewerIds.length === 0) {

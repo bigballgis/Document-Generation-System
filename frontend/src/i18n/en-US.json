@@ -984,6 +984,7 @@
       "submitSuccess": "Review submitted successfully",
       "submitFailed": "Failed to submit review",
       "selectReviewers": "Please select reviewers",
+      "reviewerCandidatesLoadFailed": "Could not load reviewer candidates for this template.",
       "reviewer": "Reviewer",
       "reviewLevel": "Review Level",
       "initialReview": "Initial Review",
