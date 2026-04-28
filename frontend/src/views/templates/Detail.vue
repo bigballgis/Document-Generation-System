@@ -16,11 +16,11 @@
         <el-button @click="handleExportDocx">{{ $t('template.exportDocx') }}</el-button>
         <el-button @click="handleExportConfig">{{ $t('template.exportConfig') }}</el-button>
         <el-button
-          v-if="availableTransitions.includes('PENDING_REVIEW')"
+          v-if="availableTransitions.includes('IN_TEST')"
           type="warning"
-          @click="handleSubmitReview"
+          @click="handleSubmitToTest"
         >
-          {{ $t('template.submitReview') }}
+          {{ $t('template.submitToTest') }}
         </el-button>
         <el-button
           v-if="availableTransitions.includes('ACTIVE')"
@@ -273,7 +273,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import {
   getTemplate, cloneTemplate, activateTemplate, archiveTemplate,
-  getCategories, getTags, submitReview, getAvailableTransitions,
+  getCategories, getTags, submitTemplateToTest, getAvailableTransitions,
   scanVariables, exportCoverageReport,
   type TemplateDTO, type CategoryDTO, type TagDTO,
 } from '@/api/templates'
@@ -336,14 +336,24 @@ type TagType = 'primary' | 'success' | 'info' | 'warning' | 'danger'
 
 function statusTagType(status: string): TagType {
   const map: Record<string, TagType> = {
-    DRAFT: 'info', PENDING_REVIEW: 'warning', REVIEWED: 'primary', ACTIVE: 'success', ARCHIVED: 'danger',
+    DRAFT: 'info',
+    IN_TEST: 'warning',
+    PENDING_REVIEW: 'warning',
+    REVIEWED: 'primary',
+    ACTIVE: 'success',
+    ARCHIVED: 'danger',
   }
   return map[status] || 'info'
 }
 
 function statusLabel(status: string) {
   const map: Record<string, string> = {
-    DRAFT: 'Draft', PENDING_REVIEW: 'PendingReview', REVIEWED: 'Reviewed', ACTIVE: 'Active', ARCHIVED: 'Archived',
+    DRAFT: 'Draft',
+    IN_TEST: 'InTest',
+    PENDING_REVIEW: 'PendingReview',
+    REVIEWED: 'Reviewed',
+    ACTIVE: 'Active',
+    ARCHIVED: 'Archived',
   }
   return map[status] || status
 }
@@ -486,10 +496,10 @@ async function fetchTransitions() {
   } catch { /* handled */ }
 }
 
-async function handleSubmitReview() {
+async function handleSubmitToTest() {
   try {
-    await submitReview(templateId)
-    ElMessage.success(t('review.submitSuccess'))
+    await submitTemplateToTest(templateId)
+    ElMessage.success(t('workspace.design.submitToTestSuccess'))
     fetchTemplate()
     fetchTransitions()
   } catch { /* handled */ }

@@ -12,7 +12,14 @@ vi.mock('@/api/request', () => ({
   },
 }))
 
-import { submitReview, getAvailableTransitions, scanVariables, exportCoverageReport } from '@/api/templates'
+import {
+  submitReview,
+  submitTemplateToTest,
+  returnTemplateToDesign,
+  getAvailableTransitions,
+  scanVariables,
+  exportCoverageReport,
+} from '@/api/templates'
 
 describe('templates.ts extension functions', () => {
   beforeEach(() => {
@@ -20,6 +27,20 @@ describe('templates.ts extension functions', () => {
     mockPost.mockReset()
     mockGet.mockResolvedValue({})
     mockPost.mockResolvedValue({})
+  })
+
+  describe('submitTemplateToTest', () => {
+    it('sends POST to /templates/{templateId}/submit-test', async () => {
+      await submitTemplateToTest(42)
+      expect(mockPost).toHaveBeenCalledWith('/templates/42/submit-test')
+    })
+  })
+
+  describe('returnTemplateToDesign', () => {
+    it('sends POST to /templates/{templateId}/return-design', async () => {
+      await returnTemplateToDesign(7)
+      expect(mockPost).toHaveBeenCalledWith('/templates/7/return-design')
+    })
   })
 
   describe('submitReview', () => {

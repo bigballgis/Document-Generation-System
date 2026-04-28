@@ -158,6 +158,7 @@
     "activate": "Activate",
     "archive": "Archive",
     "submitReview": "Submit for Review",
+    "submitToTest": "Submit to testing",
     "preview": "Preview",
     "previewWithTestData": "Preview with Test Data",
     "previewWithRealData": "Preview with Real Data",
@@ -169,6 +170,7 @@
     "reviewRequired": "Review Required",
     "noReviewRequired": "No Review Required",
     "statusDraft": "Draft",
+    "statusInTest": "In testing",
     "statusPendingReview": "Pending Review",
     "statusReviewed": "Reviewed",
     "statusActive": "Active",
@@ -828,7 +830,12 @@
       "submitReviewDisabledReadonly": "This workspace is read-only.",
       "submitReviewDisabledPending": "This template is already submitted for review. Check the Approval step for the review timeline.",
       "submitReviewDisabledNotDraft": "Submit is only available when the template is in Draft status.",
+      "submitReviewDisabledNotInTest": "Submit for review is only available when the template is in testing and overall coverage is 100%.",
       "submitReviewDisabledCoverage": "Overall test coverage must reach 100% before you can submit for review."
+    },
+    "test": {
+      "returnToDesign": "Return to design",
+      "returnToDesignSuccess": "Template returned to design (draft). You can edit content in the Design step."
     },
     "publish": {
       "summary": {
@@ -1056,6 +1063,8 @@
     "design": {
       "parameters": "Parameters",
       "segmentArrangement": "Segment Arrangement",
+      "submitToTest": "Submit to testing",
+      "submitToTestSuccess": "Template is now in testing. Continue in the Test step; submit for review when coverage reaches 100%.",
       "importZip": "Import ZIP",
       "importTemplatePackage": "Import Template Package",
       "settings": "Settings",

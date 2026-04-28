@@ -158,6 +158,7 @@
     "activate": "激活",
     "archive": "归档",
     "submitReview": "提交审查",
+    "submitToTest": "进入测试",
     "preview": "预览",
     "previewWithTestData": "使用测试数据预览",
     "previewWithRealData": "使用真实数据预览",
@@ -169,6 +170,7 @@
     "reviewRequired": "需要审查",
     "noReviewRequired": "无需审查",
     "statusDraft": "草稿",
+    "statusInTest": "测试中",
     "statusPendingReview": "待审查",
     "statusReviewed": "已审查",
     "statusActive": "已激活",
@@ -827,7 +829,12 @@
       "submitReviewDisabledReadonly": "工作区为只读模式。",
       "submitReviewDisabledPending": "该模板已提交审核。请在「审批」步骤查看时间线。",
       "submitReviewDisabledNotDraft": "仅在模板为「草稿」状态时可提交审核。",
+      "submitReviewDisabledNotInTest": "仅在模板处于「测试中」且总体覆盖率达到 100% 时可提交审核。",
       "submitReviewDisabledCoverage": "总体测试覆盖率需达到 100% 后才能提交审核。"
+    },
+    "test": {
+      "returnToDesign": "返回设计",
+      "returnToDesignSuccess": "已返回设计（草稿）阶段，可在设计步骤中编辑内容。"
     },
     "publish": {
       "summary": {
@@ -1055,6 +1062,8 @@
     "design": {
       "parameters": "参数",
       "segmentArrangement": "片段编排",
+      "submitToTest": "进入测试",
+      "submitToTestSuccess": "模板已进入测试阶段。请继续在「测试」步骤运行场景；覆盖率达到 100% 后再提交审核。",
       "importZip": "导入 ZIP",
       "importTemplatePackage": "导入模板包",
       "settings": "设置",

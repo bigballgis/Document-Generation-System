@@ -117,7 +117,12 @@ const stageDataLoaded = reactive({ test: false, approval: false })
 
 type TagType = 'primary' | 'success' | 'info' | 'warning' | 'danger'
 const statusTagMap: Record<string, TagType> = {
-  DRAFT: 'info', PENDING_REVIEW: 'warning', REVIEWED: 'primary', ACTIVE: 'success', ARCHIVED: 'danger',
+  DRAFT: 'info',
+  IN_TEST: 'warning',
+  PENDING_REVIEW: 'warning',
+  REVIEWED: 'primary',
+  ACTIVE: 'success',
+  ARCHIVED: 'danger',
 }
 
 const stageComponentMap: Record<StageName, ReturnType<typeof defineComponent>> = {
@@ -204,6 +209,15 @@ function retry() {
 onMounted(() => {
   store.initWorkspace(workspaceIdFromRoute())
 })
+
+watch(
+  [() => store.templateId, () => store.template?.status],
+  () => {
+    if (!store.template) return
+    currentStage.value = stageAvailability.activeStage.value
+  },
+  { immediate: true },
+)
 
 // When the router reuses this view (same component instance, new `params.id`), reload workspace.
 watch(

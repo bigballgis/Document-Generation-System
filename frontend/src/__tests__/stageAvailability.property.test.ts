@@ -36,6 +36,13 @@ function computeStages(s: StoreSnapshot): StageDefinition[] {
         { name: 'approval', label: label('approval'), status: 'not_started', clickable: coverage100 },
         { name: 'publish', label: label('publish'), status: 'not_started', clickable: false },
       ]
+    case 'IN_TEST':
+      return [
+        { name: 'design', label: label('design'), status: 'completed', clickable: true },
+        { name: 'test', label: label('test'), status: testCompleted ? 'completed' : 'in_progress', clickable: true },
+        { name: 'approval', label: label('approval'), status: 'not_started', clickable: coverage100 },
+        { name: 'publish', label: label('publish'), status: 'not_started', clickable: false },
+      ]
     case 'PENDING_REVIEW':
       return [
         { name: 'design', label: label('design'), status: 'readonly', clickable: true },
@@ -71,7 +78,7 @@ function computeStages(s: StoreSnapshot): StageDefinition[] {
 
 // ── Generators ──
 
-const templateStatuses = ['DRAFT', 'PENDING_REVIEW', 'REVIEWED', 'ACTIVE', 'ARCHIVED'] as const
+const templateStatuses = ['DRAFT', 'IN_TEST', 'PENDING_REVIEW', 'REVIEWED', 'ACTIVE', 'ARCHIVED'] as const
 
 const arbSegment = fc.record({
   enabled: fc.boolean(),
@@ -103,10 +110,10 @@ describe('Property 1: 阶段可用性与完成状态一致性', () => {
     )
   })
 
-  it('Sub-property 2: DRAFT — design/test clickable, approval clickable iff coverage>=100, publish not clickable', () => {
+  it('Sub-property 2: DRAFT / IN_TEST — design/test clickable, approval clickable iff coverage>=100, publish not clickable', () => {
     fc.assert(
       fc.property(
-        arbStoreSnapshot.filter((s) => s.templateStatus === 'DRAFT'),
+        arbStoreSnapshot.filter((s) => s.templateStatus === 'DRAFT' || s.templateStatus === 'IN_TEST'),
         (snapshot) => {
           const stages = computeStages(snapshot)
           expect(stages[0].clickable).toBe(true) // design
@@ -187,10 +194,10 @@ describe('Property 1: 阶段可用性与完成状态一致性', () => {
     )
   })
 
-  it('Sub-property 7: test completed iff coverage >= 100', () => {
+  it('Sub-property 7: test completed iff coverage >= 100 (DRAFT and IN_TEST)', () => {
     fc.assert(
       fc.property(
-        arbStoreSnapshot.filter((s) => s.templateStatus === 'DRAFT'),
+        arbStoreSnapshot.filter((s) => s.templateStatus === 'DRAFT' || s.templateStatus === 'IN_TEST'),
         (snapshot) => {
           const stages = computeStages(snapshot)
           expect(stages[1].status === 'completed').toBe(snapshot.overallCoveragePercent >= 100)
@@ -217,6 +224,19 @@ describe('Property 1: 阶段可用性与完成状态一致性', () => {
         const stages = computeStages(snapshot)
         expect(stages[3].status === 'completed').toBe(snapshot.templateStatus === 'ACTIVE')
       }),
+      { numRuns: 100 },
+    )
+  })
+
+  it('Sub-property 10: IN_TEST — design stage is always completed', () => {
+    fc.assert(
+      fc.property(
+        arbStoreSnapshot.filter((s) => s.templateStatus === 'IN_TEST'),
+        (snapshot) => {
+          const stages = computeStages(snapshot)
+          expect(stages[0].status).toBe('completed')
+        },
+      ),
       { numRuns: 100 },
     )
   })

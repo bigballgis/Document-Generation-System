@@ -26,7 +26,16 @@
         </div>
       </div>
       <div class="toolbar-actions">
-        <el-button v-if="!readonly && isDraft" size="small" @click="handleImportZip">
+        <el-button
+          v-if="!readonly && isDraft"
+          type="primary"
+          size="small"
+          :loading="submittingToTest"
+          @click="handleSubmitToTest"
+        >
+          {{ t('workspace.design.submitToTest') }}
+        </el-button>
+        <el-button v-if="!readonly && (isDraft || isInTest)" size="small" @click="handleImportZip">
           {{ t('workspace.design.importZip') }}
         </el-button>
         <input ref="zipInputRef" type="file" accept=".zip" style="display: none" @change="handleZipFileSelected" />
@@ -111,6 +120,8 @@ import { ElMessage } from 'element-plus'
 import { Setting, Close, WarningFilled } from '@element-plus/icons-vue'
 import { useTemplateWorkspaceStore } from '@/stores/templateWorkspace'
 import { importCompositeFromZip, getSegmentOnlyOfficeUrl } from '@/api/composite-templates'
+import { submitTemplateToTest } from '@/api/templates'
+import type { StageName } from '@/types/workspace'
 import ParameterTableDesign from './ParameterTableDesign.vue'
 import SegmentCanvas from './SegmentCanvas.vue'
 import ParameterOverviewPanel from './ParameterOverviewPanel.vue'
@@ -119,6 +130,10 @@ import ParameterSidebar from './ParameterSidebar.vue'
 import OnlyOfficeEditor from '@/components/OnlyOfficeEditor.vue'
 
 defineProps<{ readonly: boolean }>()
+
+const emit = defineEmits<{
+  'stage-change': [stage: StageName]
+}>()
 
 const { t } = useI18n()
 const store = useTemplateWorkspaceStore()
@@ -130,6 +145,8 @@ const zipInputRef = ref<HTMLInputElement | null>(null)
 const segmentCanvasRef = ref()
 
 const isDraft = computed(() => store.isDraft)
+const isInTest = computed(() => store.isInTest)
+const submittingToTest = ref(false)
 const sidebarCollapsed = ref(false)
 const editorRefs: Record<string, any> = {}
 
@@ -210,6 +227,21 @@ async function handleZipFileSelected(event: Event) {
     ElMessage.success(t('message.importSuccess'))
   } catch (e: any) { ElMessage.error(e.response?.data?.message || e.message || t('message.importFailed')) }
   finally { input.value = '' }
+}
+
+async function handleSubmitToTest() {
+  if (!store.templateId) return
+  submittingToTest.value = true
+  try {
+    await submitTemplateToTest(store.templateId)
+    await Promise.all([store.refreshTemplate(), store.refreshTransitions()])
+    ElMessage.success(t('workspace.design.submitToTestSuccess'))
+    emit('stage-change', 'test')
+  } catch (e: any) {
+    ElMessage.error(e.response?.data?.message || e.message || t('message.operationFailed'))
+  } finally {
+    submittingToTest.value = false
+  }
 }
 </script>
 

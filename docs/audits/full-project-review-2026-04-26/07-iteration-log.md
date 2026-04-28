@@ -849,6 +849,17 @@ Validation: `mvn -Dtest=TemplateServiceTest,TemplateReviewServiceTest test`; `mv
 Note: Full `mvn test` may still report unrelated pre-existing failures (e.g. `OnlyOfficeServiceTest`, `AggregationSchemaPropertyTest`).  
 Next step: WP-03 (IN_TEST and workflow transitions) and WP-04 (single review submit path, frontend `SubmitReviewDialog` → candidates API).  
 
+## 2026-04-28 — WP-03: Frontend IN_TEST workflow (submit to test, return to design, review from testing)
+
+Date: 2026-04-28  
+Workstream: Template workflow (WP-03)  
+Summary: Aligned the Vue workspace with the backend `IN_TEST` lifecycle: `TemplateStatus` and API helpers `submitTemplateToTest` / `returnTemplateToDesign`; `useStageAvailability` treats `IN_TEST` like an editable phase (with test as default active stage). Design toolbar adds **Submit to testing**; Test stage adds **Return to design** and requires `IN_TEST` + 100% coverage before **Submit for review**; `submitForReview` no longer chains deprecated `submitReview`. Template list/detail show `IN_TEST` and the detail header action uses **Submit to testing** when `IN_TEST` is an available transition. Added `store.isInTest`, workspace `currentStage` sync from `activeStage`, and extended property tests for `IN_TEST`.  
+Files changed: `frontend/src/api/templates.ts`, `composables/useStageAvailability.ts`, `stores/templateWorkspace.ts`, `views/template-workspace/Index.vue`, `components/DesignStage.vue`, `TestStage.vue`, `ApprovalStage.vue`, `views/templates/Index.vue`, `Detail.vue`, `i18n/en-US.json`, `zh-CN.json`, `zh-TW.json`, `__tests__/stageAvailability.property.test.ts`, `__tests__/api/templates-extensions.test.ts`.  
+Validation commands: `npm run type-check`; `npx vitest run src/__tests__/stageAvailability.property.test.ts src/__tests__/api/templates-extensions.test.ts` (from `frontend/`).  
+Validation result: type-check OK; Vitest 24 passed (files 2).  
+Remaining risks: `SubmitReviewDialog` may still use manual reviewer IDs until WP-04 wires `getReviewerCandidates`; legacy `submitReview` API remains for compatibility but is deprecated.  
+Next step: WP-04 (unified review entry + candidate picker) per workflow plan.  
+
 ## Entry Template
 
 ```text

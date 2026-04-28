@@ -31,6 +31,13 @@ export function useStageAvailability(store: ReturnType<typeof useTemplateWorkspa
           { name: 'approval' as const, label: label('approval'), status: 'not_started', clickable: coverage100 },
           { name: 'publish' as const, label: label('publish'), status: 'not_started', clickable: false },
         ]
+      case 'IN_TEST':
+        return [
+          { name: 'design' as const, label: label('design'), status: 'completed', clickable: true },
+          { name: 'test' as const, label: label('test'), status: testCompleted ? 'completed' : 'in_progress', clickable: true },
+          { name: 'approval' as const, label: label('approval'), status: 'not_started', clickable: coverage100 },
+          { name: 'publish' as const, label: label('publish'), status: 'not_started', clickable: false },
+        ]
       case 'PENDING_REVIEW':
         return [
           { name: 'design' as const, label: label('design'), status: 'readonly', clickable: true },
@@ -67,12 +74,15 @@ export function useStageAvailability(store: ReturnType<typeof useTemplateWorkspa
   const activeStage = computed<StageName>(() => {
     const s = store.templateStatus
     if (s === 'DRAFT') return 'design'
+    if (s === 'IN_TEST') return 'test'
     if (s === 'PENDING_REVIEW') return 'approval'
     if (s === 'REVIEWED' || s === 'ACTIVE') return 'publish'
     return 'design'
   })
 
-  const isReadonly = computed(() => store.templateStatus !== 'DRAFT')
+  const isReadonly = computed(
+    () => store.templateStatus !== 'DRAFT' && store.templateStatus !== 'IN_TEST',
+  )
 
   return { stages, activeStage, isReadonly }
 }

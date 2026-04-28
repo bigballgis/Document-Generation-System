@@ -2,6 +2,13 @@
   <div class="validation-workspace">
     <div class="validation-toolbar">
       <el-button
+        v-if="!readonly && store.templateStatus === 'IN_TEST'"
+        :loading="returningToDesign"
+        @click="handleReturnToDesign"
+      >
+        {{ t('workspace.test.returnToDesign') }}
+      </el-button>
+      <el-button
         type="primary"
         :disabled="readonly"
         @click="openNewScenarioTab"
@@ -129,7 +136,8 @@ import { ElMessage } from 'element-plus'
 import { VideoPlay, Close } from '@element-plus/icons-vue'
 import { useTemplateWorkspaceStore } from '@/stores/templateWorkspace'
 import { submitForReview } from '@/api/admin'
-import { submitReview } from '@/api/templates'
+import { returnTemplateToDesign } from '@/api/templates'
+import type { StageName } from '@/types/workspace'
 import { runAllTestCases, runTestCase, isTestPassed, type TestCaseDTO } from '@/api/market'
 import { getScenarioReadiness } from '@/api/templates'
 import type { ScenarioReadinessReportDTO } from '@/types/scenarioReadiness'
@@ -143,13 +151,18 @@ const props = defineProps<{
   readonly: boolean
 }>()
 
+const emit = defineEmits<{
+  'stage-change': [stage: StageName]
+}>()
+
 const { t } = useI18n()
 const store = useTemplateWorkspaceStore()
 
 const submitDialogVisible = ref(false)
+const returningToDesign = ref(false)
 
 const canSubmitReview = computed(() => {
-  return store.templateStatus === 'DRAFT' && (store.coverage?.overallCoveragePercent ?? 0) >= 100
+  return store.templateStatus === 'IN_TEST' && (store.coverage?.overallCoveragePercent ?? 0) >= 100
 })
 
 const submitReviewDisabledReason = computed(() => {
@@ -157,8 +170,8 @@ const submitReviewDisabledReason = computed(() => {
   if (store.templateStatus === 'PENDING_REVIEW') {
     return t('workspace.approval.submitReviewDisabledPending')
   }
-  if (store.templateStatus !== 'DRAFT') {
-    return t('workspace.approval.submitReviewDisabledNotDraft')
+  if (store.templateStatus !== 'IN_TEST') {
+    return t('workspace.approval.submitReviewDisabledNotInTest')
   }
   if ((store.coverage?.overallCoveragePercent ?? 0) < 100) {
     return t('workspace.approval.submitReviewDisabledCoverage')
@@ -170,12 +183,26 @@ async function handleSubmitReview(reviewerIds: number[], reviewLevel: number) {
   if (!store.templateId) return
   try {
     await submitForReview(store.templateId, { reviewerIds, reviewLevel })
-    await submitReview(store.templateId)
-    await Promise.all([store.refreshTemplate(), store.refreshReviews()])
+    await Promise.all([store.refreshTemplate(), store.refreshReviews(), store.refreshTransitions()])
     submitDialogVisible.value = false
     ElMessage.success(t('workspace.reviewPublish.submitSuccess'))
   } catch (e: any) {
     ElMessage.error(e.response?.data?.message || e.message || t('workspace.reviewPublish.submitFailed'))
+  }
+}
+
+async function handleReturnToDesign() {
+  if (!store.templateId) return
+  returningToDesign.value = true
+  try {
+    await returnTemplateToDesign(store.templateId)
+    await Promise.all([store.refreshTemplate(), store.refreshTransitions()])
+    ElMessage.success(t('workspace.test.returnToDesignSuccess'))
+    emit('stage-change', 'design')
+  } catch (e: any) {
+    ElMessage.error(e.response?.data?.message || e.message || t('message.operationFailed'))
+  } finally {
+    returningToDesign.value = false
   }
 }
 

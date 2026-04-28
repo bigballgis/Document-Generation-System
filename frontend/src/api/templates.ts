@@ -22,7 +22,7 @@ export interface TemplateDTO {
   createdBy?: string
 }
 
-export type TemplateStatus = 'DRAFT' | 'PENDING_REVIEW' | 'REVIEWED' | 'ACTIVE' | 'ARCHIVED'
+export type TemplateStatus = 'DRAFT' | 'IN_TEST' | 'PENDING_REVIEW' | 'REVIEWED' | 'ACTIVE' | 'ARCHIVED'
 
 export interface CreateTemplateRequest {
   name: string
@@ -212,7 +212,20 @@ export function getOnlyOfficeUrl(templateId: number) {
   return request.get<any, { url: string }>(`/templates/${templateId}/onlyoffice-url`)
 }
 
-/** Submit template for review via state machine (DRAFT → PENDING_REVIEW) */
+/** DRAFT → IN_TEST: enter testing phase (must use workspace flow for composite templates in practice). */
+export function submitTemplateToTest(templateId: number) {
+  return request.post<any, TemplateDTO>(`/templates/${templateId}/submit-test`)
+}
+
+/** IN_TEST → DRAFT: leave testing and return to design. */
+export function returnTemplateToDesign(templateId: number) {
+  return request.post<any, TemplateDTO>(`/templates/${templateId}/return-design`)
+}
+
+/**
+ * @deprecated Use {@link submitTemplateToTest} (DRAFT) then admin {@code submitForReview} (IN_TEST).
+ * Legacy DRAFT → PENDING_REVIEW in one step is no longer allowed.
+ */
 export function submitReview(templateId: number) {
   return request.post<any, TemplateDTO>(`/templates/${templateId}/submit-review`)
 }

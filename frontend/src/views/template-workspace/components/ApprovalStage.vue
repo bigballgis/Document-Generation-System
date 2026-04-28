@@ -3,7 +3,7 @@
     <div class="approval-split">
       <!-- Left: Timeline -->
       <div class="timeline-panel">
-        <!-- Submit review (enabled only in DRAFT with 100% coverage); always visible for discoverability -->
+        <!-- Submit for review: IN_TEST and 100% coverage (state moves via admin submit + review service) -->
         <el-tooltip
           :disabled="canSubmitReview && !readonly"
           placement="bottom"
@@ -82,7 +82,6 @@ import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { useTemplateWorkspaceStore } from '@/stores/templateWorkspace'
 import { submitForReview } from '@/api/admin'
-import { submitReview } from '@/api/templates'
 import { previewCompositeTemplate } from '@/api/composite-templates'
 import SubmitReviewDialog from './SubmitReviewDialog.vue'
 import type { StageName } from '@/types/workspace'
@@ -128,7 +127,7 @@ function timelineType(status: string): 'primary' | 'success' | 'warning' | 'dang
 }
 
 const canSubmitReview = computed(() => {
-  return store.templateStatus === 'DRAFT' && (store.coverage?.overallCoveragePercent ?? 0) >= 100
+  return store.templateStatus === 'IN_TEST' && (store.coverage?.overallCoveragePercent ?? 0) >= 100
 })
 
 const submitReviewDisabledReason = computed(() => {
@@ -136,8 +135,8 @@ const submitReviewDisabledReason = computed(() => {
   if (store.templateStatus === 'PENDING_REVIEW') {
     return t('workspace.approval.submitReviewDisabledPending')
   }
-  if (store.templateStatus !== 'DRAFT') {
-    return t('workspace.approval.submitReviewDisabledNotDraft')
+  if (store.templateStatus !== 'IN_TEST') {
+    return t('workspace.approval.submitReviewDisabledNotInTest')
   }
   if ((store.coverage?.overallCoveragePercent ?? 0) < 100) {
     return t('workspace.approval.submitReviewDisabledCoverage')
@@ -157,8 +156,7 @@ const allApproved = computed(() => {
 async function handleSubmitReview(reviewerIds: number[], reviewLevel: number) {
   try {
     await submitForReview(store.templateId, { reviewerIds, reviewLevel })
-    await submitReview(store.templateId)
-    await Promise.all([store.refreshTemplate(), store.refreshReviews()])
+    await Promise.all([store.refreshTemplate(), store.refreshReviews(), store.refreshTransitions()])
     submitDialogVisible.value = false
     ElMessage.success(t('workspace.reviewPublish.submitSuccess'))
   } catch (e: any) {

@@ -89,6 +89,7 @@
             @change="handleSearch"
           >
             <el-option label="Draft" value="DRAFT" />
+            <el-option label="In testing" value="IN_TEST" />
             <el-option label="Pending Review" value="PENDING_REVIEW" />
             <el-option label="Reviewed" value="REVIEWED" />
             <el-option label="Active" value="ACTIVE" />
@@ -255,6 +256,7 @@ function formatDateTime(value: unknown): string {
 function statusTagType(status: string): TagType {
   const map: Record<string, TagType> = {
     DRAFT: 'info',
+    IN_TEST: 'warning',
     PENDING_REVIEW: 'warning',
     REVIEWED: 'primary',
     ACTIVE: 'success',
@@ -266,6 +268,7 @@ function statusTagType(status: string): TagType {
 function statusLabel(status: string) {
   const map: Record<string, string> = {
     DRAFT: 'Draft',
+    IN_TEST: 'InTest',
     PENDING_REVIEW: 'PendingReview',
     REVIEWED: 'Reviewed',
     ACTIVE: 'Active',

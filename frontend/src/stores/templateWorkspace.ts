@@ -37,6 +37,7 @@ export const useTemplateWorkspaceStore = defineStore('templateWorkspace', () => 
   const templateStatus = computed(() => template.value?.status ?? 'DRAFT')
   const isActive = computed(() => templateStatus.value === 'ACTIVE')
   const isDraft = computed(() => templateStatus.value === 'DRAFT')
+  const isInTest = computed(() => templateStatus.value === 'IN_TEST')
 
   // ── Actions ──
   async function initWorkspace(id: number): Promise<void> {
@@ -206,7 +207,7 @@ export const useTemplateWorkspaceStore = defineStore('templateWorkspace', () => 
     templateId, template, assemblyConfig, parameters,
     coverage, availableTransitions, loading, criticalError, warnings,
     testCases, testReport, reviews, versions, permissions,
-    templateStatus, isActive, isDraft,
+    templateStatus, isActive, isDraft, isInTest,
     initWorkspace, refreshTemplate, refreshAssemblyConfig,
     refreshParameters, refreshCoverage,
     refreshTransitions, refreshTestCases, refreshReviews,
