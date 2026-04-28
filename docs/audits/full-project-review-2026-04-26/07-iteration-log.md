@@ -889,6 +889,14 @@ Files changed: `frontend/src/views/template-workspace/components/PublishStage.vu
 Validation: `npm run type-check` (OK).  
 Next step: —  
 
+## 2026-04-28 — Template integrations route (webhooks, schedules, watermark)
+
+Date: 2026-04-28  
+Workstream: Template workflow (publish follow-up)  
+Summary: Added authenticated route **`/templates/:id/integrations`** (`TemplateIntegrations`) rendering **WebhookPanel**, **ScheduledTaskManagement**, and **WatermarkSecurityConfig** with tabs; **`tab`** query selects the pane and stays in sync when switching tabs. **PublishStage** (ACTIVE) gained a third capability button opening this route with `tab=webhooks`.  
+Files changed: `frontend/src/router/index.ts`, `frontend/src/views/templates/Integrations.vue`, `frontend/src/views/template-workspace/components/PublishStage.vue`, `frontend/src/i18n/en-US.json`, `zh-CN.json`, `zh-TW.json`.  
+Validation: `npm run type-check` (OK).  
+
 ## 2026-04-28 — Ad-hoc: code comment cleanup / slimming (no task card ID)
 
 Date: 2026-04-28  

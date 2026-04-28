@@ -63,6 +63,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Template Editor' },
       },
       {
+        path: 'templates/:id/integrations',
+        name: 'TemplateIntegrations',
+        component: () => import('@/views/templates/Integrations.vue'),
+        meta: { title: 'Template Integrations', requiresAuth: true },
+      },
+      {
         path: 'templates/:id',
         name: 'TemplateDetail',
         redirect: (to) => `/templates/${to.params.id}/workspace`,

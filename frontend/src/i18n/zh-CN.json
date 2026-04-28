@@ -1210,7 +1210,12 @@
       "capabilitiesTitle": "集成与交付",
       "capabilitiesHint": "管理此模板的 API 接入与生成文档记录。",
       "openApiManagement": "API 管理",
-      "openDocumentHistory": "生成文档记录"
+      "openDocumentHistory": "生成文档记录",
+      "openIntegrations": "Webhook 与定时任务"
+    },
+    "integrations": {
+      "title": "模板集成",
+      "backToWorkspace": "返回工作区"
     },
     "testForm": {
       "viewJson": "查看 JSON",

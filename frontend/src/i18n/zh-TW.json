@@ -1210,7 +1210,12 @@
       "capabilitiesTitle": "整合與交付",
       "capabilitiesHint": "管理此範本的 API 連線與產生的文件紀錄。",
       "openApiManagement": "API 管理",
-      "openDocumentHistory": "產生文件紀錄"
+      "openDocumentHistory": "產生文件紀錄",
+      "openIntegrations": "Webhook 與排程"
+    },
+    "integrations": {
+      "title": "範本整合",
+      "backToWorkspace": "返回工作區"
     },
     "testForm": {
       "viewJson": "查看 JSON",

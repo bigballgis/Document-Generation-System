@@ -1211,7 +1211,12 @@
       "capabilitiesTitle": "Integration",
       "capabilitiesHint": "Manage API access and review documents generated from this template.",
       "openApiManagement": "API management",
-      "openDocumentHistory": "Generated documents"
+      "openDocumentHistory": "Generated documents",
+      "openIntegrations": "Webhooks & scheduled tasks"
+    },
+    "integrations": {
+      "title": "Template integrations",
+      "backToWorkspace": "Back to workspace"
     },
     "testForm": {
       "viewJson": "View JSON",

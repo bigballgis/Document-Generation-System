@@ -59,6 +59,9 @@
         <el-button size="large" @click="openDocumentHistory">
           {{ t('workspace.publish.openDocumentHistory') }}
         </el-button>
+        <el-button size="large" plain @click="openIntegrations">
+          {{ t('workspace.publish.openIntegrations') }}
+        </el-button>
       </div>
     </el-card>
   </div>
@@ -108,6 +111,14 @@ function openDocumentHistory() {
   router.push({
     path: '/documents',
     query: { templateId: String(store.templateId) },
+  })
+}
+
+function openIntegrations() {
+  router.push({
+    name: 'TemplateIntegrations',
+    params: { id: String(store.templateId) },
+    query: { tab: 'webhooks' },
   })
 }
 
