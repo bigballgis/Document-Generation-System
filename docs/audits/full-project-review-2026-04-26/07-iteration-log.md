@@ -839,6 +839,16 @@ Remaining risks: Users must use Test/Approval (and future submit-to-test flow) f
 Related tracking items: —  
 Next step: WP-02+ (team, state machine, unified review API) per workflow plan.  
 
+## 2026-04-28 — WP-02: Team-scoped template ownership and reviewer candidates
+
+Date: 2026-04-28  
+Workstream: Template workflow (WP-02)  
+Summary: Default `templates.team_id` from creator when omitted; validate `teamId` on create/update against the current tenant. Added `GET /api/templates/{id}/reviewers/candidates` (same-tenant, same-team users, excluding the template author). `TemplateReviewService.submitForReview` now requires a template team and validates each reviewer (same tenant and team, not the author).  
+Files changed: backend `UserRepository`, `ReviewerCandidateDTO`, `TemplateService`, `TemplateController`, `TemplateReviewService`; tests and `TemplatePersistencePropertyTest` mocks; frontend `templates.ts` (`getReviewerCandidates`).  
+Validation: `mvn -Dtest=TemplateServiceTest,TemplateReviewServiceTest test`; `mvn -Dtest=TemplatePersistencePropertyTest test`; `npm run type-check` (frontend).  
+Note: Full `mvn test` may still report unrelated pre-existing failures (e.g. `OnlyOfficeServiceTest`, `AggregationSchemaPropertyTest`).  
+Next step: WP-03 (IN_TEST and workflow transitions) and WP-04 (single review submit path, frontend `SubmitReviewDialog` → candidates API).  
+
 ## Entry Template
 
 ```text

@@ -44,7 +44,8 @@ class TemplateVersionServiceTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        templateService = new TemplateService(templateRepository, templateVersionRepository, mock(TemplateTagMappingRepository.class), minioClient);
+        templateService = new TemplateService(templateRepository, templateVersionRepository, mock(TemplateTagMappingRepository.class),
+                mock(com.docgen.repository.UserRepository.class), mock(com.docgen.repository.TeamRepository.class), minioClient);
         Field bucketField = TemplateService.class.getDeclaredField("bucketName");
         bucketField.setAccessible(true);
         bucketField.set(templateService, "docgen-test");

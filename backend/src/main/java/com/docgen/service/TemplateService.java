@@ -1,18 +1,23 @@
 package com.docgen.service;
 
 import com.docgen.dto.CreateTemplateRequest;
+import com.docgen.dto.ReviewerCandidateDTO;
 import com.docgen.dto.TemplateDTO;
 import com.docgen.dto.TemplateQueryRequest;
 import com.docgen.dto.TemplateVersionDTO;
 import com.docgen.dto.UpdateTemplateRequest;
+import com.docgen.entity.Team;
 import com.docgen.entity.Template;
 import com.docgen.entity.TemplateVersion;
+import com.docgen.entity.User;
 import com.docgen.exception.BusinessException;
 import com.docgen.exception.ErrorCode;
 import com.docgen.exception.ResourceNotFoundException;
+import com.docgen.repository.TeamRepository;
 import com.docgen.repository.TemplateRepository;
 import com.docgen.repository.TemplateTagMappingRepository;
 import com.docgen.repository.TemplateVersionRepository;
+import com.docgen.repository.UserRepository;
 import com.docgen.util.TenantContext;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
@@ -32,6 +37,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -47,6 +53,8 @@ public class TemplateService {
     private final TemplateRepository templateRepository;
     private final TemplateVersionRepository templateVersionRepository;
     private final TemplateTagMappingRepository tagMappingRepository;
+    private final UserRepository userRepository;
+    private final TeamRepository teamRepository;
     private final MinioClient minioClient;
 
     @Value("${minio.bucket-name:docgen}")
@@ -55,10 +63,14 @@ public class TemplateService {
     public TemplateService(TemplateRepository templateRepository,
                            TemplateVersionRepository templateVersionRepository,
                            TemplateTagMappingRepository tagMappingRepository,
+                           UserRepository userRepository,
+                           TeamRepository teamRepository,
                            MinioClient minioClient) {
         this.templateRepository = templateRepository;
         this.templateVersionRepository = templateVersionRepository;
         this.tagMappingRepository = tagMappingRepository;
+        this.userRepository = userRepository;
+        this.teamRepository = teamRepository;
         this.minioClient = minioClient;
     }
 
@@ -90,9 +102,11 @@ public class TemplateService {
             template.setStorageStrategy(request.getStorageStrategy());
         }
         template.setAsync(request.isAsync());
-        template.setTeamId(request.getTeamId());
         template.setCategoryId(request.getCategoryId());
         template.setReviewRequired(request.isReviewRequired());
+
+        Long effectiveTeamId = resolveTeamIdForCreate(request.getTeamId(), userId, tenantId);
+        template.setTeamId(effectiveTeamId);
 
         Template saved = templateRepository.save(template);
         log.info("Template created: name={}, id={}, tenantId={}", saved.getName(), saved.getId(), tenantId);
@@ -140,6 +154,32 @@ public class TemplateService {
     }
 
     /**
+     * Users in the same tenant and team as the template who may be selected as reviewers (excludes the template author).
+     */
+    @Transactional(readOnly = true)
+    public List<ReviewerCandidateDTO> listReviewerCandidates(Long templateId) {
+        Template template = findTemplateOrThrow(templateId);
+        Long tenantId = TenantContext.getCurrentTenantId();
+        if (!template.getTenantId().equals(tenantId)) {
+            throw new BusinessException(
+                    ErrorCode.VALIDATION_FAILED, "Template not accessible in current tenant context", HttpStatus.FORBIDDEN);
+        }
+        if (template.getTeamId() == null) {
+            throw new BusinessException(
+                    ErrorCode.VALIDATION_FAILED,
+                    "Template must be assigned to a team before listing reviewer candidates",
+                    HttpStatus.BAD_REQUEST);
+        }
+        List<User> users = userRepository.findByTenantIdAndTeamIdOrderByUsernameAsc(tenantId, template.getTeamId());
+        Long createdBy = template.getCreatedBy();
+        return users.stream()
+                .filter(u -> u.getId() != null && (createdBy == null || !u.getId().equals(createdBy)))
+                .map(u -> new ReviewerCandidateDTO(
+                        u.getId(), u.getUsername(), u.getEmail(), u.getTeamId(), u.getRole()))
+                .toList();
+    }
+
+    /**
      * Update an existing template. Automatically creates a new version snapshot.
      */
     @Transactional
@@ -162,6 +202,7 @@ public class TemplateService {
             template.setAsync(request.getAsync());
         }
         if (request.getTeamId() != null) {
+            assertTeamBelongsToTenant(request.getTeamId(), template.getTenantId());
             template.setTeamId(request.getTeamId());
         }
         if (request.getCategoryId() != null) {
@@ -293,6 +334,33 @@ public class TemplateService {
         return templateRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorCode.TEMPLATE_NOT_FOUND, "模板不存在"));
+    }
+
+    private void assertTeamBelongsToTenant(Long teamId, Long tenantId) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new BusinessException(
+                        ErrorCode.VALIDATION_FAILED, "Team not found", HttpStatus.BAD_REQUEST));
+        if (!team.getTenantId().equals(tenantId)) {
+            throw new BusinessException(
+                    ErrorCode.VALIDATION_FAILED, "Team does not belong to the current tenant", HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    /**
+     * If request does not set a team, inherit the creator's team when present; otherwise null (draft may stay unassigned).
+     */
+    private Long resolveTeamIdForCreate(Long requestTeamId, Long userId, Long tenantId) {
+        if (requestTeamId != null) {
+            assertTeamBelongsToTenant(requestTeamId, tenantId);
+            return requestTeamId;
+        }
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty() || userOpt.get().getTeamId() == null) {
+            return null;
+        }
+        Long fromUser = userOpt.get().getTeamId();
+        assertTeamBelongsToTenant(fromUser, tenantId);
+        return fromUser;
     }
 
     private String uploadTemplateFile(MultipartFile file, Long tenantId) {

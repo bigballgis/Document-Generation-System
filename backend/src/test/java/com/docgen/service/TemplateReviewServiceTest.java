@@ -8,8 +8,10 @@ import com.docgen.entity.Template;
 import com.docgen.entity.TemplateReview;
 import com.docgen.exception.BusinessException;
 import com.docgen.exception.ResourceNotFoundException;
+import com.docgen.entity.User;
 import com.docgen.repository.TemplateRepository;
 import com.docgen.repository.TemplateReviewRepository;
+import com.docgen.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +38,9 @@ class TemplateReviewServiceTest {
     private TemplateRepository templateRepository;
 
     @Mock
+    private UserRepository userRepository;
+
+    @Mock
     private TemplateStateMachineService stateMachineService;
 
     @Mock
@@ -48,7 +53,7 @@ class TemplateReviewServiceTest {
     @BeforeEach
     void setUp() {
         reviewService = new TemplateReviewService(
-                reviewRepository, templateRepository, stateMachineService, objectMapper, autoActivationService);
+                reviewRepository, templateRepository, userRepository, stateMachineService, objectMapper, autoActivationService);
     }
 
     // ── submitForReview tests ──
@@ -56,7 +61,10 @@ class TemplateReviewServiceTest {
     @Test
     void submitForReview_createsReviewsAndTransitionsState() {
         Template template = createTemplate(1L);
+        template.setTeamId(100L);
         when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
+        when(userRepository.findById(10L)).thenReturn(Optional.of(reviewerUser(10L, 1L, 100L)));
+        when(userRepository.findById(20L)).thenReturn(Optional.of(reviewerUser(20L, 1L, 100L)));
         when(stateMachineService.transition(1L, com.docgen.entity.TemplateState.PENDING_REVIEW))
                 .thenReturn(template);
         when(reviewRepository.save(any(TemplateReview.class))).thenAnswer(inv -> {
@@ -72,6 +80,30 @@ class TemplateReviewServiceTest {
         assertEquals(2, result.size());
         verify(stateMachineService).transition(1L, com.docgen.entity.TemplateState.PENDING_REVIEW);
         verify(reviewRepository, times(2)).save(any(TemplateReview.class));
+    }
+
+    @Test
+    void submitForReview_templateWithoutTeam_throws() {
+        Template template = createTemplate(1L);
+        // no team
+        when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
+
+        SubmitReviewRequest request = new SubmitReviewRequest(List.of(10L), 1);
+        assertThrows(BusinessException.class, () -> reviewService.submitForReview(1L, request));
+        verify(stateMachineService, never()).transition(anyLong(), any());
+    }
+
+    @Test
+    void submitForReview_authorCannotBeReviewer_throws() {
+        Template template = createTemplate(1L);
+        template.setTeamId(100L);
+        template.setCreatedBy(10L);
+        when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
+        when(userRepository.findById(10L)).thenReturn(Optional.of(reviewerUser(10L, 1L, 100L)));
+
+        SubmitReviewRequest request = new SubmitReviewRequest(List.of(10L), 1);
+        assertThrows(BusinessException.class, () -> reviewService.submitForReview(1L, request));
+        verify(stateMachineService, never()).transition(anyLong(), any());
     }
 
     @Test
@@ -324,6 +356,17 @@ class TemplateReviewServiceTest {
         t.setCreatedBy(1L);
         t.setStatus("DRAFT");
         return t;
+    }
+
+    private static User reviewerUser(long id, long tenantId, long teamId) {
+        User u = new User();
+        u.setId(id);
+        u.setTenantId(tenantId);
+        u.setTeamId(teamId);
+        u.setUsername("u" + id);
+        u.setEmail("u" + id + "@t.com");
+        u.setRole("USER");
+        return u;
     }
 
     private TemplateReview createPendingReview(Long id, Long templateId, Long reviewerId, int level) {

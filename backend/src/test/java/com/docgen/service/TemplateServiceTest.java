@@ -1,16 +1,21 @@
 package com.docgen.service;
 
 import com.docgen.dto.CreateTemplateRequest;
+import com.docgen.dto.ReviewerCandidateDTO;
 import com.docgen.dto.TemplateDTO;
 import com.docgen.dto.TemplateQueryRequest;
 import com.docgen.dto.UpdateTemplateRequest;
+import com.docgen.entity.Team;
 import com.docgen.entity.Template;
 import com.docgen.entity.TemplateVersion;
+import com.docgen.entity.User;
 import com.docgen.exception.BusinessException;
 import com.docgen.exception.ResourceNotFoundException;
+import com.docgen.repository.TeamRepository;
 import com.docgen.repository.TemplateRepository;
 import com.docgen.repository.TemplateTagMappingRepository;
 import com.docgen.repository.TemplateVersionRepository;
+import com.docgen.repository.UserRepository;
 import com.docgen.util.TenantContext;
 import io.minio.MinioClient;
 import io.minio.ObjectWriteResponse;
@@ -51,11 +56,18 @@ class TemplateServiceTest {
     @Mock
     private MinioClient minioClient;
 
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private TeamRepository teamRepository;
+
     private TemplateService templateService;
 
     @BeforeEach
     void setUp() throws Exception {
-        templateService = new TemplateService(templateRepository, templateVersionRepository, tagMappingRepository, minioClient);
+        templateService = new TemplateService(templateRepository, templateVersionRepository, tagMappingRepository,
+                userRepository, teamRepository, minioClient);
         // Set the @Value-injected bucketName field via reflection for unit tests
         Field bucketField = TemplateService.class.getDeclaredField("bucketName");
         bucketField.setAccessible(true);
@@ -144,6 +156,74 @@ class TemplateServiceTest {
         assertNotNull(result);
         assertEquals("Test", result.getName());
         assertEquals("DRAFT", result.getStatus());
+    }
+
+    @Test
+    void createTemplate_inheritsTeamFromCreatorWhenOmitted() throws Exception {
+        CreateTemplateRequest request = new CreateTemplateRequest();
+        request.setName("T");
+        User creator = new User();
+        creator.setId(10L);
+        creator.setTeamId(5L);
+        when(userRepository.findById(10L)).thenReturn(Optional.of(creator));
+        Team team = new Team();
+        team.setId(5L);
+        team.setTenantId(1L);
+        when(teamRepository.findById(5L)).thenReturn(Optional.of(team));
+        when(minioClient.putObject(any())).thenReturn(mock(ObjectWriteResponse.class));
+        when(templateRepository.save(any(Template.class))).thenAnswer(inv -> {
+            Template t = inv.getArgument(0);
+            t.setId(1L);
+            t.setCreatedAt(Instant.now());
+            t.setUpdatedAt(Instant.now());
+            return t;
+        });
+        TemplateDTO result = templateService.createTemplate(request, null, 10L);
+        assertEquals(5L, result.getTeamId());
+    }
+
+    @Test
+    void createTemplate_rejectsUnknownTeamId() {
+        CreateTemplateRequest request = new CreateTemplateRequest();
+        request.setName("T");
+        request.setTeamId(99L);
+        when(teamRepository.findById(99L)).thenReturn(Optional.empty());
+        assertThrows(BusinessException.class, () -> templateService.createTemplate(request, null, 10L));
+    }
+
+    @Test
+    void listReviewerCandidates_excludesTemplateAuthor() {
+        Template t = createTestTemplate();
+        t.setTeamId(5L);
+        t.setCreatedBy(1L);
+        when(templateRepository.findById(1L)).thenReturn(Optional.of(t));
+        User author = new User();
+        author.setId(1L);
+        author.setUsername("author");
+        author.setEmail("a@t.com");
+        author.setTenantId(1L);
+        author.setTeamId(5L);
+        author.setRole("USER");
+        User other = new User();
+        other.setId(2L);
+        other.setUsername("other");
+        other.setEmail("o@t.com");
+        other.setTenantId(1L);
+        other.setTeamId(5L);
+        other.setRole("USER");
+        when(userRepository.findByTenantIdAndTeamIdOrderByUsernameAsc(1L, 5L)).thenReturn(List.of(author, other));
+        List<ReviewerCandidateDTO> list = templateService.listReviewerCandidates(1L);
+        assertEquals(1, list.size());
+        assertEquals(2L, list.get(0).getId());
+        assertEquals("other", list.get(0).getUsername());
+    }
+
+    @Test
+    void listReviewerCandidates_templateWithoutTeam_throws() {
+        Template t = createTestTemplate();
+        t.setTeamId(null);
+        when(templateRepository.findById(1L)).thenReturn(Optional.of(t));
+        assertThrows(BusinessException.class, () -> templateService.listReviewerCandidates(1L));
     }
 
     // ── Get tests ──

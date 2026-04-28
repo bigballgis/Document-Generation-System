@@ -54,7 +54,8 @@ class TemplateVersionPropertyTest {
         TemplateVersionRepository templateVersionRepository = mock(TemplateVersionRepository.class);
         MinioClient minioClient = mock(MinioClient.class);
 
-        TemplateService templateService = new TemplateService(templateRepository, templateVersionRepository, mock(TemplateTagMappingRepository.class), minioClient);
+        TemplateService templateService = new TemplateService(templateRepository, templateVersionRepository, mock(TemplateTagMappingRepository.class),
+                mock(com.docgen.repository.UserRepository.class), mock(com.docgen.repository.TeamRepository.class), minioClient);
         Field bucketField = TemplateService.class.getDeclaredField("bucketName");
         bucketField.setAccessible(true);
         bucketField.set(templateService, "docgen-test");

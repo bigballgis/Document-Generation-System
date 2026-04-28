@@ -84,6 +84,14 @@ public class TemplateController {
         return ResponseEntity.ok(templateService.getTemplate(id));
     }
 
+    /**
+     * Reviewer candidates: same tenant and same team as the template; template author is excluded.
+     */
+    @GetMapping("/{id}/reviewers/candidates")
+    public ResponseEntity<List<ReviewerCandidateDTO>> listReviewerCandidates(@PathVariable Long id) {
+        return ResponseEntity.ok(templateService.listReviewerCandidates(id));
+    }
+
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<TemplateDTO> updateTemplate(
             @PathVariable Long id,

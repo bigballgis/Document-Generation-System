@@ -132,6 +132,19 @@ export function getTemplate(id: number) {
   return request.get<any, TemplateDTO>(`/templates/${id}`)
 }
 
+/** Same-tenant, same-team users who may review the template (excludes template author). */
+export interface ReviewerCandidateDTO {
+  id: number
+  username: string
+  email: string
+  teamId: number | null
+  role: string
+}
+
+export function getReviewerCandidates(templateId: number) {
+  return request.get<any, ReviewerCandidateDTO[]>(`/templates/${templateId}/reviewers/candidates`)
+}
+
 export function createTemplate(data: CreateTemplateRequest) {
   return request.post<any, TemplateDTO>('/templates', data)
 }

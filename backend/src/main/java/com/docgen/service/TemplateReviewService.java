@@ -7,11 +7,13 @@ import com.docgen.entity.ReviewStatus;
 import com.docgen.entity.Template;
 import com.docgen.entity.TemplateReview;
 import com.docgen.entity.TemplateState;
+import com.docgen.entity.User;
 import com.docgen.exception.BusinessException;
 import com.docgen.exception.ErrorCode;
 import com.docgen.exception.ResourceNotFoundException;
 import com.docgen.repository.TemplateRepository;
 import com.docgen.repository.TemplateReviewRepository;
+import com.docgen.repository.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,17 +41,20 @@ public class TemplateReviewService {
 
     private final TemplateReviewRepository reviewRepository;
     private final TemplateRepository templateRepository;
+    private final UserRepository userRepository;
     private final TemplateStateMachineService stateMachineService;
     private final ObjectMapper objectMapper;
     private final AutoActivationService autoActivationService;
 
     public TemplateReviewService(TemplateReviewRepository reviewRepository,
                                  TemplateRepository templateRepository,
+                                 UserRepository userRepository,
                                  TemplateStateMachineService stateMachineService,
                                  ObjectMapper objectMapper,
                                  AutoActivationService autoActivationService) {
         this.reviewRepository = reviewRepository;
         this.templateRepository = templateRepository;
+        this.userRepository = userRepository;
         this.stateMachineService = stateMachineService;
         this.objectMapper = objectMapper;
         this.autoActivationService = autoActivationService;
@@ -62,6 +67,7 @@ public class TemplateReviewService {
     @Transactional
     public List<TemplateReviewDTO> submitForReview(Long templateId, SubmitReviewRequest request) {
         Template template = findTemplateOrThrow(templateId);
+        assertReviewersAllowedForTemplate(template, request.getReviewerIds());
 
         // Transition template to PENDING_REVIEW
         stateMachineService.transition(templateId, TemplateState.PENDING_REVIEW);
@@ -225,6 +231,37 @@ public class TemplateReviewService {
             // All levels completed — auto-activate (PENDING_REVIEW → REVIEWED → ACTIVE + API Key)
             autoActivationService.tryAutoActivate(templateId);
             log.info("All review levels completed, auto-activation triggered for template {}", templateId);
+        }
+    }
+
+    /**
+     * Enforces same-tenant, same-team reviewers; template must have a team; author cannot review own template.
+     */
+    private void assertReviewersAllowedForTemplate(Template template, List<Long> reviewerIds) {
+        if (template.getTeamId() == null) {
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                    "Template must be assigned to a team before submitting for review",
+                    HttpStatus.BAD_REQUEST);
+        }
+        Long templateTenantId = template.getTenantId();
+        Long teamId = template.getTeamId();
+        Long createdBy = template.getCreatedBy();
+        for (Long reviewerId : reviewerIds) {
+            User u = userRepository.findById(reviewerId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.VALIDATION_FAILED,
+                            "Reviewer user not found", HttpStatus.BAD_REQUEST));
+            if (!u.getTenantId().equals(templateTenantId)) {
+                throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                        "Reviewer must belong to the same tenant as the template", HttpStatus.BAD_REQUEST);
+            }
+            if (u.getTeamId() == null || !u.getTeamId().equals(teamId)) {
+                throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                        "Reviewer must belong to the template's team", HttpStatus.BAD_REQUEST);
+            }
+            if (createdBy != null && u.getId().equals(createdBy)) {
+                throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                        "Template author cannot be a reviewer", HttpStatus.BAD_REQUEST);
+            }
         }
     }
 
