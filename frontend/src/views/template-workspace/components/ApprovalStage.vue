@@ -1,9 +1,7 @@
 <template>
   <div class="approval-stage">
     <div class="approval-split">
-      <!-- Left: Timeline -->
       <div class="timeline-panel">
-        <!-- Submit for review: IN_TEST and 100% coverage (state moves via admin submit + review service) -->
         <el-tooltip
           :disabled="canSubmitReview && !readonly"
           placement="bottom"
@@ -20,7 +18,6 @@
           </span>
         </el-tooltip>
 
-        <!-- Timeline -->
         <el-skeleton v-if="loadingReviews" :rows="4" animated />
         <el-empty v-else-if="store.reviews.length === 0" :description="t('workspace.approval.noReviews')" />
         <el-timeline v-else>
@@ -47,7 +44,6 @@
           </el-timeline-item>
         </el-timeline>
 
-        <!-- Return to edit button (rejected) -->
         <el-button
           v-if="hasRejectedReview"
           type="warning"
@@ -58,7 +54,6 @@
         </el-button>
       </div>
 
-      <!-- Right: Read-only preview -->
       <div class="preview-panel">
         <h4>{{ t('workspace.approval.previewTitle') }}</h4>
         <div v-if="previewUrl" class="preview-frame">
@@ -68,10 +63,10 @@
       </div>
     </div>
 
-    <!-- Submit Review Dialog -->
     <SubmitReviewDialog
       v-model:visible="submitDialogVisible"
       :template-id="store.templateId"
+      :is-submitting="submitReviewLoading"
       @submit="handleSubmitReview"
     />
   </div>
@@ -99,6 +94,7 @@ const { t } = useI18n()
 const store = useTemplateWorkspaceStore()
 
 const submitDialogVisible = ref(false)
+const submitReviewLoading = ref(false)
 const returning = ref(false)
 const previewUrl = ref('')
 const loadingReviews = ref(false)
@@ -155,6 +151,7 @@ const allApproved = computed(() => {
 })
 
 async function handleSubmitReview(reviewerIds: number[], reviewLevel: number) {
+  submitReviewLoading.value = true
   try {
     await submitForReview(store.templateId, { reviewerIds, reviewLevel })
     await Promise.all([store.refreshTemplate(), store.refreshReviews(), store.refreshTransitions()])
@@ -162,6 +159,8 @@ async function handleSubmitReview(reviewerIds: number[], reviewLevel: number) {
     ElMessage.success(t('workspace.reviewPublish.submitSuccess'))
   } catch (e: any) {
     ElMessage.error(e.response?.data?.message || e.message || t('workspace.reviewPublish.submitFailed'))
+  } finally {
+    submitReviewLoading.value = false
   }
 }
 
@@ -177,13 +176,11 @@ async function handleReturnToEdit() {
   }
 }
 
-// Load preview
 async function loadPreview() {
   try {
     const result = await previewCompositeTemplate(store.templateId)
     previewUrl.value = result.previewUrl
   } catch {
-    // silent
   }
 }
 
@@ -197,7 +194,6 @@ async function loadReviews() {
   }
 }
 
-// Watch for status changes — auto-navigate on approval completion
 watch(() => store.templateStatus, (newStatus) => {
   if ((newStatus === 'REVIEWED' || newStatus === 'ACTIVE') && allApproved.value) {
     emit('stage-change', 'publish')
@@ -281,3 +277,4 @@ watch(
   color: var(--el-text-color-secondary);
 }
 </style>
+

@@ -332,6 +332,7 @@
     "rejectSuccess": "Review rejected",
     "reviewInEditor": "Review in Editor",
     "selectReviewers": "Select Reviewers",
+    "submitRequiresInTest": "Submit for review is only available while the template is in testing. Open the workspace or use \"Submit to testing\" from the template header when eligible.",
     "conditionalApproveDialog": "Conditional Approval"
   },
   "market": {

@@ -1,6 +1,5 @@
 <template>
   <div class="publish-stage">
-    <!-- Summary Card -->
     <el-card class="summary-card">
       <template #header>
         <span>{{ t('workspace.publish.summaryTitle') }}</span>
@@ -27,9 +26,7 @@
       </div>
     </el-card>
 
-    <!-- Action buttons -->
     <div class="publish-actions">
-      <!-- REVIEWED: Activate button -->
       <el-button
         v-if="store.templateStatus === 'REVIEWED'"
         type="primary"
@@ -40,7 +37,6 @@
         🚀 {{ t('workspace.publish.activate') }}
       </el-button>
 
-      <!-- ACTIVE: Export + New Version buttons -->
       <template v-if="store.templateStatus === 'ACTIVE'">
         <el-button size="large" @click="handleExportZip" :loading="exporting">
           {{ t('workspace.publish.exportZip') }}
@@ -80,6 +76,7 @@ const creatingVersion = ref(false)
 type TagType = 'info' | 'warning' | 'primary' | 'success' | 'danger'
 const statusTagType: Record<string, TagType> = {
   DRAFT: 'info',
+  IN_TEST: 'warning',
   PENDING_REVIEW: 'warning',
   REVIEWED: 'primary',
   ACTIVE: 'success',
@@ -168,3 +165,4 @@ async function handleNewVersion() {
   align-items: center;
 }
 </style>
+

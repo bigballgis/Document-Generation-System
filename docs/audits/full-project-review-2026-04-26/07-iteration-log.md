@@ -871,6 +871,17 @@ Validation result: type-check OK; Vitest 7 passed.
 Remaining risks: Template detail page still uses manual comma-separated reviewer IDs for `submitForReview`; workspace flow is now candidate-driven. Empty candidate list means no eligible reviewers in team (backend contract).  
 Next step: Optional — align template `Detail.vue` admin submit UX with candidates or deep-link to workspace.  
 
+## 2026-04-28 — Ad-hoc: code comment cleanup / slimming (no task card ID)
+
+Date: 2026-04-28  
+Workstream: Ad-hoc hygiene  
+Summary: Repository-wide comment slimming: removed decorative `//` / `/* */` / HTML section markers and redundant inline comments in `docxtemplater-service` (including `generate-fol-template.mjs`), Java `backend/src` (decorative section lines, partial controller cleanup), and `frontend/src` (API partition comments, `<!-- ... -->` template labels, `request.ts` interceptor notes). Preserved configuration comments per `docs/development/comment-cleanup-config-allowlist.md`.  
+Files changed: new allowlist doc; touched JS/TS/Vue/Java across services (no `application.yml`, k8s, or build config edits).  
+Validation commands: `npm test` (`docxtemplater-service/`, exit 0); `mvn test` (`backend/`, 3 pre-existing/ENV-related failures: `OnlyOfficeServiceTest` x2, `AggregationSchemaPropertyTest` x1; `mvn -DskipTests compile` OK); `npm run type-check`, `npx vitest run`, `npm run build` (`frontend/`, all OK).  
+Validation result: Docxtemplater tests pass; frontend type-check, 345 tests, and production build pass; full backend `mvn test` not clean in this environment.  
+Remaining risks: `mvn test` noise from DB/Docker/encryption fixtures; re-run in CI or with `application-test` profile as documented.  
+Next step: None required for this hygiene pass.  
+
 ## Entry Template
 
 ```text

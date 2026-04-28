@@ -99,6 +99,17 @@ describe('SubmitReviewDialog', () => {
     expect(vm.form.reviewLevel).toBe(1)
   })
 
+  it('disables submit while isSubmitting is true', async () => {
+    const wrapper = mount(SubmitReviewDialog, {
+      props: { visible: true, templateId: 1, isSubmitting: true },
+    })
+    await flushPromises()
+    const footer = wrapper.find('.el-dialog__footer')
+    const primaryBtns = footer.findAll('.el-button--primary')
+    const submitBtn = primaryBtns[primaryBtns.length - 1]
+    expect(submitBtn?.classes().join(' ')).toMatch(/is-disabled|is-loading/)
+  })
+
   it('refetches candidates each time the dialog opens', async () => {
     const wrapper = mountDialog(false, 7)
     await flushPromises()

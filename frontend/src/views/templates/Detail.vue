@@ -47,7 +47,6 @@
     </div>
 
     <template v-if="template">
-      <!-- Basic Info Card -->
       <el-card shadow="never" style="margin-bottom: 16px">
         <el-descriptions :column="3" border>
           <el-descriptions-item :label="$t('template.status')">
@@ -86,7 +85,6 @@
         </el-descriptions>
       </el-card>
 
-      <!-- Tabs -->
       <el-tabs v-model="activeTab" type="border-card">
         <el-tab-pane :label="$t('template.versionHistory')" name="versions">
           <VersionHistory :template-id="template.id" />
@@ -134,10 +132,22 @@
           <WebhookPanel :template-id="template.id" />
         </el-tab-pane>
         <el-tab-pane :label="$t('review.title')" name="reviews">
-          <div style="margin-bottom: 12px; display: flex; gap: 8px;">
-            <el-button type="primary" @click="submitReviewDialogVisible = true">
-              {{ $t('review.submit') }}
-            </el-button>
+          <div style="margin-bottom: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+            <el-tooltip
+              :disabled="template.status === 'IN_TEST'"
+              placement="top"
+              :content="$t('review.submitRequiresInTest')"
+            >
+              <span style="display: inline-block">
+                <el-button
+                  type="primary"
+                  :disabled="template.status !== 'IN_TEST'"
+                  @click="submitReviewDialogVisible = true"
+                >
+                  {{ $t('review.submit') }}
+                </el-button>
+              </span>
+            </el-tooltip>
             <el-button @click="handleReviewInEditor">
               {{ $t('review.reviewInEditor') }}
             </el-button>
@@ -191,7 +201,6 @@
       </el-tabs>
     </template>
 
-    <!-- Edit Dialog -->
     <TemplateFormDialog
       v-model:visible="editDialogVisible"
       :template-data="template"
@@ -200,42 +209,19 @@
       @saved="onEditSaved"
     />
 
-    <!-- Generate Dialog -->
     <GenerateDialog
       v-model:visible="generateDialogVisible"
       :template-id="templateId"
       @generated="fetchTemplate"
     />
 
-    <!-- Submit for Review Dialog -->
-    <el-dialog
-      v-model="submitReviewDialogVisible"
-      :title="$t('review.submit')"
-      width="480px"
-    >
-      <el-form label-width="140px">
-        <el-form-item :label="$t('review.selectReviewers')">
-          <el-input
-            v-model="reviewerIdsInput"
-            :placeholder="$t('review.selectReviewers')"
-          />
-        </el-form-item>
-        <el-form-item :label="$t('review.level')">
-          <el-select v-model="reviewLevel" style="width: 100%">
-            <el-option :label="$t('review.levelInitial')" :value="1" />
-            <el-option :label="$t('review.levelFinal')" :value="2" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="submitReviewDialogVisible = false">{{ $t('common.cancel') }}</el-button>
-        <el-button type="primary" :loading="submitReviewLoading" @click="handleSubmitForReview">
-          {{ $t('common.confirm') }}
-        </el-button>
-      </template>
-    </el-dialog>
+    <SubmitReviewDialog
+      v-model:visible="submitReviewDialogVisible"
+      :template-id="templateId"
+      :is-submitting="submitReviewLoading"
+      @submit="handleSubmitForReviewFromDialog"
+    />
 
-    <!-- Conditional Approve Dialog -->
     <el-dialog
       v-model="conditionalApproveDialogVisible"
       :title="$t('review.conditionalApproveDialog')"
@@ -289,6 +275,7 @@ import ScheduledTaskManagement from './components/ScheduledTaskManagement.vue'
 import WatermarkSecurityConfig from './components/WatermarkSecurityConfig.vue'
 import GenerateDialog from './components/GenerateDialog.vue'
 import WebhookPanel from './components/WebhookPanel.vue'
+import SubmitReviewDialog from '@/views/template-workspace/components/SubmitReviewDialog.vue'
 import {
   submitForReview, getTemplateReviews, conditionalApproveReview, getReviewEditorUrl,
   type ReviewDTO,
@@ -316,8 +303,6 @@ const reviewSize = ref(10)
 const reviewTotal = ref(0)
 const submitReviewDialogVisible = ref(false)
 const submitReviewLoading = ref(false)
-const reviewerIdsInput = ref('')
-const reviewLevel = ref(1)
 const conditionalApproveDialogVisible = ref(false)
 const conditionalApproveLoading = ref(false)
 const conditionalApproveComment = ref('')
@@ -442,20 +427,15 @@ async function fetchReviews() {
   }
 }
 
-async function handleSubmitForReview() {
-  const ids = reviewerIdsInput.value.split(',').map(s => Number(s.trim())).filter(n => !isNaN(n) && n > 0)
-  if (!ids.length) {
-    ElMessage.warning(t('review.selectReviewers'))
-    return
-  }
+async function handleSubmitForReviewFromDialog(reviewerIds: number[], reviewLevel: number) {
   submitReviewLoading.value = true
   try {
-    await submitForReview(templateId, { reviewerIds: ids, reviewLevel: reviewLevel.value })
+    await submitForReview(templateId, { reviewerIds, reviewLevel })
     ElMessage.success(t('review.submitSuccess'))
     submitReviewDialogVisible.value = false
-    reviewerIdsInput.value = ''
-    fetchReviews()
+    await fetchReviews()
     fetchTemplate()
+    fetchTransitions()
   } catch { /* handled */ } finally {
     submitReviewLoading.value = false
   }
@@ -608,3 +588,4 @@ onMounted(() => {
   gap: 8px;
 }
 </style>
+

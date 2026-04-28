@@ -331,6 +331,7 @@
     "rejectSuccess": "審查已駁回",
     "reviewInEditor": "在編輯器中審查",
     "selectReviewers": "選擇審查人",
+    "submitRequiresInTest": "僅在範本處於「測試中」時可提交審查。請先進入工作區測試，或在範本詳情頁使用「進入測試」。",
     "conditionalApproveDialog": "條件通過"
   },
   "market": {

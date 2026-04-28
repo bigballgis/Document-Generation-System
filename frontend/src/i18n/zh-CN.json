@@ -331,6 +331,7 @@
     "rejectSuccess": "审查已驳回",
     "reviewInEditor": "在编辑器中审查",
     "selectReviewers": "选择审查人",
+    "submitRequiresInTest": "仅在模板处于「测试中」时可提交审查。请先进入工作区测试，或在模板详情页使用「进入测试」。",
     "conditionalApproveDialog": "条件通过"
   },
   "market": {

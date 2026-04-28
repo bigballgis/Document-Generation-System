@@ -32,7 +32,9 @@
     </el-form>
     <template #footer>
       <el-button @click="emit('update:visible', false)">{{ t('common.cancel') }}</el-button>
-      <el-button type="primary" @click="handleSubmit">{{ t('common.submit') }}</el-button>
+      <el-button type="primary" :loading="props.isSubmitting" :disabled="props.isSubmitting" @click="handleSubmit">
+        {{ t('common.submit') }}
+      </el-button>
     </template>
   </el-dialog>
 </template>
@@ -43,11 +45,16 @@ import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { getReviewerCandidates, type ReviewerCandidateDTO } from '@/api/templates'
 
-const props = defineProps<{
-  visible: boolean
-  /** Composite template id; candidates are same-tenant, same-team, excluding the author. */
-  templateId: number
-}>()
+const props = withDefaults(
+  defineProps<{
+    visible: boolean
+    /** Composite template id; candidates are same-tenant, same-team, excluding the author. */
+    templateId: number
+    /** When true, disables the submit button (e.g. parent is awaiting submitForReview). */
+    isSubmitting?: boolean
+  }>(),
+  { isSubmitting: false },
+)
 
 const emit = defineEmits<{
   'update:visible': [value: boolean]

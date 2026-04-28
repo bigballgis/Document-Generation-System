@@ -111,6 +111,7 @@
     <SubmitReviewDialog
       v-model:visible="submitDialogVisible"
       :template-id="store.templateId"
+      :is-submitting="submitReviewLoading"
       @submit="handleSubmitReview"
     />
 
@@ -160,6 +161,7 @@ const { t } = useI18n()
 const store = useTemplateWorkspaceStore()
 
 const submitDialogVisible = ref(false)
+const submitReviewLoading = ref(false)
 const returningToDesign = ref(false)
 
 const canSubmitReview = computed(() => {
@@ -182,6 +184,7 @@ const submitReviewDisabledReason = computed(() => {
 
 async function handleSubmitReview(reviewerIds: number[], reviewLevel: number) {
   if (!store.templateId) return
+  submitReviewLoading.value = true
   try {
     await submitForReview(store.templateId, { reviewerIds, reviewLevel })
     await Promise.all([store.refreshTemplate(), store.refreshReviews(), store.refreshTransitions()])
@@ -189,6 +192,8 @@ async function handleSubmitReview(reviewerIds: number[], reviewLevel: number) {
     ElMessage.success(t('workspace.reviewPublish.submitSuccess'))
   } catch (e: any) {
     ElMessage.error(e.response?.data?.message || e.message || t('workspace.reviewPublish.submitFailed'))
+  } finally {
+    submitReviewLoading.value = false
   }
 }
 
