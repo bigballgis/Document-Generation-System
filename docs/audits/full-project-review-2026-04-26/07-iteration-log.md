@@ -871,6 +871,15 @@ Validation result: type-check OK; Vitest 7 passed.
 Remaining risks: Template detail page still uses manual comma-separated reviewer IDs for `submitForReview`; workspace flow is now candidate-driven. Empty candidate list means no eligible reviewers in team (backend contract).  
 Next step: Optional — align template `Detail.vue` admin submit UX with candidates or deep-link to workspace.  
 
+## 2026-04-28 — Template Detail review dialog + PublishStage IN_TEST tag
+
+Date: 2026-04-28  
+Workstream: Template workflow (WP-04 follow-up)  
+Summary: `Detail.vue` Reviews tab uses shared `SubmitReviewDialog` with `getReviewerCandidates`. **Submit for review** is enabled only when `template.status === 'IN_TEST'` (tooltip `review.submitRequiresInTest`). After submit, `fetchTransitions()` runs. `SubmitReviewDialog` adds optional `isSubmitting` (Detail, Test, Approval). `PublishStage` status tag map includes `IN_TEST`.  
+Files changed: `frontend/src/views/templates/Detail.vue`, `SubmitReviewDialog.vue`, `TestStage.vue`, `ApprovalStage.vue`, `PublishStage.vue`, `SubmitReviewDialog.test.ts`, `i18n/en-US.json`, `zh-CN.json`, `zh-TW.json`.  
+Validation: `npm run type-check`; `npx vitest run src/__tests__/SubmitReviewDialog.test.ts` — 8 passed.  
+Next step: Publish-stage capabilities as a separate scope if required.  
+
 ## 2026-04-28 — Ad-hoc: code comment cleanup / slimming (no task card ID)
 
 Date: 2026-04-28  
