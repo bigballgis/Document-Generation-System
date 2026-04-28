@@ -34,7 +34,7 @@
         :loading="activating"
         @click="handleActivate"
       >
-        🚀 {{ t('workspace.publish.activate') }}
+        {{ t('workspace.publish.activate') }}
       </el-button>
 
       <template v-if="store.templateStatus === 'ACTIVE'">
@@ -46,12 +46,28 @@
         </el-button>
       </template>
     </div>
+
+    <el-card v-if="store.isActive" class="capabilities-card">
+      <template #header>
+        <span>{{ t('workspace.publish.capabilitiesTitle') }}</span>
+      </template>
+      <p class="capabilities-hint">{{ t('workspace.publish.capabilitiesHint') }}</p>
+      <div class="capability-buttons">
+        <el-button type="primary" plain size="large" @click="openApiManagement">
+          {{ t('workspace.publish.openApiManagement') }}
+        </el-button>
+        <el-button size="large" @click="openDocumentHistory">
+          {{ t('workspace.publish.openDocumentHistory') }}
+        </el-button>
+      </div>
+    </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useTemplateWorkspaceStore } from '@/stores/templateWorkspace'
 import { activateTemplate, createDraftVersion } from '@/api/templates'
@@ -67,6 +83,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const router = useRouter()
 const store = useTemplateWorkspaceStore()
 
 const activating = ref(false)
@@ -81,6 +98,17 @@ const statusTagType: Record<string, TagType> = {
   REVIEWED: 'primary',
   ACTIVE: 'success',
   ARCHIVED: 'danger',
+}
+
+function openApiManagement() {
+  router.push({ name: 'TemplateApiManagement', params: { id: String(store.templateId) } })
+}
+
+function openDocumentHistory() {
+  router.push({
+    path: '/documents',
+    query: { templateId: String(store.templateId) },
+  })
 }
 
 async function handleActivate() {
@@ -134,9 +162,10 @@ async function handleNewVersion() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 32px;
+  gap: 24px;
 }
-.summary-card {
+.summary-card,
+.capabilities-card {
   width: 100%;
   max-width: 600px;
 }
@@ -163,6 +192,19 @@ async function handleNewVersion() {
   display: flex;
   gap: 16px;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.capabilities-hint {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+  line-height: 1.5;
+}
+.capability-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 </style>
-

@@ -880,6 +880,15 @@ Files changed: `frontend/src/views/templates/Detail.vue`, `SubmitReviewDialog.vu
 Validation: `npm run type-check`; `npx vitest run src/__tests__/SubmitReviewDialog.test.ts` — 8 passed.  
 Next step: Publish-stage capabilities as a separate scope if required.  
 
+## 2026-04-28 — Publish stage integration links (API + document history)
+
+Date: 2026-04-28  
+Workstream: Template workflow (publish capabilities, no new dependencies)  
+Summary: When the template is **ACTIVE**, **PublishStage** shows an **Integration** card with navigation to existing routes: **Template API Management** (`TemplateApiManagement`) and **Documents** with `?templateId=` filter. **documents/Index.vue** reads `route.query.templateId` on mount and seeds the filter. Removed rocket emoji from Activate button for consistency.  
+Files changed: `frontend/src/views/template-workspace/components/PublishStage.vue`, `frontend/src/views/documents/Index.vue`, `frontend/src/i18n/en-US.json`, `zh-CN.json`, `zh-TW.json`.  
+Validation: `npm run type-check` (OK).  
+Next step: —  
+
 ## 2026-04-28 — Ad-hoc: code comment cleanup / slimming (no task card ID)
 
 Date: 2026-04-28  

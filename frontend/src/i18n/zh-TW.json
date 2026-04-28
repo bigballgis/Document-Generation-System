@@ -1206,7 +1206,11 @@
       "activateFailed": "範本啟用失敗",
       "exportZip": "匯出 ZIP 包",
       "newVersion": "編輯為新版本",
-      "summaryTitle": "發布摘要"
+      "summaryTitle": "發布摘要",
+      "capabilitiesTitle": "整合與交付",
+      "capabilitiesHint": "管理此範本的 API 連線與產生的文件紀錄。",
+      "openApiManagement": "API 管理",
+      "openDocumentHistory": "產生文件紀錄"
     },
     "testForm": {
       "viewJson": "查看 JSON",

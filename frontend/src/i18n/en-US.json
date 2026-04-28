@@ -1207,7 +1207,11 @@
       "activateFailed": "Template activation failed",
       "exportZip": "Export ZIP",
       "newVersion": "Edit as New Version",
-      "summaryTitle": "Publish Summary"
+      "summaryTitle": "Publish Summary",
+      "capabilitiesTitle": "Integration",
+      "capabilitiesHint": "Manage API access and review documents generated from this template.",
+      "openApiManagement": "API management",
+      "openDocumentHistory": "Generated documents"
     },
     "testForm": {
       "viewJson": "View JSON",

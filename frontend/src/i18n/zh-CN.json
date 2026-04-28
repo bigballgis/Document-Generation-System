@@ -1206,7 +1206,11 @@
       "activateFailed": "模板激活失败",
       "exportZip": "导出 ZIP 包",
       "newVersion": "编辑为新版本",
-      "summaryTitle": "发布摘要"
+      "summaryTitle": "发布摘要",
+      "capabilitiesTitle": "集成与交付",
+      "capabilitiesHint": "管理此模板的 API 接入与生成文档记录。",
+      "openApiManagement": "API 管理",
+      "openDocumentHistory": "生成文档记录"
     },
     "testForm": {
       "viewJson": "查看 JSON",
