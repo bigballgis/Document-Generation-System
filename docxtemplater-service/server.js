@@ -13,7 +13,6 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Health check endpoint
 app.get('/health', async (_req, res) => {
   const checks = { minio: 'UP' };
   try {
@@ -25,17 +24,13 @@ app.get('/health', async (_req, res) => {
   res.json({ status: overallStatus, service: 'docxtemplater-service', checks });
 });
 
-// Routes
 app.use('/render', renderRouter);
 app.use('/scan-variables', scanVariablesRouter);
 app.use('/evaluate', evaluateRouter);
 app.use('/convert-pdf', convertPdfRouter);
-// Backend document merge calls POST /merge-segments (see DocumentMergeService in Java).
 app.use('/merge-segments', mergeSegmentsRouter);
-// Standalone watermark on an existing .docx (see WatermarkService in Java).
 app.use('/watermark', watermarkRouter);
 
-// Global error handler
 app.use((err, _req, res, _next) => {
   console.error('Unhandled error:', err);
   res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: err.message } });

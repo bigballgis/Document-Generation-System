@@ -13,7 +13,6 @@
 const fc = require('fast-check');
 const { evaluate, checkExpressionSafety, SandboxSecurityError, BLOCKED_MODULES } = require('../sandbox');
 
-// Blocked module names that must never be accessible
 const BLOCKED_ACCESS_PATTERNS = [
   'fs',
   'http',
@@ -29,7 +28,6 @@ const BLOCKED_ACCESS_PATTERNS = [
   'tls',
 ];
 
-// Expression templates that attempt to access blocked resources
 const DANGEROUS_EXPRESSION_TEMPLATES = [
   (mod) => `require('${mod}')`,
   (mod) => `require("${mod}")`,

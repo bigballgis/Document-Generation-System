@@ -5,15 +5,10 @@ const { getTags } = require('docxtemplater/js/get-tags');
 const { parser, createImageModule } = require('../docx-templater-config');
 const { getFileBuffer } = require('../minio-client');
 const { rewriteLegacyIfTagsInZip } = require('../utils/legacy-if-tags');
+const { badRequest } = require('../utils/http-errors');
 
 const router = express.Router();
 
-/**
- * Flatten Docxtemplater getTags() tree into dot-path placeholder names (leaf nodes only).
- * @param {Record<string, object>} node
- * @param {string} prefix
- * @returns {string[]}
- */
 function collectLeafPathsFromTagTree(node, prefix = '') {
   if (!node || typeof node !== 'object') {
     return [];
@@ -57,21 +52,12 @@ function isNotFoundError(err) {
   return false;
 }
 
-/**
- * POST /scan-variables
- * Body: { templatePath: string }
- * Response: { variables: string[] }
- *
- * WS-02-T07: read-only placeholder discovery for composite coverage (same Docxtemplater stack as /render).
- */
 router.post('/', async (req, res) => {
   try {
     const { templatePath } = req.body || {};
 
     if (!templatePath || typeof templatePath !== 'string' || !templatePath.trim()) {
-      return res.status(400).json({
-        error: { code: 'MISSING_TEMPLATE_PATH', message: 'templatePath is required' },
-      });
+      return badRequest(res, 'MISSING_TEMPLATE_PATH', 'templatePath is required');
     }
 
     let templateBuffer;
@@ -87,9 +73,6 @@ router.post('/', async (req, res) => {
     }
 
     const zip = rewriteLegacyIfTagsInZip(new PizZip(templateBuffer));
-    // For variable discovery, images are not required and the image module can fail
-    // on templates that place raw image tags outside of a paragraph. Avoid breaking
-    // readiness/coverage when only image placeholders are malformed.
     const doc = new Docxtemplater(zip, {
       modules: [],
       paragraphLoop: true,

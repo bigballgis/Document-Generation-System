@@ -7,12 +7,8 @@ const { getFileBuffer, putFileBuffer } = require('../minio-client');
 const { generateBarcode, generateQRCode } = require('../utils/barcode');
 const { applyTextWatermark, applyImageWatermark } = require('../utils/watermark');
 const { rewriteLegacyIfTagsInZip } = require('../utils/legacy-if-tags');
+const { badRequest } = require('../utils/http-errors');
 
-/**
- * Preprocess render data to convert flat aggregation keys (e.g., "items.$sum_price")
- * into JavaScript array properties that Docxtemplater can resolve via nested path access.
- * Recursively processes nested array elements for nested aggregation properties.
- */
 function injectAggregationProperties(data) {
   for (const key of Object.keys(data)) {
     const dotIdx = key.indexOf('.$');
@@ -26,7 +22,6 @@ function injectAggregationProperties(data) {
       delete data[key];
     }
   }
-  // Recursively process nested array elements
   for (const val of Object.values(data)) {
     if (Array.isArray(val)) {
       for (const elem of val) {
@@ -38,36 +33,20 @@ function injectAggregationProperties(data) {
   }
 }
 
-/**
- * POST /render
- * Body: {
- *   templatePath: string,       // MinIO path to .docx template
- *   data: object,               // Data context for rendering
- *   outputPath?: string,        // MinIO path for output (optional)
- *   watermark?: { type: 'text'|'image', ... } (same fields as POST /watermark image/text payloads, in-process),
- *   barcodes?: { [key]: { type: 'barcode'|'qrcode', value: string, ... } }
- * }
- */
 router.post('/', async (req, res) => {
   try {
     const { templatePath, data, outputPath, watermark, barcodes } = req.body;
 
     if (!templatePath) {
-      return res.status(400).json({
-        error: { code: 'MISSING_TEMPLATE_PATH', message: 'templatePath is required' },
-      });
+      return badRequest(res, 'MISSING_TEMPLATE_PATH', 'templatePath is required');
     }
     if (!data || typeof data !== 'object') {
-      return res.status(400).json({
-        error: { code: 'MISSING_DATA', message: 'data object is required' },
-      });
+      return badRequest(res, 'MISSING_DATA', 'data object is required');
     }
 
-    // Fetch template from MinIO
     const templateBuffer = await getFileBuffer(templatePath);
     const zip = rewriteLegacyIfTagsInZip(new PizZip(templateBuffer));
 
-    // Prepare rendering data - resolve barcodes/QR codes to image buffers
     const renderData = { ...data };
     if (barcodes && typeof barcodes === 'object') {
       for (const [key, config] of Object.entries(barcodes)) {
@@ -109,11 +88,8 @@ router.post('/', async (req, res) => {
       return false;
     }
 
-    // Render document with data (supports conditions, loops, nested loops, tables)
     injectAggregationProperties(renderData);
 
-    // Prefer image module, but fall back when templates contain malformed image placeholders
-    // (e.g. raw tag not in paragraph). This keeps demos usable while allowing gradual cleanup.
     let doc;
     try {
       doc = buildDoc([createImageModule()]);
@@ -129,7 +105,6 @@ router.post('/', async (req, res) => {
 
     let outputBuffer = doc.getZip().generate({ type: 'nodebuffer' });
 
-    // Apply watermark if configured
     if (watermark) {
       if (watermark.type === 'text') {
         outputBuffer = await applyTextWatermark(outputBuffer, watermark);
@@ -138,7 +113,6 @@ router.post('/', async (req, res) => {
       }
     }
 
-    // Store result to MinIO if outputPath provided
     if (outputPath) {
       await putFileBuffer(outputPath, outputBuffer, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       return res.json({
@@ -148,7 +122,6 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Return the document directly
     res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.set('Content-Disposition', 'attachment; filename="rendered.docx"');
     res.send(outputBuffer);

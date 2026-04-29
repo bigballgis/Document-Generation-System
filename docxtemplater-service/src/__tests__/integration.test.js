@@ -11,14 +11,11 @@ const Docxtemplater = require('docxtemplater');
 const PizZip = require('pizzip');
 const { execFile } = require('child_process');
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
 /**
  * Create a minimal valid .docx buffer with given template content.
  * Uses docxtemplater to produce a real docx from a blank template.
  */
 function createTestDocx(content) {
-  // Minimal OOXML document.xml content
   const docXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas"
             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -77,9 +74,6 @@ function isLibreOfficeAvailable() {
   });
 }
 
-// ── Mock MinIO before requiring app ──────────────────────────────────────────
-
-// Store for mock files
 const mockFileStore = new Map();
 
 jest.mock('../minio-client', () => ({
@@ -162,8 +156,6 @@ function request(method, path, body) {
     req.end();
   });
 }
-
-// ── Tests ────────────────────────────────────────────────────────────────────
 
 describe('GET /health', () => {
   it('should return health status with service name', async () => {

@@ -6,8 +6,6 @@
 
 const PizZip = require('pizzip');
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
 /**
  * Create a minimal valid .docx buffer with given text content.
  */
@@ -169,8 +167,6 @@ function request(method, path, body) {
     req.end();
   });
 }
-
-// ── Tests ────────────────────────────────────────────────────────────────────
 
 describe('POST /merge-segments', () => {
   describe('input validation', () => {

@@ -1,17 +1,8 @@
-/**
- * Shared Docxtemplater expression parser and image module factory.
- * Used by POST /render and POST /scan-variables so variable discovery matches render semantics.
- */
 const expressionParser = require('docxtemplater/expressions.js');
 const ImageModule = require('docxtemplater-image-module-free');
 
-/**
- * Angular parser with built-in filters for template expressions.
- * Enables: {user.name}, {price * 1.2}, {name | upper}, {items | sumBy:'price'}, etc.
- */
 const angularParser = expressionParser.configure({
   filters: {
-    // ── String filters ──
     upper(input) { return input ? String(input).toUpperCase() : input; },
     lower(input) { return input ? String(input).toLowerCase() : input; },
     trim(input) { return input ? String(input).trim() : input; },
@@ -21,7 +12,6 @@ const angularParser = expressionParser.configure({
     substr(input, start, length) { return input ? String(input).substring(start, length != null ? start + length : undefined) : input; },
     default(input, fallback) { return (input == null || input === '') ? fallback : input; },
 
-    // ── Number filters ──
     toFixed(input, precision) { return input != null ? Number(input).toFixed(precision || 0) : input; },
     round(input, decimals) {
       if (input == null) return input;
@@ -40,7 +30,6 @@ const angularParser = expressionParser.configure({
     },
     abs(input) { return input != null ? Math.abs(Number(input)) : input; },
 
-    // ── Date filters ──
     dateFormat(input, format) {
       if (!input) return input;
       const d = new Date(input);
@@ -56,7 +45,6 @@ const angularParser = expressionParser.configure({
         .replace('ss', pad(d.getSeconds()));
     },
 
-    // ── Array filters ──
     join(input, separator) { return Array.isArray(input) ? input.filter(v => v != null).join(separator || ', ') : input; },
     joinBy(input, field, separator) {
       if (!Array.isArray(input)) return input;
@@ -123,20 +111,12 @@ const angularParser = expressionParser.configure({
   },
 });
 
-/**
- * Wrapper to tolerate image-style tags (ex: "%bank_logo") even when the image module
- * isn't used (scan-variables) or when we fall back to rendering without the image module.
- *
- * Docxtemplater image tags use a leading '%' which is not valid in angular-expressions.
- * Stripping the prefix keeps placeholder discovery and fallback render working.
- */
 function parser(tag) {
   if (typeof tag === 'string' && tag.startsWith('%')) {
     return angularParser(tag.slice(1));
   }
   if (typeof tag === 'string') {
-    // Legacy templates sometimes use "x | count + 1" (invalid for angular-expressions).
-    // Rewrite to "(x | count) + 1" which parses correctly.
+    // Legacy: "x | count + 1" -> "(x | count) + 1" for angular-expressions
     const countPlusRe = /^(.+?\|\s*count)\s*\+\s*(\d+)\s*$/;
     const m = tag.match(countPlusRe);
     if (m) {

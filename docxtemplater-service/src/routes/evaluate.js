@@ -1,36 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const { evaluate, evaluateFormula, SandboxSecurityError, SandboxTimeoutError, SandboxMemoryError } = require('../sandbox');
+const { badRequest } = require('../utils/http-errors');
 
-/**
- * POST /evaluate
- * Body: {
- *   expression: string,         // JavaScript expression or Excel formula
- *   type: 'javascript' | 'excel',  // Expression type (default: javascript when omitted)
- *   context: object,            // Data context for expression evaluation
- *   timeout?: number,           // Execution timeout in ms (default: 5000)
- *   memoryLimit?: number        // Memory limit in MB (default: 64)
- * }
- *
- * Unknown `type` values are rejected with HTTP 400 and never reach the JavaScript sandbox.
- */
 router.post('/', async (req, res) => {
   try {
     const { expression, context = {}, timeout, memoryLimit } = req.body;
 
     if (!expression || typeof expression !== 'string') {
-      return res.status(400).json({
-        error: { code: 'MISSING_EXPRESSION', message: 'expression string is required' },
-      });
+      return badRequest(res, 'MISSING_EXPRESSION', 'expression string is required');
     }
 
     let type = req.body.type;
     if (type === undefined || type === null) {
       type = 'javascript';
     } else if (typeof type !== 'string') {
-      return res.status(400).json({
-        error: { code: 'INVALID_EXPRESSION_TYPE', message: 'type must be a string' },
-      });
+      return badRequest(res, 'INVALID_EXPRESSION_TYPE', 'type must be a string');
     } else {
       type = type.trim();
       if (type === '') {
@@ -39,12 +24,7 @@ router.post('/', async (req, res) => {
     }
 
     if (type !== 'javascript' && type !== 'excel') {
-      return res.status(400).json({
-        error: {
-          code: 'UNKNOWN_EXPRESSION_TYPE',
-          message: 'type must be "javascript" or "excel"',
-        },
-      });
+      return badRequest(res, 'UNKNOWN_EXPRESSION_TYPE', 'type must be "javascript" or "excel"');
     }
 
     let result;

@@ -1,10 +1,3 @@
-/**
- * Generate complete FOL (Facility Offer Letter) composite template ZIP
- * with professional formatting and docxtemplater tags.
- * 
- * Usage: node scripts/generate-fol-template.mjs
- * Output: scripts/output/fol-template-import.zip
- */
 import {
   Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
   HeadingLevel, AlignmentType, BorderStyle, WidthType, ShadingType,
@@ -15,9 +8,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import archiver from 'archiver';
 
-// ── Shared styles ──
 const FONT = 'Times New Roman';
-const FONT_SIZE = 22; // 11pt in half-points
+const FONT_SIZE = 22;
 const HEADING_COLOR = '1B3A5C';
 const TAG_COLOR = '8B0000';
 
@@ -47,7 +39,6 @@ function bulletPara(children) {
   return new Paragraph({ spacing: { after: 80 }, bullet: { level: 0 }, children: Array.isArray(children) ? children : [children] });
 }
 
-// Simple table helper
 function simpleTable(rows) {
   return new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
@@ -69,9 +60,6 @@ function simpleTable(rows) {
 }
 
 
-// ══════════════════════════════════════════════════════════════
-// Segment 01: Cover Page
-// ══════════════════════════════════════════════════════════════
 function buildCoverPage() {
   return new Document({
     sections: [{
@@ -117,9 +105,6 @@ function buildCoverPage() {
   });
 }
 
-// ══════════════════════════════════════════════════════════════
-// Segment 02: Table of Contents
-// ══════════════════════════════════════════════════════════════
 function buildTableOfContents() {
   const tocEntries = [
     'Part A    Definitions and Interpretation',
@@ -157,9 +142,6 @@ function buildTableOfContents() {
 }
 
 
-// ══════════════════════════════════════════════════════════════
-// Segment 03: Part A — Definitions & Interpretation
-// ══════════════════════════════════════════════════════════════
 function buildDefinitions() {
   return new Document({
     sections: [{
@@ -246,9 +228,6 @@ function buildDefinitions() {
 }
 
 
-// ══════════════════════════════════════════════════════════════
-// Segment 04: Part B — Facility Details
-// ══════════════════════════════════════════════════════════════
 function buildFacilityDetails() {
   return new Document({
     sections: [{
@@ -314,9 +293,6 @@ function buildFacilityDetails() {
   });
 }
 
-// ══════════════════════════════════════════════════════════════
-// Segment 05: Part C — Interest & Fees
-// ══════════════════════════════════════════════════════════════
 function buildInterestFees() {
   return new Document({
     sections: [{
@@ -364,9 +340,6 @@ function buildInterestFees() {
 }
 
 
-// ══════════════════════════════════════════════════════════════
-// Segment 06: Part D — Repayment Schedule
-// ══════════════════════════════════════════════════════════════
 function buildRepaymentSchedule() {
   return new Document({
     sections: [{
@@ -396,9 +369,6 @@ function buildRepaymentSchedule() {
   });
 }
 
-// ══════════════════════════════════════════════════════════════
-// Segment 07: Part E — Conditions Precedent
-// ══════════════════════════════════════════════════════════════
 function buildConditionsPrecedent() {
   return new Document({
     sections: [{
@@ -427,9 +397,6 @@ function buildConditionsPrecedent() {
   });
 }
 
-// ══════════════════════════════════════════════════════════════
-// Segment 08: Part F — Representations & Warranties
-// ══════════════════════════════════════════════════════════════
 function buildRepresentations() {
   return new Document({
     sections: [{
@@ -459,9 +426,6 @@ function buildRepresentations() {
   });
 }
 
-// ══════════════════════════════════════════════════════════════
-// Segment 09: Part G — Covenants
-// ══════════════════════════════════════════════════════════════
 function buildCovenants() {
   return new Document({
     sections: [{
@@ -524,9 +488,6 @@ function buildCovenants() {
 }
 
 
-// ══════════════════════════════════════════════════════════════
-// Segment 10: Part H — Security & Collateral
-// ══════════════════════════════════════════════════════════════
 function buildSecurityCollateral() {
   return new Document({
     sections: [{
@@ -567,9 +528,6 @@ function buildSecurityCollateral() {
   });
 }
 
-// ══════════════════════════════════════════════════════════════
-// Segment 11: Part I — Guarantee
-// ══════════════════════════════════════════════════════════════
 function buildGuarantee() {
   return new Document({
     sections: [{
@@ -597,9 +555,6 @@ function buildGuarantee() {
   });
 }
 
-// ══════════════════════════════════════════════════════════════
-// Segment 12: Part J — Events of Default
-// ══════════════════════════════════════════════════════════════
 function buildEventsOfDefault() {
   return new Document({
     sections: [{
@@ -627,9 +582,6 @@ function buildEventsOfDefault() {
   });
 }
 
-// ══════════════════════════════════════════════════════════════
-// Segment 13: Part K — Governing Law & Jurisdiction
-// ══════════════════════════════════════════════════════════════
 function buildGoverningLaw() {
   return new Document({
     sections: [{
@@ -654,9 +606,6 @@ function buildGoverningLaw() {
   });
 }
 
-// ══════════════════════════════════════════════════════════════
-// Segment 14: Part L — Miscellaneous
-// ══════════════════════════════════════════════════════════════
 function buildMiscellaneous() {
   return new Document({
     sections: [{
@@ -686,9 +635,6 @@ function buildMiscellaneous() {
 }
 
 
-// ══════════════════════════════════════════════════════════════
-// Segment 15: Appendix A — Compliance Certificate
-// ══════════════════════════════════════════════════════════════
 function buildAppendixCompliance() {
   return new Document({
     sections: [{
@@ -725,9 +671,6 @@ function buildAppendixCompliance() {
   });
 }
 
-// ══════════════════════════════════════════════════════════════
-// Segment 16: Appendix B — Drawdown Notice
-// ══════════════════════════════════════════════════════════════
 function buildAppendixDrawdown() {
   return new Document({
     sections: [{
@@ -774,9 +717,6 @@ function buildAppendixDrawdown() {
   });
 }
 
-// ══════════════════════════════════════════════════════════════
-// Segment 17: Appendix C — Fee Schedule
-// ══════════════════════════════════════════════════════════════
 function buildAppendixFeeSchedule() {
   return new Document({
     sections: [{
@@ -807,9 +747,6 @@ function buildAppendixFeeSchedule() {
   });
 }
 
-// ══════════════════════════════════════════════════════════════
-// Segment 18: Signature Page
-// ══════════════════════════════════════════════════════════════
 function buildSignaturePage() {
   return new Document({
     sections: [{
@@ -853,10 +790,6 @@ function buildSignaturePage() {
   });
 }
 
-
-// ══════════════════════════════════════════════════════════════
-// Headers & Footers
-// ══════════════════════════════════════════════════════════════
 function buildCoverHeader() {
   return new Document({
     sections: [{
@@ -903,9 +836,6 @@ function buildSignatureFooter() {
   });
 }
 
-// ══════════════════════════════════════════════════════════════
-// Config JSON for import
-// ══════════════════════════════════════════════════════════════
 function buildConfig() {
   return {
     templateName: "International Bank FOL — Full Demo",
@@ -934,9 +864,6 @@ function buildConfig() {
   };
 }
 
-// ══════════════════════════════════════════════════════════════
-// Main: Generate all docx files and pack into ZIP
-// ══════════════════════════════════════════════════════════════
 async function main() {
   const outDir = path.join(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1')), 'output');
   fs.mkdirSync(outDir, { recursive: true });

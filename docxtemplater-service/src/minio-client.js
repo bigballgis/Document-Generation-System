@@ -10,7 +10,6 @@ function parseEndpoint(endpoint) {
       useSSL: url.protocol === 'https:',
     };
   } catch {
-    // Fallback: treat as hostname
     return { endPoint: raw, port: 9000, useSSL: false };
   }
 }
