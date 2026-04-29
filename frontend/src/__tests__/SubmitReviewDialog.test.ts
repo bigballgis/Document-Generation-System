@@ -47,7 +47,7 @@ describe('SubmitReviewDialog', () => {
     await flushPromises()
     await wrapper.setProps({ visible: true })
     await flushPromises()
-    expect(mockGetReviewerCandidates).toHaveBeenCalledWith(42)
+    expect(mockGetReviewerCandidates).toHaveBeenCalledWith(42, 1)
   })
 
   it('does not request candidates when templateId is missing', async () => {
@@ -119,6 +119,6 @@ describe('SubmitReviewDialog', () => {
     await wrapper.setProps({ visible: true })
     await flushPromises()
     expect(mockGetReviewerCandidates).toHaveBeenCalledTimes(2)
-    expect(mockGetReviewerCandidates).toHaveBeenLastCalledWith(7)
+    expect(mockGetReviewerCandidates).toHaveBeenLastCalledWith(7, 1)
   })
 })

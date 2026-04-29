@@ -71,6 +71,15 @@ class TemplateTestServiceTest {
                     g.setDownloadUrl("/api/documents/500/download");
                     return g;
                 });
+        lenient().when(documentStorageService.store(any(Template.class), any(byte[].class), eq("PDF"), eq("TEMP")))
+                .thenAnswer(inv -> {
+                    GenerateDocumentResponse g = new GenerateDocumentResponse();
+                    g.setDocumentId(501L);
+                    g.setDownloadUrl("/api/documents/501/download");
+                    return g;
+                });
+        lenient().when(documentGeneratorService.convertToPdf(any(byte[].class)))
+                .thenReturn(new byte[]{7, 8});
     }
 
 
@@ -337,6 +346,8 @@ class TemplateTestServiceTest {
         assertNull(result.getDiffDetails());
         assertEquals(500L, result.getSampleDocumentId());
         assertEquals("/api/documents/500/download", result.getSampleDocumentDownloadUrl());
+        assertEquals(501L, result.getSamplePdfDocumentId());
+        assertEquals("/api/documents/501/download", result.getSamplePdfDocumentDownloadUrl());
     }
 
     @Test

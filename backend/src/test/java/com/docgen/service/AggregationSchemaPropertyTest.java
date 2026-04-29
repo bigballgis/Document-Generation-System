@@ -167,8 +167,12 @@ class AggregationSchemaPropertyTest {
             int expectedCount = 3; // $count, $first, $last
             for (ParameterDefinition child : children) {
                 String dt = child.getDataType();
-                if ("NUMBER".equals(dt)) expectedCount += 4;
-                else if ("STRING".equals(dt)) expectedCount += 1;
+                if ("NUMBER".equals(dt)) {
+                    expectedCount += 4;
+                } else if ("STRING".equals(dt)) {
+                    // STRING children expose multiple join delimiter variants (see AggregationResolver).
+                    expectedCount += 6;
+                }
             }
             assertEquals(expectedCount, props.size(),
                     "Property count should match expected based on child types");
