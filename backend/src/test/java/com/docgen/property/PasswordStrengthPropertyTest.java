@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Tag("Feature: low-code-document-generation-system, Property 14: 密码强度验证正确性")
 class PasswordStrengthPropertyTest {
 
-    private final UserService userService = new UserService(null, null, null, null, null);
+    private final UserService userService = new UserService(null, null, null, null, null, null);
 
     private static final String UPPERCASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     private static final String LOWERCASE = "abcdefghijklmnopqrstuvwxyz";

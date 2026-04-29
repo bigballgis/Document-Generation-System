@@ -3,9 +3,12 @@ package com.docgen.service;
 import com.docgen.config.JwtProperties;
 import com.docgen.config.RedisConfig;
 import com.docgen.dto.*;
+import com.docgen.entity.Team;
+import com.docgen.entity.TeamApprovalMode;
 import com.docgen.entity.User;
 import com.docgen.exception.BusinessException;
 import com.docgen.exception.ErrorCode;
+import com.docgen.repository.TeamRepository;
 import com.docgen.repository.UserRepository;
 import com.docgen.util.JwtTokenProvider;
 import org.slf4j.Logger;
@@ -41,17 +44,20 @@ public class UserService {
     private static final Pattern SPECIAL_CHAR_PATTERN = Pattern.compile("[^a-zA-Z0-9]");
 
     private final UserRepository userRepository;
+    private final TeamRepository teamRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final JwtProperties jwtProperties;
     private final RedisTemplate<String, String> redisTemplate;
 
     public UserService(UserRepository userRepository,
+                       TeamRepository teamRepository,
                        PasswordEncoder passwordEncoder,
                        JwtTokenProvider jwtTokenProvider,
                        JwtProperties jwtProperties,
                        RedisTemplate<String, String> redisTemplate) {
         this.userRepository = userRepository;
+        this.teamRepository = teamRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
         this.jwtProperties = jwtProperties;
@@ -222,9 +228,37 @@ public class UserService {
             }
         }
 
+        assertTeamAssignmentConsistent(user);
+
         User saved = userRepository.save(user);
         log.info("User admin update: userId={} by principalUserId={}", userId, principal.getUserId());
         return toDTO(saved);
+    }
+
+    /**
+     * Ensures {@code teamId} refers to a team in the user's tenant, and that maker-checker teams
+     * always have a concrete {@link User#getTeamReviewLane()} (MAKER or CHECKER).
+     */
+    private void assertTeamAssignmentConsistent(User user) {
+        if (user.getTeamId() == null) {
+            return;
+        }
+        Team team = teamRepository.findById(user.getTeamId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.VALIDATION_FAILED,
+                        "Team not found for assignment", HttpStatus.NOT_FOUND));
+        if (!team.getTenantId().equals(user.getTenantId())) {
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                    "Team must belong to the same tenant as the user", HttpStatus.BAD_REQUEST);
+        }
+        if (team.getApprovalMode() == TeamApprovalMode.MAKER_CHECKER) {
+            String lane = user.getTeamReviewLane();
+            if (lane == null || lane.isBlank()
+                    || (!"MAKER".equals(lane) && !"CHECKER".equals(lane))) {
+                throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                        "Users on maker-checker teams must have teamReviewLane set to MAKER or CHECKER",
+                        HttpStatus.BAD_REQUEST);
+            }
+        }
     }
 
     private void assertAdminMayEditUser(UserPrincipal principal, User user) {

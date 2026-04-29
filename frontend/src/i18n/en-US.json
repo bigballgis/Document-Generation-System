@@ -458,7 +458,7 @@
       "statusActive": "Active",
       "statusLocked": "Locked",
       "reviewLane": "Review lane",
-      "reviewLaneHint": "For maker–checker teams only",
+      "reviewLaneHint": "Required: MAKER or CHECKER for maker-checker teams; leave empty for cross-review teams.",
       "laneNone": "None"
     },
     "team": {

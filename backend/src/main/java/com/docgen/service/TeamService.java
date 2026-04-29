@@ -61,6 +61,7 @@ public class TeamService {
     @Transactional
     public TeamDTO updateTeam(Long tenantId, Long id, UpdateTeamRequest request) {
         Team team = findTeamInTenantOrThrow(tenantId, id);
+        TeamApprovalMode previousMode = team.getApprovalMode();
 
         if (request.getName() != null && !request.getName().equals(team.getName())) {
             if (teamRepository.existsByTenantIdAndName(team.getTenantId(), request.getName())) {
@@ -79,6 +80,15 @@ public class TeamService {
                     request.getAdGroupObjectId(),
                     request.getAdMakerGroupObjectId(),
                     request.getAdCheckerGroupObjectId());
+        }
+
+        if (team.getApprovalMode() == TeamApprovalMode.MAKER_CHECKER
+                && previousMode != TeamApprovalMode.MAKER_CHECKER
+                && userRepository.existsByTeamIdWithMissingReviewLane(id)) {
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                    "Cannot enable maker-checker mode until every team member has teamReviewLane "
+                            + "set to MAKER or CHECKER in user administration.",
+                    HttpStatus.CONFLICT);
         }
 
         Team saved = teamRepository.save(team);

@@ -457,7 +457,7 @@
       "statusActive": "正常",
       "statusLocked": "已锁定",
       "reviewLane": "审批通道",
-      "reviewLaneHint": "仅用于 Maker/Checker 模式团队",
+      "reviewLaneHint": "制作者-复核团队须选择 MAKER 或 CHECKER；横向复核团队可留空。",
       "laneNone": "无"
     },
     "team": {

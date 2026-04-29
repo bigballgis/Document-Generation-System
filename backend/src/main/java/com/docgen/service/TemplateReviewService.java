@@ -150,7 +150,7 @@ public class TemplateReviewService {
 
         if (reason == null || reason.isBlank()) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "驳回原因不能为空", HttpStatus.BAD_REQUEST);
+                    "Rejection reason is required", HttpStatus.BAD_REQUEST);
         }
 
         review.setStatus(ReviewStatus.REJECTED);
@@ -293,24 +293,24 @@ public class TemplateReviewService {
     private void validateReviewerAndPending(TemplateReview review, Long reviewerId) {
         if (!review.getReviewerId().equals(reviewerId)) {
             throw new BusinessException(ErrorCode.REVIEW_NOT_AUTHORIZED,
-                    "只有指定的审查人才能执行此操作", HttpStatus.FORBIDDEN);
+                    "Only the assigned reviewer can perform this action", HttpStatus.FORBIDDEN);
         }
         if (review.getStatus() != ReviewStatus.PENDING) {
             throw new BusinessException(ErrorCode.REVIEW_ALREADY_COMPLETED,
-                    "该审查已完成，不能重复操作", HttpStatus.BAD_REQUEST);
+                    "This review is already completed", HttpStatus.BAD_REQUEST);
         }
     }
 
     private TemplateReview findReviewOrThrow(Long reviewId) {
         return reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.REVIEW_NOT_FOUND, "审查记录不存在"));
+                        ErrorCode.REVIEW_NOT_FOUND, "Review record not found"));
     }
 
     private Template findTemplateOrThrow(Long templateId) {
         return templateRepository.findById(templateId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.TEMPLATE_NOT_FOUND, "模板不存在"));
+                        ErrorCode.TEMPLATE_NOT_FOUND, "Template not found"));
     }
 
     TemplateReviewDTO toDTO(TemplateReview review) {
@@ -348,7 +348,7 @@ public class TemplateReviewService {
             return objectMapper.writeValueAsString(suggestions);
         } catch (JsonProcessingException e) {
             throw new BusinessException(ErrorCode.INTERNAL_ERROR,
-                    "序列化建议列表失败", HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Failed to serialize review suggestions", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 }
