@@ -916,6 +916,33 @@ Validation result: Docxtemplater tests pass; frontend type-check, 345 tests, and
 Remaining risks: `mvn test` noise from DB/Docker/encryption fixtures; re-run in CI or with `application-test` profile as documented.  
 Next step: None required for this hygiene pass.  
 
+## 2026-04-28 — AI-CODE-T01–T10 series closure (documentation)
+
+Date: 2026-04-28  
+Workstream: AI-readable code governance  
+Summary: Formal completion report for **`AI-CODE-T01`–`AI-CODE-T10`** per `docs/development/ai-readable-code-task-cards.md`. Mechanical passes (T01–T05), persisted inventories for read-only cards (T06–T08), and implemented approved extractions/inline steps (T09–T10) are recorded in **`docs/development/ai-readable-code-completion-report.md`**. **`docs/development/ai-governance-index.md`** updated so future agents open **new** narrow cards instead of assuming T01–T10 are still in flight.  
+Files changed:
+- `docs/development/ai-readable-code-completion-report.md` (new)
+- `docs/development/ai-governance-index.md`
+- `docs/audits/full-project-review-2026-04-26/07-iteration-log.md`  
+Validation commands: documentation consistency review only.  
+Validation result: N/A.  
+Remaining risks: New comment noise may accumulate; schedule periodic T01-style passes via new task cards.  
+Related tracking items: —  
+Next step: Use **`ai-readable-code-completion-report.md`** as baseline; spin follow-up cards only for approved extractions or inventories.
+
+## 2026-04-28 — REQ-R7-001: Composite ZIP `render-config.json` (render_config column)
+
+Task ID: REQ-R7-001 / WS-03-T05–T06  
+Workstream: WS-03  
+Summary: Implemented optional **`render-config.json`** in composite template ZIP export and import with **`templates.render_config`** JSONB persistence (**V41**). **`RenderConfigDocument`** schema version 1 supports text/image watermarks; remote image URLs rejected; non-empty **`barcodes`** rejected until supported. **`RenderConfigValidator`** delegates watermark rules to **`WatermarkService`**. **`CompositeGeneratorService`** applies configured watermarks after segment merge. **`CompositeMarketService`** copies **`render_config`** when installing from market; **`TemplateService.cloneTemplate`** copies **`templateType`**, **`assembly_config`**, and **`render_config`**. Documentation: **`docs/development/render-config-json-schema.md`**; traceability **`REQ-R7-001`** → Verified.  
+Files changed: `V41__templates_add_render_config.sql`, `Template.java`, `TemplateDTO.java`, `RenderConfigDocument.java`, `RenderConfigValidator.java`, `CompositeImportExportService.java`, `CompositeGeneratorService.java`, `WatermarkService.java`, `CompositeMarketService.java`, `TemplateService.java`, tests, **`05-traceability-matrix.md`**, **`.kiro/specs/.../requirements.md`**.  
+Validation commands: `mvn -q -DskipTests compile`; `mvn "-Dtest=CompositeImportExportServiceTest,RenderConfigValidatorTest,CompositeImportExportServiceExportTest,ExportConstraintPropertyTest" test` (from `backend/`).  
+Validation result: BUILD SUCCESS.  
+Remaining risks: Barcode rendering not implemented; **`cloneTemplate`** behaviour extended—verify downstream assumptions for composite clones.  
+Related tracking items: REQ-R7-001  
+Next step: Optional API/UI to edit **`render_config`** beyond ZIP import.
+
 ## Entry Template
 
 ```text
