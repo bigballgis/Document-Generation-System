@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -156,6 +157,32 @@ class OnlyOfficeServiceTest {
 
         verify(templateRepository).findById(99L);
         verifyNoInteractions(minioClient, callbackDocumentDownloadHelper);
+    }
+
+    /**
+     * Document Server may return a literal loopback IP in the callback URL while {@code onlyoffice.url}
+     * uses {@code localhost}; resolved addresses must be allowlisted together with the hostname.
+     */
+    @Test
+    void isAllowedCallbackDownloadUrl_acceptsIpLiteralWhenHostnameResolvesToThatIp() throws Exception {
+        Field onlyOfficeUrlField = OnlyOfficeService.class.getDeclaredField("onlyOfficeUrl");
+        onlyOfficeUrlField.setAccessible(true);
+        onlyOfficeUrlField.set(service, "http://localhost");
+
+        assertTrue(service.isAllowedCallbackDownloadUrl("http://127.0.0.1/cache/files/save.docx"));
+    }
+
+    /**
+     * When Document Server uses an alternate hostname that resolves to the same addresses as
+     * {@code onlyoffice.url}, the same-instance fallback must accept the callback download URL.
+     */
+    @Test
+    void isAllowedCallbackDownloadUrl_acceptsAlternateHostnameViaSameAddressFallback() throws Exception {
+        Field onlyOfficeUrlField = OnlyOfficeService.class.getDeclaredField("onlyOfficeUrl");
+        onlyOfficeUrlField.setAccessible(true);
+        onlyOfficeUrlField.set(service, "http://127.0.0.1");
+
+        assertTrue(service.isAllowedCallbackDownloadUrl("http://localhost/cache/files/save.docx"));
     }
 }
 

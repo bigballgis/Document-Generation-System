@@ -19,12 +19,18 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.io.ByteArrayInputStream;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -157,17 +163,18 @@ public class OnlyOfficeService {
 
         // Status 2 (ready for saving) or 6 (forcesave) — download and update
         if (status == 2 || status == 6) {
+            String downloadUrl = (String) body.get("url");
+            if (downloadUrl == null || downloadUrl.isBlank()) {
+                log.warn("OnlyOffice callback for template {} has no download URL", templateId);
+                return 0;
+            }
+
             String callbackToken = extractOnlyOfficeToken(body, authorizationHeader);
             if (callbackRequireJwt && (callbackToken == null || !isValidOnlyOfficeJwt(callbackToken))) {
                 log.warn("OnlyOffice callback JWT validation failed for template {}", templateId);
                 return 1;
             }
 
-            String downloadUrl = (String) body.get("url");
-            if (downloadUrl == null || downloadUrl.isBlank()) {
-                log.warn("OnlyOffice callback for template {} has no download URL", templateId);
-                return 0;
-            }
             if (!isAllowedCallbackDownloadUrl(downloadUrl)) {
                 log.warn("OnlyOffice callback download URL is not allowed for template {}", templateId);
                 return 1;
@@ -227,21 +234,109 @@ public class OnlyOfficeService {
     }
 
     public boolean isAllowedCallbackDownloadUrl(String downloadUrl) {
+        List<String> extraAllowedHosts = buildCallbackDownloadExtraHosts();
+        if (outboundUrlPolicy.validateHttpUrlWithMergedHosts(downloadUrl, extraAllowedHosts).allowed()) {
+            return true;
+        }
+        /*
+         * Document Server may use another resolvable hostname for the same container (for example the
+         * Compose-scoped DNS name) while {@code onlyoffice.url} uses the short service name. If both
+         * resolve to the same addresses, treat the download as targeting the configured Document Server.
+         */
+        try {
+            URI downloadUri = URI.create(downloadUrl.trim());
+            String downloadHost = downloadUri.getHost();
+            URI onlyOfficeUri = URI.create(onlyOfficeUrl.trim());
+            String canonicalHost = onlyOfficeUri.getHost();
+            if (downloadHost == null || canonicalHost == null) {
+                return false;
+            }
+            if (!resolvedAddressesOverlap(downloadHost, canonicalHost)) {
+                return false;
+            }
+            String normalizedUrl = rewriteUriHost(downloadUri, canonicalHost);
+            return outboundUrlPolicy.validateHttpUrlWithMergedHosts(normalizedUrl, extraAllowedHosts).allowed();
+        } catch (Exception e) {
+            log.debug("OnlyOffice callback download URL fallback validation failed: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    private List<String> buildCallbackDownloadExtraHosts() {
         List<String> extraAllowedHosts = new ArrayList<>();
         try {
             URI onlyOfficeUri = URI.create(onlyOfficeUrl);
             if (onlyOfficeUri.getHost() != null) {
-                extraAllowedHosts.add(onlyOfficeUri.getHost());
+                addHostnameAndResolvedIps(onlyOfficeUri.getHost(), extraAllowedHosts);
             }
         } catch (Exception ignored) {
             // Ignore invalid onlyoffice.url here; merged allowlist may still be populated via callback hosts.
         }
 
         if (callbackAllowedHosts != null) {
-            extraAllowedHosts.addAll(callbackAllowedHosts);
+            for (String h : callbackAllowedHosts) {
+                if (h != null && !h.isBlank()) {
+                    addHostnameAndResolvedIps(h.trim(), extraAllowedHosts);
+                }
+            }
         }
+        return extraAllowedHosts;
+    }
 
-        return outboundUrlPolicy.validateHttpUrlWithMergedHosts(downloadUrl, extraAllowedHosts).allowed();
+    private static boolean resolvedAddressesOverlap(String hostA, String hostB) throws UnknownHostException {
+        Set<String> ipsB = resolvedIpStrings(hostB);
+        for (InetAddress a : InetAddress.getAllByName(hostA)) {
+            if (ipsB.contains(a.getHostAddress())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static Set<String> resolvedIpStrings(String host) throws UnknownHostException {
+        Set<String> out = new HashSet<>();
+        for (InetAddress a : InetAddress.getAllByName(host)) {
+            out.add(a.getHostAddress());
+        }
+        return out;
+    }
+
+    private static String rewriteUriHost(URI downloadUri, String newHost) throws URISyntaxException {
+        return new URI(
+                downloadUri.getScheme(),
+                downloadUri.getRawUserInfo(),
+                newHost,
+                downloadUri.getPort(),
+                downloadUri.getRawPath(),
+                downloadUri.getRawQuery(),
+                downloadUri.getRawFragment()
+        ).toASCIIString();
+    }
+
+    /**
+     * Document Server often emits callback download URLs with a literal IP host even when the editor
+     * was opened against a Docker DNS name (e.g. {@code onlyoffice}). The host allowlist must then
+     * include those resolved addresses, while {@link OutboundUrlPolicy} still enforces private-range rules
+     * unless {@code url-policy.allow-private-addresses} is enabled for local deployments.
+     */
+    private void addHostnameAndResolvedIps(String host, List<String> targets) {
+        if (host == null || host.isBlank()) {
+            return;
+        }
+        String normalized = host.toLowerCase(Locale.ROOT);
+        if (!targets.contains(normalized)) {
+            targets.add(normalized);
+        }
+        try {
+            for (InetAddress addr : InetAddress.getAllByName(host)) {
+                String ip = addr.getHostAddress();
+                if (!targets.contains(ip)) {
+                    targets.add(ip);
+                }
+            }
+        } catch (UnknownHostException e) {
+            log.debug("Could not resolve OnlyOffice host '{}' for callback URL allowlist: {}", host, e.getMessage());
+        }
     }
 
     private String extractOnlyOfficeToken(Map<String, Object> body, String authorizationHeader) {
