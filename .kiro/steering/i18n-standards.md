@@ -20,4 +20,4 @@ description: 国际化规范，包括支持语言、i18n key 命名、前端翻�
 - 新增功能必须同时更新三个语言文件
 - 后端错误通过 ErrorCode 返回，前端按 code 映射本地化文本
 - 后端日志用英文
-- Composable: #[[file:frontend/src/composables/useLocale.ts]]
+- 语言切换: 使用 `useI18n()` 的 `locale`，持久化到 `localStorage`（`locale` 键），参考 `MainLayout.vue` 的 `changeLocale`

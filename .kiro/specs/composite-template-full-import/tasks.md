@@ -30,9 +30,10 @@
 - [x] 后端编译通过 (`mvn compile`)
 - [x] 前端编译通过 (`vue-tsc --noEmit`)
 
-## Task 6: R7 `render-config.json` (DEFERRED — WS-03-T04, 2026-04-26)
+## Task 6: R7 `render-config.json` (implemented — REQ-R7-001, 2026-04-28)
 
-**English decision record:** `docs/audits/full-project-review-2026-04-26/17-composite-r7-render-config-scope.md`
+**Schema:** `docs/development/render-config-json-schema.md`
 
-- [ ] **Deferred:** Do not implement `render-config.json` in composite ZIP export/import until an approved JSON schema, persistence model on `Template` (or related entity), and SSRF-safe validation rules exist.
-- [ ] When scope reopens, implement using follow-up task cards (audit **WS-03-T05** / **WS-03-T06** or their replacements) and extend the ZIP allowlist under `composite-import.zip` limits.
+- [x] Optional ZIP entry `render-config.json`; allowlisted import path; export when `templates.render_config` is non-empty.
+- [x] Persistence: **`templates.render_config`** JSONB (**Flyway V41**).
+- [x] SSRF-safe watermark validation via **`RenderConfigValidator`** + **`WatermarkService`** (reject remote image URLs).

@@ -50,13 +50,11 @@
 
 ---
 
-### R7 implementation status (audit WS-03-T04, 2026-04-26) — English
+### R7 implementation status — English
 
-**Status:** **Deferred.** `render-config.json` is **not** part of composite ZIP export or import in the current codebase.
+**Status:** **Implemented** (2026-04-28). Composite ZIP export/import supports optional `render-config.json`; validated payload is stored in `templates.render_config` (Flyway V41). Schema and security rules: `docs/development/render-config-json-schema.md`.
 
-**Authoritative rationale and follow-up criteria:** see `docs/audits/full-project-review-2026-04-26/17-composite-r7-render-config-scope.md`.
-
-**Summary:** Implementation is postponed until a reviewed JSON schema, bounded parsing under ZIP import limits, SSRF-safe handling of any embedded resource references, and a clear persistence model exist. Until then, **WS-03-T05** and **WS-03-T06** in the audit task package remain **out of scope**.
+Historical deferral rationale (superseded): `docs/audits/full-project-review-2026-04-26/17-composite-r7-render-config-scope.md`.
 
 ## 验收标准
 

@@ -49,7 +49,7 @@ onMounted(() => fetchData())
 ## Composable
 
 - 文件: `composables/use{Feature}.ts`
-- 现有: useLocale, useAssemblyConfig, useParameterUtils, useSegmentDrag, useTaskPolling, useWorkflowSteps
+- 现有: useAssemblyConfig, useParameterUtils, useSegmentDrag, useTaskPolling, useWorkflowSteps
 
 ## CSS
 
