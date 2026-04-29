@@ -57,7 +57,6 @@ class TemplateVersionServiceTest {
         TenantContext.clear();
     }
 
-    // ── getTemplateVersions tests ──
 
     @Test
     void getTemplateVersions_returnsVersionsOrderedByVersionNumberDesc() {
@@ -96,7 +95,6 @@ class TemplateVersionServiceTest {
         assertTrue(result.isEmpty());
     }
 
-    // ── updateTemplate auto-version creation tests ──
 
     @Test
     void updateTemplate_createsVersionWithIncrementedNumber() {
@@ -139,7 +137,6 @@ class TemplateVersionServiceTest {
         assertEquals(1, captor.getValue().getVersionNumber());
     }
 
-    // ── rollbackToVersion tests ──
 
     @Test
     void rollbackToVersion_success_createsNewVersion() {
@@ -190,7 +187,6 @@ class TemplateVersionServiceTest {
                 () -> templateService.rollbackToVersion(1L, 99L));
     }
 
-    // ── Version config_json content tests ──
 
     @Test
     void updateTemplate_versionConfigJsonContainsAllMetadata() {
@@ -221,7 +217,6 @@ class TemplateVersionServiceTest {
         assertTrue(configJson.contains("\"status\":\"DRAFT\""));
     }
 
-    // ── Helpers ──
 
     private Template createTestTemplate() {
         Template template = new Template();
@@ -258,3 +253,4 @@ class TemplateVersionServiceTest {
         return version;
     }
 }
+

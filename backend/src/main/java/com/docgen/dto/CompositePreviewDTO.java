@@ -3,8 +3,7 @@ package com.docgen.dto;
 import java.util.List;
 
 /**
- * DTO for composite template preview results.
- * Contains the preview URL and per-segment preview status.
+ * Preview URL plus per-segment preview status entries.
  */
 public class CompositePreviewDTO {
 

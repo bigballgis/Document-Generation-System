@@ -46,7 +46,6 @@ public class TestResult {
         }
     }
 
-    // ── Getters and Setters ──
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -69,3 +68,4 @@ public class TestResult {
     public Long getGeneratedDocumentId() { return generatedDocumentId; }
     public void setGeneratedDocumentId(Long generatedDocumentId) { this.generatedDocumentId = generatedDocumentId; }
 }
+

@@ -163,7 +163,6 @@ class SortOrderEvaluationPropertyTest {
         }
     }
 
-    // ── Records & Generators ──
 
     record ChainTestData(int[][] rows) {}
 
@@ -177,3 +176,4 @@ class SortOrderEvaluationPropertyTest {
                 .map(list -> new ChainTestData(list.toArray(new int[0][])));
     }
 }
+

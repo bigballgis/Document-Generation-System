@@ -2,9 +2,6 @@ package com.docgen.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
-/**
- * DTO representing API usage statistics for a tenant.
- */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UsageStatsDTO {
 
@@ -14,7 +11,6 @@ public class UsageStatsDTO {
     private long remainingQuota;
     private String resetAt;
 
-    // ── Getters and Setters ──
 
     public Long getTenantId() { return tenantId; }
     public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
@@ -31,3 +27,4 @@ public class UsageStatsDTO {
     public String getResetAt() { return resetAt; }
     public void setResetAt(String resetAt) { this.resetAt = resetAt; }
 }
+

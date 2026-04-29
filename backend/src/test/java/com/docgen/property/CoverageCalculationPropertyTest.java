@@ -101,7 +101,6 @@ class CoverageCalculationPropertyTest {
         assertTrue(report.getOverallCoverage() <= 100.0);
     }
 
-    // ── Helpers ──
 
     private ParameterDefinition makeParam(Long id, String name) {
         ParameterDefinition p = new ParameterDefinition();

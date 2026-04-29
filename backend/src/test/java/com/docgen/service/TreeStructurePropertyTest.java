@@ -123,7 +123,6 @@ class TreeStructurePropertyTest {
         }
     }
 
-    // ── Helper Methods ──
 
     private void flattenTree(List<ParameterDTO> nodes, List<ParameterDTO> result) {
         if (nodes == null) return;
@@ -178,7 +177,6 @@ class TreeStructurePropertyTest {
         return p;
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<List<ParameterDefinition>> randomParameterTrees() {
@@ -224,3 +222,4 @@ class TreeStructurePropertyTest {
         return tree;
     }
 }
+

@@ -25,7 +25,6 @@ class AssemblyConfigServiceTest {
         service = new AssemblyConfigService(objectMapper);
     }
 
-    // ── serialize / deserialize ──
 
     @Test
     void serialize_roundTrip_preservesData() {
@@ -72,7 +71,6 @@ class AssemblyConfigServiceTest {
         assertEquals(ErrorCode.INTERNAL_ERROR, ex.getErrorCode());
     }
 
-    // ── validate: enabled segment check ──
 
     @Test
     void validate_noSegments_throwsCompositeTemplateEmpty() {
@@ -106,7 +104,6 @@ class AssemblyConfigServiceTest {
         assertEquals(ErrorCode.COMPOSITE_TEMPLATE_EMPTY, ex.getErrorCode());
     }
 
-    // ── validate: filePath check ──
 
     @Test
     void validate_filePathNull_throwsAssemblyConfigInvalid() {
@@ -152,7 +149,6 @@ class AssemblyConfigServiceTest {
         assertDoesNotThrow(() -> service.validate(config));
     }
 
-    // ── helpers ──
 
     private AssemblyConfigDTO buildConfig(AssemblySegmentEntry... entries) {
         AssemblyConfigDTO config = new AssemblyConfigDTO();
@@ -176,3 +172,4 @@ class AssemblyConfigServiceTest {
         return e;
     }
 }
+

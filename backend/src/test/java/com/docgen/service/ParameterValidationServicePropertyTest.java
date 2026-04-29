@@ -43,7 +43,6 @@ class ParameterValidationServicePropertyTest {
         return new ParameterValidationService(repo, engine, mapper, aggResolver);
     }
 
-    // ── Helpers ──
 
     private ParameterDefinition makeParam(Long id, String name, String paramType, String dataType,
                                            boolean required, String defaultValue, int sortOrder) {

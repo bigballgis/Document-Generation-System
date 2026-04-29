@@ -11,9 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * REST controller for team management endpoints, nested under tenants.
- */
 @RestController
 @RequestMapping("/api/tenants/{tenantId}/teams")
 public class TeamController {

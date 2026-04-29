@@ -13,9 +13,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * REST controller for template test case CRUD, execution, and import/export.
- */
 @RestController
 public class TemplateTestController {
 

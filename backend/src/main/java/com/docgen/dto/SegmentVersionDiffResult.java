@@ -3,9 +3,6 @@ package com.docgen.dto;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * DTO representing the diff result between two segment versions.
- */
 public class SegmentVersionDiffResult {
 
     private Long templateId;

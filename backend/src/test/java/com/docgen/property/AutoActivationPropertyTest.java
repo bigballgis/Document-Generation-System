@@ -33,7 +33,6 @@ import static org.mockito.Mockito.*;
 @Tag("Feature: workspace-test-publish, Property 3 & 4: AutoActivationService")
 class AutoActivationPropertyTest {
 
-    // ── Helper: create a Template entity ──
 
     private Template createTemplate(Long id, Long tenantId, String name) {
         Template t = new Template();
@@ -46,7 +45,6 @@ class AutoActivationPropertyTest {
         return t;
     }
 
-    // ── Helper: create an ApiKey entity ──
 
     private ApiKey createApiKey(boolean enabled, Instant expiresAt) {
         ApiKey key = new ApiKey();
@@ -197,7 +195,6 @@ class AutoActivationPropertyTest {
         }
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<Long> templateIds() {
@@ -233,7 +230,6 @@ class AutoActivationPropertyTest {
         return singleKey.list().ofMinSize(0).ofMaxSize(5);
     }
 
-    // ── Helper types ──
 
     enum TransitionScenario {
         BOTH_SUCCEED,
@@ -256,3 +252,4 @@ class AutoActivationPropertyTest {
         }
     }
 }
+

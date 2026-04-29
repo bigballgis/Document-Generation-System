@@ -6,7 +6,6 @@ import jakarta.validation.constraints.Size;
 import java.util.Map;
 
 /**
- * Request DTO for updating a parameter definition.
  * All fields are optional except version (required for optimistic locking).
  */
 public record UpdateParameterRequest(

@@ -5,9 +5,6 @@ import com.docgen.service.CoverageCheckService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * REST controller for template coverage check endpoints.
- */
 @RestController
 public class CoverageController {
 

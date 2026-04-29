@@ -81,7 +81,6 @@ class DataScopeResolutionPropertyTest {
         }
     }
 
-    // ── Helper types ──
 
     static class DataScopeInput {
         final Map<String, Object> globalData;
@@ -98,7 +97,6 @@ class DataScopeResolutionPropertyTest {
         }
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<DataScopeInput> dataScopeInputs() {
@@ -160,3 +158,4 @@ class DataScopeResolutionPropertyTest {
         });
     }
 }
+

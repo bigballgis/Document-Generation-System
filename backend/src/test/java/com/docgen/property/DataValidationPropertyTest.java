@@ -27,7 +27,6 @@ class DataValidationPropertyTest {
     private final DataValidationService service = new DataValidationService();
     private static final String FIELD = "testField";
 
-    // ── REQUIRED (Req 13.2) ──
 
     /**
      * Property 8 (REQUIRED): Non-null, non-empty values should pass REQUIRED validation.
@@ -61,7 +60,6 @@ class DataValidationPropertyTest {
         assertEquals(RuleType.REQUIRED, result.getErrors().get(0).getRuleType());
     }
 
-    // ── TYPE (Req 13.3) ──
 
     /**
      * Property 8 (TYPE): Values matching the expected type should pass TYPE validation.
@@ -98,7 +96,6 @@ class DataValidationPropertyTest {
         assertEquals(RuleType.TYPE, result.getErrors().get(0).getRuleType());
     }
 
-    // ── RANGE (Req 13.4) ──
 
     /**
      * Property 8 (RANGE): Numeric values within [min, max] should pass RANGE validation.
@@ -139,7 +136,6 @@ class DataValidationPropertyTest {
         assertEquals(RuleType.RANGE, result.getErrors().get(0).getRuleType());
     }
 
-    // ── LENGTH (Req 13.5) ──
 
     /**
      * Property 8 (LENGTH): Strings with length in [min, max] should pass LENGTH validation.
@@ -180,7 +176,6 @@ class DataValidationPropertyTest {
         assertEquals(RuleType.LENGTH, result.getErrors().get(0).getRuleType());
     }
 
-    // ── REGEX (Req 13.6) ──
 
     /**
      * Property 8 (REGEX): Values matching the regex pattern should pass REGEX validation.
@@ -217,7 +212,6 @@ class DataValidationPropertyTest {
         assertEquals(RuleType.REGEX, result.getErrors().get(0).getRuleType());
     }
 
-    // ── Error details (Req 13.7) ──
 
     /**
      * Property 8 (Error details): Every validation failure should include the field name
@@ -241,7 +235,6 @@ class DataValidationPropertyTest {
                 "Error message should not be blank");
     }
 
-    // ── Records ──
 
     record TypeAndValue(DataType dataType, Object value) {}
     record RangeTestCase(double min, double max, double value) {}
@@ -249,7 +242,6 @@ class DataValidationPropertyTest {
     record RegexTestCase(String pattern, String value) {}
     record RuleAndData(ValidationRule rule, Map<String, Object> data) {}
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<String> nonEmptyStrings() {
@@ -433,3 +425,4 @@ class DataValidationPropertyTest {
         );
     }
 }
+

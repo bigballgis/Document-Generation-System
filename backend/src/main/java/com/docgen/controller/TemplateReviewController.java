@@ -13,9 +13,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * REST controller for template review workflow.
- * Provides endpoints for submitting, approving, conditionally approving,
- * and rejecting template reviews.
+ * Submit, approve, conditionally approve, and reject template reviews.
  */
 @RestController
 public class TemplateReviewController {

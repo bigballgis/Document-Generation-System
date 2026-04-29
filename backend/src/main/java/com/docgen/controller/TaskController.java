@@ -14,9 +14,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-/**
- * REST controller for async task status and progress queries.
- */
 @RestController
 @RequestMapping("/api/tasks")
 @Tag(name = "Async Tasks", description = "APIs for querying async task status and downloading results")

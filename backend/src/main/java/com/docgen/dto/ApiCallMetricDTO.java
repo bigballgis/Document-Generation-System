@@ -2,9 +2,6 @@ package com.docgen.dto;
 
 import java.time.Instant;
 
-/**
- * DTO representing a single data point in the API call trend chart.
- */
 public class ApiCallMetricDTO {
 
     private Instant timestamp;

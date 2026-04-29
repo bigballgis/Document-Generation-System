@@ -68,7 +68,6 @@ class SecurityIntegrationTest extends BaseIntegrationTest {
         tenantRepository.deleteAll();
     }
 
-    // ── JWT Authentication Tests ──
 
     @Test
     void shouldAuthenticateWithValidJwtToken() {
@@ -132,7 +131,6 @@ class SecurityIntegrationTest extends BaseIntegrationTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
-    // ── API Key Authentication Tests ──
 
     @Test
     void shouldAuthenticateWithValidApiKey() {
@@ -226,7 +224,6 @@ class SecurityIntegrationTest extends BaseIntegrationTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
-    // ── Public Endpoint Tests ──
 
     @Test
     void shouldAllowAccessToPublicEndpoints() {
@@ -240,7 +237,6 @@ class SecurityIntegrationTest extends BaseIntegrationTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
-    // ── Role-Based Access Control Tests ──
 
     @Test
     void shouldDenySuperAdminEndpointToRegularUser() {
@@ -274,3 +270,4 @@ class SecurityIntegrationTest extends BaseIntegrationTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 }
+

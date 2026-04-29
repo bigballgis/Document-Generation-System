@@ -4,9 +4,6 @@ import com.docgen.entity.PermissionType;
 
 import java.time.Instant;
 
-/**
- * Response DTO for permission information.
- */
 public class PermissionDTO {
 
     private Long id;

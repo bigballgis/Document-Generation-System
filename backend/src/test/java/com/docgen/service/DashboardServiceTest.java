@@ -46,7 +46,6 @@ class DashboardServiceTest {
                 meterRegistry, redisConnectionFactory, dataSource, minioClient);
     }
 
-    // ── getSystemOverview ──
 
     @Test
     void getSystemOverview_returnsCounts() {
@@ -81,7 +80,6 @@ class DashboardServiceTest {
         assertEquals(0, overview.getTotalDocuments());
     }
 
-    // ── getApiCallMetrics ──
 
     @Test
     void getApiCallMetrics_returnsCorrectBucketCount() {
@@ -109,7 +107,6 @@ class DashboardServiceTest {
         assertTrue(last.getAvgResponseTimeMs() > 0);
     }
 
-    // ── getSystemResources ──
 
     @Test
     void getSystemResources_collectsJvmAndDbPoolAndRedis() {

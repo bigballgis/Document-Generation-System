@@ -5,9 +5,6 @@ import com.docgen.entity.ReviewStatus;
 import java.time.Instant;
 import java.util.List;
 
-/**
- * Response DTO for template review information.
- */
 public class TemplateReviewDTO {
 
     private Long id;

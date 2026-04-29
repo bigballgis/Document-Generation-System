@@ -5,9 +5,6 @@ import jakarta.validation.constraints.Size;
 
 import java.time.Instant;
 
-/**
- * Request DTO for creating a new API Key.
- */
 public class CreateApiKeyRequest {
 
     @NotBlank(message = "API Key name is required")

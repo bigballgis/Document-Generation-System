@@ -39,7 +39,6 @@ public class TaskExecution {
         }
     }
 
-    // ── Getters and Setters ──
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -59,3 +58,4 @@ public class TaskExecution {
     public Instant getExecutedAt() { return executedAt; }
     public void setExecutedAt(Instant executedAt) { this.executedAt = executedAt; }
 }
+

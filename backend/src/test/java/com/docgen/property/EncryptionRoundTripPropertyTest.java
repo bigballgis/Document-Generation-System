@@ -61,7 +61,6 @@ class EncryptionRoundTripPropertyTest {
         assertEquals(original, encryptionService.decrypt(encrypted2));
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<String> sensitiveStrings() {
@@ -103,3 +102,4 @@ class EncryptionRoundTripPropertyTest {
         );
     }
 }
+

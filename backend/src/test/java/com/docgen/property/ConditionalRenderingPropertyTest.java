@@ -154,7 +154,6 @@ class ConditionalRenderingPropertyTest {
         }
     }
 
-    // ── Helper types ──
 
     static class ConditionalSegmentInfo {
         final String filePath;
@@ -192,7 +191,6 @@ class ConditionalRenderingPropertyTest {
         }
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<ConditionalConfigInput> conditionalSegmentConfigs() {
@@ -221,7 +219,6 @@ class ConditionalRenderingPropertyTest {
         });
     }
 
-    // ── Utility ──
 
     private static void setField(Object target, String fieldName, Object value) throws Exception {
         Field field = target.getClass().getDeclaredField(fieldName);
@@ -229,3 +226,4 @@ class ConditionalRenderingPropertyTest {
         field.set(target, value);
     }
 }
+

@@ -116,7 +116,6 @@ class RowDerivedIsolationPropertyTest {
         return copy;
     }
 
-    // ── Records & Generators ──
 
     record ArrayDerivedTestData(List<Map<String, Object>> rows) {}
 
@@ -135,3 +134,4 @@ class RowDerivedIsolationPropertyTest {
                 .map(ArrayDerivedTestData::new);
     }
 }
+

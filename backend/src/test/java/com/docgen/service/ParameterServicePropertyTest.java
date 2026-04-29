@@ -28,7 +28,6 @@ class ParameterServicePropertyTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // ── Property 1: Parameter type determines expression presence ──
     // Validates: Requirements 1.3, 1.4, 2.6
 
     /**
@@ -73,7 +72,6 @@ class ParameterServicePropertyTest {
         assertEquals(ErrorCode.VALIDATION_FAILED, ex.getErrorCode());
     }
 
-    // ── Property 2: Duplicate name rejection within scope ──
     // Validates: Requirements 1.2, 2.5
 
     /**
@@ -112,7 +110,6 @@ class ParameterServicePropertyTest {
         assertEquals(ErrorCode.PARAMETER_DUPLICATE_NAME, ex.getErrorCode());
     }
 
-    // ── Property 3: Range constraint consistency ──
     // Validates: Requirements 1.8, 1.9, 1.10
 
     /**
@@ -151,7 +148,6 @@ class ParameterServicePropertyTest {
         assertDoesNotThrow(() -> service.validateValidationRules(pair.dataType, rules));
     }
 
-    // ── Property 4: Validation rules compatibility with data_type ──
     // Validates: Requirements 2.9
 
     /**
@@ -188,7 +184,6 @@ class ParameterServicePropertyTest {
         assertDoesNotThrow(() -> service.validateValidationRules(pair.dataType, rules));
     }
 
-    // ── Property 6: Parameter path computation ──
     // Validates: Requirements 1.15
 
     /**
@@ -230,7 +225,6 @@ class ParameterServicePropertyTest {
         }
     }
 
-    // ── Property 7: Maximum depth enforcement ──
     // Validates: Requirements 1.16
 
     /**
@@ -267,7 +261,6 @@ class ParameterServicePropertyTest {
         assertEquals(ErrorCode.PARAMETER_MAX_DEPTH_EXCEEDED, ex.getErrorCode());
     }
 
-    // ── Property 8: Parent type constraint ──
     // Validates: Requirements 2.12
 
     /**
@@ -302,7 +295,6 @@ class ParameterServicePropertyTest {
         assertDoesNotThrow(() -> service.validateParentType(parent));
     }
 
-    // ── Property 11: Parameter name pattern validation ──
     // Validates: Requirements 1.17
 
     /**
@@ -332,7 +324,6 @@ class ParameterServicePropertyTest {
         assertEquals(ErrorCode.PARAMETER_INVALID_NAME, ex.getErrorCode());
     }
 
-    // ── Property 17: Circular dependency detection ──
     // Validates: Requirements 5.6
 
     /**
@@ -354,13 +345,11 @@ class ParameterServicePropertyTest {
         assertEquals(ErrorCode.PARAMETER_CIRCULAR_DEPENDENCY, ex.getErrorCode());
     }
 
-    // ── Records ──
 
     record RangePair(String minKey, String maxKey, double minVal, double maxVal, String dataType) {}
     record DataTypeRulePair(String dataType, String ruleKey, Object ruleValue) {}
     record CircularGraph(List<ParameterDefinition> existingParams, String newParamName, String newExpression) {}
 
-    // ── Helper Methods ──
 
     private ParameterService createServiceWithMocks() {
         ParameterRepository repo = mock(ParameterRepository.class);
@@ -396,7 +385,6 @@ class ParameterServicePropertyTest {
         return p;
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<String> emptyOrNullExpressions() {
@@ -637,3 +625,4 @@ class ParameterServicePropertyTest {
         );
     }
 }
+

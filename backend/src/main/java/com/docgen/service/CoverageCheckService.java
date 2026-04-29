@@ -148,7 +148,6 @@ public class CoverageCheckService {
                 conditionCount, loopCount, paramCount);
     }
 
-    // ── Private helpers ──
 
     private List<Map<String, Object>> parseTestCaseData(List<TestCase> testCases, List<String> warnings) {
         List<Map<String, Object>> result = new ArrayList<>();

@@ -5,6 +5,7 @@ import com.docgen.entity.Template;
 import com.docgen.exception.BusinessException;
 import com.docgen.exception.ErrorCode;
 import com.docgen.repository.TemplateRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -32,19 +33,22 @@ public class CompositeGeneratorService {
     private final AssemblyEngineService assemblyEngineService;
     private final DocumentStorageService documentStorageService;
     private final WatermarkService watermarkService;
+    private final ObjectMapper objectMapper;
 
     public CompositeGeneratorService(TemplateRepository templateRepository,
                                      ParameterValidationService parameterValidationService,
                                      AssemblyConfigService assemblyConfigService,
                                      AssemblyEngineService assemblyEngineService,
                                      DocumentStorageService documentStorageService,
-                                     WatermarkService watermarkService) {
+                                     WatermarkService watermarkService,
+                                     ObjectMapper objectMapper) {
         this.templateRepository = templateRepository;
         this.parameterValidationService = parameterValidationService;
         this.assemblyConfigService = assemblyConfigService;
         this.assemblyEngineService = assemblyEngineService;
         this.documentStorageService = documentStorageService;
         this.watermarkService = watermarkService;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -141,13 +145,36 @@ public class CompositeGeneratorService {
     }
 
     /**
-     * Apply watermark to the assembled document if the template has watermark configuration.
-     * Currently checks for text watermark config in template metadata.
+     * Apply watermark(s) from {@code templates.render_config} (imported via render-config.json) when present.
+     * Text watermark is applied before image watermark. Barcode entries are reserved for a future release.
      */
     private byte[] applyWatermarkIfConfigured(Template template, byte[] docxBytes, Map<String, Object> data) {
-        // Watermark is applied at the composite level after all segments are merged.
-        // The template's watermark config would be stored as part of template metadata.
-        // For now, return as-is — watermark config integration follows existing pattern.
+        String json = template.getRenderConfig();
+        if (json == null || json.isBlank()) {
+            return docxBytes;
+        }
+        try {
+            RenderConfigDocument config = objectMapper.readValue(json, RenderConfigDocument.class);
+            if (config == null || config.isEffectivelyEmpty()) {
+                return docxBytes;
+            }
+            if (config.getTextWatermark() != null) {
+                docxBytes = watermarkService.applyTextWatermark(docxBytes, config.getTextWatermark(), data);
+            }
+            if (config.getImageWatermark() != null) {
+                docxBytes = watermarkService.applyImageWatermark(docxBytes, config.getImageWatermark());
+            }
+            if (config.getBarcodes() != null && !config.getBarcodes().isEmpty()) {
+                log.warn("Template {} has barcode entries in render_config; not supported, skipping", template.getId());
+            }
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("Failed to apply render_config watermarks for template {}: {}", template.getId(), e.getMessage());
+            throw new BusinessException(ErrorCode.WATERMARK_FAILED,
+                    "Failed to apply render configuration: " + e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR, e);
+        }
         return docxBytes;
     }
 

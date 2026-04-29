@@ -32,17 +32,16 @@ class TemplateStateMachineServiceTest {
         stateMachineService = new TemplateStateMachineService(templateRepository);
     }
 
-    // ── Legal transitions ──
 
     @Test
-    void transition_draftToPendingReview_success() {
+    void transition_draftToInTest_success() {
         Template template = createTemplate("DRAFT", true);
         when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
         when(templateRepository.save(any(Template.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        Template result = stateMachineService.transition(1L, TemplateState.PENDING_REVIEW);
+        Template result = stateMachineService.transition(1L, TemplateState.IN_TEST);
 
-        assertEquals("PENDING_REVIEW", result.getStatus());
+        assertEquals("IN_TEST", result.getStatus());
         verify(templateRepository).save(template);
     }
 
@@ -58,8 +57,30 @@ class TemplateStateMachineServiceTest {
     }
 
     @Test
-    void transition_pendingReviewToDraft_success() {
+    void transition_pendingReviewToInTest_success() {
         Template template = createTemplate("PENDING_REVIEW", true);
+        when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
+        when(templateRepository.save(any(Template.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Template result = stateMachineService.transition(1L, TemplateState.IN_TEST);
+
+        assertEquals("IN_TEST", result.getStatus());
+    }
+
+    @Test
+    void transition_inTestToPendingReview_success() {
+        Template template = createTemplate("IN_TEST", true);
+        when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
+        when(templateRepository.save(any(Template.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Template result = stateMachineService.transition(1L, TemplateState.PENDING_REVIEW);
+
+        assertEquals("PENDING_REVIEW", result.getStatus());
+    }
+
+    @Test
+    void transition_inTestToDraft_success() {
+        Template template = createTemplate("IN_TEST", true);
         when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
         when(templateRepository.save(any(Template.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -101,7 +122,6 @@ class TemplateStateMachineServiceTest {
         assertEquals("DRAFT", result.getStatus());
     }
 
-    // ── DRAFT→ACTIVE: review_required=false ──
 
     @Test
     void transition_draftToActive_noReviewRequired_success() {
@@ -114,7 +134,6 @@ class TemplateStateMachineServiceTest {
         assertEquals("ACTIVE", result.getStatus());
     }
 
-    // ── DRAFT→ACTIVE: review_required=true should fail ──
 
     @Test
     void transition_draftToActive_reviewRequired_throws() {
@@ -128,7 +147,6 @@ class TemplateStateMachineServiceTest {
         assertTrue(ex.getMessage().contains("ACTIVE"));
     }
 
-    // ── Illegal transitions ──
 
     @Test
     void transition_draftToArchived_throws() {
@@ -178,7 +196,6 @@ class TemplateStateMachineServiceTest {
         assertTrue(ex.getMessage().contains("DRAFT"));
     }
 
-    // ── Template not found ──
 
     @Test
     void transition_templateNotFound_throws() {
@@ -188,7 +205,6 @@ class TemplateStateMachineServiceTest {
                 () -> stateMachineService.transition(99L, TemplateState.ACTIVE));
     }
 
-    // ── getAvailableTransitions ──
 
     @Test
     void getAvailableTransitions_draft_reviewRequired() {
@@ -197,8 +213,9 @@ class TemplateStateMachineServiceTest {
 
         List<TemplateState> transitions = stateMachineService.getAvailableTransitions(1L);
 
-        assertTrue(transitions.contains(TemplateState.PENDING_REVIEW));
+        assertTrue(transitions.contains(TemplateState.IN_TEST));
         assertFalse(transitions.contains(TemplateState.ACTIVE));
+        assertFalse(transitions.contains(TemplateState.PENDING_REVIEW));
     }
 
     @Test
@@ -208,8 +225,20 @@ class TemplateStateMachineServiceTest {
 
         List<TemplateState> transitions = stateMachineService.getAvailableTransitions(1L);
 
-        assertTrue(transitions.contains(TemplateState.PENDING_REVIEW));
+        assertTrue(transitions.contains(TemplateState.IN_TEST));
         assertTrue(transitions.contains(TemplateState.ACTIVE));
+    }
+
+    @Test
+    void getAvailableTransitions_inTest() {
+        Template template = createTemplate("IN_TEST", true);
+        when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
+
+        List<TemplateState> transitions = stateMachineService.getAvailableTransitions(1L);
+
+        assertTrue(transitions.contains(TemplateState.DRAFT));
+        assertTrue(transitions.contains(TemplateState.PENDING_REVIEW));
+        assertEquals(2, transitions.size());
     }
 
     @Test
@@ -220,7 +249,7 @@ class TemplateStateMachineServiceTest {
         List<TemplateState> transitions = stateMachineService.getAvailableTransitions(1L);
 
         assertTrue(transitions.contains(TemplateState.REVIEWED));
-        assertTrue(transitions.contains(TemplateState.DRAFT));
+        assertTrue(transitions.contains(TemplateState.IN_TEST));
         assertEquals(2, transitions.size());
     }
 
@@ -265,7 +294,6 @@ class TemplateStateMachineServiceTest {
                 () -> stateMachineService.getAvailableTransitions(99L));
     }
 
-    // ── Helper ──
 
     private Template createTemplate(String status, boolean reviewRequired) {
         Template template = new Template();
@@ -284,3 +312,4 @@ class TemplateStateMachineServiceTest {
         return template;
     }
 }
+

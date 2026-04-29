@@ -9,7 +9,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ParameterResolverTest {
 
-    // ── resolve ──
 
     @Test
     void resolve_nullDefs_returnsRuntimeParams() {
@@ -107,7 +106,6 @@ class ParameterResolverTest {
         assertTrue(ex.getMessage().contains("orgId"));
     }
 
-    // ── replacePathParameters ──
 
     @Test
     void replacePathParameters_noPlaceholders() {
@@ -173,7 +171,6 @@ class ParameterResolverTest {
         assertEquals("/users/42", result);
     }
 
-    // ── extractParameterDefs ──
 
     @Test
     void extractParameterDefs_noParametersKey_returnsEmpty() {

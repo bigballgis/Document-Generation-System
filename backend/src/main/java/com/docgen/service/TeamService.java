@@ -89,7 +89,6 @@ public class TeamService {
         return toDTO(findTeamOrThrow(id));
     }
 
-    // ── Private helpers ──
 
     private Team findTeamOrThrow(Long id) {
         return teamRepository.findById(id)

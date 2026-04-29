@@ -81,7 +81,6 @@ public class AsyncTask {
         this.updatedAt = Instant.now();
     }
 
-    // ── Getters and Setters ──
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -134,3 +133,4 @@ public class AsyncTask {
     public Instant getCompletedAt() { return completedAt; }
     public void setCompletedAt(Instant completedAt) { this.completedAt = completedAt; }
 }
+

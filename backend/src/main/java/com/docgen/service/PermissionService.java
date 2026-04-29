@@ -162,7 +162,6 @@ public class PermissionService {
                 .collect(Collectors.toList());
     }
 
-    // ── Private helpers ──
 
     private void validateGrantRequest(GrantPermissionRequest request) {
         if (request.getUserId() == null && request.getTeamId() == null) {

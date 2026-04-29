@@ -129,7 +129,6 @@ public class CategoryService {
         return toDTO(findCategoryOrThrow(id));
     }
 
-    // ── Private helpers ──
 
     private TemplateCategory findCategoryOrThrow(Long id) {
         return categoryRepository.findById(id)

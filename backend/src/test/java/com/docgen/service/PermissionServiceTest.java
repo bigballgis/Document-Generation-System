@@ -48,7 +48,6 @@ class PermissionServiceTest {
         TenantContext.clear();
     }
 
-    // ── hasPermission tests ──
 
     @Test
     void hasPermission_directUserPermission_returnsTrue() {
@@ -84,7 +83,6 @@ class PermissionServiceTest {
         assertFalse(permissionService.hasPermission(1L, null, 10L, PermissionType.CALL_API));
     }
 
-    // ── checkPermission tests ──
 
     @Test
     void checkPermission_superAdmin_bypasses() {
@@ -147,7 +145,6 @@ class PermissionServiceTest {
                 permissionService.checkPermission(1L, null, "USER", 10L, PermissionType.VIEW));
     }
 
-    // ── grantPermission tests ──
 
     @Test
     void grantPermission_toUser_success() {
@@ -230,7 +227,6 @@ class PermissionServiceTest {
                 permissionService.grantPermission(99L, request, 1L));
     }
 
-    // ── revokePermission tests ──
 
     @Test
     void revokePermission_success() {
@@ -259,7 +255,6 @@ class PermissionServiceTest {
                 permissionService.revokePermission(10L, 1L));
     }
 
-    // ── getTemplatePermissions tests ──
 
     @Test
     void getTemplatePermissions_returnsList() {
@@ -281,7 +276,6 @@ class PermissionServiceTest {
                 permissionService.getTemplatePermissions(99L));
     }
 
-    // ── getUserPermissions tests ──
 
     @Test
     void getUserPermissions_returnsList() {
@@ -294,7 +288,6 @@ class PermissionServiceTest {
         assertEquals(PermissionType.VIEW, result.get(0).getPermissionType());
     }
 
-    // ── Helpers ──
 
     private Template createTestTemplate(Long id, Long tenantId, Long createdBy) {
         Template template = new Template();
@@ -319,3 +312,4 @@ class PermissionServiceTest {
         return p;
     }
 }
+

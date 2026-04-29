@@ -27,7 +27,6 @@ class TemplateScanServicePropertyTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // ── Property 12: Placeholder parsing round-trip ──
     // Validates: Requirements 3.1, 3.6, 3.7, 3.8
 
     /**
@@ -156,7 +155,6 @@ class TemplateScanServicePropertyTest {
         assertTrue(leafOpt.isPresent(), "Leaf should be found as child of inner loop");
     }
 
-    // ── Property 13: Scan comparison set partitioning ──
     // Validates: Requirements 3.2
 
     /**
@@ -262,7 +260,6 @@ class TemplateScanServicePropertyTest {
                 "matched ∪ unused should cover all parameter paths");
     }
 
-    // ── Property 14: Auto-create tree construction from paths ──
     // Validates: Requirements 3.3
 
     /**
@@ -328,7 +325,6 @@ class TemplateScanServicePropertyTest {
         }
     }
 
-    // ── Property 15: Data type recommendation from placeholder name ──
     // Validates: Requirements 4.16
 
     /**
@@ -393,13 +389,11 @@ class TemplateScanServicePropertyTest {
         assertEquals("STRING", service.recommendDataType(null));
     }
 
-    // ── Records ──
 
     record LoopSpec(String loopName, List<String> childNames) {}
     record NestedLoopSpec(String outerName, String innerName, String leafName) {}
     record ScanComparisonInput(List<String> placeholderPaths, List<String> parameterPaths) {}
 
-    // ── Helper Methods ──
 
     private ParameterService createParameterServiceWithMocks() {
         ParameterRepository repo = mock(ParameterRepository.class);
@@ -438,7 +432,6 @@ class TemplateScanServicePropertyTest {
         }
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<List<String>> simpleVariableSets() {
@@ -575,3 +568,4 @@ class TemplateScanServicePropertyTest {
         return Character.toUpperCase(s.charAt(0)) + s.substring(1);
     }
 }
+

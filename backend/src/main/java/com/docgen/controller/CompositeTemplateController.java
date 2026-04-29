@@ -81,7 +81,6 @@ public class CompositeTemplateController {
         this.callbackDocumentDownloadHelper = callbackDocumentDownloadHelper;
     }
 
-    // ── Create ──
 
     @PostMapping
     public ResponseEntity<TemplateDTO> createCompositeTemplate(
@@ -91,7 +90,6 @@ public class CompositeTemplateController {
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
-    // ── Assembly Config ──
 
     @GetMapping("/{id}/assembly-config")
     public ResponseEntity<AssemblyConfigDTO> getAssemblyConfig(@PathVariable Long id) {
@@ -105,7 +103,6 @@ public class CompositeTemplateController {
         return ResponseEntity.ok(compositeTemplateService.updateAssemblyConfig(id, request));
     }
 
-    // ── Preview ──
 
     @PostMapping("/{id}/preview")
     public ResponseEntity<CompositePreviewDTO> previewCompositeTemplate(@PathVariable Long id) {
@@ -120,14 +117,12 @@ public class CompositeTemplateController {
                 compositeTemplateService.previewSelectiveSegments(id, request.getPositions()));
     }
 
-    // ── Coverage ──
 
     @GetMapping("/{id}/coverage")
     public ResponseEntity<CompositeCoverageReport> getCoverage(@PathVariable Long id) {
         return ResponseEntity.ok(compositeCoverageService.checkCoverage(id));
     }
 
-    // ── Import / Export ──
 
     @GetMapping("/{id}/export")
     public ResponseEntity<byte[]> exportAsZip(@PathVariable Long id) {
@@ -155,7 +150,6 @@ public class CompositeTemplateController {
         return ResponseEntity.status(HttpStatus.CREATED).body(result);
     }
 
-    // ── Upload Segment ──
 
     /**
      * Upload a segment .docx file to MinIO and return an AssemblySegmentEntry with the filePath.
@@ -195,7 +189,6 @@ public class CompositeTemplateController {
         return ResponseEntity.status(HttpStatus.CREATED).body(entry);
     }
 
-    // ── Create Blank Segment ──
 
     /**
      * Create a blank .docx segment file, upload to MinIO, and return an AssemblySegmentEntry.
@@ -233,7 +226,6 @@ public class CompositeTemplateController {
         return ResponseEntity.status(HttpStatus.CREATED).body(entry);
     }
 
-    // ── Create Blank Header/Footer ──
 
     /**
      * Create a blank header or footer .docx file, upload to MinIO, and return the filePath.
@@ -275,7 +267,6 @@ public class CompositeTemplateController {
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("filePath", objectPath));
     }
 
-    // ── Segment OnlyOffice URL ──
 
     /**
      * Generate a MinIO presigned URL for a specific segment's .docx file.
@@ -315,7 +306,6 @@ public class CompositeTemplateController {
         }
     }
 
-    // ── Segment OnlyOffice Callback ──
 
     /**
      * Handle OnlyOffice callback for a specific segment.
@@ -424,7 +414,6 @@ public class CompositeTemplateController {
         return ResponseEntity.ok(Map.of("error", 0));
     }
 
-    // ── Segment Version Management ──
 
     /**
      * Publish (snapshot) a segment version.
@@ -475,3 +464,4 @@ public class CompositeTemplateController {
                 segmentVersionService.rollbackSegment(id, segmentName, targetVersion));
     }
 }
+

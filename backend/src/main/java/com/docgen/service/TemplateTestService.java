@@ -68,7 +68,6 @@ public class TemplateTestService {
         this.documentStorageService = documentStorageService;
     }
 
-    // ── CRUD operations ──
 
     @Transactional
     public TestCaseDTO createTestCase(Long templateId, CreateTestCaseRequest request) {
@@ -178,7 +177,6 @@ public class TemplateTestService {
         return PageRequest.of(page, size, sort);
     }
 
-    // ── Test execution ──
 
     @Transactional
     public TestResultDTO runTestCase(Long testCaseId) {
@@ -333,7 +331,6 @@ public class TemplateTestService {
         return report;
     }
 
-    // ── Import / Export ──
 
     @Transactional(readOnly = true)
     public String exportTestCases(Long templateId) {
@@ -363,7 +360,6 @@ public class TemplateTestService {
         }
     }
 
-    // ── Comparison logic ──
 
     /**
      * Package-visible for unit tests; only VARIABLE_VALUE is supported through this entry point.
@@ -441,7 +437,6 @@ public class TemplateTestService {
         }
     }
 
-    // ── Private helpers ──
 
     private TestCase findTestCaseOrThrow(Long testCaseId) {
         return testCaseRepository.findById(testCaseId)
@@ -488,3 +483,4 @@ public class TemplateTestService {
 
     record ComparisonResult(boolean passed, String diffDetails) {}
 }
+

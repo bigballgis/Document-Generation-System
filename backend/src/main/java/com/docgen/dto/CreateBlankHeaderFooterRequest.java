@@ -3,9 +3,6 @@ package com.docgen.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
-/**
- * Request DTO for creating a blank header or footer .docx file.
- */
 public class CreateBlankHeaderFooterRequest {
 
     @NotBlank(message = "类型不能为空")

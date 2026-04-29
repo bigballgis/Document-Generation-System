@@ -39,7 +39,6 @@ class TemplateScanServiceTest {
         bucketField.set(service, "docgen");
     }
 
-    // ── parsePlaceholders: simple variables ──
 
     @Test
     void parsePlaceholders_simpleVariables() {
@@ -63,7 +62,6 @@ class TemplateScanServiceTest {
         assertEquals("email", result.get(2).fullPath());
     }
 
-    // ── parsePlaceholders: dot-notation ──
 
     @Test
     void parsePlaceholders_dotNotation() {
@@ -85,7 +83,6 @@ class TemplateScanServiceTest {
         assertEquals(List.of("company", "address", "city"), city.segments());
     }
 
-    // ── parsePlaceholders: loop constructs ──
 
     @Test
     void parsePlaceholders_loopConstruct() {
@@ -124,7 +121,6 @@ class TemplateScanServiceTest {
         assertSimple(items.children().get(1), "qty", "qty");
     }
 
-    // ── parsePlaceholders: conditions ──
 
     @Test
     void parsePlaceholders_condition() {
@@ -151,7 +147,6 @@ class TemplateScanServiceTest {
         assertEquals(2, cond.children().size());
     }
 
-    // ── parsePlaceholders: mixed content ──
 
     @Test
     void parsePlaceholders_mixedContent() {
@@ -180,7 +175,6 @@ class TemplateScanServiceTest {
         assertTrue(result.isEmpty());
     }
 
-    // ── parsePlaceholders: dot-notation inside loops ──
 
     @Test
     void parsePlaceholders_dotNotationInsideLoop() {
@@ -197,7 +191,6 @@ class TemplateScanServiceTest {
         assertEquals("product.price", loop.children().get(1).fullPath());
     }
 
-    // ── extractXmlFromDocx ──
 
     @Test
     void extractXmlFromDocx_readsWordXmlEntries() throws Exception {
@@ -221,7 +214,6 @@ class TemplateScanServiceTest {
         assertFalse(xml.contains("<types/>"));
     }
 
-    // ── scanPlaceholders (integration with MinIO mock) ──
 
     @Test
     void scanPlaceholders_success() throws Exception {
@@ -245,7 +237,6 @@ class TemplateScanServiceTest {
         assertEquals("PARAMETER_SCAN_FAILED", ex.getErrorCode());
     }
 
-    // ── Helpers ──
 
     private void assertSimple(PlaceholderInfo info, String expectedName, String expectedFullPath) {
         assertEquals(expectedName, info.name());
@@ -285,3 +276,4 @@ class TemplateScanServiceTest {
         return baos.toByteArray();
     }
 }
+

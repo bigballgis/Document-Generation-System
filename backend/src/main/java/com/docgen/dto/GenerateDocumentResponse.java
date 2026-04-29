@@ -3,9 +3,6 @@ package com.docgen.dto;
 import java.time.Instant;
 import java.util.List;
 
-/**
- * Response DTO for document generation results.
- */
 public class GenerateDocumentResponse {
 
     private Long documentId;
@@ -51,7 +48,6 @@ public class GenerateDocumentResponse {
     public GenerateDocumentResponse getSecondaryDocument() { return secondaryDocument; }
     public void setSecondaryDocument(GenerateDocumentResponse secondaryDocument) { this.secondaryDocument = secondaryDocument; }
 
-    // ── Composite template segment render stats ──
 
     /** Per-segment render time statistics (only populated for COMPOSITE templates). */
     private List<SegmentRenderStat> segmentRenderStats;
@@ -65,3 +61,4 @@ public class GenerateDocumentResponse {
     public Long getTotalRenderTimeMs() { return totalRenderTimeMs; }
     public void setTotalRenderTimeMs(Long totalRenderTimeMs) { this.totalRenderTimeMs = totalRenderTimeMs; }
 }
+

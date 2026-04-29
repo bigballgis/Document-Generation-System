@@ -9,9 +9,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-/**
- * REST controller for authentication endpoints.
- */
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {

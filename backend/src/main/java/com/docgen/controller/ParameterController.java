@@ -14,9 +14,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * REST controller for parameter definition CRUD, scan, auto-create, and schema endpoints.
- */
 @RestController
 @RequestMapping("/api")
 @Tag(name = "Parameter", description = "参数表管理")

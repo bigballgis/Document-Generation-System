@@ -49,6 +49,7 @@ public class CompositeImportExportService {
     private final ParameterService parameterService;
     private final ParameterRepository parameterRepository;
     private final CompositeZipImportProperties zipImportProperties;
+    private final RenderConfigValidator renderConfigValidator;
 
     @Value("${minio.bucket-name:docgen}")
     private String bucketName;
@@ -61,7 +62,8 @@ public class CompositeImportExportService {
                                         CompositeCoverageService compositeCoverageService,
                                         ParameterService parameterService,
                                         ParameterRepository parameterRepository,
-                                        CompositeZipImportProperties zipImportProperties) {
+                                        CompositeZipImportProperties zipImportProperties,
+                                        RenderConfigValidator renderConfigValidator) {
         this.templateRepository = templateRepository;
         this.assemblyConfigService = assemblyConfigService;
         this.minioClient = minioClient;
@@ -71,6 +73,7 @@ public class CompositeImportExportService {
         this.parameterService = parameterService;
         this.parameterRepository = parameterRepository;
         this.zipImportProperties = zipImportProperties;
+        this.renderConfigValidator = renderConfigValidator;
     }
 
     /**
@@ -154,6 +157,22 @@ public class CompositeImportExportService {
                 log.warn("Failed to generate coverage report for export, skipping: {}", e.getMessage());
             }
 
+            if (template.getRenderConfig() != null && !template.getRenderConfig().isBlank()) {
+                try {
+                    RenderConfigDocument renderDoc = objectMapper.readValue(
+                            template.getRenderConfig(), RenderConfigDocument.class);
+                    if (renderDoc != null && !renderDoc.isEffectivelyEmpty()) {
+                        byte[] renderBytes = objectMapper.writerWithDefaultPrettyPrinter()
+                                .writeValueAsBytes(renderDoc);
+                        zos.putNextEntry(new ZipEntry("render-config.json"));
+                        zos.write(renderBytes);
+                        zos.closeEntry();
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to export render-config.json, skipping: {}", e.getMessage());
+                }
+            }
+
             zos.finish();
             return baos.toByteArray();
         } catch (BusinessException e) {
@@ -197,6 +216,7 @@ public class CompositeImportExportService {
         CompositeExportConfig exportConfig = null;
         byte[] testDataBytes = null;
         byte[] parametersBytes = null;
+        byte[] renderConfigBytes = null;
 
         long maxArchiveBytes = zipImportProperties.getMaxArchiveBytes();
         if (maxArchiveBytes > 0) {
@@ -275,6 +295,11 @@ public class CompositeImportExportService {
                     totalUncompressed = addUncompressedTotalOrReject(totalUncompressed, content.length,
                             zipImportProperties.getMaxTotalUncompressedBytes());
                     parametersBytes = content;
+                } else if ("render-config.json".equals(name)) {
+                    byte[] content = readZipEntryBody(zis, perEntryCap);
+                    totalUncompressed = addUncompressedTotalOrReject(totalUncompressed, content.length,
+                            zipImportProperties.getMaxTotalUncompressedBytes());
+                    renderConfigBytes = content;
                 } else if ("coverage-report.json".equals(name)) {
                     long drained = drainZipEntry(zis, perEntryCap);
                     totalUncompressed = addUncompressedTotalOrReject(totalUncompressed, drained,
@@ -358,6 +383,24 @@ public class CompositeImportExportService {
         template.setAsync(exportConfig.isAsync());
         template.setReviewRequired(exportConfig.isReviewRequired());
 
+        if (renderConfigBytes != null) {
+            try {
+                RenderConfigDocument renderDoc = objectMapper.readValue(renderConfigBytes, RenderConfigDocument.class);
+                renderConfigValidator.validateForImport(renderDoc);
+                if (renderDoc.isEffectivelyEmpty()) {
+                    template.setRenderConfig(null);
+                } else {
+                    template.setRenderConfig(objectMapper.writeValueAsString(renderDoc));
+                }
+            } catch (BusinessException e) {
+                throw e;
+            } catch (Exception e) {
+                log.error("Invalid render-config.json", e);
+                throw new BusinessException(ErrorCode.IMPORT_INVALID_FILE,
+                        "Invalid render-config.json: " + e.getMessage(), HttpStatus.BAD_REQUEST, e);
+            }
+        }
+
         template = templateRepository.save(template);
 
         log.info("Imported composite template: name={}, id={}, segments={}",
@@ -375,7 +418,6 @@ public class CompositeImportExportService {
         return toTemplateDTO(template);
     }
 
-    // ── Parameter tree conversion helpers ──
 
     private List<ParameterExportEntry> convertParameterTree(List<ParameterDTO> params) {
         if (params == null || params.isEmpty()) return List.of();
@@ -425,7 +467,6 @@ public class CompositeImportExportService {
         }
     }
 
-    // ── Header/Footer export helpers ──
 
     private void exportHeaderFooterFile(ZipOutputStream zos, String filePath, String zipDir,
                                          Set<String> exported) {
@@ -457,7 +498,6 @@ public class CompositeImportExportService {
         return fileName.isBlank() ? null : fileName;
     }
 
-    // ── Private helpers ──
 
     private Template findCompositeTemplateOrThrow(Long templateId) {
         Template template = templateRepository.findById(templateId)
@@ -700,6 +740,8 @@ public class CompositeImportExportService {
         dto.setCategoryId(template.getCategoryId());
         dto.setReviewRequired(template.isReviewRequired());
         dto.setStatus(template.getStatus());
+        dto.setTemplateType(template.getTemplateType());
+        dto.setRenderConfig(template.getRenderConfig());
         dto.setCreatedAt(template.getCreatedAt());
         dto.setUpdatedAt(template.getUpdatedAt());
         return dto;
@@ -717,6 +759,7 @@ public class CompositeImportExportService {
         if ("config.json".equals(name)
                 || "test-data.json".equals(name)
                 || "parameters.json".equals(name)
+                || "render-config.json".equals(name)
                 || "coverage-report.json".equals(name)) {
             return;
         }
@@ -990,3 +1033,4 @@ public class CompositeImportExportService {
         public void setChildren(List<ParameterExportEntry> children) { this.children = children; }
     }
 }
+

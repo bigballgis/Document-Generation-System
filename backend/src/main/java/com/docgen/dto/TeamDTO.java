@@ -2,9 +2,6 @@ package com.docgen.dto;
 
 import java.time.Instant;
 
-/**
- * Response DTO for team information.
- */
 public class TeamDTO {
 
     private Long id;

@@ -28,7 +28,6 @@ public class RateLimitConfig {
     @Column(name = "reset_at", nullable = false)
     private Instant resetAt;
 
-    // ── Getters and Setters ──
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -45,3 +44,4 @@ public class RateLimitConfig {
     public Instant getResetAt() { return resetAt; }
     public void setResetAt(Instant resetAt) { this.resetAt = resetAt; }
 }
+

@@ -7,9 +7,6 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Request DTO for batch updating parameters.
- */
 public record BatchUpdateParameterRequest(
         @NotEmpty(message = "更新列表不能为空")
         List<@Valid BatchUpdateItem> items

@@ -15,9 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * REST controller exposing dashboard endpoints for the operations dashboard.
- */
 @RestController
 @RequestMapping("/api/dashboard")
 @Tag(name = "Dashboard", description = "Operations dashboard endpoints")

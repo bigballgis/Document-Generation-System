@@ -86,13 +86,11 @@ class ResponseTransformerPropertyTest {
                 "Second JSONPath should extract correctly");
     }
 
-    // ── Test data records ──
 
     record JsonWithPath(Map<String, Object> json, String jsonPath, Object expectedValue) {}
     record MultiFieldData(Map<String, Object> json, String path1, Object expected1,
                           String path2, Object expected2) {}
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<JsonWithPath> topLevelJsonData() {
@@ -183,3 +181,4 @@ class ResponseTransformerPropertyTest {
         };
     }
 }
+

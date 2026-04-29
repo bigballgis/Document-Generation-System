@@ -1,8 +1,5 @@
 package com.docgen.entity;
 
-/**
- * Comparison strategy for template test cases.
- */
 public enum ComparisonType {
     /** Compare rendered variable values against expected values. */
     VARIABLE_VALUE,

@@ -49,7 +49,6 @@ class RateLimitServiceTest {
         service = new RateLimitService(redisTemplate, rateLimitConfigRepository);
     }
 
-    // ── checkRateLimit ──
 
     @Test
     void checkRateLimit_withinLimits_succeeds() {
@@ -120,7 +119,6 @@ class RateLimitServiceTest {
         assertTrue(ex.getRetryAfterSeconds() > 0);
     }
 
-    // ── checkMonthlyQuota ──
 
     @Test
     void checkMonthlyQuota_noConfig_passes() {
@@ -163,7 +161,6 @@ class RateLimitServiceTest {
         assertDoesNotThrow(() -> service.checkMonthlyQuota(1L));
     }
 
-    // ── getRateLimitStatus ──
 
     @Test
     void getRateLimitStatus_returnsCorrectRemaining() {
@@ -181,7 +178,6 @@ class RateLimitServiceTest {
         assertEquals(900, status.getRemainingPerHour());
     }
 
-    // ── getUsageStats ──
 
     @Test
     void getUsageStats_withConfig_returnsStats() {
@@ -208,7 +204,6 @@ class RateLimitServiceTest {
         assertEquals(-1L, stats.getRemainingQuota());
     }
 
-    // ── getMinRemaining ──
 
     @Test
     void getMinRemaining_returnsMinimumAcrossWindows() {
@@ -222,7 +217,6 @@ class RateLimitServiceTest {
         assertEquals(2, min);
     }
 
-    // ── Helpers ──
 
     private RateLimitConfig createConfig(Long tenantId, long quota, long usage) {
         RateLimitConfig config = new RateLimitConfig();
@@ -235,3 +229,4 @@ class RateLimitServiceTest {
         return config;
     }
 }
+

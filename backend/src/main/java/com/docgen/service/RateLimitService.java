@@ -205,7 +205,6 @@ public class RateLimitService {
         return Math.min(remS, Math.min(remM, remH));
     }
 
-    // ── Private helpers ──
 
     private long slidingWindowCount(Long apiKeyId, String suffix, long now, long windowMs) {
         String key = buildRateLimitKey(apiKeyId, suffix);

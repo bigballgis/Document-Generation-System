@@ -55,7 +55,6 @@ class RedisIntegrationTest extends BaseIntegrationTest {
         tenantRepository.deleteAll();
     }
 
-    // ── Rate Limit Counter Tests ──
 
     @Test
     void shouldAllowRequestsWithinLimit() {
@@ -103,3 +102,4 @@ class RedisIntegrationTest extends BaseIntegrationTest {
         assertThat(value).isEqualTo("test-value");
     }
 }
+

@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Response DTO for template category information, supporting tree structure.
+ * Nested categories via {@code children}.
  */
 public class CategoryDTO {
 

@@ -3,7 +3,7 @@ package com.docgen.dto;
 import java.time.Instant;
 
 /**
- * Response DTO for user information (excludes sensitive fields like password).
+ * Excludes sensitive authentication fields (password never included).
  */
 public class UserDTO {
 

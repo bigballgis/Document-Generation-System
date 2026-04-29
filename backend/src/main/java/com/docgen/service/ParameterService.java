@@ -100,7 +100,6 @@ public class ParameterService {
         this.aggregationResolver = aggregationResolver;
     }
 
-    // ── CRUD Methods ──
 
     /**
      * Create a new parameter definition under the given template.
@@ -568,7 +567,6 @@ public class ParameterService {
         return results;
     }
 
-    // ── JSON Import ──
 
     /**
      * Import parameters from a JSON string. Recursively traverses the JSON structure
@@ -811,7 +809,6 @@ public class ParameterService {
         return str.length() > 100 ? str.substring(0, 100) + "..." : str;
     }
 
-    // ── Scan & Auto-Create ──
 
     /**
      * Scan the template .docx file for placeholders and compare with existing parameters.
@@ -1191,7 +1188,6 @@ public class ParameterService {
         return dto;
     }
 
-    // ── Tree Building ──
 
     /**
      * Build a nested tree from a flat list of parameters.
@@ -1234,7 +1230,6 @@ public class ParameterService {
         return roots;
     }
 
-    // ── Path Computation ──
 
     /**
      * Compute the full parameter path by traversing the parent chain.
@@ -1250,7 +1245,6 @@ public class ParameterService {
         return String.join(".", segments);
     }
 
-    // ── Validation Helpers ──
 
     /**
      * Validate parameter name matches the required pattern: ^[a-zA-Z_][a-zA-Z0-9_-]*$
@@ -1698,7 +1692,6 @@ public class ParameterService {
         return referenced;
     }
 
-    // ── DTO Conversion ──
 
     private ParameterDTO toDTO(ParameterDefinition entity) {
         ParameterDTO dto = new ParameterDTO();
@@ -1721,7 +1714,6 @@ public class ParameterService {
         return dto;
     }
 
-    // ── Schema ──
 
     /**
      * Get the parameter schema for a template.
@@ -1872,7 +1864,6 @@ public class ParameterService {
         }
     }
 
-    // ── JSON Serialization Helpers ──
 
     private String serializeValidationRules(Map<String, Object> rules) {
         if (rules == null || rules.isEmpty()) {
@@ -1898,3 +1889,4 @@ public class ParameterService {
         }
     }
 }
+

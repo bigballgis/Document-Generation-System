@@ -45,18 +45,22 @@ class CompositeImportExportServiceExportTest {
     @Mock private CompositeCoverageService compositeCoverageService;
     @Mock private ParameterService parameterService;
     @Mock private com.docgen.repository.ParameterRepository parameterRepository;
+    @Mock private RenderConfigValidator renderConfigValidator;
 
     private CompositeImportExportService service;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() throws Exception {
+        org.mockito.Mockito.lenient().doNothing().when(renderConfigValidator)
+                .validateForImport(org.mockito.ArgumentMatchers.any());
         service = new CompositeImportExportService(
                 templateRepository, assemblyConfigService,
                 minioClient, objectMapper,
                 testCaseRepository, compositeCoverageService,
                 parameterService, parameterRepository,
-                new CompositeZipImportProperties());
+                new CompositeZipImportProperties(),
+                renderConfigValidator);
         Field bucketField = CompositeImportExportService.class.getDeclaredField("bucketName");
         bucketField.setAccessible(true);
         bucketField.set(service, "docgen-test");

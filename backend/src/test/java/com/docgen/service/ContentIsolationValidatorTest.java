@@ -28,7 +28,6 @@ class ContentIsolationValidatorTest {
         validator = new ContentIsolationValidator();
     }
 
-    // ── Passing cases: blank docx files pass their respective validations ──
 
     @Test
     void blankBody_passesBodyValidation() throws IOException {
@@ -48,7 +47,6 @@ class ContentIsolationValidatorTest {
         assertDoesNotThrow(() -> validator.validate(docx, "footer"));
     }
 
-    // ── Failing cases: docx with out-of-scope content fails validation ──
 
     @Test
     void bodyDocx_withHeaderContent_failsBodyValidation() throws IOException {
@@ -74,7 +72,6 @@ class ContentIsolationValidatorTest {
         assertEquals("ONLYOFFICE_CONTENT_ISOLATION_VIOLATION", ex.getErrorCode());
     }
 
-    // ── Helpers: create .docx files with out-of-scope content ──
 
     /**
      * Creates a body .docx that also has non-empty header content (violation).
@@ -147,3 +144,4 @@ class ContentIsolationValidatorTest {
         return baos.toByteArray();
     }
 }
+

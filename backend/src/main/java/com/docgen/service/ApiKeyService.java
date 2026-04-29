@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Service for API Key CRUD operations.
  * Also implements {@link ApiKeyValidationService} so the authentication filter
  * can validate keys against the database.
  */
@@ -42,7 +41,6 @@ public class ApiKeyService implements ApiKeyValidationService {
         this.secureRandom = new SecureRandom();
     }
 
-    // ── Visible for testing ──
     ApiKeyService(ApiKeyRepository apiKeyRepository, UserRepository userRepository, SecureRandom secureRandom) {
         this.apiKeyRepository = apiKeyRepository;
         this.userRepository = userRepository;
@@ -121,7 +119,6 @@ public class ApiKeyService implements ApiKeyValidationService {
         apiKeyRepository.delete(key);
     }
 
-    // ── ApiKeyValidationService implementation ──
 
     @Override
     @Transactional(readOnly = true)
@@ -150,7 +147,6 @@ public class ApiKeyService implements ApiKeyValidationService {
                 });
     }
 
-    // ── Private helpers ──
 
     private ApiKey findByIdAndTenant(Long id, Long tenantId) {
         ApiKey key = apiKeyRepository.findById(id)
@@ -187,3 +183,4 @@ public class ApiKeyService implements ApiKeyValidationService {
         return dto;
     }
 }
+

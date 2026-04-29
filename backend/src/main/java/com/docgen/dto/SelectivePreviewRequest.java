@@ -6,8 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Request DTO for selective preview of a Composite_Template.
- * Allows the user to specify a subset of segment positions to preview.
+ * Allows specifying a subset of composite segment positions to preview.
  */
 public class SelectivePreviewRequest {
 

@@ -2,9 +2,6 @@ package com.docgen.dto;
 
 import java.time.Instant;
 
-/**
- * DTO representing a published segment version.
- */
 public record SegmentVersionDTO(
         Long id,
         Long templateId,

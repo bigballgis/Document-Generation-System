@@ -1,8 +1,5 @@
 package com.docgen.dto;
 
-/**
- * DTO for the system overview dashboard panel.
- */
 public class SystemOverviewDTO {
 
     private long totalTemplates;

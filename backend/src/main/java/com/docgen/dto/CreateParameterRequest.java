@@ -5,9 +5,6 @@ import jakarta.validation.constraints.Size;
 
 import java.util.Map;
 
-/**
- * Request DTO for creating a parameter definition.
- */
 public record CreateParameterRequest(
         @NotBlank(message = "参数名称不能为空")
         @Size(max = 100, message = "参数名称不能超过100个字符")

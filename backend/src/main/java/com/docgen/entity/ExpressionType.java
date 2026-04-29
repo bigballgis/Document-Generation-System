@@ -1,10 +1,8 @@
 package com.docgen.entity;
 
 /**
- * Supported expression language types.
- * <p>
- * Stored values use Java enum names; outbound calls to the Docxtemplater {@code /evaluate}
- * API use {@link #toEvaluateApiType()} literals expected by the Node service.
+ * Stored values use Java enum names; outbound Docxtemplater {@code /evaluate} calls use
+ * {@link #toEvaluateApiType()} literals expected by the Node service.
  */
 public enum ExpressionType {
     JAVASCRIPT,

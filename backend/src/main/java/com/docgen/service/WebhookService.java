@@ -59,7 +59,6 @@ public class WebhookService {
         this.outboundUrlPolicy = outboundUrlPolicy;
     }
 
-    // ── CRUD operations ──
 
     @Transactional
     public WebhookConfigDTO createWebhook(Long templateId, CreateWebhookRequest request) {
@@ -114,7 +113,6 @@ public class WebhookService {
                 .map(this::toLogDTO);
     }
 
-    // ── Notification sending ──
 
     /**
      * Send notifications to all enabled webhooks for the given template.
@@ -245,7 +243,6 @@ public class WebhookService {
         }
     }
 
-    // ── Private helpers ──
 
     private void recordLog(Long configId, String eventType, String payload,
                            Integer responseStatus, String responseBody) {
@@ -293,3 +290,4 @@ public class WebhookService {
         return dto;
     }
 }
+

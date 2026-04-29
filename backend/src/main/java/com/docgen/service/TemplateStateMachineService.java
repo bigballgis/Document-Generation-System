@@ -33,8 +33,12 @@ public class TemplateStateMachineService {
 
     static {
         Map<TemplateState, Set<TemplateState>> map = new EnumMap<>(TemplateState.class);
-        map.put(TemplateState.DRAFT, EnumSet.of(TemplateState.PENDING_REVIEW, TemplateState.ACTIVE));
-        map.put(TemplateState.PENDING_REVIEW, EnumSet.of(TemplateState.REVIEWED, TemplateState.DRAFT));
+        // DRAFT → IN_TEST (submit to test) or → ACTIVE when review is not required
+        map.put(TemplateState.DRAFT, EnumSet.of(TemplateState.IN_TEST, TemplateState.ACTIVE));
+        // IN_TEST → DRAFT (return to design) or → PENDING_REVIEW (submit for team review)
+        map.put(TemplateState.IN_TEST, EnumSet.of(TemplateState.DRAFT, TemplateState.PENDING_REVIEW));
+        // PENDING_REVIEW → REVIEWED (after approvals) or → IN_TEST (reject / send back to testing)
+        map.put(TemplateState.PENDING_REVIEW, EnumSet.of(TemplateState.REVIEWED, TemplateState.IN_TEST));
         map.put(TemplateState.REVIEWED, EnumSet.of(TemplateState.ACTIVE));
         map.put(TemplateState.ACTIVE, EnumSet.of(TemplateState.ARCHIVED));
         map.put(TemplateState.ARCHIVED, EnumSet.of(TemplateState.DRAFT));

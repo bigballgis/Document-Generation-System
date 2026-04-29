@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Full scenario readiness payload for the validation workspace (GET /scenario-readiness).
+ * Aggregated scenario readiness returned by {@code GET /api/templates/{templateId}/scenario-readiness}.
  */
 public class ScenarioReadinessReportDTO {
 

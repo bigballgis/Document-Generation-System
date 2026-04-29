@@ -131,7 +131,6 @@ public class TagService {
                 .collect(Collectors.toList());
     }
 
-    // ── Private helpers ──
 
     private TemplateTag findTagOrThrow(Long id) {
         return tagRepository.findById(id)

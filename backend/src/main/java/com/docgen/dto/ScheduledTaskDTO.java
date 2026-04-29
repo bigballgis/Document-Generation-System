@@ -2,9 +2,6 @@ package com.docgen.dto;
 
 import java.time.Instant;
 
-/**
- * Response DTO for scheduled task configuration.
- */
 public class ScheduledTaskDTO {
 
     private Long id;

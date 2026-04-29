@@ -113,7 +113,6 @@ public class DocumentMergeService {
         return documentRepository.save(merged);
     }
 
-    // ── Validation ──
 
     void validateRequest(MergeDocumentsRequest request) {
         if (request == null) {
@@ -137,7 +136,6 @@ public class DocumentMergeService {
         }
     }
 
-    // ── MinIO operations ──
 
     byte[] fetchDocumentContent(GeneratedDocument doc) {
         try (InputStream stream = minioClient.getObject(GetObjectArgs.builder()
@@ -170,7 +168,6 @@ public class DocumentMergeService {
         }
     }
 
-    // ── Node.js service call ──
 
     /**
      * Builds the {@code segments} array expected by {@code POST /merge-segments}.
@@ -233,3 +230,4 @@ public class DocumentMergeService {
         return "DOCX";
     }
 }
+

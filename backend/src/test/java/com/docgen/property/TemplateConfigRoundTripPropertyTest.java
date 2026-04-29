@@ -54,7 +54,6 @@ class TemplateConfigRoundTripPropertyTest {
                 "Version should be preserved");
     }
 
-    // ── Assertion helpers ──
 
     private void assertTemplateMetadataEqual(
             TemplateConfigExport.TemplateMetadata expected,
@@ -131,7 +130,6 @@ class TemplateConfigRoundTripPropertyTest {
         }
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<TemplateConfigExport> validTemplateConfigs() {
@@ -338,3 +336,4 @@ class TemplateConfigRoundTripPropertyTest {
                 });
     }
 }
+

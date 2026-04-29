@@ -113,7 +113,6 @@ public class TenantService {
         );
     }
 
-    // ── Private helpers ──
 
     private Tenant findTenantOrThrow(Long id) {
         return tenantRepository.findById(id)

@@ -139,7 +139,6 @@ class CompositeExportPropertyTest {
                 "Masked data source count should match input count");
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<DataSourceConfig> dataSourceConfigs() {
@@ -189,7 +188,7 @@ class CompositeExportPropertyTest {
         return dataSourceConfigs().list().ofMinSize(0).ofMaxSize(10);
     }
 
-    // ── Helper record ──
 
     record DataSourceConfig(String name, String type, String configJson) {}
 }
+

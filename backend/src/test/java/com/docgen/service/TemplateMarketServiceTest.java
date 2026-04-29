@@ -65,7 +65,6 @@ class TemplateMarketServiceTest {
         TenantContext.clear();
     }
 
-    // ── Search tests ──
 
     @Test
     void searchMarketTemplates_withKeyword_returnsResults() {
@@ -115,7 +114,6 @@ class TemplateMarketServiceTest {
         assertEquals(0, result.getTotalElements());
     }
 
-    // ── Copy tests ──
 
     @Test
     void copyFromMarket_success() throws Exception {
@@ -161,7 +159,6 @@ class TemplateMarketServiceTest {
         assertThrows(ResourceNotFoundException.class, () -> service.copyFromMarket(1L));
     }
 
-    // ── Share tests ──
 
     @Test
     void shareToMarket_success() {
@@ -222,7 +219,6 @@ class TemplateMarketServiceTest {
                 () -> service.shareToMarket(10L, "GLOBAL"));
     }
 
-    // ── Helpers ──
 
     private MarketTemplate createMarketTemplate(Long id, Long templateId) {
         MarketTemplate mt = new MarketTemplate();

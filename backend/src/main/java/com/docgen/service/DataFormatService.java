@@ -37,7 +37,6 @@ public class DataFormatService {
         STRING, NUMBER, BOOLEAN
     }
 
-    // ── Date format conversion (Req 7.2) ──
 
     /**
      * Convert a date value from one format to another.
@@ -70,7 +69,6 @@ public class DataFormatService {
         }
     }
 
-    // ── Number format conversion (Req 7.3) ──
 
     /**
      * Format a numeric value with the given decimal places and optional thousands separator.
@@ -108,7 +106,6 @@ public class DataFormatService {
         }
     }
 
-    // ── Data type conversion (Req 7.4) ──
 
     /**
      * Convert a value to the specified target type.
@@ -133,7 +130,6 @@ public class DataFormatService {
         }
     }
 
-    // ── Custom field mapping (Req 7.5) ──
 
     /**
      * Apply field mapping rules to a data map.
@@ -172,7 +168,6 @@ public class DataFormatService {
         return result;
     }
 
-    // ── Internal helpers ──
 
     private void applyOneMapping(Map<String, Object> result, Map<String, Object> rule) {
         String sourceField = (String) rule.get("sourceField");
@@ -244,3 +239,4 @@ public class DataFormatService {
         return Double.parseDouble(String.valueOf(value).trim());
     }
 }
+

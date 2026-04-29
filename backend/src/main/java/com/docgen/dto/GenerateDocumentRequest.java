@@ -2,9 +2,6 @@ package com.docgen.dto;
 
 import java.util.Map;
 
-/**
- * Request DTO for synchronous document generation.
- */
 public class GenerateDocumentRequest {
 
     /** Runtime parameters passed to data sources and expressions. */

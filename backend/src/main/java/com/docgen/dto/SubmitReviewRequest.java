@@ -4,9 +4,6 @@ import jakarta.validation.constraints.NotEmpty;
 
 import java.util.List;
 
-/**
- * Request DTO for submitting a template review request.
- */
 public class SubmitReviewRequest {
 
     @NotEmpty(message = "审查人列表不能为空")

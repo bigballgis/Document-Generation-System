@@ -48,7 +48,6 @@ class UserServiceTest {
                 jwtTokenProvider, jwtProperties, redisTemplate);
     }
 
-    // ── Registration tests ──
 
     @Test
     void register_success() {
@@ -92,7 +91,6 @@ class UserServiceTest {
         assertEquals("邮箱已被注册", ex.getMessage());
     }
 
-    // ── Password strength tests ──
 
     @Test
     void validatePasswordStrength_tooShort_throws() {
@@ -129,7 +127,6 @@ class UserServiceTest {
         assertDoesNotThrow(() -> userService.validatePasswordStrength("Abcdefg1!"));
     }
 
-    // ── Login tests ──
 
     @Test
     void login_success() {
@@ -188,7 +185,6 @@ class UserServiceTest {
         assertNotNull(captor.getValue().getLockedUntil());
     }
 
-    // ── Refresh token tests ──
 
     @Test
     void refreshToken_success() {
@@ -217,7 +213,6 @@ class UserServiceTest {
                 () -> userService.refreshToken("bad-token"));
     }
 
-    // ── Delete user test ──
 
     @Test
     void deleteUser_success() {
@@ -235,7 +230,6 @@ class UserServiceTest {
         assertThrows(BusinessException.class, () -> userService.deleteUser(99L));
     }
 
-    // ── Helper ──
 
     private User createTestUser() {
         User user = new User();
@@ -251,3 +245,4 @@ class UserServiceTest {
         return user;
     }
 }
+

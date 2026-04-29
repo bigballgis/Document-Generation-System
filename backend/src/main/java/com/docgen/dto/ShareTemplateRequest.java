@@ -3,9 +3,6 @@ package com.docgen.dto;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
-/**
- * Request DTO for sharing a template to the market.
- */
 public class ShareTemplateRequest {
 
     @NotNull(message = "分享范围不能为空")

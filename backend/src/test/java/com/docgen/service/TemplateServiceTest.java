@@ -80,7 +80,6 @@ class TemplateServiceTest {
         TenantContext.clear();
     }
 
-    // ── Create tests ──
 
     @Test
     void createTemplate_success() throws Exception {
@@ -226,7 +225,6 @@ class TemplateServiceTest {
         assertThrows(BusinessException.class, () -> templateService.listReviewerCandidates(1L));
     }
 
-    // ── Get tests ──
 
     @Test
     void getTemplate_success() {
@@ -247,7 +245,6 @@ class TemplateServiceTest {
                 () -> templateService.getTemplate(99L));
     }
 
-    // ── List tests ──
 
     @Test
     void listTemplates_withKeyword_returnsPaginatedResults() {
@@ -275,7 +272,6 @@ class TemplateServiceTest {
         assertEquals(1, result.getTotalElements());
     }
 
-    // ── Update tests ──
 
     @Test
     void updateTemplate_success_noFileChange() {
@@ -304,7 +300,6 @@ class TemplateServiceTest {
                 () -> templateService.updateTemplate(99L, new UpdateTemplateRequest(), null));
     }
 
-    // ── Delete tests ──
 
     @Test
     void deleteTemplate_success() {
@@ -324,7 +319,6 @@ class TemplateServiceTest {
                 () -> templateService.deleteTemplate(99L));
     }
 
-    // ── Clone tests ──
 
     @Test
     void cloneTemplate_success() throws Exception {
@@ -359,7 +353,6 @@ class TemplateServiceTest {
                 () -> templateService.cloneTemplate(99L));
     }
 
-    // ── Helper ──
 
     private Template createTestTemplate() {
         Template template = new Template();
@@ -381,3 +374,4 @@ class TemplateServiceTest {
         return template;
     }
 }
+

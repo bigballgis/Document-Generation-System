@@ -45,7 +45,6 @@ public class WebhookLog {
         }
     }
 
-    // ── Getters and Setters ──
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -68,3 +67,4 @@ public class WebhookLog {
     public Instant getSentAt() { return sentAt; }
     public void setSentAt(Instant sentAt) { this.sentAt = sentAt; }
 }
+

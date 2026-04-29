@@ -75,7 +75,6 @@ class CompositeTemplateControllerIntegrationTest extends BaseIntegrationTest {
         tenantRepository.deleteAll();
     }
 
-    // ── Helper methods ──
 
     private HttpHeaders authHeaders() {
         HttpHeaders headers = new HttpHeaders();
@@ -102,7 +101,6 @@ class CompositeTemplateControllerIntegrationTest extends BaseIntegrationTest {
         return response.getBody();
     }
 
-    // ── 1. POST /api/composite-templates — Create composite template ──
 
     @Test
     void shouldCreateCompositeTemplate() throws Exception {
@@ -125,7 +123,6 @@ class CompositeTemplateControllerIntegrationTest extends BaseIntegrationTest {
         assertThat(response.getBody().get("status")).isEqualTo("DRAFT");
     }
 
-    // ── 2. PUT /api/composite-templates/{id}/assembly-config — Update assembly config (inline mode) ──
 
     @Test
     void shouldUpdateAssemblyConfig() throws Exception {
@@ -155,7 +152,6 @@ class CompositeTemplateControllerIntegrationTest extends BaseIntegrationTest {
         assertThat(segments).hasSize(2);
     }
 
-    // ── 3. PUT with all disabled segments — Should return 422 ──
 
     @Test
     void shouldReturn422WhenAllSegmentsDisabled() throws Exception {
@@ -181,7 +177,6 @@ class CompositeTemplateControllerIntegrationTest extends BaseIntegrationTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
     }
 
-    // ── 4. PUT with empty filePath — Should return 422 ──
 
     @Test
     void shouldReturn422WhenFilePathEmpty() throws Exception {
@@ -205,7 +200,6 @@ class CompositeTemplateControllerIntegrationTest extends BaseIntegrationTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
     }
 
-    // ── 5. GET /api/composite-templates/{id}/assembly-config — Get assembly config ──
 
     @Test
     void shouldGetAssemblyConfig() throws Exception {
@@ -260,7 +254,6 @@ class CompositeTemplateControllerIntegrationTest extends BaseIntegrationTest {
         assertThat(segments).isEmpty();
     }
 
-    // ── 6. POST /api/composite-templates/{id}/preview — Preview ──
 
     @Test
     void shouldPreviewCompositeTemplate() throws Exception {
@@ -298,7 +291,6 @@ class CompositeTemplateControllerIntegrationTest extends BaseIntegrationTest {
         assertThat(segmentPreviews).hasSize(2);
     }
 
-    // ── 7. Authentication required ──
 
     @Test
     void shouldReturnUnauthorizedWithoutToken() throws Exception {
@@ -316,3 +308,4 @@ class CompositeTemplateControllerIntegrationTest extends BaseIntegrationTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 }
+

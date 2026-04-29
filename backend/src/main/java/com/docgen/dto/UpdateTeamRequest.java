@@ -1,8 +1,5 @@
 package com.docgen.dto;
 
-/**
- * Request DTO for updating an existing team.
- */
 public class UpdateTeamRequest {
 
     private String name;

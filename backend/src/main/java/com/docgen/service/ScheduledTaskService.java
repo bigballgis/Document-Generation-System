@@ -49,7 +49,6 @@ public class ScheduledTaskService {
         this.documentGeneratorService = documentGeneratorService;
     }
 
-    // ── CRUD Operations ──
 
     @Transactional
     public ScheduledTaskDTO createTask(Long templateId, CreateScheduledTaskRequest request) {
@@ -119,7 +118,6 @@ public class ScheduledTaskService {
                 .map(this::toExecutionDTO);
     }
 
-    // ── Execution Logic ──
 
     /**
      * Execute a scheduled task. If the previous execution is still running,
@@ -202,7 +200,6 @@ public class ScheduledTaskService {
                 lastException != null ? lastException.getMessage() : "Unknown error");
     }
 
-    // ── Helpers ──
 
     private void validateCronExpression(String cron) {
         try {
@@ -245,3 +242,4 @@ public class ScheduledTaskService {
         return dto;
     }
 }
+

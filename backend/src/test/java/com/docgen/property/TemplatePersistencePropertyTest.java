@@ -150,7 +150,6 @@ class TemplatePersistencePropertyTest {
         }
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<CreateTemplateRequest> validCreateTemplateRequests() {
@@ -204,3 +203,4 @@ class TemplatePersistencePropertyTest {
                 });
     }
 }
+

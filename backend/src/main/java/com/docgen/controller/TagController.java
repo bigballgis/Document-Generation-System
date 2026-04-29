@@ -10,9 +10,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * REST controller for template tag management.
- */
 @RestController
 @RequestMapping("/api/tags")
 public class TagController {

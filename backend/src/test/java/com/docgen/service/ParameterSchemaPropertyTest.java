@@ -226,7 +226,6 @@ class ParameterSchemaPropertyTest {
                 "Sample body should use default_value when defined");
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<String> validParamNames() {
@@ -243,3 +242,4 @@ class ParameterSchemaPropertyTest {
                 .filter(s -> !s.contains("\"") && !s.contains("\\") && !s.contains("\n") && !s.isBlank());
     }
 }
+

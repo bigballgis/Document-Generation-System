@@ -2,9 +2,6 @@ package com.docgen.dto;
 
 import java.time.Instant;
 
-/**
- * Response DTO for template information.
- */
 public class TemplateDTO {
 
     private Long id;
@@ -21,6 +18,10 @@ public class TemplateDTO {
     private boolean reviewRequired;
     private String status;
     private String templateType;
+    /**
+     * Optional JSON: post-merge render config (watermark) from {@code render-config.json} for composite packages.
+     */
+    private String renderConfig;
     private Integer version;
     private Instant createdAt;
     private Instant updatedAt;
@@ -99,4 +100,7 @@ public class TemplateDTO {
 
     public Integer getVersion() { return version; }
     public void setVersion(Integer version) { this.version = version; }
+
+    public String getRenderConfig() { return renderConfig; }
+    public void setRenderConfig(String renderConfig) { this.renderConfig = renderConfig; }
 }

@@ -160,7 +160,6 @@ class DocxTextExtractorTest {
         verify(minioClient).getObject(any(GetObjectArgs.class));
     }
 
-    // ── helpers ──
 
     private static String singleParagraph(String text) {
         // Namespace bound once on w:document; avoid repeated xmlns:w on sibling w:p (some SAX stacks reject it).

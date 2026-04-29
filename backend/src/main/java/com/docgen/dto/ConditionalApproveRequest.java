@@ -4,9 +4,6 @@ import jakarta.validation.constraints.NotEmpty;
 
 import java.util.List;
 
-/**
- * Request DTO for conditional approval with suggestions.
- */
 public class ConditionalApproveRequest {
 
     private String comment;

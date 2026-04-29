@@ -66,7 +66,6 @@ class ParameterServiceBatchTest {
         TenantContext.clear();
     }
 
-    // ── batchDelete Tests ── Validates: Requirements 9.1, 9.3
 
     @Nested
     class BatchDeleteTests {
@@ -154,7 +153,6 @@ class ParameterServiceBatchTest {
         }
     }
 
-    // ── batchUpdate Tests ── Validates: Requirements 9.2, 9.4
 
     @Nested
     class BatchUpdateTests {
@@ -283,7 +281,6 @@ class ParameterServiceBatchTest {
         }
     }
 
-    // ── Helper ──
 
     private ParameterDefinition makeEntity(Long id, Long templateId, Long parentId,
                                            String name, String parameterType, String dataType) {
@@ -302,3 +299,4 @@ class ParameterServiceBatchTest {
         return p;
     }
 }
+

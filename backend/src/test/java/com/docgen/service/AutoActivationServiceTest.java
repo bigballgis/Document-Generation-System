@@ -49,7 +49,6 @@ class AutoActivationServiceTest {
                 stateMachineService, apiKeyService, apiKeyRepository, templateRepository);
     }
 
-    // ── Success: two-step transition + no active key → creates key ──
 
     @Test
     void tryAutoActivate_successfulTransitions_noActiveKey_createsApiKey() {
@@ -73,7 +72,6 @@ class AutoActivationServiceTest {
         assertTrue(keyName.contains("Invoice"), "Key name should contain sanitized template name: " + keyName);
     }
 
-    // ── Success: two-step transition + active key exists → does NOT create key ──
 
     @Test
     void tryAutoActivate_successfulTransitions_activeKeyExists_doesNotCreateKey() {
@@ -94,7 +92,6 @@ class AutoActivationServiceTest {
         verify(apiKeyService, never()).createApiKey(anyLong(), anyLong(), any());
     }
 
-    // ── Step 1 failure → WARN log, no Step 2, no exception ──
 
     @Test
     void tryAutoActivate_step1Fails_doesNotCallStep2_noException() {
@@ -109,7 +106,6 @@ class AutoActivationServiceTest {
         verify(apiKeyService, never()).createApiKey(anyLong(), anyLong(), any());
     }
 
-    // ── Step 2 failure → WARN log, template stays REVIEWED, no exception ──
 
     @Test
     void tryAutoActivate_step2Fails_templateStaysReviewed_noException() {
@@ -126,7 +122,6 @@ class AutoActivationServiceTest {
         verify(apiKeyService, never()).createApiKey(anyLong(), anyLong(), any());
     }
 
-    // ── API Key creation failure → WARN log, template stays ACTIVE, no exception ──
 
     @Test
     void tryAutoActivate_apiKeyCreationFails_templateStaysActive_noException() {
@@ -145,7 +140,6 @@ class AutoActivationServiceTest {
         verify(apiKeyService).createApiKey(eq(10L), eq(1L), any());
     }
 
-    // ── API Key name format: auto-{sanitizedName}-{timestamp} ──
 
     @Test
     void tryAutoActivate_apiKeyNameFormat_matchesPattern() {
@@ -167,7 +161,6 @@ class AutoActivationServiceTest {
                 "Key name should match auto-{sanitized}-{timestamp} pattern: " + keyName);
     }
 
-    // ── Disabled key is not considered active ──
 
     @Test
     void tryAutoActivate_disabledKeyOnly_createsNewKey() {
@@ -187,7 +180,6 @@ class AutoActivationServiceTest {
         verify(apiKeyService).createApiKey(eq(10L), eq(1L), any());
     }
 
-    // ── Expired key is not considered active ──
 
     @Test
     void tryAutoActivate_expiredKeyOnly_createsNewKey() {
@@ -208,7 +200,6 @@ class AutoActivationServiceTest {
         verify(apiKeyService).createApiKey(eq(10L), eq(1L), any());
     }
 
-    // ── Helper ──
 
     private Template createTemplate(Long id, Long tenantId, String name) {
         Template t = new Template();
@@ -221,3 +212,4 @@ class AutoActivationServiceTest {
         return t;
     }
 }
+

@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.*;
 @Tag("Feature: template-parameter-redesign")
 class DataMigrationPropertyTest {
 
-    // ── Simulated source records ──
 
     record TemplateVariable(Long templateId, String name, String variableType,
                             String defaultValue, String description,
@@ -33,7 +32,6 @@ class DataMigrationPropertyTest {
     record Expression(Long templateId, String name, String expressionText,
                       String expressionType, int executionOrder, String description) {}
 
-    // ── Simulated migration output ──
 
     record MigratedParameter(Long templateId, String name, String parameterType,
                              String dataType, String defaultValue, String description,
@@ -221,3 +219,4 @@ class DataMigrationPropertyTest {
                 "Bound variables with no matching expression should not be migrated");
     }
 }
+

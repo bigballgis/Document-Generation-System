@@ -124,7 +124,6 @@ class ParameterNameValidationPropertyTest {
         assertThrows(BusinessException.class, () -> invokeValidateName(null));
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<String> validParameterNames() {
@@ -196,3 +195,4 @@ class ParameterNameValidationPropertyTest {
         ).filter(s -> s != null);
     }
 }
+

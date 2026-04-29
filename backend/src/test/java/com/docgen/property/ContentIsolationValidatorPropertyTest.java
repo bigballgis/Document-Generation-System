@@ -27,7 +27,6 @@ class ContentIsolationValidatorPropertyTest {
 
     private final ContentIsolationValidator validator = new ContentIsolationValidator();
 
-    // ── XML templates ──
 
     private static final String EMPTY_BODY_XML =
             "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
@@ -171,14 +170,12 @@ class ContentIsolationValidatorPropertyTest {
                 "Validation should be idempotent: both calls should pass or both should fail");
     }
 
-    // ── Providers ──
 
     @Provide
     Arbitrary<String> contentType() {
         return Arbitraries.of("body", "header", "footer");
     }
 
-    // ── Docx builder ──
 
     private byte[] buildDocx(
             boolean hasBodyContent,

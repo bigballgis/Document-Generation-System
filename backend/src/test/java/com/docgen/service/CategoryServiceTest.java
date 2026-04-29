@@ -173,7 +173,6 @@ class CategoryServiceTest {
         assertThrows(BusinessException.class, () -> categoryService.updateCategory(1L, request));
     }
 
-    // ── Helper ──
 
     private TemplateCategory createTestCategory(Long id, String name, Long parentId) {
         TemplateCategory cat = new TemplateCategory();

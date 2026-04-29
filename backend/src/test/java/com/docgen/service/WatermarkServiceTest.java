@@ -41,7 +41,6 @@ class WatermarkServiceTest {
         urlField.set(service, "http://localhost:3000");
     }
 
-    // ── applyTextWatermark ──
 
     @Test
     @SuppressWarnings("unchecked")
@@ -151,7 +150,6 @@ class WatermarkServiceTest {
         assertTrue(ex.getMessage().contains("水印服务调用失败"));
     }
 
-    // ── applyTextWatermark with dynamic content ──
 
     @Test
     @SuppressWarnings("unchecked")
@@ -193,7 +191,6 @@ class WatermarkServiceTest {
         assertEquals("{unknown} watermark", body.get("text"));
     }
 
-    // ── applyImageWatermark ──
 
     @Test
     @SuppressWarnings("unchecked")
@@ -265,7 +262,6 @@ class WatermarkServiceTest {
         assertEquals("WATERMARK_INVALID_CONFIG", ex.getErrorCode());
     }
 
-    // ── resolveTemplateVariables ──
 
     @Test
     void resolveTemplateVariables_nullText_returnsNull() {
@@ -289,7 +285,6 @@ class WatermarkServiceTest {
         assertEquals("hello {name}", service.resolveTemplateVariables("hello {name}", null));
     }
 
-    // ── Default values ──
 
     @Test
     void textWatermarkConfig_defaults() {
@@ -307,3 +302,4 @@ class WatermarkServiceTest {
         assertEquals(0.3, config.getOpacity());
     }
 }
+

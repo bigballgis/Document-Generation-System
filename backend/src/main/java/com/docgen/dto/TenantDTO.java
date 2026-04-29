@@ -2,9 +2,6 @@ package com.docgen.dto;
 
 import java.time.Instant;
 
-/**
- * Response DTO for tenant information.
- */
 public class TenantDTO {
 
     private Long id;

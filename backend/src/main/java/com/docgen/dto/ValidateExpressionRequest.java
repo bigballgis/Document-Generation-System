@@ -2,9 +2,6 @@ package com.docgen.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
-/**
- * Request DTO for validating an expression.
- */
 public class ValidateExpressionRequest {
 
     @NotBlank(message = "表达式内容不能为空")

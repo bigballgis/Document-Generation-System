@@ -138,7 +138,6 @@ class DataScopeIsolationPropertyTest {
         }
     }
 
-    // ── Helper types ──
 
     static class DisjointDataAndScope {
         final Map<String, Object> globalData;
@@ -155,7 +154,6 @@ class DataScopeIsolationPropertyTest {
         }
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<Map<String, Object>> globalDataMaps() {
@@ -201,3 +199,4 @@ class DataScopeIsolationPropertyTest {
         return Combinators.combine(globalData, dataScope).as(DisjointDataAndScope::new);
     }
 }
+

@@ -136,7 +136,6 @@ public class TemplateMarketService {
         return toDTO(saved);
     }
 
-    // ── Private helpers ──
 
     private String copyTemplateFileInMinio(String sourceFilePath, Long tenantId) {
         String destObjectName = String.format("templates/%d/%s_%s",

@@ -12,6 +12,7 @@ import com.docgen.config.CompositeZipImportProperties;
 import com.docgen.service.AssemblyConfigService;
 import com.docgen.service.CompositeCoverageService;
 import com.docgen.service.CompositeImportExportService;
+import com.docgen.service.RenderConfigValidator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.docgen.util.TenantContext;
 import io.minio.MinioClient;
@@ -48,12 +49,16 @@ class ExportConstraintPropertyTest {
         ObjectMapper objectMapper = new ObjectMapper();
         com.docgen.service.ParameterService parameterService = mock(com.docgen.service.ParameterService.class);
         com.docgen.repository.ParameterRepository parameterRepository = mock(com.docgen.repository.ParameterRepository.class);
+        RenderConfigValidator renderConfigValidator = mock(RenderConfigValidator.class);
+        org.mockito.Mockito.lenient().doNothing().when(renderConfigValidator)
+                .validateForImport(org.mockito.ArgumentMatchers.any());
         CompositeImportExportService service = new CompositeImportExportService(
                 templateRepository, assemblyConfigService,
                 minioClient, objectMapper,
                 testCaseRepository, compositeCoverageService,
                 parameterService, parameterRepository,
-                new CompositeZipImportProperties());
+                new CompositeZipImportProperties(),
+                renderConfigValidator);
         Field bucketField = CompositeImportExportService.class.getDeclaredField("bucketName");
         bucketField.setAccessible(true);
         bucketField.set(service, "docgen-test");

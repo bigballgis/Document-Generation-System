@@ -3,9 +3,6 @@ package com.docgen.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-/**
- * Request DTO for creating a new Composite_Template.
- */
 public class CreateCompositeTemplateRequest {
 
     @NotBlank(message = "组合模板名称不能为空")

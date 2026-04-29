@@ -2,9 +2,6 @@ package com.docgen.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
-/**
- * Request DTO for creating a new template tag.
- */
 public class CreateTagRequest {
 
     @NotBlank(message = "标签名称不能为空")

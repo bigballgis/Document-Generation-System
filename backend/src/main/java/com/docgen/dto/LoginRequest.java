@@ -2,9 +2,6 @@ package com.docgen.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
-/**
- * Request DTO for user login.
- */
 public class LoginRequest {
 
     @NotBlank(message = "用户名不能为空")

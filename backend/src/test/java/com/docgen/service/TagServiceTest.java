@@ -182,7 +182,6 @@ class TagServiceTest {
         assertEquals(2, result.size());
     }
 
-    // ── Helper ──
 
     private TemplateTag createTestTag(Long id, String name) {
         TemplateTag tag = new TemplateTag();

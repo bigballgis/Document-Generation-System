@@ -59,7 +59,6 @@ public class SegmentVersion {
         }
     }
 
-    // ── Getters and Setters ──
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -94,3 +93,4 @@ public class SegmentVersion {
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }
+

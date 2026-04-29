@@ -56,7 +56,6 @@ public class DashboardService {
         this.minioClient = minioClient;
     }
 
-    // ── System Overview ──
 
     public SystemOverviewDTO getSystemOverview() {
         long totalTemplates = templateRepository.count();
@@ -69,7 +68,6 @@ public class DashboardService {
         return dto;
     }
 
-    // ── API Call Metrics ──
 
     public List<ApiCallMetricDTO> getApiCallMetrics(int minutes) {
         if (minutes <= 0) {
@@ -97,7 +95,6 @@ public class DashboardService {
         return metrics;
     }
 
-    // ── System Resources ──
 
     public SystemResourceDTO getSystemResources() {
         SystemResourceDTO dto = new SystemResourceDTO();
@@ -107,7 +104,6 @@ public class DashboardService {
         return dto;
     }
 
-    // ── Data Source Health ──
 
     public List<DataSourceHealthDTO> getDataSourceHealth() {
         List<DataSourceHealthDTO> results = new ArrayList<>();
@@ -117,7 +113,6 @@ public class DashboardService {
         return results;
     }
 
-    // ── Private helpers ──
 
     private long getTotalApiCallCount() {
         double total = 0;

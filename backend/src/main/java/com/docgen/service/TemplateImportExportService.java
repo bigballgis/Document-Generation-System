@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Service for template import/export operations.
  * Supports importing .docx files as new templates, exporting templates as .docx,
  * and full config export/import as JSON.
  */
@@ -157,7 +156,6 @@ public class TemplateImportExportService {
         return toDTO(saved);
     }
 
-    // ── Validation helpers ──
 
     /**
      * Validate that the uploaded file is a valid .docx.
@@ -228,7 +226,6 @@ public class TemplateImportExportService {
         return config;
     }
 
-    // ── Private helpers ──
 
     private boolean matchesMagicBytes(byte[] header) {
         for (int i = 0; i < DOCX_MAGIC.length; i++) {
@@ -279,3 +276,4 @@ public class TemplateImportExportService {
                 template.getStatus(), template.getCreatedAt(), template.getUpdatedAt());
     }
 }
+

@@ -111,7 +111,20 @@ public class WatermarkService {
         return callWatermarkEndpoint(body);
     }
 
-    // ── Validation ──
+
+    /**
+     * Validates text watermark config for import/persistence (e.g. render-config.json) without applying.
+     */
+    public void validateTextWatermarkConfig(TextWatermarkConfig config) {
+        validateTextConfig(config);
+    }
+
+    /**
+     * Validates image watermark config for import/persistence; rejects remote HTTP(S) URLs.
+     */
+    public void validateImageWatermarkConfig(ImageWatermarkConfig config) {
+        validateImageConfig(config);
+    }
 
     void validateTextConfig(TextWatermarkConfig config) {
         if (config == null) {
@@ -167,7 +180,6 @@ public class WatermarkService {
         }
     }
 
-    // ── Template variable resolution ──
 
     /**
      * Replace {@code {variableName}} placeholders in the text with values from the context.
@@ -189,7 +201,6 @@ public class WatermarkService {
         return sb.toString();
     }
 
-    // ── Remote call ──
 
     private byte[] callWatermarkEndpoint(Map<String, Object> body) {
         HttpHeaders headers = new HttpHeaders();
@@ -219,3 +230,4 @@ public class WatermarkService {
         }
     }
 }
+

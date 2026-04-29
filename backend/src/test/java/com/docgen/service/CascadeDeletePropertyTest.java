@@ -172,7 +172,6 @@ class CascadeDeletePropertyTest {
         }
     }
 
-    // ── Helper Methods ──
 
     /**
      * Collect all descendant IDs of a given parameter (transitive children).
@@ -214,11 +213,9 @@ class CascadeDeletePropertyTest {
         return p;
     }
 
-    // ── Records ──
 
     record TreeWithTarget(List<ParameterDefinition> allParams, Long targetId) {}
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<TreeWithTarget> treesWithSubtree() {
@@ -317,3 +314,4 @@ class CascadeDeletePropertyTest {
         return tree;
     }
 }
+

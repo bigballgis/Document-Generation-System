@@ -98,7 +98,6 @@ class ValidationRulesRoundTripPropertyTest {
         }
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<Map<String, Object>> validValidationRules() {
@@ -194,3 +193,4 @@ class ValidationRulesRoundTripPropertyTest {
         });
     }
 }
+

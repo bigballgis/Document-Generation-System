@@ -96,7 +96,6 @@ class PasswordStrengthPropertyTest {
                 "Password without special chars '" + password + "' should be rejected");
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<String> validPasswords() {
@@ -226,3 +225,4 @@ class PasswordStrengthPropertyTest {
         return new String(chars);
     }
 }
+

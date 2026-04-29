@@ -62,7 +62,6 @@ public class User {
         this.updatedAt = Instant.now();
     }
 
-    // ── Getters and Setters ──
 
     public Long getId() {
         return id;
@@ -160,3 +159,4 @@ public class User {
         this.updatedAt = updatedAt;
     }
 }
+

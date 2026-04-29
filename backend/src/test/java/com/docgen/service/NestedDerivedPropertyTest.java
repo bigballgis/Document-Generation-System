@@ -205,7 +205,6 @@ class NestedDerivedPropertyTest {
         }
     }
 
-    // ── Records & Generators ──
 
     record OrderData(String orderId, int[][] items) {}
     record NestedDerivedTestData(List<OrderData> orders) {}
@@ -224,3 +223,4 @@ class NestedDerivedPropertyTest {
                 .map(NestedDerivedTestData::new);
     }
 }
+

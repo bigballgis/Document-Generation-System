@@ -1,8 +1,5 @@
 package com.docgen.dto;
 
-/**
- * Response DTO containing access and refresh tokens.
- */
 public class TokenPair {
 
     private String accessToken;

@@ -46,10 +46,10 @@ class CompositeCoveragePropertyTest {
         assertTrue(threshold >= 0.0 && threshold <= 100.0);
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<Double> thresholds() {
         return Arbitraries.doubles().between(0.0, 100.0);
     }
 }
+

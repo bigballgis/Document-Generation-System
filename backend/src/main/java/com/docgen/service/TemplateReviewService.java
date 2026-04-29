@@ -68,6 +68,12 @@ public class TemplateReviewService {
     public List<TemplateReviewDTO> submitForReview(Long templateId, SubmitReviewRequest request) {
         Template template = findTemplateOrThrow(templateId);
         assertReviewersAllowedForTemplate(template, request.getReviewerIds());
+        TemplateState current = TemplateState.valueOf(template.getStatus());
+        if (current != TemplateState.IN_TEST) {
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                    "Template must be in IN_TEST before submitting for review; use POST /api/templates/{id}/submit-test first",
+                    HttpStatus.BAD_REQUEST);
+        }
 
         // Transition template to PENDING_REVIEW
         stateMachineService.transition(templateId, TemplateState.PENDING_REVIEW);
@@ -129,7 +135,7 @@ public class TemplateReviewService {
     }
 
     /**
-     * Reject a review. Transitions the template back to DRAFT state.
+     * Reject a review. Transitions the template back to IN_TEST for further changes and re-test.
      */
     @Transactional
     public TemplateReviewDTO rejectReview(Long reviewId, Long reviewerId, String reason) {
@@ -146,8 +152,8 @@ public class TemplateReviewService {
         review.setCompletedAt(Instant.now());
         TemplateReview saved = reviewRepository.save(review);
 
-        // Transition template back to DRAFT
-        stateMachineService.transition(review.getTemplateId(), TemplateState.DRAFT);
+        // Send back to testing
+        stateMachineService.transition(review.getTemplateId(), TemplateState.IN_TEST);
 
         log.info("Review rejected: reviewId={}, templateId={}, reason={}",
                 reviewId, review.getTemplateId(), reason);
@@ -204,7 +210,6 @@ public class TemplateReviewService {
                 template.getTemplateFilePath());
     }
 
-    // ── Private helpers ──
 
     /**
      * After a review action, check if all reviews at the given level are completed

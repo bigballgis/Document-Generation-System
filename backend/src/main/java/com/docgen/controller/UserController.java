@@ -9,9 +9,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * REST controller for user management endpoints.
- */
 @RestController
 @RequestMapping("/api/users")
 public class UserController {

@@ -3,7 +3,6 @@ package com.docgen.dto;
 import java.util.List;
 
 /**
- * DTO representing a complete template configuration export.
  * Contains template metadata, data sources, expressions, and validation rules.
  * Used for JSON-based template config import/export (requirements 30.4, 30.5).
  */

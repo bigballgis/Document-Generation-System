@@ -163,7 +163,6 @@ class MigrationPropertyTest {
         }
     }
 
-    // ── Helper types ──
 
     static class SegmentRecord {
         final long id;
@@ -194,7 +193,6 @@ class MigrationPropertyTest {
         }
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<MigrationInput> migrationInputs() {
@@ -259,3 +257,4 @@ class MigrationPropertyTest {
         return new MigrationInput(assemblyConfig, segmentsTable);
     }
 }
+

@@ -4,9 +4,6 @@ import com.docgen.entity.TestStatus;
 
 import java.time.Instant;
 
-/**
- * Response DTO for a test case execution result.
- */
 public class TestResultDTO {
 
     private Long id;

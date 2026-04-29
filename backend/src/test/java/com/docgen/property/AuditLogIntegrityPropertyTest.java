@@ -34,7 +34,6 @@ class AuditLogIntegrityPropertyTest {
         return new AuditLogServiceTestHarness(service, repository);
     }
 
-    // ── Property Tests ──
 
     /**
      * Property 12a: Every call to AuditLogService.log() results in exactly one
@@ -144,7 +143,6 @@ class AuditLogIntegrityPropertyTest {
         assertEquals(input2.tenantId(), second.getTenantId(), "Second save tenantId must match input2");
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<AuditLogInput> auditLogInputs() {
@@ -171,7 +169,6 @@ class AuditLogIntegrityPropertyTest {
                 .as(AuditLogInput::new);
     }
 
-    // ── Supporting types ──
 
     record AuditLogInput(Long tenantId, Long userId, String action,
                          String resourceType, Long resourceId,
@@ -181,3 +178,4 @@ class AuditLogIntegrityPropertyTest {
             com.docgen.service.AuditLogService service,
             AuditLogRepository repository) {}
 }
+

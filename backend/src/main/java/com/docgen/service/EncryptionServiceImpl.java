@@ -108,7 +108,6 @@ public class EncryptionServiceImpl implements EncryptionService {
         return "*".repeat(len);
     }
 
-    // ── Private helpers ──
 
     private SecretKeySpec parseKey(String base64Key) {
         try {

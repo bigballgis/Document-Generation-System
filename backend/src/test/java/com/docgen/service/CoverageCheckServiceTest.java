@@ -162,7 +162,6 @@ class CoverageCheckServiceTest {
         assertFalse(service.isBelowThreshold(1L, 100.0));
     }
 
-    // ── Helpers ──
 
     private ParameterDefinition makeParam(Long id, String name) {
         ParameterDefinition p = new ParameterDefinition();

@@ -3,9 +3,6 @@ package com.docgen.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
-/**
- * Request DTO for creating a new tenant.
- */
 public class CreateTenantRequest {
 
     @NotBlank(message = "租户名称不能为空")

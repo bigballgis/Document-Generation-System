@@ -15,8 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * REST controller for template market operations.
- * Provides endpoints for searching, copying, and sharing market templates.
+ * Search, copy, and share templates published to the market.
  */
 @RestController
 public class MarketTemplateController {

@@ -22,9 +22,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-/**
- * REST controller for template CRUD and clone endpoints.
- */
 @RestController
 @RequestMapping("/api/templates")
 public class TemplateController {
@@ -150,12 +147,6 @@ public class TemplateController {
         return ResponseEntity.ok(versionDiffService.compareVersions(id, versionA, versionB));
     }
 
-    // ── Preview endpoint ──
-
-    /**
-     * Preview a template using test data or real data sources.
-     * Supports OnlyOffice in-browser preview and direct download.
-     */
     @PostMapping("/{id}/preview")
     public ResponseEntity<PreviewResult> previewTemplate(
             @PathVariable Long id,
@@ -166,11 +157,8 @@ public class TemplateController {
         return ResponseEntity.ok(templatePreviewService.preview(id, request));
     }
 
-    // ── State machine endpoints ──
-
     @PostMapping("/{id}/activate")
     public ResponseEntity<TemplateDTO> activateTemplate(@PathVariable Long id) {
-        // Warn if coverage is below threshold (requirement 47.5)
         if (coverageCheckService.isBelowThreshold(id, 100.0)) {
             log.warn("Template {} has coverage below 100% threshold during activation", id);
         }
@@ -184,8 +172,31 @@ public class TemplateController {
         return ResponseEntity.ok(templateService.getTemplate(template.getId()));
     }
 
+    /**
+     * DRAFT → IN_TEST. Run after design is ready; then use {@code POST /api/templates/{id}/reviews} to request review.
+     */
+    @PostMapping("/{id}/submit-test")
+    public ResponseEntity<TemplateDTO> submitToTest(@PathVariable Long id) {
+        var template = stateMachineService.transition(id, TemplateState.IN_TEST);
+        return ResponseEntity.ok(templateService.getTemplate(template.getId()));
+    }
+
+    /**
+     * IN_TEST → DRAFT. Return to design for editing.
+     */
+    @PostMapping("/{id}/return-design")
+    public ResponseEntity<TemplateDTO> returnToDesign(@PathVariable Long id) {
+        var template = stateMachineService.transition(id, TemplateState.DRAFT);
+        return ResponseEntity.ok(templateService.getTemplate(template.getId()));
+    }
+
+    /**
+     * @deprecated Use {@code submit-test} then create reviews via {@code TemplateReviewController}.
+     * Direct DRAFT → PENDING_REVIEW is no longer allowed; transition will fail unless current state is IN_TEST.
+     */
     @PostMapping("/{id}/submit-review")
-    public ResponseEntity<TemplateDTO> submitForReview(@PathVariable Long id) {
+    @Deprecated
+    public ResponseEntity<TemplateDTO> submitForReviewStateOnly(@PathVariable Long id) {
         var template = stateMachineService.transition(id, TemplateState.PENDING_REVIEW);
         return ResponseEntity.ok(templateService.getTemplate(template.getId()));
     }
@@ -195,8 +206,6 @@ public class TemplateController {
         return ResponseEntity.ok(stateMachineService.getAvailableTransitions(id));
     }
 
-    // ── Create Draft Version endpoint ──
-
     @PostMapping("/{id}/create-draft-version")
     public ResponseEntity<TemplateDTO> createDraftVersion(
             @PathVariable Long id,
@@ -205,11 +214,6 @@ public class TemplateController {
         return ResponseEntity.ok(result);
     }
 
-    // ── Migration endpoint ──
-
-    /**
-     * Migrate a traditional single-file template to a Composite_Template.
-     */
     @PostMapping("/{id}/migrate-to-composite")
     public ResponseEntity<MigrationResultDTO> migrateToComposite(
             @PathVariable Long id,

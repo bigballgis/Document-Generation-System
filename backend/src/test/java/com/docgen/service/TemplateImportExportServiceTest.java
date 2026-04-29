@@ -52,7 +52,6 @@ class TemplateImportExportServiceTest {
         TenantContext.clear();
     }
 
-    // ── importFromDocx tests ──
 
     @Test
     void importFromDocx_success() throws Exception {
@@ -105,7 +104,6 @@ class TemplateImportExportServiceTest {
         assertEquals("IMPORT_INVALID_FILE", ex.getErrorCode());
     }
 
-    // ── exportToDocx tests ──
 
     @Test
     void exportToDocx_success() throws Exception {
@@ -132,7 +130,6 @@ class TemplateImportExportServiceTest {
         assertThrows(BusinessException.class, () -> service.exportToDocx(999L));
     }
 
-    // ── exportConfig tests ──
 
     @Test
     void exportConfig_success() throws Exception {
@@ -146,7 +143,6 @@ class TemplateImportExportServiceTest {
         assertEquals("Config Test", config.getTemplate().getName());
     }
 
-    // ── importConfig tests ──
 
     @Test
     void importConfig_success() throws Exception {
@@ -218,7 +214,6 @@ class TemplateImportExportServiceTest {
         assertTrue(ex.getMessage().contains("template"));
     }
 
-    // ── Helper methods ──
 
     private byte[] createValidDocxBytes() {
         return new byte[]{0x50, 0x4B, 0x03, 0x04, 0x14, 0x00, 0x06, 0x00,
@@ -241,3 +236,4 @@ class TemplateImportExportServiceTest {
         return template;
     }
 }
+

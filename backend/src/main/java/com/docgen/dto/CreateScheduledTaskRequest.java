@@ -2,9 +2,6 @@ package com.docgen.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
-/**
- * Request DTO for creating a new scheduled task.
- */
 public class CreateScheduledTaskRequest {
 
     @NotBlank(message = "Cron expression is required")

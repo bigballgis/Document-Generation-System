@@ -284,7 +284,6 @@ public class SegmentVersionService {
         return toDTO(target);
     }
 
-    // ── Private helpers ──
 
     private Template findCompositeTemplateOrThrow(Long templateId) {
         Template template = templateRepository.findById(templateId)

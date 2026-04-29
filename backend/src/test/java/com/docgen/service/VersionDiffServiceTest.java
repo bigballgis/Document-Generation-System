@@ -33,7 +33,6 @@ class VersionDiffServiceTest {
         service = new VersionDiffService(versionRepository);
     }
 
-    // ── compareVersions ──
 
     @Test
     void compareVersions_detectsModifiedFields() {
@@ -117,7 +116,6 @@ class VersionDiffServiceTest {
                 () -> service.compareVersions(100L, 1, 2));
     }
 
-    // ── parseConfigJson ──
 
     @Test
     void parseConfigJson_parsesValidJson() {
@@ -144,7 +142,6 @@ class VersionDiffServiceTest {
         assertEquals("Test \"quoted\"", map.get("name"));
     }
 
-    // ── diffConfigFields ──
 
     @Test
     void diffConfigFields_detectsAddedField() {
@@ -177,7 +174,6 @@ class VersionDiffServiceTest {
         assertTrue(diffs.isEmpty());
     }
 
-    // ── changeSummary counts ──
 
     @Test
     void compareVersions_summaryCountsCorrect() {
@@ -203,7 +199,6 @@ class VersionDiffServiceTest {
         assertEquals(0, result.getChangeSummary().getDeletions());
     }
 
-    // ── Helper ──
 
     private TemplateVersion createVersion(Long id, Long templateId, int versionNumber,
                                           String configJson, String filePath) {
@@ -218,3 +213,4 @@ class VersionDiffServiceTest {
         return v;
     }
 }
+

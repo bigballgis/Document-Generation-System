@@ -12,9 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * REST controller for webhook configuration CRUD and log querying.
- * Provides endpoints scoped to templates for managing webhooks,
- * and a log endpoint scoped to individual webhook configs.
+ * Template-scoped webhook CRUD and per-webhook-config log queries.
  */
 @RestController
 public class WebhookController {

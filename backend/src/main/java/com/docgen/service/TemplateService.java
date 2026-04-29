@@ -261,6 +261,9 @@ public class TemplateService {
         clone.setCategoryId(source.getCategoryId());
         clone.setReviewRequired(source.isReviewRequired());
         clone.setStatus("DRAFT");
+        clone.setTemplateType(source.getTemplateType());
+        clone.setAssemblyConfig(source.getAssemblyConfig());
+        clone.setRenderConfig(source.getRenderConfig());
 
         Template saved = templateRepository.save(clone);
         log.info("Template cloned: sourceId={}, cloneId={}, cloneName={}",
@@ -268,7 +271,6 @@ public class TemplateService {
         return toDTO(saved);
     }
 
-    // ── Version management ──
 
     /**
      * Get all versions for a template, ordered by version number descending.
@@ -328,7 +330,6 @@ public class TemplateService {
         return toDTO(template);
     }
 
-    // ── Private helpers ──
 
     private Template findTemplateOrThrow(Long id) {
         return templateRepository.findById(id)
@@ -508,6 +509,7 @@ public class TemplateService {
                 template.getUpdatedAt()
         );
         dto.setTemplateType(template.getTemplateType());
+        dto.setRenderConfig(template.getRenderConfig());
         dto.setVersion(templateVersionRepository.findMaxVersionNumber(template.getId()).orElse(0));
         return dto;
     }
@@ -618,3 +620,4 @@ public class TemplateService {
         return value.replace("\\\"", "\"").replace("\\\\", "\\");
     }
 }
+

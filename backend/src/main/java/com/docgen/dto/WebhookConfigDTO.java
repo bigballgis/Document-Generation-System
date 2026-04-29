@@ -2,9 +2,6 @@ package com.docgen.dto;
 
 import java.time.Instant;
 
-/**
- * Response DTO for webhook configuration.
- */
 public class WebhookConfigDTO {
 
     private Long id;

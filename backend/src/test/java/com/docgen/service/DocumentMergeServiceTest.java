@@ -61,7 +61,6 @@ class DocumentMergeServiceTest {
         assertEquals(false, segments.get(1).get("pageBreakBefore"));
     }
 
-    // ── Validation tests ──
 
     @Test
     void validateRequest_nullRequest_throws() {
@@ -114,7 +113,6 @@ class DocumentMergeServiceTest {
         assertDoesNotThrow(() -> service.validateRequest(req));
     }
 
-    // ── Invalid document IDs ──
 
     @Test
     void mergeDocuments_invalidDocumentIds_throws() {
@@ -132,7 +130,6 @@ class DocumentMergeServiceTest {
         assertTrue(ex.getMessage().contains("3"));
     }
 
-    // ── Successful merge ──
 
     @Test
     @SuppressWarnings("unchecked")
@@ -219,7 +216,6 @@ class DocumentMergeServiceTest {
         assertTrue(result.getFilePath().endsWith(".pdf"));
     }
 
-    // ── Node.js service failure ──
 
     @Test
     void mergeDocuments_nodeServiceFailure_throws() throws Exception {
@@ -263,7 +259,6 @@ class DocumentMergeServiceTest {
         assertEquals("MERGE_FAILED", ex.getErrorCode());
     }
 
-    // ── Default values ──
 
     @Test
     void mergeDocumentsRequest_defaults() {
@@ -273,7 +268,6 @@ class DocumentMergeServiceTest {
         assertEquals("DOCX", req.getOutputFormat());
     }
 
-    // ── Merge order preserved ──
 
     @Test
     @SuppressWarnings("unchecked")
@@ -311,7 +305,6 @@ class DocumentMergeServiceTest {
         assertEquals(Base64.getEncoder().encodeToString("content-2".getBytes()), segments.get(2).get("buffer"));
     }
 
-    // ── Helpers ──
 
     private GeneratedDocument createDoc(Long id) {
         GeneratedDocument doc = new GeneratedDocument();
@@ -333,3 +326,4 @@ class DocumentMergeServiceTest {
                 .thenReturn(mockResponse);
     }
 }
+

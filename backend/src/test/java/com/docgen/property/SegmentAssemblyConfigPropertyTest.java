@@ -69,7 +69,6 @@ class SegmentAssemblyConfigPropertyTest {
         }
     }
 
-    // ── Generators ──
 
     private static final String[] SEGMENT_TYPES = {
             "COVER", "TOC", "CHAPTER", "TABLE", "SIGNATURE", "LEGAL", "APPENDIX"
@@ -137,3 +136,4 @@ class SegmentAssemblyConfigPropertyTest {
         return Arbitraries.maps(keyArb, valueArb).ofMinSize(1).ofMaxSize(5);
     }
 }
+

@@ -128,7 +128,6 @@ class AssemblyOrderPropertyTest {
         }
     }
 
-    // ── Helper types ──
 
     static class SegmentInfo {
         final String filePath;
@@ -160,7 +159,6 @@ class AssemblyOrderPropertyTest {
         }
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<SegmentConfigInput> randomSegmentConfigs() {
@@ -183,7 +181,6 @@ class AssemblyOrderPropertyTest {
         });
     }
 
-    // ── Utility ──
 
     private static void setField(Object target, String fieldName, Object value) throws Exception {
         Field field = target.getClass().getDeclaredField(fieldName);
@@ -191,3 +188,4 @@ class AssemblyOrderPropertyTest {
         field.set(target, value);
     }
 }
+

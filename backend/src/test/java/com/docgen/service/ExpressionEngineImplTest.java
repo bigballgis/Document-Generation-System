@@ -41,7 +41,6 @@ class ExpressionEngineImplTest {
         engine = new ExpressionEngineImpl(restTemplate, SERVICE_URL);
     }
 
-    // ── evaluate ──
 
     @Test
     void evaluate_javascript_success() {
@@ -170,7 +169,6 @@ class ExpressionEngineImplTest {
         assertEquals(2, result);
     }
 
-    // ── evaluateAll ──
 
     @Test
     void evaluateAll_success() {
@@ -220,7 +218,6 @@ class ExpressionEngineImplTest {
         assertThrows(BusinessException.class, () -> engine.evaluateAll(configs, Map.of()));
     }
 
-    // ── validateExpression ──
 
     @Test
     void validateExpression_valid() {
@@ -293,3 +290,4 @@ class ExpressionEngineImplTest {
         assertTrue(result.getErrorMessage().contains("验证服务返回空结果"));
     }
 }
+

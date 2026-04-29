@@ -64,7 +64,6 @@ class ParameterServiceTest {
         parameterService = new ParameterService(parameterRepository, templateRepository, templateScanService, expressionEngine, objectMapper, auditLogService, mock(AggregationResolver.class));
     }
 
-    // ── 1. createParameter happy path (root) ── Req 2.1
 
     @Test
     void createParameter_rootRequest_success() {
@@ -93,7 +92,6 @@ class ParameterServiceTest {
         verify(parameterRepository).save(any(ParameterDefinition.class));
     }
 
-    // ── 1. createParameter happy path (child) ── Req 2.1
 
     @Test
     void createParameter_childUnderObject_success() {
@@ -121,7 +119,6 @@ class ParameterServiceTest {
         verify(parameterRepository, atLeastOnce()).findById(10L);
     }
 
-    // ── 2. getParameterTree with nested structure ── Req 2.2
 
     @Test
     void getParameterTree_nestedStructure() {
@@ -151,7 +148,6 @@ class ParameterServiceTest {
         assertTrue(grandchildDto.getChildren().isEmpty());
     }
 
-    // ── 3. getParameterFlat with computed paths ── Req 2.13
 
     @Test
     void getParameterFlat_computedPaths() {
@@ -171,7 +167,6 @@ class ParameterServiceTest {
         assertNull(flat.get(1).getChildren());
     }
 
-    // ── 4. updateParameter happy path ── Req 2.3
 
     @Test
     void updateParameter_success() {
@@ -195,7 +190,6 @@ class ParameterServiceTest {
         assertEquals(5, result.getSortOrder());
     }
 
-    // ── 5. updateParameter with optimistic locking conflict ── Req 2.14
 
     @Test
     void updateParameter_optimisticLockConflict() {
@@ -215,7 +209,6 @@ class ParameterServiceTest {
         assertEquals("PARAMETER_CONCURRENT_MODIFICATION", ex.getErrorCode());
     }
 
-    // ── 6. deleteParameter happy path ── Req 2.4
 
     @Test
     void deleteParameter_success() {
@@ -227,7 +220,6 @@ class ParameterServiceTest {
         verify(parameterRepository).delete(entity);
     }
 
-    // ── 7. deleteParameter not found ──
 
     @Test
     void deleteParameter_notFound_throws() {
@@ -237,7 +229,6 @@ class ParameterServiceTest {
                 () -> parameterService.deleteParameter(99L));
     }
 
-    // ── 8. createParameter with invalid parent (not found) ── Req 2.11
 
     @Test
     void createParameter_parentNotFound_throws() {
@@ -252,7 +243,6 @@ class ParameterServiceTest {
         assertEquals("PARAMETER_INVALID_PARENT", ex.getErrorCode());
     }
 
-    // ── 8. createParameter with invalid parent (wrong template) ── Req 2.11
 
     @Test
     void createParameter_parentWrongTemplate_throws() {
@@ -269,7 +259,6 @@ class ParameterServiceTest {
         assertEquals("PARAMETER_INVALID_PARENT", ex.getErrorCode());
     }
 
-    // ── 8. createParameter with invalid parent (wrong type) ── Req 2.12
 
     @Test
     void createParameter_parentNotContainerType_throws() {
@@ -286,7 +275,6 @@ class ParameterServiceTest {
         assertEquals("PARAMETER_PARENT_TYPE_INVALID", ex.getErrorCode());
     }
 
-    // ── 9. Empty template returns empty list ──
 
     @Test
     void getParameterTree_emptyTemplate_returnsEmptyList() {
@@ -308,7 +296,6 @@ class ParameterServiceTest {
         assertTrue(flat.isEmpty());
     }
 
-    // ── Additional edge cases ──
 
     @Test
     void createParameter_duplicateName_throws() {
@@ -423,7 +410,6 @@ class ParameterServiceTest {
                 () -> parameterService.updateParameter(99L, req));
     }
 
-    // ── Helper ──
 
     private ParameterDefinition makeEntity(Long id, Long templateId, Long parentId,
                                            String name, String parameterType, String dataType) {
@@ -442,3 +428,4 @@ class ParameterServiceTest {
         return p;
     }
 }
+

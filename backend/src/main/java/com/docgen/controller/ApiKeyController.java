@@ -12,9 +12,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * REST controller for API Key management.
- */
 @RestController
 @RequestMapping("/api/api-keys")
 public class ApiKeyController {

@@ -81,7 +81,6 @@ class ParameterServiceJsonImportTest {
         TenantContext.clear();
     }
 
-    // ── Simple flat JSON ──
 
     @Nested
     class SimpleFlatJson {
@@ -111,7 +110,6 @@ class ParameterServiceJsonImportTest {
         }
     }
 
-    // ── Nested objects ──
 
     @Nested
     class NestedObjects {
@@ -141,7 +139,6 @@ class ParameterServiceJsonImportTest {
         }
     }
 
-    // ── Arrays of objects ──
 
     @Nested
     class ArraysOfObjects {
@@ -169,7 +166,6 @@ class ParameterServiceJsonImportTest {
         }
     }
 
-    // ── Arrays of primitives ──
 
     @Nested
     class ArraysOfPrimitives {
@@ -205,7 +201,6 @@ class ParameterServiceJsonImportTest {
         }
     }
 
-    // ── Empty JSON ──
 
     @Nested
     class EmptyJson {
@@ -229,7 +224,6 @@ class ParameterServiceJsonImportTest {
         }
     }
 
-    // ── Invalid JSON ──
 
     @Nested
     class InvalidJson {
@@ -252,7 +246,6 @@ class ParameterServiceJsonImportTest {
         }
     }
 
-    // ── Depth exceeded ──
 
     @Nested
     class DepthExceeded {
@@ -306,7 +299,6 @@ class ParameterServiceJsonImportTest {
         }
     }
 
-    // ── Null values ──
 
     @Nested
     class NullValues {
@@ -345,7 +337,6 @@ class ParameterServiceJsonImportTest {
         }
     }
 
-    // ── Name sanitization ──
 
     @Nested
     class NameSanitization {
@@ -360,7 +351,6 @@ class ParameterServiceJsonImportTest {
         }
     }
 
-    // ── Top-level array ──
 
     @Nested
     class TopLevelArray {
@@ -384,7 +374,6 @@ class ParameterServiceJsonImportTest {
         }
     }
 
-    // ── Helper ──
 
     private ParameterDefinition makeEntity(Long id, Long templateId, Long parentId, String name) {
         ParameterDefinition p = new ParameterDefinition();
@@ -402,3 +391,4 @@ class ParameterServiceJsonImportTest {
         return p;
     }
 }
+

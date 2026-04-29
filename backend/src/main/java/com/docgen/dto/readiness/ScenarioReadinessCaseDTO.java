@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Readiness contribution of a single business scenario (test case).
+ * Readiness metrics for one named business scenario (linked to a test case).
  */
 public class ScenarioReadinessCaseDTO {
 

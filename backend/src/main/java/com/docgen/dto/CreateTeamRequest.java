@@ -3,9 +3,6 @@ package com.docgen.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-/**
- * Request DTO for creating a new team.
- */
 public class CreateTeamRequest {
 
     @NotNull(message = "租户ID不能为空")

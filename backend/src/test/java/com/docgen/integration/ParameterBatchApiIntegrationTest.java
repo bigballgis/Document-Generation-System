@@ -111,7 +111,6 @@ class ParameterBatchApiIntegrationTest extends BaseIntegrationTest {
         return parameterRepository.save(param);
     }
 
-    // ── batch-delete tests ──
 
     @Test
     @Order(1)
@@ -180,7 +179,6 @@ class ParameterBatchApiIntegrationTest extends BaseIntegrationTest {
         assertThat(parameterRepository.findById(p1.getId())).isPresent();
     }
 
-    // ── batch-update tests ──
 
     @Test
     @Order(4)

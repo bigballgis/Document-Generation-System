@@ -86,7 +86,6 @@ class MaskingFormatPropertyTest {
         assertEquals("", encryptionService.mask(""));
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<String> stringsLengthAtLeast8() {
@@ -122,3 +121,4 @@ class MaskingFormatPropertyTest {
         );
     }
 }
+

@@ -22,7 +22,6 @@ class AggregationSchemaPropertyTest {
 
     private static final Long TEMPLATE_ID = 1L;
 
-    // ── Helpers ──
 
     private ParameterDefinition makeParam(Long id, Long parentId, String name,
                                            String paramType, String dataType, int sortOrder) {
@@ -176,7 +175,6 @@ class AggregationSchemaPropertyTest {
         }
     }
 
-    // ── Assertion helpers ──
 
     private void assertPlaceholderPath(List<AggregationPropertyDTO> props, String name, String expectedPath) {
         props.stream()
@@ -279,3 +277,4 @@ class AggregationSchemaPropertyTest {
         });
     }
 }
+

@@ -4,9 +4,6 @@ import com.docgen.entity.ComparisonType;
 
 import java.time.Instant;
 
-/**
- * Response DTO for a template test case.
- */
 public class TestCaseDTO {
 
     private Long id;

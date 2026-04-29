@@ -28,7 +28,6 @@ class AggregationResolverPropertyTest {
         return new AggregationResolver(repo);
     }
 
-    // ── Helpers ──
 
     private ParameterDefinition makeParam(Long id, Long parentId, String name,
                                            String paramType, String dataType, int sortOrder) {

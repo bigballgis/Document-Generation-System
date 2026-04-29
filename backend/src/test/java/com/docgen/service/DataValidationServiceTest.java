@@ -25,7 +25,6 @@ class DataValidationServiceTest {
         service = new DataValidationService();
     }
 
-    // ── No rules / null rules ──
 
     @Test
     void validate_nullRules_returnsSuccess() {
@@ -48,7 +47,6 @@ class DataValidationServiceTest {
         assertEquals(1, result.getErrors().size());
     }
 
-    // ── REQUIRED ──
 
     @Test
     void required_missingField_fails() {
@@ -80,7 +78,6 @@ class DataValidationServiceTest {
         assertTrue(result.isValid());
     }
 
-    // ── TYPE ──
 
     @Test
     void type_stringExpected_stringValue_passes() {
@@ -190,7 +187,6 @@ class DataValidationServiceTest {
         assertTrue(result.isValid());
     }
 
-    // ── RANGE ──
 
     @Test
     void range_withinBounds_passes() {
@@ -258,7 +254,6 @@ class DataValidationServiceTest {
         assertTrue(result.isValid());
     }
 
-    // ── LENGTH ──
 
     @Test
     void length_withinBounds_passes() {
@@ -305,7 +300,6 @@ class DataValidationServiceTest {
         assertTrue(result.isValid());
     }
 
-    // ── REGEX ──
 
     @Test
     void regex_matchingPattern_passes() {
@@ -345,7 +339,6 @@ class DataValidationServiceTest {
         assertTrue(result.isValid());
     }
 
-    // ── Multiple rules ──
 
     @Test
     void multipleRules_allPass() {
@@ -374,7 +367,6 @@ class DataValidationServiceTest {
         assertEquals(2, result.getErrors().size());
     }
 
-    // ── Error details ──
 
     @Test
     void errorContainsFieldNameAndRuleType() {
@@ -388,3 +380,4 @@ class DataValidationServiceTest {
         assertFalse(error.getMessage().isEmpty());
     }
 }
+

@@ -43,6 +43,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -58,6 +59,7 @@ class CompositeImportExportServiceTest {
     @Mock private CompositeCoverageService compositeCoverageService;
     @Mock private ParameterService parameterService;
     @Mock private com.docgen.repository.ParameterRepository parameterRepository;
+    @Mock private RenderConfigValidator renderConfigValidator;
 
     private CompositeImportExportService service;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -66,6 +68,7 @@ class CompositeImportExportServiceTest {
     @BeforeEach
     void setUp() throws Exception {
         zipImportProperties = new CompositeZipImportProperties();
+        lenient().doNothing().when(renderConfigValidator).validateForImport(any());
         rebuildService();
         TenantContext.setCurrentTenantId(1L);
     }
@@ -76,7 +79,8 @@ class CompositeImportExportServiceTest {
                 minioClient, objectMapper,
                 testCaseRepository, compositeCoverageService,
                 parameterService, parameterRepository,
-                zipImportProperties);
+                zipImportProperties,
+                renderConfigValidator);
         Field bucketField = CompositeImportExportService.class.getDeclaredField("bucketName");
         bucketField.setAccessible(true);
         bucketField.set(service, "docgen-test");
@@ -87,7 +91,6 @@ class CompositeImportExportServiceTest {
         TenantContext.clear();
     }
 
-    // ── exportAsZip: ZIP contains all required files ──
 
     @Test
     void exportAsZip_containsAllRequiredFiles() throws Exception {
@@ -123,7 +126,46 @@ class CompositeImportExportServiceTest {
         assertTrue(entries.containsKey("coverage-report.json"), "ZIP must contain coverage-report.json");
     }
 
-    // ── exportAsZip: empty arrays when no data ──
+    @Test
+    void exportAsZip_includesRenderConfigWhenSet() throws Exception {
+        Template template = createCompositeTemplate(1L, "TestTemplate");
+        template.setRenderConfig("{\"schemaVersion\":1,\"textWatermark\":{\"text\":\"DRAFT\",\"fontSize\":36}}");
+        when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
+        mockEmptyAssemblyConfig();
+        when(testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(1L)).thenReturn(List.of());
+        mockCoverageSuccess();
+
+        byte[] zipBytes = service.exportAsZip(1L);
+        Map<String, byte[]> entries = extractZipEntries(zipBytes);
+        assertTrue(entries.containsKey("render-config.json"));
+    }
+
+    @Test
+    void importFromZip_withRenderConfig_persistsOnTemplate() throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+            zos.putNextEntry(new ZipEntry("config.json"));
+            zos.write(objectMapper.writeValueAsBytes(minimalExportConfig()));
+            zos.closeEntry();
+            zos.putNextEntry(new ZipEntry("segments/intro.docx"));
+            zos.write(new byte[]{0x50, 0x4B, 0x03, 0x04});
+            zos.closeEntry();
+            zos.putNextEntry(new ZipEntry("render-config.json"));
+            zos.write("{\"schemaVersion\":1,\"textWatermark\":{\"text\":\"IMPORTED\",\"fontSize\":36}}"
+                    .getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+        }
+        ArgumentCaptor<Template> templateCaptor = ArgumentCaptor.forClass(Template.class);
+        Template saved = createCompositeTemplate(200L, "R");
+        when(templateRepository.save(templateCaptor.capture())).thenReturn(saved);
+
+        service.importFromZip(
+                new MockMultipartFile("file", "r.zip", "application/zip", baos.toByteArray()), 1L);
+
+        assertNotNull(templateCaptor.getValue().getRenderConfig());
+        assertTrue(templateCaptor.getValue().getRenderConfig().contains("IMPORTED"));
+        verify(renderConfigValidator).validateForImport(any());
+    }
 
     @Test
     void exportAsZip_emptyArraysWhenNoData() throws Exception {
@@ -140,7 +182,6 @@ class CompositeImportExportServiceTest {
         assertTrue(td.isEmpty());
     }
 
-    // ── exportAsZip: coverage failure → ZIP still succeeds ──
 
     @Test
     void exportAsZip_coverageFailure_zipStillSucceeds() throws Exception {
@@ -158,7 +199,6 @@ class CompositeImportExportServiceTest {
         assertFalse(entries.containsKey("coverage-report.json"));
     }
 
-    // ── importFromZip: with test data ──
 
     @Test
     void importFromZip_withTestData_createsRecords() throws Exception {
@@ -175,7 +215,6 @@ class CompositeImportExportServiceTest {
         verify(testCaseRepository, times(1)).save(any(TestCase.class));
     }
 
-    // ── importFromZip: minimal ZIP ──
 
     @Test
     void importFromZip_minimalZip_noError() throws Exception {
@@ -191,7 +230,6 @@ class CompositeImportExportServiceTest {
         verify(testCaseRepository, never()).save(any(TestCase.class));
     }
 
-    // ── importFromZip: ZIP boundary / path characterization (WS-03-T01) ──
 
     @Test
     @DisplayName("Non-ZIP bytes fail parse with IMPORT_INVALID_FILE")
@@ -313,7 +351,6 @@ class CompositeImportExportServiceTest {
         verify(minioClient, atLeastOnce()).putObject(any());
     }
 
-    // ── importFromZip: limits (WS-03-T02) ──
 
     @Test
     void importFromZip_perEntryMaxExceeded_rejected() throws Exception {
@@ -375,7 +412,6 @@ class CompositeImportExportServiceTest {
         assertEquals(ErrorCode.IMPORT_INVALID_FILE, ex.getErrorCode());
     }
 
-    // ── importFromZip: MinIO object name sanitization (WS-03-T03) ──
 
     @Test
     void importFromZip_segmentNameWithPunctuation_usesSanitizedMinioObjectKey() throws Exception {
@@ -425,7 +461,6 @@ class CompositeImportExportServiceTest {
                         && o.matches(".*headers/[0-9a-fA-F-]{36}_x_hdr\\.docx")));
     }
 
-    // ── Helper methods ──
 
     private Template createCompositeTemplate(Long id, String name) {
         Template template = new Template();
@@ -620,3 +655,4 @@ class CompositeImportExportServiceTest {
     }
 
 }
+

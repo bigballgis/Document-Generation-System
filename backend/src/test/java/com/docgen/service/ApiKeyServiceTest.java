@@ -39,7 +39,6 @@ class ApiKeyServiceTest {
         service = new ApiKeyService(apiKeyRepository, userRepository);
     }
 
-    // ── createApiKey ──
 
     @Test
     void createApiKey_success() {
@@ -95,7 +94,6 @@ class ApiKeyServiceTest {
         assertNull(result.getExpiresAt());
     }
 
-    // ── listApiKeys ──
 
     @Test
     void listApiKeys_success() {
@@ -114,7 +112,6 @@ class ApiKeyServiceTest {
         assertNull(result.get(0).getRawKey());
     }
 
-    // ── enableApiKey ──
 
     @Test
     void enableApiKey_success() {
@@ -142,7 +139,6 @@ class ApiKeyServiceTest {
         assertThrows(ResourceNotFoundException.class, () -> service.enableApiKey(1L, 99L));
     }
 
-    // ── disableApiKey ──
 
     @Test
     void disableApiKey_success() {
@@ -155,7 +151,6 @@ class ApiKeyServiceTest {
         assertFalse(result.isEnabled());
     }
 
-    // ── deleteApiKey ──
 
     @Test
     void deleteApiKey_success() {
@@ -181,7 +176,6 @@ class ApiKeyServiceTest {
         assertThrows(ResourceNotFoundException.class, () -> service.deleteApiKey(1L, 99L));
     }
 
-    // ── validateApiKey ──
 
     @Test
     void validateApiKey_validKey_returnsInfo() {
@@ -256,7 +250,6 @@ class ApiKeyServiceTest {
         assertTrue(result.isEmpty());
     }
 
-    // ── generateRawKey ──
 
     @Test
     void generateRawKey_startsWithPrefix() {
@@ -265,7 +258,6 @@ class ApiKeyServiceTest {
         assertTrue(key.length() > 10);
     }
 
-    // ── Helpers ──
 
     private ApiKey createSampleApiKey(Long id, Long tenantId) {
         ApiKey key = new ApiKey();
@@ -282,3 +274,4 @@ class ApiKeyServiceTest {
         return key;
     }
 }
+

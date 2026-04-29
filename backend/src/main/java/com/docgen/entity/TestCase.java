@@ -55,7 +55,6 @@ public class TestCase {
         this.updatedAt = Instant.now();
     }
 
-    // ── Getters and Setters ──
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -81,3 +80,4 @@ public class TestCase {
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }
+

@@ -137,7 +137,6 @@ class TemplateVersionPropertyTest {
                         .map(TemplateVersionPropertyTest::copyVersion);
             });
 
-            // ── Phase 1: Apply N sequential updates and verify monotonic version numbers ──
             for (UpdateTemplateRequest update : updates) {
                 templateService.updateTemplate(templateId, update, null);
             }
@@ -160,7 +159,6 @@ class TemplateVersionPropertyTest {
                 assertEquals(templateId, v.getTemplateId(), "Version templateId should match");
             }
 
-            // ── Phase 2: Rollback to a target version and verify correctness ──
             // Pick a valid rollback target (1-indexed version, map to 0-indexed list)
             int targetIdx = Math.abs(rollbackTargetIndex) % n;
             TemplateVersion targetVersion = versionStore.get(targetIdx);
@@ -197,7 +195,6 @@ class TemplateVersionPropertyTest {
         }
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<List<UpdateTemplateRequest>> updateSequences() {
@@ -255,7 +252,6 @@ class TemplateVersionPropertyTest {
                 });
     }
 
-    // ── Helpers ──
 
     private static Template copyTemplate(Template src) {
         Template copy = new Template();
@@ -289,3 +285,4 @@ class TemplateVersionPropertyTest {
         return copy;
     }
 }
+

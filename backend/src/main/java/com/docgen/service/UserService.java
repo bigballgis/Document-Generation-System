@@ -201,7 +201,6 @@ public class UserService {
         log.info("User deleted: userId={}", userId);
     }
 
-    // ── Password strength validation ──
 
     /**
      * Validate that the password meets strength requirements:
@@ -230,7 +229,6 @@ public class UserService {
         }
     }
 
-    // ── Private helpers ──
 
     private void handleLoginFailure(User user) {
         int newFailCount = user.getLoginFailCount() + 1;
@@ -269,3 +267,4 @@ public class UserService {
         );
     }
 }
+

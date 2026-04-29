@@ -54,7 +54,6 @@ public class Tenant {
         this.updatedAt = Instant.now();
     }
 
-    // ── Getters and Setters ──
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -86,3 +85,4 @@ public class Tenant {
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }
+

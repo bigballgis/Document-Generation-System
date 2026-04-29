@@ -73,7 +73,6 @@ class TemplateTestServiceTest {
                 });
     }
 
-    // ── createTestCase ──
 
     @Test
     void createTestCase_success() {
@@ -118,7 +117,6 @@ class TemplateTestServiceTest {
         assertEquals(ComparisonType.VARIABLE_VALUE, result.getComparisonType());
     }
 
-    // ── listTestCases ──
 
     @Test
     void listTestCases_returnsAll() {
@@ -181,7 +179,6 @@ class TemplateTestServiceTest {
         assertSame(orig, TemplateTestService.capPageable(orig));
     }
 
-    // ── WS-05-T07: execution semantics characterization ──
 
     @Test
     void characterization_runTestCase_invokesRenderForTemplateTestWithParsedParameters() {
@@ -276,7 +273,6 @@ class TemplateTestServiceTest {
         verifyNoInteractions(docxTextExtractor);
     }
 
-    // ── updateTestCase ──
 
     @Test
     void updateTestCase_success() {
@@ -303,7 +299,6 @@ class TemplateTestServiceTest {
         assertThrows(ResourceNotFoundException.class, () -> service.updateTestCase(999L, request));
     }
 
-    // ── deleteTestCase ──
 
     @Test
     void deleteTestCase_success() {
@@ -320,7 +315,6 @@ class TemplateTestServiceTest {
         assertThrows(ResourceNotFoundException.class, () -> service.deleteTestCase(999L));
     }
 
-    // ── runTestCase ──
 
     @Test
     void runTestCase_variableValue_passed() {
@@ -479,7 +473,6 @@ class TemplateTestServiceTest {
         assertThrows(ResourceNotFoundException.class, () -> service.runTestCase(999L));
     }
 
-    // ── runAllTests ──
 
     @Test
     void runAllTests_mixedResults() {
@@ -530,7 +523,6 @@ class TemplateTestServiceTest {
         assertEquals(0, report.getFailedCount());
     }
 
-    // ── Import / Export ──
 
     @Test
     void exportTestCases_success() {
@@ -559,7 +551,6 @@ class TemplateTestServiceTest {
         assertEquals("Imported", imported.get(0).getName());
     }
 
-    // ── Comparison logic ──
 
     @Test
     void compare_variableValue_emptyExpected() {
@@ -582,7 +573,6 @@ class TemplateTestServiceTest {
         assertEquals(service.computeHashBytes(b), service.computeHashBytes(b));
     }
 
-    // ── Helpers ──
 
     private TestCase createSampleTestCase(Long id, Long templateId, String name) {
         TestCase tc = new TestCase();
@@ -597,3 +587,4 @@ class TemplateTestServiceTest {
         return tc;
     }
 }
+

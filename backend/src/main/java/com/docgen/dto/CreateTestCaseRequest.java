@@ -6,9 +6,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-/**
- * Request DTO for creating a new template test case.
- */
 public class CreateTestCaseRequest {
 
     @NotBlank(message = "Test case name is required")

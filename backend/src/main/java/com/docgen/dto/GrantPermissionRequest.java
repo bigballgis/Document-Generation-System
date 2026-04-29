@@ -4,7 +4,6 @@ import com.docgen.entity.PermissionType;
 import jakarta.validation.constraints.NotNull;
 
 /**
- * Request DTO for granting a permission on a template.
  * Either userId or teamId must be provided (not both null).
  */
 public class GrantPermissionRequest {

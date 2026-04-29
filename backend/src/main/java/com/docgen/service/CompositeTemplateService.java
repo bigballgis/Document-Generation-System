@@ -46,7 +46,6 @@ public class CompositeTemplateService {
         this.templateStateMachineService = templateStateMachineService;
     }
 
-    // ── Create ──
 
     /**
      * Create a new Composite_Template with template_type = COMPOSITE.
@@ -74,7 +73,6 @@ public class CompositeTemplateService {
         return toTemplateDTO(saved);
     }
 
-    // ── Update Assembly Config ──
 
     /**
      * Update the assembly configuration of a Composite_Template.
@@ -98,7 +96,6 @@ public class CompositeTemplateService {
         return config;
     }
 
-    // ── Activate ──
 
     /**
      * Activate a Composite_Template after verifying all inline segments have valid filePaths.
@@ -149,7 +146,6 @@ public class CompositeTemplateService {
         return toTemplateDTO(saved);
     }
 
-    // ── Get Assembly Config ──
 
     /**
      * Retrieve the assembly configuration of a Composite_Template.
@@ -168,7 +164,6 @@ public class CompositeTemplateService {
         return assemblyConfigService.deserialize(json);
     }
 
-    // ── Preview ──
 
     /**
      * Generate a preview of the composite template showing each segment's status.
@@ -214,7 +209,6 @@ public class CompositeTemplateService {
         return preview;
     }
 
-    // ── Selective Preview ──
 
     /**
      * Generate a selective preview of the composite template for a subset of segment positions.
@@ -266,7 +260,6 @@ public class CompositeTemplateService {
         return preview;
     }
 
-    // ── Private helpers ──
 
     private Template findCompositeTemplateOrThrow(Long templateId) {
         Template template = templateRepository.findById(templateId)
@@ -302,3 +295,4 @@ public class CompositeTemplateService {
         );
     }
 }
+

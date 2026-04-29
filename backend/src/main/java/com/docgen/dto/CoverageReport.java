@@ -4,7 +4,6 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * DTO representing the result of a template coverage check.
  * Three-dimensional coverage: Branch / Loop / Parameter.
  */
 public class CoverageReport {
@@ -12,13 +11,11 @@ public class CoverageReport {
     private Long templateId;
     private String templateName;
 
-    // Three-dimensional coverage
     private double branchCoverage;
     private double loopCoverage;
     private double parameterCoverage;
     private double overallCoverage;
 
-    // Statistics
     private int totalBranches;
     private int coveredBranches;
     private int totalLoopScenarios;
@@ -26,20 +23,16 @@ public class CoverageReport {
     private int totalParameters;
     private int coveredParameters;
 
-    // Uncovered items
     private List<UncoveredItem> uncoveredItems;
 
-    // Threshold
     private boolean belowThreshold;
     private double threshold;
     private Instant checkedAt;
 
-    // Warnings
     private List<String> warnings;
 
     public CoverageReport() {}
 
-    // ── Getters and Setters ──
 
     public Long getTemplateId() { return templateId; }
     public void setTemplateId(Long templateId) { this.templateId = templateId; }
@@ -92,3 +85,4 @@ public class CoverageReport {
     public List<String> getWarnings() { return warnings; }
     public void setWarnings(List<String> warnings) { this.warnings = warnings; }
 }
+

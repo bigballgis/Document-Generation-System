@@ -37,7 +37,6 @@ class ContentDiffServiceTest {
         service = new ContentDiffService(textExtractor);
     }
 
-    // ── computeLineDiff (package-private) ──
 
     @Test
     void computeLineDiff_bothEmpty_returnsEmptyList() {
@@ -87,7 +86,6 @@ class ContentDiffServiceTest {
         assertEquals("new-body", mod.getNewText());
     }
 
-    // ── computeContentDiff / hasContentChanged ──
 
     @Test
     void computeContentDiff_identicalTexts_returnsEmptyLinesAndNoContentChange() {
@@ -156,3 +154,4 @@ class ContentDiffServiceTest {
         assertFalse(service.hasContentChanged(OLD_PATH, NEW_PATH));
     }
 }
+

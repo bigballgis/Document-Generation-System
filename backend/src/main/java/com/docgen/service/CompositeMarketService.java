@@ -98,6 +98,7 @@ public class CompositeMarketService {
         copy.setStatus("DRAFT");
         copy.setTemplateType("COMPOSITE");
         copy.setAssemblyConfig(newAssemblyConfig);
+        copy.setRenderConfig(sourceTemplate.getRenderConfig());
 
         Template saved = templateRepository.save(copy);
 
@@ -140,7 +141,6 @@ public class CompositeMarketService {
         return toMarketTemplateDTO(saved);
     }
 
-    // ── Private helpers ──
 
     /**
      * Copy segment files in MinIO and remap assembly config to use new filePaths.

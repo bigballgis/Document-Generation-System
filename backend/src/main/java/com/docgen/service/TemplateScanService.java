@@ -109,7 +109,6 @@ public class TemplateScanService {
         return buildTree(tokens);
     }
 
-    // ── Internal token representation ──
 
     /**
      * Represents a parsed token from the template XML.
@@ -275,3 +274,4 @@ public class TemplateScanService {
         }
     }
 }
+

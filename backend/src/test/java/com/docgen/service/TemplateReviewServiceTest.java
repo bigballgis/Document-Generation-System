@@ -56,12 +56,12 @@ class TemplateReviewServiceTest {
                 reviewRepository, templateRepository, userRepository, stateMachineService, objectMapper, autoActivationService);
     }
 
-    // ── submitForReview tests ──
 
     @Test
     void submitForReview_createsReviewsAndTransitionsState() {
         Template template = createTemplate(1L);
         template.setTeamId(100L);
+        template.setStatus("IN_TEST");
         when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
         when(userRepository.findById(10L)).thenReturn(Optional.of(reviewerUser(10L, 1L, 100L)));
         when(userRepository.findById(20L)).thenReturn(Optional.of(reviewerUser(20L, 1L, 100L)));
@@ -107,6 +107,19 @@ class TemplateReviewServiceTest {
     }
 
     @Test
+    void submitForReview_notInTest_throws() {
+        Template template = createTemplate(1L);
+        template.setTeamId(100L);
+        template.setStatus("DRAFT");
+        when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
+        when(userRepository.findById(10L)).thenReturn(Optional.of(reviewerUser(10L, 1L, 100L)));
+
+        SubmitReviewRequest request = new SubmitReviewRequest(List.of(10L), 1);
+        assertThrows(BusinessException.class, () -> reviewService.submitForReview(1L, request));
+        verify(stateMachineService, never()).transition(anyLong(), any());
+    }
+
+    @Test
     void submitForReview_templateNotFound_throws() {
         when(templateRepository.findById(999L)).thenReturn(Optional.empty());
 
@@ -115,7 +128,6 @@ class TemplateReviewServiceTest {
                 () -> reviewService.submitForReview(999L, request));
     }
 
-    // ── approveReview tests ──
 
     @Test
     void approveReview_setsApprovedStatus() {
@@ -194,7 +206,6 @@ class TemplateReviewServiceTest {
         verify(autoActivationService, never()).tryAutoActivate(anyLong());
     }
 
-    // ── conditionalApprove tests ──
 
     @Test
     void conditionalApprove_setsStatusAndSuggestions() {
@@ -216,21 +227,20 @@ class TemplateReviewServiceTest {
         assertEquals(2, result.getSuggestions().size());
     }
 
-    // ── rejectReview tests ──
 
     @Test
-    void rejectReview_setsRejectedAndTransitionsToDraft() {
+    void rejectReview_setsRejectedAndTransitionsToInTest() {
         TemplateReview review = createPendingReview(1L, 100L, 10L, 1);
         when(reviewRepository.findById(1L)).thenReturn(Optional.of(review));
         when(reviewRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(stateMachineService.transition(100L, com.docgen.entity.TemplateState.DRAFT))
+        when(stateMachineService.transition(100L, com.docgen.entity.TemplateState.IN_TEST))
                 .thenReturn(new Template());
 
         TemplateReviewDTO result = reviewService.rejectReview(1L, 10L, "Needs major rework");
 
         assertEquals(ReviewStatus.REJECTED, result.getStatus());
         assertEquals("Needs major rework", result.getComment());
-        verify(stateMachineService).transition(100L, com.docgen.entity.TemplateState.DRAFT);
+        verify(stateMachineService).transition(100L, com.docgen.entity.TemplateState.IN_TEST);
     }
 
     @Test
@@ -259,7 +269,6 @@ class TemplateReviewServiceTest {
                 () -> reviewService.rejectReview(999L, 10L, "reason"));
     }
 
-    // ── getReview tests ──
 
     @Test
     void getReview_returnsDTO() {
@@ -273,7 +282,6 @@ class TemplateReviewServiceTest {
         assertEquals(ReviewStatus.PENDING, result.getStatus());
     }
 
-    // ── OnlyOffice integration test ──
 
     @Test
     void getOnlyOfficeReviewUrl_returnsUrl() {
@@ -287,7 +295,6 @@ class TemplateReviewServiceTest {
         assertTrue(url.contains("mode=review"));
     }
 
-    // ── AutoActivationService integration tests ──
 
     @Test
     void approveReview_partialReviewsIncomplete_doesNotCallAutoActivation() {
@@ -345,7 +352,6 @@ class TemplateReviewServiceTest {
         verify(autoActivationService, never()).tryAutoActivate(anyLong());
     }
 
-    // ── Helper methods ──
 
     private Template createTemplate(Long id) {
         Template t = new Template();
@@ -380,3 +386,4 @@ class TemplateReviewServiceTest {
         return review;
     }
 }
+

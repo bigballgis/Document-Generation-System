@@ -2,9 +2,6 @@ package com.docgen.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
-/**
- * Request DTO for creating a blank segment .docx file.
- */
 public class CreateBlankSegmentRequest {
 
     @NotBlank(message = "片段名称不能为空")

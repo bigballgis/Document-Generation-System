@@ -30,7 +30,6 @@ class CoverageCheckServicePropertyTest {
     private static final Long TEMPLATE_ID = 1L;
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    // ── Helpers ──
 
     private CoverageCheckService createService(List<PlaceholderInfo> placeholders,
                                                 List<ParameterDefinition> params,

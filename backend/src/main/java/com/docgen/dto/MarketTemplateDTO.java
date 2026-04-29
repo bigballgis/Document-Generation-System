@@ -3,9 +3,6 @@ package com.docgen.dto;
 import java.math.BigDecimal;
 import java.time.Instant;
 
-/**
- * Response DTO for market template information.
- */
 public class MarketTemplateDTO {
 
     private Long id;

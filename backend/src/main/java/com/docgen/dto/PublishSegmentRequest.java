@@ -2,9 +2,6 @@ package com.docgen.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
-/**
- * Request DTO for publishing a segment version.
- */
 public class PublishSegmentRequest {
 
     @NotBlank(message = "片段名称不能为空")

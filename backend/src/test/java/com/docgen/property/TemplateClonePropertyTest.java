@@ -166,7 +166,6 @@ class TemplateClonePropertyTest {
         }
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<Template> sourceTemplates() {
@@ -258,7 +257,6 @@ class TemplateClonePropertyTest {
                 });
     }
 
-    // ── Helpers ──
 
     private Template copyTemplate(Template src) {
         Template copy = new Template();
@@ -280,3 +278,4 @@ class TemplateClonePropertyTest {
         return copy;
     }
 }
+

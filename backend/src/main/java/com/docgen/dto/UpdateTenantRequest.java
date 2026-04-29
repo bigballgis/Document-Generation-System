@@ -2,9 +2,6 @@ package com.docgen.dto;
 
 import jakarta.validation.constraints.Email;
 
-/**
- * Request DTO for updating an existing tenant.
- */
 public class UpdateTenantRequest {
 
     private String name;

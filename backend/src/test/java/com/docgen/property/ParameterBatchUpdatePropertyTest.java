@@ -120,14 +120,12 @@ class ParameterBatchUpdatePropertyTest {
         verify(repo, times(scenario.items.size())).save(any(ParameterDefinition.class));
     }
 
-    // ── Scenario record ──
 
     record BatchScenario(
             List<ParameterDefinition> existingEntities,
             List<BatchUpdateParameterRequest.BatchUpdateItem> items
     ) {}
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<BatchScenario> batchWithAtLeastOneInvalidItem() {
@@ -183,7 +181,6 @@ class ParameterBatchUpdatePropertyTest {
         });
     }
 
-    // ── Invalid item factory ──
 
     enum InvalidReason {
         INVALID_DATA_TYPE,
@@ -209,7 +206,6 @@ class ParameterBatchUpdatePropertyTest {
         };
     }
 
-    // ── Helper ──
 
     private static ParameterDefinition makeEntity(Long id, Long templateId, Long parentId,
                                                    String name, String parameterType, String dataType) {
@@ -228,3 +224,4 @@ class ParameterBatchUpdatePropertyTest {
         return p;
     }
 }
+

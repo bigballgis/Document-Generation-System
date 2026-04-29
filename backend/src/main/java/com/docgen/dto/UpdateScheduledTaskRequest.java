@@ -1,8 +1,5 @@
 package com.docgen.dto;
 
-/**
- * Request DTO for updating an existing scheduled task.
- */
 public class UpdateScheduledTaskRequest {
 
     private String cronExpression;
