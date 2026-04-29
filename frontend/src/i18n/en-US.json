@@ -459,7 +459,12 @@
       "statusLocked": "Locked",
       "reviewLane": "Review lane",
       "reviewLaneHint": "Required: MAKER or CHECKER for maker-checker teams; leave empty for cross-review teams.",
-      "laneNone": "None"
+      "laneNone": "None",
+      "teamSelectPlaceholder": "Select a team",
+      "teamLoadFailed": "Could not load teams for this tenant",
+      "teamModeCrossReview": "Cross-review",
+      "teamModeMakerChecker": "Maker-checker",
+      "makerCheckerLaneReminder": "This team uses maker-checker: set the review lane to MAKER or CHECKER."
     },
     "team": {
       "selectTenant": "Tenant",

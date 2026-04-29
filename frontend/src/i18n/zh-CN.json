@@ -458,7 +458,12 @@
       "statusLocked": "已锁定",
       "reviewLane": "审批通道",
       "reviewLaneHint": "制作者-复核团队须选择 MAKER 或 CHECKER；横向复核团队可留空。",
-      "laneNone": "无"
+      "laneNone": "无",
+      "teamSelectPlaceholder": "选择团队",
+      "teamLoadFailed": "无法加载该租户的团队列表",
+      "teamModeCrossReview": "横向复核",
+      "teamModeMakerChecker": "制作者-复核",
+      "makerCheckerLaneReminder": "该团队为制作者-复核模式：请为审查跑道选择 MAKER 或 CHECKER。"
     },
     "team": {
       "selectTenant": "选择租户",

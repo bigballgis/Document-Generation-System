@@ -67,8 +67,31 @@
           </el-select>
         </el-form-item>
         <el-form-item :label="$t('admin.user.team')">
-          <el-input-number v-model="assignTeamId" :min="1" style="width: 100%" :controls="true" />
+          <el-select
+            v-model="assignTeamId"
+            clearable
+            filterable
+            :loading="loadingTeams"
+            :placeholder="$t('admin.user.teamSelectPlaceholder')"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="tm in teamsForDialog"
+              :key="tm.id"
+              :label="teamOptionLabel(tm)"
+              :value="tm.id"
+            />
+          </el-select>
         </el-form-item>
+        <el-alert
+          v-if="selectedTeamIsMakerChecker"
+          type="warning"
+          :closable="false"
+          show-icon
+          class="lane-reminder"
+        >
+          {{ $t('admin.user.makerCheckerLaneReminder') }}
+        </el-alert>
         <el-form-item :label="$t('admin.user.reviewLane')">
           <el-select v-model="selectedLane" clearable style="width: 100%" :placeholder="$t('admin.user.reviewLaneHint')">
             <el-option :label="$t('admin.user.laneNone')" value="" />
@@ -86,10 +109,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { getUsers, updateUser, type UserDTO } from '@/api/admin'
+import { listTeams, type TeamDTO } from '@/api/teams'
 
 const { t } = useI18n()
 
@@ -106,6 +130,14 @@ const editingUser = ref<UserDTO | null>(null)
 const selectedRole = ref('USER')
 const assignTeamId = ref<number | undefined>(undefined)
 const selectedLane = ref<string>('')
+const teamsForDialog = ref<TeamDTO[]>([])
+const loadingTeams = ref(false)
+
+const selectedTeamIsMakerChecker = computed(() => {
+  const id = assignTeamId.value
+  if (id === undefined || id === null) return false
+  return teamsForDialog.value.some((team) => team.id === id && team.approvalMode === 'MAKER_CHECKER')
+})
 
 const roleLabels: Record<string, string> = {
   SUPER_ADMIN: 'Super Admin',
@@ -116,6 +148,14 @@ const roleLabels: Record<string, string> = {
 
 function roleLabel(role: string) {
   return roleLabels[role] || role
+}
+
+function teamOptionLabel(tm: TeamDTO) {
+  const mode =
+    tm.approvalMode === 'MAKER_CHECKER'
+      ? t('admin.user.teamModeMakerChecker')
+      : t('admin.user.teamModeCrossReview')
+  return `${tm.name} (${mode})`
 }
 
 function formatDate(iso?: string) {
@@ -132,6 +172,24 @@ async function loadData() {
     loading.value = false
   }
 }
+
+watch(roleDialogVisible, async (visible) => {
+  if (!visible) {
+    teamsForDialog.value = []
+    return
+  }
+  const u = editingUser.value
+  if (!u) return
+  loadingTeams.value = true
+  try {
+    teamsForDialog.value = await listTeams(u.tenantId)
+  } catch {
+    teamsForDialog.value = []
+    ElMessage.error(t('admin.user.teamLoadFailed'))
+  } finally {
+    loadingTeams.value = false
+  }
+})
 
 function openRoleDialog(user: UserDTO) {
   editingUser.value = user
@@ -172,5 +230,7 @@ onMounted(() => loadData())
   justify-content: flex-end;
   margin-top: 16px;
 }
+.lane-reminder {
+  margin: 0 0 12px 120px;
+}
 </style>
-

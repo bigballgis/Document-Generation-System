@@ -82,7 +82,7 @@ class UserServiceTest {
 
         BusinessException ex = assertThrows(BusinessException.class,
                 () -> userService.register(request, 1L));
-        assertEquals("用户名已存在", ex.getMessage());
+        assertEquals("Username already exists", ex.getMessage());
     }
 
     @Test
@@ -93,7 +93,7 @@ class UserServiceTest {
 
         BusinessException ex = assertThrows(BusinessException.class,
                 () -> userService.register(request, 1L));
-        assertEquals("邮箱已被注册", ex.getMessage());
+        assertEquals("Email is already registered", ex.getMessage());
     }
 
 

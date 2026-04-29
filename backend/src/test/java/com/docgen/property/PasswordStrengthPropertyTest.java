@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p><b>Validates: Requirements 48.2</b></p>
  */
-@Tag("Feature: low-code-document-generation-system, Property 14: 密码强度验证正确性")
+@Tag("password-strength-validation")
 class PasswordStrengthPropertyTest {
 
     private final UserService userService = new UserService(null, null, null, null, null, null);

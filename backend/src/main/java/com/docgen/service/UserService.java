@@ -71,11 +71,11 @@ public class UserService {
     public UserDTO register(RegisterRequest request, Long tenantId) {
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "用户名已存在", HttpStatus.CONFLICT);
+                    "Username already exists", HttpStatus.CONFLICT);
         }
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "邮箱已被注册", HttpStatus.CONFLICT);
+                    "Email is already registered", HttpStatus.CONFLICT);
         }
 
         validatePasswordStrength(request.getPassword());
@@ -99,18 +99,18 @@ public class UserService {
     public TokenPair login(LoginRequest request) {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new BusinessException(ErrorCode.AUTH_INVALID_CREDENTIALS,
-                        "用户名或密码错误", HttpStatus.UNAUTHORIZED));
+                        "Invalid username or password", HttpStatus.UNAUTHORIZED));
 
         // Check if account is locked
         if (user.getLockedUntil() != null && Instant.now().isBefore(user.getLockedUntil())) {
             throw new BusinessException(ErrorCode.AUTH_ACCOUNT_LOCKED,
-                    "账户已锁定，请稍后再试", HttpStatus.FORBIDDEN);
+                    "Account is locked. Try again later.", HttpStatus.FORBIDDEN);
         }
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             handleLoginFailure(user);
             throw new BusinessException(ErrorCode.AUTH_INVALID_CREDENTIALS,
-                    "用户名或密码错误", HttpStatus.UNAUTHORIZED);
+                    "Invalid username or password", HttpStatus.UNAUTHORIZED);
         }
 
         // Reset fail count on successful login
@@ -130,7 +130,7 @@ public class UserService {
     public TokenPair refreshToken(String refreshToken) {
         if (!jwtTokenProvider.validateToken(refreshToken)) {
             throw new BusinessException(ErrorCode.AUTH_INVALID_TOKEN,
-                    "无效的刷新令牌", HttpStatus.UNAUTHORIZED);
+                    "Invalid refresh token", HttpStatus.UNAUTHORIZED);
         }
 
         Long userId = jwtTokenProvider.getUserIdFromToken(refreshToken);
@@ -138,12 +138,12 @@ public class UserService {
 
         if (storedToken == null || !storedToken.equals(refreshToken)) {
             throw new BusinessException(ErrorCode.AUTH_INVALID_TOKEN,
-                    "刷新令牌已失效", HttpStatus.UNAUTHORIZED);
+                    "Refresh token is no longer valid", HttpStatus.UNAUTHORIZED);
         }
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.AUTH_INVALID_TOKEN,
-                        "用户不存在", HttpStatus.UNAUTHORIZED));
+                        "User not found", HttpStatus.UNAUTHORIZED));
 
         return generateTokenPair(user);
     }
@@ -166,7 +166,7 @@ public class UserService {
     public UserDTO updateProfile(Long userId, UpdateProfileRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.VALIDATION_FAILED,
-                        "用户不存在", HttpStatus.NOT_FOUND));
+                        "User not found", HttpStatus.NOT_FOUND));
 
         // UpdateProfileRequest has nickname, avatarUrl, contactInfo
         // The users table doesn't have these columns yet, so we log and return current state.
@@ -182,7 +182,7 @@ public class UserService {
     public UserDTO getUserById(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.VALIDATION_FAILED,
-                        "用户不存在", HttpStatus.NOT_FOUND));
+                        "User not found", HttpStatus.NOT_FOUND));
         return toDTO(user);
     }
 
@@ -284,7 +284,7 @@ public class UserService {
     public void deleteUser(Long userId) {
         if (!userRepository.existsById(userId)) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "用户不存在", HttpStatus.NOT_FOUND);
+                    "User not found", HttpStatus.NOT_FOUND);
         }
         userRepository.deleteById(userId);
         RedisConfig.deleteRefreshToken(redisTemplate, userId);
@@ -299,23 +299,23 @@ public class UserService {
     public void validatePasswordStrength(String password) {
         if (password == null || password.length() < 8) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "密码长度不能少于8位", HttpStatus.BAD_REQUEST);
+                    "Password must be at least 8 characters", HttpStatus.BAD_REQUEST);
         }
         if (!UPPERCASE_PATTERN.matcher(password).find()) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "密码必须包含大写字母", HttpStatus.BAD_REQUEST);
+                    "Password must contain an uppercase letter", HttpStatus.BAD_REQUEST);
         }
         if (!LOWERCASE_PATTERN.matcher(password).find()) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "密码必须包含小写字母", HttpStatus.BAD_REQUEST);
+                    "Password must contain a lowercase letter", HttpStatus.BAD_REQUEST);
         }
         if (!DIGIT_PATTERN.matcher(password).find()) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "密码必须包含数字", HttpStatus.BAD_REQUEST);
+                    "Password must contain a digit", HttpStatus.BAD_REQUEST);
         }
         if (!SPECIAL_CHAR_PATTERN.matcher(password).find()) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "密码必须包含特殊字符", HttpStatus.BAD_REQUEST);
+                    "Password must contain a special character", HttpStatus.BAD_REQUEST);
         }
     }
 

@@ -60,7 +60,7 @@ public class AsyncDocumentService {
     public AsyncTaskDTO submitAsyncGeneration(Long templateId, GenerateDocumentRequest request) {
         Template template = templateRepository.findById(templateId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TEMPLATE_NOT_FOUND,
-                        "模板不存在: " + templateId, HttpStatus.NOT_FOUND));
+                        "Template not found: " + templateId, HttpStatus.NOT_FOUND));
 
         templateGenerationEligibilityService.requireActiveForDocumentGeneration(template, templateId);
 
@@ -133,7 +133,7 @@ public class AsyncDocumentService {
     public AsyncTaskDTO getTaskStatus(String taskId) {
         AsyncTask task = asyncTaskRepository.findByTaskId(taskId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TASK_NOT_FOUND,
-                        "任务不存在: " + taskId, HttpStatus.NOT_FOUND));
+                        "Task not found: " + taskId, HttpStatus.NOT_FOUND));
         return toDTO(task);
     }
 
@@ -144,11 +144,11 @@ public class AsyncDocumentService {
     public ResponseEntity<byte[]> downloadTaskResult(String taskId) {
         AsyncTask task = asyncTaskRepository.findByTaskId(taskId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TASK_NOT_FOUND,
-                        "任务不存在: " + taskId, HttpStatus.NOT_FOUND));
+                        "Task not found: " + taskId, HttpStatus.NOT_FOUND));
 
         if (!"COMPLETED".equals(task.getStatus())) {
             throw new BusinessException(ErrorCode.TASK_NOT_COMPLETED,
-                    "任务尚未完成: " + taskId, HttpStatus.BAD_REQUEST);
+                    "Task is not completed yet: " + taskId, HttpStatus.BAD_REQUEST);
         }
 
         if ("BATCH_GENERATE".equals(task.getTaskType())) {
@@ -175,7 +175,7 @@ public class AsyncDocumentService {
         }
 
         throw new BusinessException(ErrorCode.DOCUMENT_NOT_FOUND,
-                "任务结果文档不存在", HttpStatus.NOT_FOUND);
+                "No result document is available for this task", HttpStatus.NOT_FOUND);
     }
 
     AsyncTaskDTO toDTO(AsyncTask task) {

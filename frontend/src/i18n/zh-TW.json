@@ -452,7 +452,12 @@
       "statusLocked": "已鎖定",
       "reviewLane": "審核通道",
       "reviewLaneHint": "製作者-複核團隊須選擇 MAKER 或 CHECKER；橫向複核團隊可留空。",
-      "laneNone": "無"
+      "laneNone": "無",
+      "teamSelectPlaceholder": "選擇團隊",
+      "teamLoadFailed": "無法載入該租戶的團隊列表",
+      "teamModeCrossReview": "橫向複核",
+      "teamModeMakerChecker": "製作者-複核",
+      "makerCheckerLaneReminder": "此團隊為製作者-複核模式：請為審查跑道選擇 MAKER 或 CHECKER。"
     },
     "team": {
       "selectTenant": "選擇租戶",
