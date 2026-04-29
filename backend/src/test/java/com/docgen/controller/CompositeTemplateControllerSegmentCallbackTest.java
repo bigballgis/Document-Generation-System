@@ -65,6 +65,9 @@ class CompositeTemplateControllerSegmentCallbackTest {
 
     @BeforeEach
     void setUp() {
+        when(onlyOfficeService.resolveCallbackDownloadFetchUrl(anyString()))
+                .thenAnswer(inv -> inv.getArgument(0));
+
         controller = new CompositeTemplateController(
                 compositeTemplateService,
                 compositeCoverageService,

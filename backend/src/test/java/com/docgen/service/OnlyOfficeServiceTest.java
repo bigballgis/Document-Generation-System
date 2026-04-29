@@ -184,5 +184,16 @@ class OnlyOfficeServiceTest {
 
         assertTrue(service.isAllowedCallbackDownloadUrl("http://localhost/cache/files/save.docx"));
     }
+
+    @Test
+    void resolveCallbackDownloadFetchUrl_rewritesLoopbackToConfiguredDocumentServerHostname() throws Exception {
+        Field onlyOfficeUrlField = OnlyOfficeService.class.getDeclaredField("onlyOfficeUrl");
+        onlyOfficeUrlField.setAccessible(true);
+        onlyOfficeUrlField.set(service, "http://onlyoffice");
+
+        assertEquals(
+                "http://onlyoffice/cache/key.docx",
+                service.resolveCallbackDownloadFetchUrl("http://localhost/cache/key.docx"));
+    }
 }
 

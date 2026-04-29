@@ -89,6 +89,62 @@ public class OnlyOfficeService {
     }
 
     /**
+     * OnlyOffice often sends {@code localhost} / loopback in callback {@code url} when the editor was opened via
+     * a browser host such as {@code localhost}. The Spring backend resolves {@code localhost} to itself, not to
+     * Document Server — so we rewrite loopback hosts to {@link #onlyOfficeUrl} before outbound policy and GET.
+     *
+     * @return URL string to use for {@link OutboundUrlPolicy} validation and {@link CallbackDocumentDownloadHelper}.
+     */
+    public String resolveCallbackDownloadFetchUrl(String rawCallbackUrl) {
+        if (rawCallbackUrl == null || rawCallbackUrl.isBlank()) {
+            return rawCallbackUrl != null ? rawCallbackUrl.trim() : null;
+        }
+        String trimmed = rawCallbackUrl.strip();
+        try {
+            URI documentServerBase = URI.create(onlyOfficeUrl.strip());
+            String canonicalHost = documentServerBase.getHost();
+            if (canonicalHost == null) {
+                return trimmed;
+            }
+
+            URI u = URI.create(trimmed);
+            String fetchHost = u.getHost();
+            if (fetchHost == null || !InetAddress.getByName(fetchHost.strip()).isLoopbackAddress()) {
+                return trimmed;
+            }
+
+            String scheme = documentServerBase.getScheme();
+            if (scheme == null || scheme.isBlank()) {
+                scheme = u.getScheme();
+            }
+
+            URI rebuilt = new URI(
+                    scheme,
+                    documentServerBase.getRawUserInfo(),
+                    canonicalHost,
+                    documentServerBase.getPort(),
+                    u.getRawPath(),
+                    u.getRawQuery(),
+                    u.getRawFragment());
+
+            log.debug(
+                    "OnlyOffice fetch URL loopback '{}:{}' rewrote to '{}' for backend outbound fetch",
+                    fetchHost,
+                    u.getPort() >= 0 ? u.getPort() : -1,
+                    rebuilt.toASCIIString());
+            return rebuilt.toASCIIString();
+        } catch (UnknownHostException e) {
+            return trimmed;
+        } catch (URISyntaxException e) {
+            log.warn("Could not normalize OnlyOffice callback download URL syntax: {}", e.getMessage());
+            return trimmed;
+        } catch (Exception e) {
+            log.warn("Could not normalize OnlyOffice callback download URL: {}", e.toString());
+            return trimmed;
+        }
+    }
+
+    /**
      * Generate a presigned GET URL for the template file in MinIO.
      * OnlyOffice Document Server will use this URL to download the document.
      */
@@ -164,10 +220,15 @@ public class OnlyOfficeService {
 
         // Status 2 (ready for saving) or 6 (forcesave) — download and update
         if (status == 2 || status == 6) {
-            String downloadUrl = (String) body.get("url");
-            if (downloadUrl == null || downloadUrl.isBlank()) {
+            String rawUrl = (String) body.get("url");
+            if (rawUrl == null || rawUrl.isBlank()) {
                 log.warn("OnlyOffice callback for template {} has no download URL", templateId);
                 return 0;
+            }
+
+            String downloadUrl = resolveCallbackDownloadFetchUrl(rawUrl);
+            if (!rawUrl.strip().equals(downloadUrl)) {
+                log.debug("OnlyOffice callback rewrote Document Server fetch URL from {} to {}", rawUrl, downloadUrl);
             }
 
             String callbackToken = extractOnlyOfficeToken(body, authorizationHeader);

@@ -332,12 +332,13 @@ public class CompositeTemplateController {
             return ResponseEntity.ok(Map.of("error", 0));
         }
 
-        String downloadUrl = (String) body.get("url");
-        if (downloadUrl == null || downloadUrl.isBlank()) {
+        String rawDownloadUrl = (String) body.get("url");
+        if (rawDownloadUrl == null || rawDownloadUrl.isBlank()) {
             log.warn("OnlyOffice segment callback has no download URL for template {}, segment {}",
                     id, segmentIndex);
             return ResponseEntity.ok(Map.of("error", 0));
         }
+        String downloadUrl = onlyOfficeService.resolveCallbackDownloadFetchUrl(rawDownloadUrl);
         if (!onlyOfficeService.isAllowedCallbackDownloadUrl(downloadUrl)) {
             log.warn("OnlyOffice segment callback download URL is not allowed for template {}, segment {}",
                     id, segmentIndex);
