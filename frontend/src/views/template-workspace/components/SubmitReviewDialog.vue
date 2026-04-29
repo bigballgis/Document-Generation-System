@@ -72,23 +72,33 @@ const candidates = ref<ReviewerCandidateDTO[]>([])
 const loadingCandidates = ref(false)
 
 function candidateLabel(c: ReviewerCandidateDTO): string {
-  if (c.email) return `${c.username} (${c.email})`
-  return c.username
+  const lane = c.teamReviewLane ? ` [${c.teamReviewLane}]` : ''
+  if (c.email) return `${c.username} (${c.email})${lane}`
+  return `${c.username}${lane}`
 }
 
 watch(
-  () => [props.visible, props.templateId] as const,
-  async ([visible, templateId]) => {
+  () => props.visible,
+  (visible) => {
+    if (visible) {
+      form.reviewerIds = []
+      form.reviewLevel = 1
+    }
+  },
+)
+
+watch(
+  () => [props.visible, props.templateId, form.reviewLevel] as const,
+  async ([visible, templateId, reviewLevel]) => {
     if (!visible) return
-    form.reviewerIds = []
-    form.reviewLevel = 1
     if (!templateId || templateId <= 0) {
       candidates.value = []
       return
     }
+    form.reviewerIds = []
     loadingCandidates.value = true
     try {
-      candidates.value = await getReviewerCandidates(templateId)
+      candidates.value = await getReviewerCandidates(templateId, reviewLevel)
     } catch (e: any) {
       candidates.value = []
       ElMessage.error(

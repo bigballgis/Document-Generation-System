@@ -6,6 +6,7 @@ import com.docgen.dto.TemplateDTO;
 import com.docgen.dto.TemplateQueryRequest;
 import com.docgen.dto.UpdateTemplateRequest;
 import com.docgen.entity.Team;
+import com.docgen.entity.TeamApprovalMode;
 import com.docgen.entity.Template;
 import com.docgen.entity.TemplateVersion;
 import com.docgen.entity.User;
@@ -196,6 +197,10 @@ class TemplateServiceTest {
         t.setTeamId(5L);
         t.setCreatedBy(1L);
         when(templateRepository.findById(1L)).thenReturn(Optional.of(t));
+        Team team = new Team();
+        team.setId(5L);
+        team.setTenantId(1L);
+        when(teamRepository.findById(5L)).thenReturn(Optional.of(team));
         User author = new User();
         author.setId(1L);
         author.setUsername("author");
@@ -211,7 +216,7 @@ class TemplateServiceTest {
         other.setTeamId(5L);
         other.setRole("USER");
         when(userRepository.findByTenantIdAndTeamIdOrderByUsernameAsc(1L, 5L)).thenReturn(List.of(author, other));
-        List<ReviewerCandidateDTO> list = templateService.listReviewerCandidates(1L);
+        List<ReviewerCandidateDTO> list = templateService.listReviewerCandidates(1L, null);
         assertEquals(1, list.size());
         assertEquals(2L, list.get(0).getId());
         assertEquals("other", list.get(0).getUsername());
@@ -222,7 +227,73 @@ class TemplateServiceTest {
         Template t = createTestTemplate();
         t.setTeamId(null);
         when(templateRepository.findById(1L)).thenReturn(Optional.of(t));
-        assertThrows(BusinessException.class, () -> templateService.listReviewerCandidates(1L));
+        assertThrows(BusinessException.class, () -> templateService.listReviewerCandidates(1L, null));
+    }
+
+    @Test
+    void listReviewerCandidates_makerChecker_level1_onlyMakers() {
+        Template t = createTestTemplate();
+        t.setTeamId(5L);
+        t.setCreatedBy(1L);
+        when(templateRepository.findById(1L)).thenReturn(Optional.of(t));
+        Team team = new Team();
+        team.setId(5L);
+        team.setTenantId(1L);
+        team.setApprovalMode(TeamApprovalMode.MAKER_CHECKER);
+        when(teamRepository.findById(5L)).thenReturn(Optional.of(team));
+        User maker = new User();
+        maker.setId(2L);
+        maker.setUsername("maker");
+        maker.setEmail("m@t.com");
+        maker.setTenantId(1L);
+        maker.setTeamId(5L);
+        maker.setRole("USER");
+        maker.setTeamReviewLane("MAKER");
+        User checker = new User();
+        checker.setId(3L);
+        checker.setUsername("checker");
+        checker.setEmail("c@t.com");
+        checker.setTenantId(1L);
+        checker.setTeamId(5L);
+        checker.setRole("USER");
+        checker.setTeamReviewLane("CHECKER");
+        when(userRepository.findByTenantIdAndTeamIdOrderByUsernameAsc(1L, 5L)).thenReturn(List.of(maker, checker));
+        List<ReviewerCandidateDTO> list = templateService.listReviewerCandidates(1L, 1);
+        assertEquals(1, list.size());
+        assertEquals(2L, list.get(0).getId());
+    }
+
+    @Test
+    void listReviewerCandidates_makerChecker_level2_onlyCheckers() {
+        Template t = createTestTemplate();
+        t.setTeamId(5L);
+        t.setCreatedBy(1L);
+        when(templateRepository.findById(1L)).thenReturn(Optional.of(t));
+        Team team = new Team();
+        team.setId(5L);
+        team.setTenantId(1L);
+        team.setApprovalMode(TeamApprovalMode.MAKER_CHECKER);
+        when(teamRepository.findById(5L)).thenReturn(Optional.of(team));
+        User maker = new User();
+        maker.setId(2L);
+        maker.setUsername("maker");
+        maker.setEmail("m@t.com");
+        maker.setTenantId(1L);
+        maker.setTeamId(5L);
+        maker.setRole("USER");
+        maker.setTeamReviewLane("MAKER");
+        User checker = new User();
+        checker.setId(3L);
+        checker.setUsername("checker");
+        checker.setEmail("c@t.com");
+        checker.setTenantId(1L);
+        checker.setTeamId(5L);
+        checker.setRole("USER");
+        checker.setTeamReviewLane("CHECKER");
+        when(userRepository.findByTenantIdAndTeamIdOrderByUsernameAsc(1L, 5L)).thenReturn(List.of(maker, checker));
+        List<ReviewerCandidateDTO> list = templateService.listReviewerCandidates(1L, 2);
+        assertEquals(1, list.size());
+        assertEquals(3L, list.get(0).getId());
     }
 
 

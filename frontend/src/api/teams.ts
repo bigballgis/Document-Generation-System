@@ -1,20 +1,36 @@
 import request from './request'
 
+export type TeamApprovalMode = 'CROSS_REVIEW' | 'MAKER_CHECKER'
+
 export interface TeamDTO {
   id: number
   tenantId: number
   name: string
+  description?: string
+  approvalMode?: TeamApprovalMode
+  adGroupObjectId?: string | null
+  adMakerGroupObjectId?: string | null
+  adCheckerGroupObjectId?: string | null
   createdAt: string
-  updatedAt: string
 }
 
 export interface CreateTeamRequest {
   name: string
+  description?: string
+  approvalMode?: TeamApprovalMode
+  adGroupObjectId?: string
+  adMakerGroupObjectId?: string
+  adCheckerGroupObjectId?: string
   tenantId?: number
 }
 
 export interface UpdateTeamRequest {
-  name: string
+  name?: string
+  description?: string
+  approvalMode?: TeamApprovalMode
+  adGroupObjectId?: string
+  adMakerGroupObjectId?: string
+  adCheckerGroupObjectId?: string
 }
 
 export function createTeam(tenantId: number, data: CreateTeamRequest) {

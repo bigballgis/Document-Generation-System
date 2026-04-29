@@ -39,6 +39,10 @@ public class TestResult {
     @Column(name = "generated_document_id")
     private Long generatedDocumentId;
 
+    /** Optional PDF sample stored alongside {@link #generatedDocumentId} Word/DOCX trial output. */
+    @Column(name = "generated_pdf_document_id")
+    private Long generatedPdfDocumentId;
+
     @PrePersist
     protected void onCreate() {
         if (this.executedAt == null) {
@@ -67,5 +71,8 @@ public class TestResult {
 
     public Long getGeneratedDocumentId() { return generatedDocumentId; }
     public void setGeneratedDocumentId(Long generatedDocumentId) { this.generatedDocumentId = generatedDocumentId; }
+
+    public Long getGeneratedPdfDocumentId() { return generatedPdfDocumentId; }
+    public void setGeneratedPdfDocumentId(Long generatedPdfDocumentId) { this.generatedPdfDocumentId = generatedPdfDocumentId; }
 }
 

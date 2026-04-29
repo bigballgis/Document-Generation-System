@@ -65,7 +65,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { isTestPassed, type TestCaseDTO } from '@/api/market'
+import { isTestPassed, type TestCaseDTO } from '@/api/templateTesting'
 
 const props = defineProps<{
   scenarios: TestCaseDTO[]

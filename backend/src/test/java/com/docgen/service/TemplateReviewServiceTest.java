@@ -4,11 +4,14 @@ import com.docgen.dto.ConditionalApproveRequest;
 import com.docgen.dto.SubmitReviewRequest;
 import com.docgen.dto.TemplateReviewDTO;
 import com.docgen.entity.ReviewStatus;
+import com.docgen.entity.Team;
+import com.docgen.entity.TeamApprovalMode;
 import com.docgen.entity.Template;
 import com.docgen.entity.TemplateReview;
 import com.docgen.exception.BusinessException;
 import com.docgen.exception.ResourceNotFoundException;
 import com.docgen.entity.User;
+import com.docgen.repository.TeamRepository;
 import com.docgen.repository.TemplateRepository;
 import com.docgen.repository.TemplateReviewRepository;
 import com.docgen.repository.UserRepository;
@@ -41,6 +44,9 @@ class TemplateReviewServiceTest {
     private UserRepository userRepository;
 
     @Mock
+    private TeamRepository teamRepository;
+
+    @Mock
     private TemplateStateMachineService stateMachineService;
 
     @Mock
@@ -53,7 +59,8 @@ class TemplateReviewServiceTest {
     @BeforeEach
     void setUp() {
         reviewService = new TemplateReviewService(
-                reviewRepository, templateRepository, userRepository, stateMachineService, objectMapper, autoActivationService);
+                reviewRepository, templateRepository, userRepository, teamRepository,
+                stateMachineService, objectMapper, autoActivationService);
     }
 
 
@@ -63,6 +70,7 @@ class TemplateReviewServiceTest {
         template.setTeamId(100L);
         template.setStatus("IN_TEST");
         when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
+        stubTeam(100L, TeamApprovalMode.CROSS_REVIEW);
         when(userRepository.findById(10L)).thenReturn(Optional.of(reviewerUser(10L, 1L, 100L)));
         when(userRepository.findById(20L)).thenReturn(Optional.of(reviewerUser(20L, 1L, 100L)));
         when(stateMachineService.transition(1L, com.docgen.entity.TemplateState.PENDING_REVIEW))
@@ -98,7 +106,9 @@ class TemplateReviewServiceTest {
         Template template = createTemplate(1L);
         template.setTeamId(100L);
         template.setCreatedBy(10L);
+        template.setStatus("IN_TEST");
         when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
+        stubTeam(100L, TeamApprovalMode.CROSS_REVIEW);
         when(userRepository.findById(10L)).thenReturn(Optional.of(reviewerUser(10L, 1L, 100L)));
 
         SubmitReviewRequest request = new SubmitReviewRequest(List.of(10L), 1);
@@ -112,6 +122,7 @@ class TemplateReviewServiceTest {
         template.setTeamId(100L);
         template.setStatus("DRAFT");
         when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
+        stubTeam(100L, TeamApprovalMode.CROSS_REVIEW);
         when(userRepository.findById(10L)).thenReturn(Optional.of(reviewerUser(10L, 1L, 100L)));
 
         SubmitReviewRequest request = new SubmitReviewRequest(List.of(10L), 1);
@@ -126,6 +137,22 @@ class TemplateReviewServiceTest {
         SubmitReviewRequest request = new SubmitReviewRequest(List.of(10L), 1);
         assertThrows(ResourceNotFoundException.class,
                 () -> reviewService.submitForReview(999L, request));
+    }
+
+    @Test
+    void submitForReview_makerChecker_level1_rejectsCheckerLane() {
+        Template template = createTemplate(1L);
+        template.setTeamId(100L);
+        template.setStatus("IN_TEST");
+        when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
+        stubTeam(100L, TeamApprovalMode.MAKER_CHECKER);
+        User checker = reviewerUser(10L, 1L, 100L);
+        checker.setTeamReviewLane("CHECKER");
+        when(userRepository.findById(10L)).thenReturn(Optional.of(checker));
+
+        SubmitReviewRequest request = new SubmitReviewRequest(List.of(10L), 1);
+        assertThrows(BusinessException.class, () -> reviewService.submitForReview(1L, request));
+        verify(stateMachineService, never()).transition(anyLong(), any());
     }
 
 
@@ -362,6 +389,13 @@ class TemplateReviewServiceTest {
         t.setCreatedBy(1L);
         t.setStatus("DRAFT");
         return t;
+    }
+
+    private void stubTeam(long teamId, TeamApprovalMode mode) {
+        Team team = new Team();
+        team.setId(teamId);
+        team.setApprovalMode(mode);
+        when(teamRepository.findById(teamId)).thenReturn(Optional.of(team));
     }
 
     private static User reviewerUser(long id, long tenantId, long teamId) {

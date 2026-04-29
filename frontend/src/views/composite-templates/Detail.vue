@@ -25,9 +25,6 @@
           <el-descriptions-item :label="$t('template.version')">
             {{ template.version }}
           </el-descriptions-item>
-          <el-descriptions-item :label="$t('template.outputFormat')">
-            {{ template.outputFormat || 'DOCX' }}
-          </el-descriptions-item>
           <el-descriptions-item :label="$t('common.createdAt')">
             {{ template.createdAt }}
           </el-descriptions-item>

@@ -40,6 +40,7 @@ export interface UserDTO {
   tenantName?: string
   teamId?: number
   teamName?: string
+  teamReviewLane?: string | null
   lastLogin?: string
   status: string
   createdAt: string
@@ -48,6 +49,7 @@ export interface UserDTO {
 export interface UpdateUserRequest {
   role: string
   teamId?: number | null
+  teamReviewLane?: string | null
 }
 
 export interface PermissionDTO {

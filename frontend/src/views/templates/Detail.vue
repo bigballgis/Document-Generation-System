@@ -54,14 +54,8 @@
               {{ $t(`template.status${statusLabel(template.status)}`) }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item :label="$t('template.category')">
-            {{ template.categoryName || '-' }}
-          </el-descriptions-item>
           <el-descriptions-item :label="$t('template.currentVersion')">
             v{{ template.version }}
-          </el-descriptions-item>
-          <el-descriptions-item :label="$t('template.outputFormat')">
-            {{ template.outputFormat || 'WORD' }}
           </el-descriptions-item>
           <el-descriptions-item :label="$t('common.createdAt')">
             {{ template.createdAt }}
@@ -204,7 +198,6 @@
     <TemplateFormDialog
       v-model:visible="editDialogVisible"
       :template-data="template"
-      :categories="categoryTree"
       :tags="tagList"
       @saved="onEditSaved"
     />
@@ -259,12 +252,12 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import {
   getTemplate, cloneTemplate, activateTemplate, archiveTemplate,
-  getCategories, getTags, submitTemplateToTest, getAvailableTransitions,
+  getTags, submitTemplateToTest, getAvailableTransitions,
   scanVariables, exportCoverageReport,
-  type TemplateDTO, type CategoryDTO, type TagDTO,
+  type TemplateDTO, type TagDTO,
 } from '@/api/templates'
 import { exportDocx, exportConfig } from '@/api/import-export'
-import { exportTestCases, importTestCases } from '@/api/market'
+import { exportTestCases, importTestCases } from '@/api/templateTesting'
 import TemplateFormDialog from './components/TemplateFormDialog.vue'
 import VersionHistory from './components/VersionHistory.vue'
 import VersionDiff from './components/VersionDiff.vue'
@@ -290,7 +283,6 @@ const template = ref<TemplateDTO | null>(null)
 const activeTab = ref('versions')
 const editDialogVisible = ref(false)
 const generateDialogVisible = ref(false)
-const categoryTree = ref<CategoryDTO[]>([])
 const tagList = ref<TagDTO[]>([])
 
 const templateId = Number(route.params.id)
@@ -352,9 +344,7 @@ async function fetchTemplate() {
 
 async function fetchFilters() {
   try {
-    const [cats, tags] = await Promise.all([getCategories(), getTags()])
-    categoryTree.value = cats
-    tagList.value = tags
+    tagList.value = await getTags()
   } catch {}
 }
 

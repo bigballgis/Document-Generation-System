@@ -32,9 +32,9 @@ const messages = {
 const i18n = createI18n({ legacy: false, locale: 'en-US', messages })
 
 describe('TemplateCreationWizard', () => {
-  it('renders step 1 by default', () => {
+  it('renders basic form fields without a multi-step wizard', () => {
     const wrapper = mount(TemplateCreationWizard, {
-      props: { visible: true, categories: [], tags: [] },
+      props: { visible: true, tags: [] },
       global: {
         plugins: [i18n],
         stubs: {
@@ -56,12 +56,12 @@ describe('TemplateCreationWizard', () => {
       },
     })
     expect(wrapper.text()).toContain('Name')
-    expect(wrapper.text()).toContain('Next')
+    expect(wrapper.text()).not.toContain('Next')
   })
 
   it('shows cancel button', () => {
     const wrapper = mount(TemplateCreationWizard, {
-      props: { visible: true, categories: [], tags: [] },
+      props: { visible: true, tags: [] },
       global: {
         plugins: [i18n],
         stubs: {

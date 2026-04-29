@@ -14,9 +14,13 @@ public class TestResultDTO {
     private String actualResultJson;
     private String diffDetails;
     private Instant executedAt;
-    /** Populated when the trial stored a sample rendered document. */
+    /** Populated when the trial stored a sample rendered document (Word / DOCX). */
     private Long sampleDocumentId;
     private String sampleDocumentDownloadUrl;
+
+    /** Populated when the trial stored a PDF sample alongside the DOCX sample. */
+    private Long samplePdfDocumentId;
+    private String samplePdfDocumentDownloadUrl;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -44,4 +48,10 @@ public class TestResultDTO {
 
     public String getSampleDocumentDownloadUrl() { return sampleDocumentDownloadUrl; }
     public void setSampleDocumentDownloadUrl(String sampleDocumentDownloadUrl) { this.sampleDocumentDownloadUrl = sampleDocumentDownloadUrl; }
+
+    public Long getSamplePdfDocumentId() { return samplePdfDocumentId; }
+    public void setSamplePdfDocumentId(Long samplePdfDocumentId) { this.samplePdfDocumentId = samplePdfDocumentId; }
+
+    public String getSamplePdfDocumentDownloadUrl() { return samplePdfDocumentDownloadUrl; }
+    public void setSamplePdfDocumentDownloadUrl(String samplePdfDocumentDownloadUrl) { this.samplePdfDocumentDownloadUrl = samplePdfDocumentDownloadUrl; }
 }

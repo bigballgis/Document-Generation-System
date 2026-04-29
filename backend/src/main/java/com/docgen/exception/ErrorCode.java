@@ -30,6 +30,8 @@ public final class ErrorCode {
     public static final String EXPRESSION_EVALUATION_FAILED = "EXPRESSION_EVALUATION_FAILED";
 
     public static final String GENERATE_FAILED = "GENERATE_FAILED";
+    /** Single-request BOTH output is not supported; clients must call /word and /pdf (sync or async) separately. */
+    public static final String GENERATE_BOTH_NOT_SUPPORTED = "GENERATE_BOTH_NOT_SUPPORTED";
     public static final String GENERATE_TIMEOUT = "GENERATE_TIMEOUT";
     public static final String GENERATE_RENDER_FAILED = "GENERATE_RENDER_FAILED";
     public static final String GENERATE_PDF_CONVERSION_FAILED = "GENERATE_PDF_CONVERSION_FAILED";
@@ -93,9 +95,6 @@ public final class ErrorCode {
 
     public static final String TEST_CASE_NOT_FOUND = "TEST_CASE_NOT_FOUND";
     public static final String TEST_CASE_EXECUTION_FAILED = "TEST_CASE_EXECUTION_FAILED";
-
-    public static final String MARKET_TEMPLATE_NOT_FOUND = "MARKET_TEMPLATE_NOT_FOUND";
-    public static final String MARKET_TEMPLATE_ALREADY_SHARED = "MARKET_TEMPLATE_ALREADY_SHARED";
 
     public static final String COMPOSITE_TEMPLATE_EMPTY = "COMPOSITE_TEMPLATE_EMPTY";
     public static final String GENERATE_ALL_SEGMENTS_SKIPPED = "GENERATE_ALL_SEGMENTS_SKIPPED";

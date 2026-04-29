@@ -10,16 +10,24 @@ public class ReviewerCandidateDTO {
     private String email;
     private Long teamId;
     private String role;
+    /** MAKER or CHECKER for maker-checker teams; null otherwise. */
+    private String teamReviewLane;
 
     public ReviewerCandidateDTO() {
     }
 
     public ReviewerCandidateDTO(Long id, String username, String email, Long teamId, String role) {
+        this(id, username, email, teamId, role, null);
+    }
+
+    public ReviewerCandidateDTO(Long id, String username, String email, Long teamId, String role,
+                                String teamReviewLane) {
         this.id = id;
         this.username = username;
         this.email = email;
         this.teamId = teamId;
         this.role = role;
+        this.teamReviewLane = teamReviewLane;
     }
 
     public Long getId() {
@@ -60,5 +68,13 @@ public class ReviewerCandidateDTO {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getTeamReviewLane() {
+        return teamReviewLane;
+    }
+
+    public void setTeamReviewLane(String teamReviewLane) {
+        this.teamReviewLane = teamReviewLane;
     }
 }

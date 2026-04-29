@@ -74,10 +74,14 @@ const routes: RouteRecordRaw[] = [
         redirect: (to) => `/templates/${to.params.id}/workspace`,
       },
       {
+        path: 'generation',
+        name: 'Generation',
+        component: () => import('@/views/generation/Index.vue'),
+        meta: { title: 'Document generation' },
+      },
+      {
         path: 'market',
-        name: 'Market',
-        component: () => import('@/views/market/Index.vue'),
-        meta: { title: 'Template Market' },
+        redirect: '/generation',
       },
       {
         path: 'admin',
@@ -99,9 +103,7 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: 'tasks',
-        name: 'Tasks',
-        component: () => import('@/views/tasks/Index.vue'),
-        meta: { title: 'Tasks', requiresAuth: true },
+        redirect: () => ({ path: '/generation', query: { tab: 'queue' } }),
       },
       {
         path: 'components',

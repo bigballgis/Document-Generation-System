@@ -64,7 +64,7 @@ vi.mock('vue-router', () => ({
 
 // Stub the TemplateFormDialog child component
 vi.mock('@/views/templates/components/TemplateFormDialog.vue', () => ({
-  default: { template: '<div class="stub-form-dialog" />', props: ['visible', 'templateData', 'categories', 'tags'] },
+  default: { template: '<div class="stub-form-dialog" />', props: ['visible', 'templateData', 'tags'] },
 }))
 
 import TemplateIndex from '@/views/templates/Index.vue'
@@ -107,7 +107,7 @@ describe('Template Index Page', () => {
     expect(tags.length).toBeGreaterThanOrEqual(2)
   }, 15000)
 
-  it('renders filter controls (search, category, status)', async () => {
+  it('renders filter controls (search, tags, status)', async () => {
     const wrapper = mount(TemplateIndex)
     await flushPromises()
 

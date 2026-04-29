@@ -171,7 +171,7 @@ import {
   isTestPassed,
   type TestCaseDTO, type TestResultDTO, type TestReportDTO,
   type ComparisonType,
-} from '@/api/market'
+} from '@/api/templateTesting'
 
 const props = withDefaults(defineProps<{ templateId: number; hideIntro?: boolean }>(), {
   hideIntro: false,

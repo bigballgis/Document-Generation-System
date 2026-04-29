@@ -23,4 +23,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * Users in a tenant that belong to a team (for reviewer candidate listing).
      */
     List<User> findByTenantIdAndTeamIdOrderByUsernameAsc(Long tenantId, Long teamId);
+
+    boolean existsByTeamId(Long teamId);
 }

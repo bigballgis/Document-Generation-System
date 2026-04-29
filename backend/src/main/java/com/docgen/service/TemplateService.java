@@ -7,6 +7,7 @@ import com.docgen.dto.TemplateQueryRequest;
 import com.docgen.dto.TemplateVersionDTO;
 import com.docgen.dto.UpdateTemplateRequest;
 import com.docgen.entity.Team;
+import com.docgen.entity.TeamApprovalMode;
 import com.docgen.entity.Template;
 import com.docgen.entity.TemplateVersion;
 import com.docgen.entity.User;
@@ -155,9 +156,10 @@ public class TemplateService {
 
     /**
      * Users in the same tenant and team as the template who may be selected as reviewers (excludes the template author).
+     * For maker-checker teams, filters by {@code reviewLevel}: level 1 → makers, level 2+ → checkers.
      */
     @Transactional(readOnly = true)
-    public List<ReviewerCandidateDTO> listReviewerCandidates(Long templateId) {
+    public List<ReviewerCandidateDTO> listReviewerCandidates(Long templateId, Integer reviewLevel) {
         Template template = findTemplateOrThrow(templateId);
         Long tenantId = TenantContext.getCurrentTenantId();
         if (!template.getTenantId().equals(tenantId)) {
@@ -170,13 +172,28 @@ public class TemplateService {
                     "Template must be assigned to a team before listing reviewer candidates",
                     HttpStatus.BAD_REQUEST);
         }
+        Team team = teamRepository.findById(template.getTeamId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.VALIDATION_FAILED,
+                        "Template team not found", HttpStatus.BAD_REQUEST));
         List<User> users = userRepository.findByTenantIdAndTeamIdOrderByUsernameAsc(tenantId, template.getTeamId());
         Long createdBy = template.getCreatedBy();
+        int level = reviewLevel != null ? reviewLevel : 1;
         return users.stream()
                 .filter(u -> u.getId() != null && (createdBy == null || !u.getId().equals(createdBy)))
+                .filter(u -> includeUserForReviewCandidate(team, level, u))
                 .map(u -> new ReviewerCandidateDTO(
-                        u.getId(), u.getUsername(), u.getEmail(), u.getTeamId(), u.getRole()))
+                        u.getId(), u.getUsername(), u.getEmail(), u.getTeamId(), u.getRole(), u.getTeamReviewLane()))
                 .toList();
+    }
+
+    private static boolean includeUserForReviewCandidate(Team team, int reviewLevel, User user) {
+        if (team.getApprovalMode() != TeamApprovalMode.MAKER_CHECKER) {
+            return true;
+        }
+        if (reviewLevel <= 1) {
+            return "MAKER".equals(user.getTeamReviewLane());
+        }
+        return "CHECKER".equals(user.getTeamReviewLane());
     }
 
     /**

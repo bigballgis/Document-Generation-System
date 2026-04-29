@@ -199,12 +199,19 @@ public class TemplateTestService {
             byte[] docx = render.docxBytes();
             boolean hasRenderableOutput = docx != null && docx.length > 0;
             Long sampleDocumentId = null;
+            Long samplePdfDocumentId = null;
             if (hasRenderableOutput) {
                 try {
                     GenerateDocumentResponse stored =
                             documentStorageService.store(template, docx, "DOCX", "TEMP");
                     if (stored.getDocumentId() != null) {
                         sampleDocumentId = stored.getDocumentId();
+                    }
+                    byte[] pdfBytes = documentGeneratorService.convertToPdf(docx);
+                    GenerateDocumentResponse pdfStored =
+                            documentStorageService.store(template, pdfBytes, "PDF", "TEMP");
+                    if (pdfStored.getDocumentId() != null) {
+                        samplePdfDocumentId = pdfStored.getDocumentId();
                     }
                 } catch (Exception e) {
                     log.warn("Trial sample document storage failed testCaseId={}: {}", testCaseId, e.getMessage());
@@ -214,7 +221,7 @@ public class TemplateTestService {
             String diff = comparison.diffDetails();
             TestStatus finalStatus;
             boolean storageRequired = hasRenderableOutput;
-            boolean storageOk = sampleDocumentId != null;
+            boolean storageOk = sampleDocumentId != null && samplePdfDocumentId != null;
             if (storageRequired && !storageOk) {
                 finalStatus = TestStatus.FAILED;
                 String storageMsg = "Sample document could not be registered for download.";
@@ -230,6 +237,7 @@ public class TemplateTestService {
             result.setDiffDetails(diff);
             result.setExecutedAt(Instant.now());
             result.setGeneratedDocumentId(sampleDocumentId);
+            result.setGeneratedPdfDocumentId(samplePdfDocumentId);
             result = testResultRepository.save(result);
             return toTestResultDTO(result, testCase.getName());
         } catch (BusinessException e) {
@@ -477,6 +485,11 @@ public class TemplateTestService {
             dto.setSampleDocumentId(entity.getGeneratedDocumentId());
             dto.setSampleDocumentDownloadUrl(
                     String.format("/api/documents/%d/download", entity.getGeneratedDocumentId()));
+        }
+        if (entity.getGeneratedPdfDocumentId() != null) {
+            dto.setSamplePdfDocumentId(entity.getGeneratedPdfDocumentId());
+            dto.setSamplePdfDocumentDownloadUrl(
+                    String.format("/api/documents/%d/download", entity.getGeneratedPdfDocumentId()));
         }
         return dto;
     }

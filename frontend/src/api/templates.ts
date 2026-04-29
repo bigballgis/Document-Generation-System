@@ -137,10 +137,13 @@ export interface ReviewerCandidateDTO {
   email: string
   teamId: number | null
   role: string
+  teamReviewLane?: string | null
 }
 
-export function getReviewerCandidates(templateId: number) {
-  return request.get<any, ReviewerCandidateDTO[]>(`/templates/${templateId}/reviewers/candidates`)
+export function getReviewerCandidates(templateId: number, reviewLevel?: number) {
+  return request.get<any, ReviewerCandidateDTO[]>(`/templates/${templateId}/reviewers/candidates`, {
+    params: reviewLevel != null ? { reviewLevel } : {},
+  })
 }
 
 export function createTemplate(data: CreateTemplateRequest) {

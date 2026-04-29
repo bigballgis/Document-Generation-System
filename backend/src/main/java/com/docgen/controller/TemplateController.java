@@ -85,8 +85,10 @@ public class TemplateController {
      * Reviewer candidates: same tenant and same team as the template; template author is excluded.
      */
     @GetMapping("/{id}/reviewers/candidates")
-    public ResponseEntity<List<ReviewerCandidateDTO>> listReviewerCandidates(@PathVariable Long id) {
-        return ResponseEntity.ok(templateService.listReviewerCandidates(id));
+    public ResponseEntity<List<ReviewerCandidateDTO>> listReviewerCandidates(
+            @PathVariable Long id,
+            @RequestParam(required = false) Integer reviewLevel) {
+        return ResponseEntity.ok(templateService.listReviewerCandidates(id, reviewLevel));
     }
 
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)

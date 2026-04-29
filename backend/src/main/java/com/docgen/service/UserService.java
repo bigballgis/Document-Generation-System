@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 /**
@@ -188,6 +189,61 @@ public class UserService {
     }
 
     /**
+     * Tenant admin or super admin: update role, team assignment, and maker-checker lane.
+     */
+    @Transactional
+    public UserDTO updateUserAdmin(Long userId, AdminUserUpdateRequest request, UserPrincipal principal) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.VALIDATION_FAILED,
+                        "User not found", HttpStatus.NOT_FOUND));
+        assertAdminMayEditUser(principal, user);
+
+        Long oldTeamId = user.getTeamId();
+        user.setRole(request.getRole());
+        user.setTeamId(request.getTeamId());
+
+        if (request.getTeamId() == null) {
+            user.setTeamReviewLane(null);
+        } else {
+            if (request.getTeamReviewLane() == null) {
+                if (!Objects.equals(oldTeamId, request.getTeamId())) {
+                    user.setTeamReviewLane(null);
+                }
+            } else {
+                String lane = request.getTeamReviewLane().trim();
+                if (lane.isEmpty()) {
+                    user.setTeamReviewLane(null);
+                } else if (!"MAKER".equals(lane) && !"CHECKER".equals(lane)) {
+                    throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                            "teamReviewLane must be MAKER or CHECKER", HttpStatus.BAD_REQUEST);
+                } else {
+                    user.setTeamReviewLane(lane);
+                }
+            }
+        }
+
+        User saved = userRepository.save(user);
+        log.info("User admin update: userId={} by principalUserId={}", userId, principal.getUserId());
+        return toDTO(saved);
+    }
+
+    private void assertAdminMayEditUser(UserPrincipal principal, User user) {
+        if (principal == null) {
+            throw new BusinessException(ErrorCode.AUTH_INVALID_TOKEN,
+                    "Not authenticated", HttpStatus.UNAUTHORIZED);
+        }
+        if ("SUPER_ADMIN".equals(principal.getRole())) {
+            return;
+        }
+        if ("TENANT_ADMIN".equals(principal.getRole())
+                && principal.getTenantId().equals(user.getTenantId())) {
+            return;
+        }
+        throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                "Not allowed to manage this user", HttpStatus.FORBIDDEN);
+    }
+
+    /**
      * Delete a user by ID.
      */
     @Transactional
@@ -254,8 +310,8 @@ public class UserService {
         return new TokenPair(accessToken, refreshToken);
     }
 
-    private UserDTO toDTO(User user) {
-        return new UserDTO(
+    public UserDTO toDTO(User user) {
+        UserDTO dto = new UserDTO(
                 user.getId(),
                 user.getTenantId(),
                 user.getUsername(),
@@ -263,8 +319,9 @@ public class UserService {
                 user.getRole(),
                 user.getTeamId(),
                 user.getLanguagePreference(),
-                user.getCreatedAt()
-        );
+                user.getCreatedAt());
+        dto.setTeamReviewLane(user.getTeamReviewLane());
+        return dto;
     }
 }
 

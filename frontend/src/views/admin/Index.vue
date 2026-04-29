@@ -8,6 +8,9 @@
       <el-tab-pane :label="$t('admin.users')" name="users">
         <UserManagement />
       </el-tab-pane>
+      <el-tab-pane :label="$t('admin.teams')" name="teams">
+        <TeamManagement />
+      </el-tab-pane>
       <el-tab-pane :label="$t('admin.permissions')" name="permissions">
         <PermissionManagement />
       </el-tab-pane>
@@ -28,6 +31,7 @@
 import { ref } from 'vue'
 import TenantManagement from './TenantManagement.vue'
 import UserManagement from './UserManagement.vue'
+import TeamManagement from './TeamManagement.vue'
 import PermissionManagement from './PermissionManagement.vue'
 import ApiKeyManagement from './ApiKeyManagement.vue'
 import ReviewManagement from './ReviewManagement.vue'

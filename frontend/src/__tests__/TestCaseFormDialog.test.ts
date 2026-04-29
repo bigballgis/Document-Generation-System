@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
-import type { TestCaseDTO } from '@/api/market'
+import type { TestCaseDTO } from '@/api/templateTesting'
 
 const mockCreateTestCase = vi.fn()
 const mockUpdateTestCase = vi.fn()
 
-vi.mock('@/api/market', () => ({
+vi.mock('@/api/templateTesting', () => ({
   createTestCase: (...args: unknown[]) => mockCreateTestCase(...args),
   updateTestCase: (...args: unknown[]) => mockUpdateTestCase(...args),
 }))

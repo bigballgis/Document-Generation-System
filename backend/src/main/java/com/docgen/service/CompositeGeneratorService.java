@@ -8,6 +8,7 @@ import com.docgen.repository.TemplateRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -34,6 +35,7 @@ public class CompositeGeneratorService {
     private final DocumentStorageService documentStorageService;
     private final WatermarkService watermarkService;
     private final ObjectMapper objectMapper;
+    private final DocumentGeneratorService documentGeneratorService;
 
     public CompositeGeneratorService(TemplateRepository templateRepository,
                                      ParameterValidationService parameterValidationService,
@@ -41,7 +43,8 @@ public class CompositeGeneratorService {
                                      AssemblyEngineService assemblyEngineService,
                                      DocumentStorageService documentStorageService,
                                      WatermarkService watermarkService,
-                                     ObjectMapper objectMapper) {
+                                     ObjectMapper objectMapper,
+                                     @Lazy DocumentGeneratorService documentGeneratorService) {
         this.templateRepository = templateRepository;
         this.parameterValidationService = parameterValidationService;
         this.assemblyConfigService = assemblyConfigService;
@@ -49,6 +52,7 @@ public class CompositeGeneratorService {
         this.documentStorageService = documentStorageService;
         this.watermarkService = watermarkService;
         this.objectMapper = objectMapper;
+        this.documentGeneratorService = documentGeneratorService;
     }
 
     /**
@@ -77,6 +81,8 @@ public class CompositeGeneratorService {
         String storageStrategy = request.getStorageStrategy() != null
                 ? request.getStorageStrategy() : template.getStorageStrategy();
 
+        String outputFormat = resolveOutputFormat(request.getOutputFormat(), template.getOutputFormat());
+
         // Step 1: Validate parameters and evaluate DERIVED parameters
         Map<String, Object> data = executePipeline(template, params);
 
@@ -89,19 +95,39 @@ public class CompositeGeneratorService {
         // Step 3: Apply watermark if configured
         docxBytes = applyWatermarkIfConfigured(template, docxBytes, data);
 
-        // Step 4: Store document
-        GenerateDocumentResponse response = documentStorageService.store(
-                template, docxBytes, "WORD", storageStrategy);
+        GenerateDocumentResponse response;
 
-        // Step 5: Attach segment render stats to response metadata
+        if ("PDF".equalsIgnoreCase(outputFormat)) {
+            byte[] pdfBytes = documentGeneratorService.convertToPdf(docxBytes);
+            response = documentStorageService.store(template, pdfBytes, "PDF", storageStrategy);
+        } else {
+            response = documentStorageService.store(template, docxBytes, "WORD", storageStrategy);
+        }
+
+        attachSegmentMetadata(response, assemblyResult);
+
+        log.info("Composite document generated for template {}: {} segments, total time {}ms, format {}",
+                templateId, response.getSegmentRenderStats() != null ? response.getSegmentRenderStats().size() : 0,
+                assemblyResult.getTotalRenderTimeMs(), outputFormat);
+
+        return response;
+    }
+
+    private static String resolveOutputFormat(String requestFormat, String templateFormat) {
+        String resolved;
+        if (requestFormat != null && !requestFormat.isBlank()) {
+            resolved = requestFormat.toUpperCase();
+        } else {
+            resolved = templateFormat != null ? templateFormat.toUpperCase() : "WORD";
+        }
+        DocumentGeneratorService.rejectBothOutputFormat(resolved);
+        return resolved;
+    }
+
+    private void attachSegmentMetadata(GenerateDocumentResponse response, AssemblyResult assemblyResult) {
         List<SegmentRenderStat> segmentStats = buildSegmentStats(assemblyResult);
         response.setSegmentRenderStats(segmentStats);
         response.setTotalRenderTimeMs(assemblyResult.getTotalRenderTimeMs());
-
-        log.info("Composite document generated for template {}: {} segments, total time {}ms",
-                templateId, segmentStats.size(), assemblyResult.getTotalRenderTimeMs());
-
-        return response;
     }
 
     /**

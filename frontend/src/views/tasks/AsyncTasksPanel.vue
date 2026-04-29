@@ -1,9 +1,5 @@
 <template>
-  <div class="tasks-page">
-    <div class="page-header">
-      <h2>{{ $t('task.title') }}</h2>
-    </div>
-
+  <div class="async-tasks-panel">
     <el-card class="filter-card" shadow="never">
       <el-form :inline="true" @submit.prevent="handleSearch">
         <el-form-item :label="$t('task.status')">
@@ -70,7 +66,9 @@
           <template #default="{ row }">
             <el-button
               v-if="row.status === 'COMPLETED'"
-              link type="primary" size="small"
+              link
+              type="primary"
+              size="small"
               @click="handleDownload(row)"
             >
               {{ $t('task.downloadResult') }}
@@ -128,7 +126,6 @@ const query = reactive<TaskQuery>({
   size: 10,
 })
 
-// Polling for the first RUNNING task found
 const pollingTaskId = ref<string | null>(null)
 const { task: polledTask, progress: polledProgress, stop: stopPolling } = useTaskPolling(pollingTaskId)
 
@@ -155,7 +152,6 @@ function statusLabel(status: string) {
 }
 
 function getTaskProgress(row: AsyncTaskDTO): number {
-  // If this is the polled task, use live progress
   if (polledProgress.value && pollingTaskId.value === row.taskId) {
     return polledProgress.value.progress
   }
@@ -175,13 +171,15 @@ async function fetchTasks() {
     tasks.value = res.content
     total.value = res.totalElements
     startPollingForRunningTask()
-  } catch {} finally {
+  } catch {
+    /* interceptor */
+  } finally {
     loading.value = false
   }
 }
 
 function startPollingForRunningTask() {
-  const runningTask = tasks.value.find((t) => t.status === 'RUNNING')
+  const runningTask = tasks.value.find((x) => x.status === 'RUNNING')
   if (runningTask) {
     pollingTaskId.value = runningTask.taskId
   } else {
@@ -213,22 +211,21 @@ function triggerBlobDownload(blob: Blob, filename: string) {
 
 async function handleDownload(row: AsyncTaskDTO) {
   try {
-    const blob = await downloadTaskResult(row.taskId) as unknown as Blob
+    const blob = (await downloadTaskResult(row.taskId)) as unknown as Blob
     const filename = `task-${row.taskId}-result.zip`
     triggerBlobDownload(blob, filename)
     ElMessage.success(t('message.downloadStarted'))
-  } catch {}
+  } catch {
+    /* */
+  }
 }
 
-// Watch polled task for status changes — refresh list when task completes
 watch(polledTask, (newTask) => {
   if (newTask && (newTask.status === 'COMPLETED' || newTask.status === 'FAILED')) {
-    // Update the task in the list with latest data
-    const idx = tasks.value.findIndex((t) => t.taskId === newTask.taskId)
+    const idx = tasks.value.findIndex((x) => x.taskId === newTask.taskId)
     if (idx !== -1) {
       tasks.value[idx] = { ...tasks.value[idx], ...newTask }
     }
-    // Look for next running task
     startPollingForRunningTask()
   }
 })
@@ -243,17 +240,8 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.tasks-page {
+.async-tasks-panel {
   padding: 0;
-}
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-.page-header h2 {
-  margin: 0;
 }
 .filter-card :deep(.el-form-item) {
   margin-bottom: 0;
@@ -269,4 +257,3 @@ onBeforeUnmount(() => {
   margin-left: 4px;
 }
 </style>
-

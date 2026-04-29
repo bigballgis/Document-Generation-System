@@ -8,6 +8,30 @@
       <el-button size="small" @click="emit('copy', apiUrl)">{{ t('common.copy') }}</el-button>
     </div>
 
+    <div class="endpoint-row">
+      <span class="label">Word:</span>
+      <code>POST {{ apiUrlWord }}</code>
+      <el-button size="small" @click="emit('copy', apiUrlWord)">{{ t('common.copy') }}</el-button>
+    </div>
+
+    <div class="endpoint-row">
+      <span class="label">PDF:</span>
+      <code>POST {{ apiUrlPdf }}</code>
+      <el-button size="small" @click="emit('copy', apiUrlPdf)">{{ t('common.copy') }}</el-button>
+    </div>
+
+    <div class="endpoint-row">
+      <span class="label">Async Word:</span>
+      <code>POST {{ apiUrlAsyncWord }}</code>
+      <el-button size="small" @click="emit('copy', apiUrlAsyncWord)">{{ t('common.copy') }}</el-button>
+    </div>
+
+    <div class="endpoint-row">
+      <span class="label">Async PDF:</span>
+      <code>POST {{ apiUrlAsyncPdf }}</code>
+      <el-button size="small" @click="emit('copy', apiUrlAsyncPdf)">{{ t('common.copy') }}</el-button>
+    </div>
+
     <template v-if="activeKey">
       <div class="endpoint-row">
         <span class="label">API Key:</span>
@@ -54,6 +78,10 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const apiUrl = computed(() => `${window.location.origin}/api/generate/${props.templateId}`)
+const apiUrlWord = computed(() => `${window.location.origin}/api/generate/${props.templateId}/word`)
+const apiUrlPdf = computed(() => `${window.location.origin}/api/generate/${props.templateId}/pdf`)
+const apiUrlAsyncWord = computed(() => `${window.location.origin}/api/generate/${props.templateId}/async/word`)
+const apiUrlAsyncPdf = computed(() => `${window.location.origin}/api/generate/${props.templateId}/async/pdf`)
 const activeKey = computed(() => props.apiKeys.find(k => k.enabled) ?? props.apiKeys[0] ?? null)
 </script>
 
@@ -69,7 +97,7 @@ const activeKey = computed(() => props.apiKeys.find(k => k.enabled) ?? props.api
 }
 .endpoint-row .label {
   font-weight: bold;
-  min-width: 60px;
+  min-width: 92px;
 }
 .endpoint-row code {
   background: var(--el-fill-color-light);

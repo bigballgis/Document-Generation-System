@@ -75,11 +75,17 @@ const creatingApiKey = ref(false)
 
 const curlExample = computed(() => {
   const keyPrefix = apiKeys.value.find(k => k.enabled)?.keyPrefix ?? 'YOUR_API_KEY'
+  const base = `${window.location.origin}/api/generate/${templateId.value}`
   return `curl -X POST \\
-  ${window.location.origin}/api/generate/${templateId.value} \\
+  ${base} \\
   -H "X-API-Key: ${keyPrefix}" \\
   -H "Content-Type: application/json" \\
-  -d '{"data": {}}'`
+  -d '{"parameters": {}}'
+
+# Sync Word: POST ${base}/word
+# Sync PDF: POST ${base}/pdf
+# Async Word: POST ${base}/async/word
+# Async PDF: POST ${base}/async/pdf`
 })
 
 async function loadData() {

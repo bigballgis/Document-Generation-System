@@ -113,15 +113,12 @@ public class DocumentGeneratorService {
         // Step 2: Render DOCX via Docxtemplater service
         byte[] docxBytes = renderDocument(template.getTemplateFilePath(), data);
 
-        // Step 3: Handle output format
-        if ("BOTH".equalsIgnoreCase(outputFormat)) {
-            return handleBothFormats(template, docxBytes, storageStrategy);
-        } else if ("PDF".equalsIgnoreCase(outputFormat)) {
+        // Step 3: Single format only (WORD or PDF). BOTH is rejected — external clients must call /word and /pdf separately.
+        if ("PDF".equalsIgnoreCase(outputFormat)) {
             byte[] pdfBytes = convertToPdf(docxBytes);
             return documentStorageService.store(template, pdfBytes, "PDF", storageStrategy);
-        } else {
-            return documentStorageService.store(template, docxBytes, "WORD", storageStrategy);
         }
+        return documentStorageService.store(template, docxBytes, "WORD", storageStrategy);
     }
 
     /**
@@ -192,7 +189,7 @@ public class DocumentGeneratorService {
         }
     }
 
-    byte[] convertToPdf(byte[] docxBytes) {
+    public byte[] convertToPdf(byte[] docxBytes) {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("inputBuffer", Base64.getEncoder().encodeToString(docxBytes));
 
@@ -221,18 +218,28 @@ public class DocumentGeneratorService {
         }
     }
 
-    private GenerateDocumentResponse handleBothFormats(Template template, byte[] docxBytes, String storageStrategy) {
-        byte[] pdfBytes = convertToPdf(docxBytes);
-        GenerateDocumentResponse wordResponse = documentStorageService.store(template, docxBytes, "WORD", storageStrategy);
-        GenerateDocumentResponse pdfResponse = documentStorageService.store(template, pdfBytes, "PDF", storageStrategy);
-        wordResponse.setSecondaryDocument(pdfResponse);
-        return wordResponse;
+    private String resolveOutputFormat(String requestFormat, String templateFormat) {
+        String resolved;
+        if (requestFormat != null && !requestFormat.isBlank()) {
+            resolved = requestFormat.toUpperCase();
+        } else {
+            resolved = templateFormat != null ? templateFormat.toUpperCase() : "WORD";
+        }
+        rejectBothOutputFormat(resolved);
+        return resolved;
     }
 
-    private String resolveOutputFormat(String requestFormat, String templateFormat) {
-        if (requestFormat != null && !requestFormat.isBlank()) {
-            return requestFormat.toUpperCase();
+    /**
+     * Single-request BOTH output is not supported; clients must call {@code /api/generate/{id}/word}
+     * and {@code /pdf} (or async variants) separately.
+     */
+    public static void rejectBothOutputFormat(String outputFormat) {
+        if (outputFormat != null && "BOTH".equalsIgnoreCase(outputFormat.trim())) {
+            throw new BusinessException(ErrorCode.GENERATE_BOTH_NOT_SUPPORTED,
+                    "Output format BOTH is not supported. Call POST /api/generate/{templateId}/word and "
+                            + "/api/generate/{templateId}/pdf (or /async/word and /async/pdf) separately for each format.",
+                    HttpStatus.BAD_REQUEST);
         }
-        return templateFormat != null ? templateFormat.toUpperCase() : "WORD";
     }
 }
+

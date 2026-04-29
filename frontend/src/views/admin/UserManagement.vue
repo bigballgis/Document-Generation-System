@@ -19,6 +19,12 @@
         </template>
       </el-table-column>
       <el-table-column prop="tenantName" :label="$t('admin.user.tenant')" width="140" />
+      <el-table-column prop="teamId" :label="$t('admin.user.team')" width="100" />
+      <el-table-column :label="$t('admin.user.reviewLane')" width="110">
+        <template #default="{ row }">
+          {{ row.teamReviewLane || '—' }}
+        </template>
+      </el-table-column>
       <el-table-column :label="$t('admin.user.status')" width="100">
         <template #default="{ row }">
           <el-tag :type="row.status === 'ACTIVE' ? 'success' : 'danger'" size="small">
@@ -50,14 +56,24 @@
       />
     </div>
 
-    <el-dialog v-model="roleDialogVisible" :title="$t('admin.user.assignRole')" width="400px" destroy-on-close>
-      <el-form label-width="80px">
+    <el-dialog v-model="roleDialogVisible" :title="$t('admin.user.assignRole')" width="440px" destroy-on-close>
+      <el-form label-width="120px">
         <el-form-item :label="$t('admin.user.role')">
           <el-select v-model="selectedRole" style="width: 100%">
             <el-option label="Super Admin" value="SUPER_ADMIN" />
             <el-option label="Tenant Admin" value="TENANT_ADMIN" />
             <el-option label="Team Admin" value="TEAM_ADMIN" />
             <el-option label="User" value="USER" />
+          </el-select>
+        </el-form-item>
+        <el-form-item :label="$t('admin.user.team')">
+          <el-input-number v-model="assignTeamId" :min="1" style="width: 100%" :controls="true" />
+        </el-form-item>
+        <el-form-item :label="$t('admin.user.reviewLane')">
+          <el-select v-model="selectedLane" clearable style="width: 100%" :placeholder="$t('admin.user.reviewLaneHint')">
+            <el-option :label="$t('admin.user.laneNone')" value="" />
+            <el-option label="MAKER" value="MAKER" />
+            <el-option label="CHECKER" value="CHECKER" />
           </el-select>
         </el-form-item>
       </el-form>
@@ -88,6 +104,8 @@ const list = ref<UserDTO[]>([])
 const roleDialogVisible = ref(false)
 const editingUser = ref<UserDTO | null>(null)
 const selectedRole = ref('USER')
+const assignTeamId = ref<number | undefined>(undefined)
+const selectedLane = ref<string>('')
 
 const roleLabels: Record<string, string> = {
   SUPER_ADMIN: 'Super Admin',
@@ -118,6 +136,8 @@ async function loadData() {
 function openRoleDialog(user: UserDTO) {
   editingUser.value = user
   selectedRole.value = user.role
+  assignTeamId.value = user.teamId ?? undefined
+  selectedLane.value = user.teamReviewLane ?? ''
   roleDialogVisible.value = true
 }
 
@@ -125,7 +145,11 @@ async function handleAssignRole() {
   if (!editingUser.value) return
   saving.value = true
   try {
-    await updateUser(editingUser.value.id, { role: selectedRole.value })
+    await updateUser(editingUser.value.id, {
+      role: selectedRole.value,
+      teamId: assignTeamId.value ?? null,
+      teamReviewLane: selectedLane.value ? selectedLane.value : null,
+    })
     ElMessage.success(t('message.updateSuccess'))
     roleDialogVisible.value = false
     loadData()

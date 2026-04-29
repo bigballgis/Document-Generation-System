@@ -46,8 +46,8 @@ import { reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import { createTestCase, updateTestCase } from '@/api/market'
-import type { TestCaseDTO, CreateTestCaseRequest, ComparisonType } from '@/api/market'
+import { createTestCase, updateTestCase } from '@/api/templateTesting'
+import type { TestCaseDTO, CreateTestCaseRequest, ComparisonType } from '@/api/templateTesting'
 
 const props = defineProps<{
   visible: boolean

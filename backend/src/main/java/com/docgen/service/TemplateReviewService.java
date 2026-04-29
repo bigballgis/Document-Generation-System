@@ -11,6 +11,9 @@ import com.docgen.entity.User;
 import com.docgen.exception.BusinessException;
 import com.docgen.exception.ErrorCode;
 import com.docgen.exception.ResourceNotFoundException;
+import com.docgen.entity.Team;
+import com.docgen.entity.TeamApprovalMode;
+import com.docgen.repository.TeamRepository;
 import com.docgen.repository.TemplateRepository;
 import com.docgen.repository.TemplateReviewRepository;
 import com.docgen.repository.UserRepository;
@@ -42,6 +45,7 @@ public class TemplateReviewService {
     private final TemplateReviewRepository reviewRepository;
     private final TemplateRepository templateRepository;
     private final UserRepository userRepository;
+    private final TeamRepository teamRepository;
     private final TemplateStateMachineService stateMachineService;
     private final ObjectMapper objectMapper;
     private final AutoActivationService autoActivationService;
@@ -49,12 +53,14 @@ public class TemplateReviewService {
     public TemplateReviewService(TemplateReviewRepository reviewRepository,
                                  TemplateRepository templateRepository,
                                  UserRepository userRepository,
+                                 TeamRepository teamRepository,
                                  TemplateStateMachineService stateMachineService,
                                  ObjectMapper objectMapper,
                                  AutoActivationService autoActivationService) {
         this.reviewRepository = reviewRepository;
         this.templateRepository = templateRepository;
         this.userRepository = userRepository;
+        this.teamRepository = teamRepository;
         this.stateMachineService = stateMachineService;
         this.objectMapper = objectMapper;
         this.autoActivationService = autoActivationService;
@@ -67,7 +73,7 @@ public class TemplateReviewService {
     @Transactional
     public List<TemplateReviewDTO> submitForReview(Long templateId, SubmitReviewRequest request) {
         Template template = findTemplateOrThrow(templateId);
-        assertReviewersAllowedForTemplate(template, request.getReviewerIds());
+        assertReviewersAllowedForTemplate(template, request.getReviewerIds(), request.getReviewLevel());
         TemplateState current = TemplateState.valueOf(template.getStatus());
         if (current != TemplateState.IN_TEST) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
@@ -242,7 +248,7 @@ public class TemplateReviewService {
     /**
      * Enforces same-tenant, same-team reviewers; template must have a team; author cannot review own template.
      */
-    private void assertReviewersAllowedForTemplate(Template template, List<Long> reviewerIds) {
+    private void assertReviewersAllowedForTemplate(Template template, List<Long> reviewerIds, int reviewLevel) {
         if (template.getTeamId() == null) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
                     "Template must be assigned to a team before submitting for review",
@@ -251,6 +257,15 @@ public class TemplateReviewService {
         Long templateTenantId = template.getTenantId();
         Long teamId = template.getTeamId();
         Long createdBy = template.getCreatedBy();
+
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.VALIDATION_FAILED,
+                        "Template team not found", HttpStatus.BAD_REQUEST));
+        String expectedLane = null;
+        if (team.getApprovalMode() == TeamApprovalMode.MAKER_CHECKER) {
+            expectedLane = reviewLevel <= 1 ? "MAKER" : "CHECKER";
+        }
+
         for (Long reviewerId : reviewerIds) {
             User u = userRepository.findById(reviewerId)
                     .orElseThrow(() -> new BusinessException(ErrorCode.VALIDATION_FAILED,
@@ -266,6 +281,11 @@ public class TemplateReviewService {
             if (createdBy != null && u.getId().equals(createdBy)) {
                 throw new BusinessException(ErrorCode.VALIDATION_FAILED,
                         "Template author cannot be a reviewer", HttpStatus.BAD_REQUEST);
+            }
+            if (expectedLane != null && !expectedLane.equals(u.getTeamReviewLane())) {
+                throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                        "Reviewer must have team review lane " + expectedLane + " for this review level",
+                        HttpStatus.BAD_REQUEST);
             }
         }
     }

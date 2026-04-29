@@ -19,18 +19,30 @@
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column :label="t('workspace.validation.trialRecordsSample')" width="120" align="center">
+          <el-table-column :label="t('workspace.validation.trialRecordsSample')" width="200" align="center">
             <template #default="{ row }">
-              <el-button
-                v-if="row.sampleDocumentId"
-                type="primary"
-                link
-                size="small"
-                :loading="downloadingId === row.sampleDocumentId"
-                @click="downloadSample(row)"
-              >
-                {{ t('workspace.validation.trialRecordsDownloadSample') }}
-              </el-button>
+              <div v-if="row.sampleDocumentId || row.samplePdfDocumentId" class="sample-actions">
+                <el-button
+                  v-if="row.sampleDocumentId"
+                  type="primary"
+                  link
+                  size="small"
+                  :loading="downloadingKey === docKey(row.sampleDocumentId)"
+                  @click="downloadSample(row.sampleDocumentId!, 'docx')"
+                >
+                  {{ t('document.downloadWord') }}
+                </el-button>
+                <el-button
+                  v-if="row.samplePdfDocumentId"
+                  type="primary"
+                  link
+                  size="small"
+                  :loading="downloadingKey === docKey(row.samplePdfDocumentId)"
+                  @click="downloadSample(row.samplePdfDocumentId!, 'pdf')"
+                >
+                  {{ t('document.downloadPdf') }}
+                </el-button>
+              </div>
               <span v-else class="muted">—</span>
             </template>
           </el-table-column>
@@ -59,7 +71,7 @@
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
-import { getTestCaseResults, type TestResultDTO } from '@/api/market'
+import { getTestCaseResults, type TestResultDTO } from '@/api/templateTesting'
 import { downloadDocument } from '@/api/documents'
 
 const props = defineProps<{
@@ -68,7 +80,7 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
-const downloadingId = ref<number | null>(null)
+const downloadingKey = ref<string | null>(null)
 
 const loading = ref(false)
 const loadError = ref('')
@@ -76,6 +88,10 @@ const rows = ref<TestResultDTO[]>([])
 const page = ref(0)
 const pageSize = ref(20)
 const totalElements = ref(0)
+
+function docKey(id: number) {
+  return `doc-${id}`
+}
 
 function formatWhen(iso: string) {
   try {
@@ -115,22 +131,20 @@ function onPageChange(p1: number) {
   void load()
 }
 
-async function downloadSample(row: TestResultDTO) {
-  const id = row.sampleDocumentId
-  if (id == null) return
-  downloadingId.value = id
+async function downloadSample(documentId: number, kind: 'docx' | 'pdf') {
+  downloadingKey.value = docKey(documentId)
   try {
-    const blob = await downloadDocument(id)
+    const blob = await downloadDocument(documentId)
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `trial-sample-${id}.docx`
+    a.download = kind === 'pdf' ? `trial-sample-${documentId}.pdf` : `trial-sample-${documentId}.docx`
     a.click()
     window.URL.revokeObjectURL(url)
   } catch {
     ElMessage.error(t('workspace.validation.trialRecordsDownloadFailed'))
   } finally {
-    downloadingId.value = null
+    downloadingKey.value = null
   }
 }
 
@@ -145,33 +159,28 @@ watch(
 </script>
 
 <style scoped>
-.trial-records-panel {
-  min-height: 120px;
-}
-.scenario-name {
-  margin: 0 0 12px;
-  font-weight: 600;
-  font-size: 14px;
-}
-.table-wrap {
+.sample-actions {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
 }
-.records-table {
-  width: 100%;
+.muted {
+  color: var(--el-text-color-secondary);
 }
 .summary-text {
   font-size: 12px;
   color: var(--el-text-color-regular);
-  line-height: 1.4;
-  word-break: break-word;
+}
+.table-wrap {
+  width: 100%;
 }
 .pager {
+  margin-top: 12px;
   justify-content: flex-end;
 }
-.muted {
-  color: var(--el-text-color-placeholder);
-  font-size: 12px;
+.scenario-name {
+  margin-bottom: 8px;
+  font-weight: 600;
 }
 </style>

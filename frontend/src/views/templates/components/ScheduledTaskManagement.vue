@@ -102,7 +102,7 @@ import {
   deleteScheduledTask, enableScheduledTask, disableScheduledTask,
   getTaskExecutions,
   type ScheduledTaskDTO, type TaskExecutionDTO,
-} from '@/api/market'
+} from '@/api/templateTesting'
 
 const props = defineProps<{ templateId: number }>()
 const { t } = useI18n()

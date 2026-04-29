@@ -50,19 +50,6 @@
             @clear="handleSearch"
           />
         </el-form-item>
-        <el-form-item :label="$t('template.category')">
-          <el-tree-select
-            v-model="query.categoryId"
-            :data="categoryTree"
-            :props="{ label: 'name', children: 'children' }"
-            node-key="id"
-            :placeholder="$t('common.all')"
-            clearable
-            check-strictly
-            style="width: 180px"
-            @change="handleSearch"
-          />
-        </el-form-item>
         <el-form-item :label="$t('template.tags')">
           <el-select
             v-model="query.tagId"
@@ -119,7 +106,6 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="categoryName" :label="$t('template.category')" width="130" />
         <el-table-column :label="$t('template.tags')" width="200">
           <template #default="{ row }">
             <el-tag
@@ -198,7 +184,6 @@
 
     <TemplateCreationWizard
       v-model:visible="wizardVisible"
-      :categories="categoryTree"
       :tags="tagList"
       @created="onWizardCreated"
     />
@@ -212,8 +197,8 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getTemplates, deleteTemplate, cloneTemplate, activateTemplate, archiveTemplate,
-  getCategories, getTags,
-  type TemplateDTO, type TemplateQuery, type CategoryDTO, type TagDTO,
+  getTags,
+  type TemplateDTO, type TemplateQuery, type TagDTO,
 } from '@/api/templates'
 import TemplateCreationWizard from '@/views/template-workspace/components/TemplateCreationWizard.vue'
 import { importDocx, importConfig } from '@/api/import-export'
@@ -225,7 +210,6 @@ const router = useRouter()
 const loading = ref(false)
 const templates = ref<TemplateDTO[]>([])
 const total = ref(0)
-const categoryTree = ref<CategoryDTO[]>([])
 const tagList = ref<TagDTO[]>([])
 const wizardVisible = ref(false)
 
@@ -235,7 +219,6 @@ const importZipInput = ref<HTMLInputElement | null>(null)
 
 const query = reactive<TemplateQuery>({
   keyword: '',
-  categoryId: null,
   tagId: null,
   status: '',
   page: 1,
@@ -300,9 +283,7 @@ async function fetchTemplates() {
 
 async function fetchFilters() {
   try {
-    const [cats, tags] = await Promise.all([getCategories(), getTags()])
-    categoryTree.value = cats
-    tagList.value = tags
+    tagList.value = await getTags()
   } catch {}
 }
 
@@ -313,7 +294,6 @@ function handleSearch() {
 
 function resetFilters() {
   query.keyword = ''
-  query.categoryId = null
   query.tagId = null
   query.status = ''
   handleSearch()

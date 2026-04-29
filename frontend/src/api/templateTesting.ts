@@ -1,34 +1,6 @@
 import request from './request'
 import type { PageResult } from '@/types'
 
-
-export interface MarketTemplateDTO {
-  id: number
-  name: string
-  description: string
-  category: string
-  tags: string[]
-  author: string
-  usageCount: number
-  rating: number
-  shareScope: 'TENANT_INTERNAL' | 'GLOBAL'
-  createdAt: string
-}
-
-export interface MarketQuery {
-  keyword?: string
-  category?: string
-  tag?: string
-  sort?: 'popular' | 'recent' | 'rating'
-  page: number
-  size: number
-}
-
-export interface ShareRequest {
-  scope: 'TENANT_INTERNAL' | 'GLOBAL'
-}
-
-
 export type ComparisonType = 'VARIABLE_VALUE' | 'TEXT_CONTENT' | 'FILE_SNAPSHOT'
 
 export interface TestCaseDTO {
@@ -62,9 +34,12 @@ export interface TestResultDTO {
   actualResultJson?: string | null
   diffDetails?: string | null
   executedAt: string
-  /** Set when the trial stored a temp sample document in MinIO. */
+  /** Set when the trial stored a temp sample Word/DOCX in storage. */
   sampleDocumentId?: number | null
   sampleDocumentDownloadUrl?: string | null
+  /** Optional PDF sample stored alongside the Word trial artifact. */
+  samplePdfDocumentId?: number | null
+  samplePdfDocumentDownloadUrl?: string | null
 }
 
 export interface TestReportDTO {
@@ -79,7 +54,6 @@ export interface TestReportDTO {
 export function isTestPassed(result: TestResultDTO): boolean {
   return result.status === 'PASSED'
 }
-
 
 export interface ScheduledTaskDTO {
   id: number
@@ -110,29 +84,6 @@ export interface TaskExecutionDTO {
   documentId?: number
   errorMessage?: string
 }
-
-
-export function searchMarketTemplates(query: MarketQuery) {
-  return request.get<any, PageResult<MarketTemplateDTO>>('/market/templates', {
-    params: {
-      keyword: query.keyword || undefined,
-      category: query.category || undefined,
-      tag: query.tag || undefined,
-      sort: query.sort || undefined,
-      page: query.page,
-      size: query.size,
-    },
-  })
-}
-
-export function copyFromMarket(marketTemplateId: number) {
-  return request.post(`/market/templates/${marketTemplateId}/copy`)
-}
-
-export function shareToMarket(templateId: number, data: ShareRequest) {
-  return request.post(`/templates/${templateId}/share`, data)
-}
-
 
 export interface ListTestCasesQuery {
   page?: number
@@ -178,7 +129,6 @@ export function runAllTestCases(templateId: number) {
   return request.post<any, TestReportDTO>(`/templates/${templateId}/test-cases/run-all`)
 }
 
-
 export function getScheduledTasks(templateId: number) {
   return request.get<any, ScheduledTaskDTO[]>(`/templates/${templateId}/scheduled-tasks`)
 }
@@ -220,4 +170,3 @@ export function importTestCases(templateId: number, json: string) {
     headers: { 'Content-Type': 'application/json' },
   })
 }
-

@@ -11,7 +11,15 @@ vi.mock('@/api/request', () => ({
   },
 }))
 
-import { generateDocument, generateDocumentAsync, generateDocumentBatch } from '@/api/generate'
+import {
+  generateDocument,
+  generateDocumentAsync,
+  generateDocumentBatch,
+  generateDocumentWord,
+  generateDocumentPdf,
+  generateDocumentAsyncWord,
+  generateDocumentAsyncPdf,
+} from '@/api/generate'
 
 describe('generate API', () => {
   beforeEach(() => {
@@ -37,6 +45,44 @@ describe('generate API', () => {
       await generateDocument(10)
 
       expect(mockPost).toHaveBeenCalledWith('/generate/10', {}, { params: undefined })
+    })
+  })
+
+  describe('generateDocumentWord', () => {
+    it('sends POST to /generate/{templateId}/word', async () => {
+      await generateDocumentWord(42, { parameters: { x: 1 } })
+
+      expect(mockPost).toHaveBeenCalledWith('/generate/42/word', { parameters: { x: 1 } }, { params: undefined })
+    })
+
+    it('supports version query param', async () => {
+      await generateDocumentWord(5, {}, 2)
+
+      expect(mockPost).toHaveBeenCalledWith('/generate/5/word', {}, { params: { version: 2 } })
+    })
+  })
+
+  describe('generateDocumentPdf', () => {
+    it('sends POST to /generate/{templateId}/pdf', async () => {
+      await generateDocumentPdf(42)
+
+      expect(mockPost).toHaveBeenCalledWith('/generate/42/pdf', {}, { params: undefined })
+    })
+  })
+
+  describe('generateDocumentAsyncWord', () => {
+    it('sends POST to /generate/{templateId}/async/word', async () => {
+      await generateDocumentAsyncWord(9, { parameters: { x: 1 } })
+
+      expect(mockPost).toHaveBeenCalledWith('/generate/9/async/word', { parameters: { x: 1 } })
+    })
+  })
+
+  describe('generateDocumentAsyncPdf', () => {
+    it('sends POST to /generate/{templateId}/async/pdf', async () => {
+      await generateDocumentAsyncPdf(9)
+
+      expect(mockPost).toHaveBeenCalledWith('/generate/9/async/pdf', {})
     })
   })
 

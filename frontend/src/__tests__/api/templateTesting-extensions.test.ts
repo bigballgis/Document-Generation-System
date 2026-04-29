@@ -12,9 +12,9 @@ vi.mock('@/api/request', () => ({
   },
 }))
 
-import { exportTestCases, importTestCases, getTestCases } from '@/api/market'
+import { exportTestCases, importTestCases, getTestCases } from '@/api/templateTesting'
 
-describe('market.ts extension functions', () => {
+describe('templateTesting.ts API helpers', () => {
   beforeEach(() => {
     mockGet.mockClear()
     mockPost.mockClear()

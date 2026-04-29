@@ -63,13 +63,9 @@
               <el-icon><Files /></el-icon>
               <template #title>{{ $t('nav.documents') }}</template>
             </el-menu-item>
-            <el-menu-item index="/tasks">
-              <el-icon><Clock /></el-icon>
-              <template #title>{{ $t('nav.tasks') }}</template>
-            </el-menu-item>
-            <el-menu-item index="/market">
-              <el-icon><Shop /></el-icon>
-              <template #title>{{ $t('nav.market') }}</template>
+            <el-menu-item index="/generation">
+              <el-icon><Connection /></el-icon>
+              <template #title>{{ $t('nav.generation') }}</template>
             </el-menu-item>
             <el-menu-item v-if="canAccessAdmin" index="/admin">
               <el-icon><Setting /></el-icon>
@@ -95,8 +91,8 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import {
-  Monitor, Document, Shop, Setting, List,
-  Fold, Expand, UserFilled, Files, Clock,
+  Monitor, Document, Connection, Setting, List,
+  Fold, Expand, UserFilled, Files,
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 
@@ -110,6 +106,7 @@ const isCollapsed = ref(false)
 const activeMenuIndex = computed(() => {
   const path = route.path
   if (path.startsWith('/templates')) return '/templates'
+  if (path.startsWith('/generation')) return '/generation'
   return path
 })
 

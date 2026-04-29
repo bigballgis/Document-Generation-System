@@ -68,7 +68,7 @@ import {
   isTestPassed,
   type TestCaseDTO,
   type ComparisonType,
-} from '@/api/market'
+} from '@/api/templateTesting'
 
 const props = defineProps<{
   templateId: number
