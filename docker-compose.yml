@@ -43,8 +43,8 @@ services:
       - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
       - DOCXTEMPLATER_SERVICE_URL=http://docxtemplater:3000
       - ONLYOFFICE_URL=http://onlyoffice
-      # OnlyOffice callbacks fetch edited docs from Document Server; hostname resolves to Docker private IPs (e.g. 172.20.0.0/16)
-      - URL_POLICY_ALLOW_PRIVATE_ADDRESSES=true
+      # Enables application-docker.yml: loopback hostname allowlist + extra outbound ports for OnlyOffice callback URLs
+      - SPRING_PROFILES_ACTIVE=docker
       - ONLYOFFICE_JWT_SECRET=${ONLYOFFICE_JWT_SECRET}
       - JWT_SECRET=${JWT_SECRET}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}

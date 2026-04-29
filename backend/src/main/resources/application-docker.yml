@@ -1,0 +1,17 @@
+# Activated when SPRING_PROFILES_ACTIVE includes docker (see docker-compose app service).
+# OnlyOffice callbacks may emit http://localhost, http://127.0.0.1, or ports exposed on the Document Server container (e.g. 8088 on the Docker host mapped to internal 80).
+url-policy:
+  allow-private-addresses: true
+  allowed-ports:
+    - 80
+    - 443
+    - 8080
+    - 8088
+    - 8443
+    - 8000
+
+onlyoffice:
+  callback:
+    allowed-hosts:
+      - localhost
+      - 127.0.0.1

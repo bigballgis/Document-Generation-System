@@ -5,6 +5,7 @@ import com.docgen.exception.BusinessException;
 import com.docgen.exception.ErrorCode;
 import com.docgen.repository.TemplateRepository;
 import com.docgen.security.url.OutboundUrlPolicy;
+import com.docgen.security.url.UrlValidationResult;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import io.minio.GetPresignedObjectUrlArgs;
@@ -235,7 +236,8 @@ public class OnlyOfficeService {
 
     public boolean isAllowedCallbackDownloadUrl(String downloadUrl) {
         List<String> extraAllowedHosts = buildCallbackDownloadExtraHosts();
-        if (outboundUrlPolicy.validateHttpUrlWithMergedHosts(downloadUrl, extraAllowedHosts).allowed()) {
+        UrlValidationResult first = outboundUrlPolicy.validateHttpUrlWithMergedHosts(downloadUrl, extraAllowedHosts);
+        if (first.allowed()) {
             return true;
         }
         /*
@@ -249,15 +251,31 @@ public class OnlyOfficeService {
             URI onlyOfficeUri = URI.create(onlyOfficeUrl.trim());
             String canonicalHost = onlyOfficeUri.getHost();
             if (downloadHost == null || canonicalHost == null) {
+                log.warn("OnlyOffice callback download URL rejected (missing host): initialReason={}: {}",
+                        first.reasonCode(), first.message());
                 return false;
             }
             if (!resolvedAddressesOverlap(downloadHost, canonicalHost)) {
+                log.warn("OnlyOffice callback download URL rejected: urlHost={} initialReason={}: {} "
+                                + "(fallback: address set does not overlap with Document Server '{}')",
+                        downloadHost, first.reasonCode(), first.message(), canonicalHost);
                 return false;
             }
             String normalizedUrl = rewriteUriHost(downloadUri, canonicalHost);
-            return outboundUrlPolicy.validateHttpUrlWithMergedHosts(normalizedUrl, extraAllowedHosts).allowed();
+            UrlValidationResult second =
+                    outboundUrlPolicy.validateHttpUrlWithMergedHosts(normalizedUrl, extraAllowedHosts);
+            if (second.allowed()) {
+                return true;
+            }
+            log.warn("OnlyOffice callback download URL rejected after same-host normalization: urlHost={} "
+                            + "initialReason={}: {} fallbackReason={}: {}",
+                    downloadHost,
+                    first.reasonCode(), first.message(),
+                    second.reasonCode(), second.message());
+            return false;
         } catch (Exception e) {
-            log.debug("OnlyOffice callback download URL fallback validation failed: {}", e.getMessage());
+            log.warn("OnlyOffice callback download URL fallback failed initialReason={}: {} ({})",
+                    first.reasonCode(), first.message(), e.toString());
             return false;
         }
     }
