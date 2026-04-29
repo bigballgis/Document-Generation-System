@@ -1,4 +1,3 @@
-// ── Parameter Types ──
 
 export type ParameterType = 'REQUEST' | 'DERIVED'
 export type DataType = 'STRING' | 'NUMBER' | 'DATE' | 'BOOLEAN' | 'ARRAY' | 'OBJECT'
@@ -70,7 +69,6 @@ export interface UpdateParameterRequest {
   version?: number
 }
 
-// ── Batch Update ──
 
 export interface BatchUpdateItem {
   id: number
@@ -87,7 +85,6 @@ export interface BatchUpdateItem {
   validationRules?: ValidationRules
 }
 
-// ── Scan Types ──
 
 export type PlaceholderType = 'SIMPLE' | 'OBJECT_PATH' | 'LOOP' | 'CONDITION' | 'AGGREGATION'
 
@@ -105,7 +102,6 @@ export interface ScanResultDTO {
   unusedParameters: ParameterDTO[]
 }
 
-// ── Schema Types ──
 
 export interface ParameterSchemaEntry {
   name: string
@@ -127,7 +123,6 @@ export interface ParameterSchemaDTO {
   sampleRequestBody: Record<string, unknown>
 }
 
-// ── Aggregation Schema Types ──
 
 export interface AggregationPropertyDTO {
   name: string
@@ -142,7 +137,6 @@ export interface AggregationSchemaDTO {
   properties: AggregationPropertyDTO[]
 }
 
-// ── Coverage Types (new three-dimensional) ──
 
 export interface UncoveredItem {
   type: 'BRANCH' | 'LOOP' | 'PARAMETER'
@@ -169,3 +163,4 @@ export interface CoverageReport {
   checkedAt: string
   warnings: string[]
 }
+

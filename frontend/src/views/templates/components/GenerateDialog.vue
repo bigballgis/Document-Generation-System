@@ -7,7 +7,6 @@
     @closed="resetForm"
   >
     <el-form label-width="140px" label-position="top">
-      <!-- Generation Mode -->
       <el-form-item :label="$t('document.generateMode')">
         <el-radio-group v-model="form.mode">
           <el-radio value="sync">{{ $t('document.modeSync') }}</el-radio>
@@ -16,7 +15,6 @@
         </el-radio-group>
       </el-form-item>
 
-      <!-- Parameters (sync & async) -->
       <el-form-item v-if="form.mode !== 'batch'" :label="$t('document.parameters')">
         <el-input
           v-model="form.parameters"
@@ -26,7 +24,6 @@
         />
       </el-form-item>
 
-      <!-- Output Format -->
       <el-form-item :label="$t('document.outputFormat')">
         <el-select v-model="form.outputFormat" style="width: 100%">
           <el-option label="Word (.docx)" value="WORD" />
@@ -35,7 +32,6 @@
         </el-select>
       </el-form-item>
 
-      <!-- Storage Strategy -->
       <el-form-item :label="$t('document.storageMode')">
         <el-select v-model="form.storageStrategy" style="width: 100%">
           <el-option :label="$t('document.storageTemporary')" value="TEMP" />
@@ -43,7 +39,6 @@
         </el-select>
       </el-form-item>
 
-      <!-- Batch Mode Fields -->
       <template v-if="form.mode === 'batch'">
         <el-form-item :label="$t('document.dataSets')">
           <el-input
@@ -70,14 +65,12 @@
       </template>
     </el-form>
 
-    <!-- Sync result -->
     <div v-if="syncResult" style="margin-top: 12px">
       <el-alert :title="$t('document.generateSuccess')" type="success" show-icon :closable="false">
         <a :href="syncResult.downloadUrl" target="_blank">{{ $t('common.download') }}</a>
       </el-alert>
     </div>
 
-    <!-- Async result -->
     <div v-if="asyncTaskId" style="margin-top: 12px">
       <el-alert :title="`Task ID: ${asyncTaskId}`" type="info" show-icon :closable="false">
         <router-link to="/tasks">{{ $t('task.title') }}</router-link>
@@ -215,3 +208,4 @@ function resetForm() {
   asyncTaskId.value = null
 }
 </script>
+

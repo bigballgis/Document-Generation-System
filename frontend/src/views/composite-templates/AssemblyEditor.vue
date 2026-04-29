@@ -15,7 +15,6 @@
     </div>
 
     <div class="editor-layout">
-      <!-- Left: Outline Navigation -->
       <div class="editor-sidebar">
         <OutlineNavigation
           :segments="assemblyConfig.segments.value"
@@ -27,14 +26,11 @@
         </div>
       </div>
 
-      <!-- Center: Segment List -->
       <div class="editor-main">
-        <!-- Empty State -->
         <div v-if="assemblyConfig.segments.value.length === 0" class="empty-state">
           <el-empty :description="$t('assembly.emptyHint')" />
         </div>
 
-        <!-- Batch Actions -->
         <div v-if="selectedIndices.length > 0" class="batch-actions">
           <span>{{ $t('common.selected') }}: {{ selectedIndices.length }}</span>
           <el-button size="small" @click="handleBatchEnable">{{ $t('common.enable') }}</el-button>
@@ -42,7 +38,6 @@
           <el-button size="small" type="danger" @click="handleBatchRemove">{{ $t('common.delete') }}</el-button>
         </div>
 
-        <!-- Segment Cards -->
         <div class="segment-list">
           <div
             v-for="(entry, index) in assemblyConfig.segments.value"
@@ -73,7 +68,6 @@
               <el-tag v-if="entry.segmentType" size="small" type="info">{{ entry.segmentType }}</el-tag>
             </div>
 
-            <!-- Segment Config -->
             <div v-if="selectedIndex === index" class="card-config">
               <el-form :inline="true" size="small">
                 <el-form-item :label="$t('common.enable')">
@@ -206,7 +200,7 @@ async function handleSave() {
   try {
     await updateAssemblyConfig(templateId, { segments: assemblyConfig.segments.value })
     ElMessage.success(t('message.saveSuccess'))
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     saving.value = false
   }
 }
@@ -215,7 +209,7 @@ async function loadConfig() {
   try {
     const config = await getAssemblyConfig(templateId)
     assemblyConfig.deserialize(config)
-  } catch { /* handled */ }
+  } catch {}
 }
 
 onMounted(() => {
@@ -247,3 +241,4 @@ onMounted(() => {
 .card-config { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--el-border-color-lighter); }
 .estimated-pages { margin-top: 12px; padding: 8px; background: var(--el-fill-color-light); border-radius: 4px; font-size: 13px; text-align: center; }
 </style>
+

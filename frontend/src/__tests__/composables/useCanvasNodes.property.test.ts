@@ -37,7 +37,6 @@ function makeNode(type: CanvasNode['type'], extra?: Partial<CanvasNode>): Canvas
   return { id: `test-${++_nodeCounter}`, type, ...extra }
 }
 
-// ── Arbitraries ──
 
 
 describe('Property 5: Control node attribute propagation correctness', () => {
@@ -270,3 +269,4 @@ describe('Property 6: Control node affected range calculation', () => {
     expect(range).toEqual({ start: -1, end: -1 })
   })
 })
+

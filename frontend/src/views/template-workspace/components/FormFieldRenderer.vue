@@ -1,6 +1,5 @@
 <template>
   <div class="form-field-renderer" :class="{ 'is-highlighted': isHighlighted }">
-    <!-- OBJECT: collapsible group -->
     <template v-if="field.controlType === 'collapse'">
       <el-collapse v-model="collapseActive">
         <el-collapse-item :title="field.name" :name="field.path">
@@ -17,7 +16,6 @@
       </el-collapse>
     </template>
 
-    <!-- ARRAY: dynamic list -->
     <template v-else-if="field.controlType === 'dynamic-list'">
       <div class="array-field">
         <div class="array-header">
@@ -40,14 +38,12 @@
       </div>
     </template>
 
-    <!-- Leaf controls -->
     <template v-else>
       <el-form-item
         :label="field.name"
         :required="field.required"
         :class="{ 'is-highlighted': isHighlighted }"
       >
-        <!-- SELECT (enum) -->
         <el-select
           v-if="field.controlType === 'select'"
           :model-value="modelValue as string"
@@ -64,7 +60,6 @@
           />
         </el-select>
 
-        <!-- SWITCH (boolean) -->
         <el-switch
           v-else-if="field.controlType === 'switch'"
           :model-value="modelValue as boolean"
@@ -72,7 +67,6 @@
           @update:model-value="emit('update:modelValue', $event)"
         />
 
-        <!-- DATE PICKER -->
         <el-date-picker
           v-else-if="field.controlType === 'date-picker'"
           :model-value="modelValue as string"
@@ -83,7 +77,6 @@
           @update:model-value="emit('update:modelValue', $event)"
         />
 
-        <!-- NUMBER INPUT -->
         <el-input-number
           v-else-if="field.controlType === 'number-input'"
           :model-value="modelValue as number"
@@ -93,7 +86,6 @@
           @update:model-value="emit('update:modelValue', $event)"
         />
 
-        <!-- TEXT INPUT (default) -->
         <el-input
           v-else
           :model-value="modelValue as string"
@@ -129,7 +121,6 @@ const isHighlighted = computed(() => {
   return props.highlightedPaths?.includes(props.field.path) ?? false
 })
 
-// OBJECT helpers
 function getChildValue(child: FormField): unknown {
   const obj = (props.modelValue as Record<string, unknown>) ?? {}
   return obj[child.name]
@@ -141,7 +132,6 @@ function setChildValue(child: FormField, value: unknown) {
   emit('update:modelValue', obj)
 }
 
-// ARRAY helpers
 const arrayItems = computed<unknown[]>(() => {
   return Array.isArray(props.modelValue) ? props.modelValue : []
 })
@@ -199,3 +189,4 @@ function updateArrayItem(idx: number, value: unknown) {
   min-width: 30px;
 }
 </style>
+

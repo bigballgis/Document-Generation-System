@@ -1,7 +1,6 @@
 import { ref, computed, type ComputedRef, type Ref } from 'vue'
 import type { ParameterDTO } from '@/types/parameter'
 
-// ── Operation Types ──
 
 export interface AddPayload {
   parameterId: number
@@ -106,3 +105,4 @@ export function useUndoRedo(
 
   return { canUndo, canRedo, undoStack, redoStack, push, undo, redo, clear }
 }
+

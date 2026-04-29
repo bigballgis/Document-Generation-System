@@ -10,6 +10,7 @@
     "lint": "eslint . --ext .vue,.js,.jsx,.ts,.tsx --fix",
     "type-check": "vue-tsc --noEmit",
     "test": "vitest --run",
+    "test:ci": "vitest run --pool=threads",
     "test:watch": "vitest"
   },
   "dependencies": {

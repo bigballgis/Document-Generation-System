@@ -11,7 +11,6 @@
       border
       @row-contextmenu="handleContextMenu"
     >
-      <!-- Drag handle + checkbox column -->
       <el-table-column width="60" align="center">
         <template #default="{ row }">
           <div class="cell-drag-check">
@@ -24,7 +23,6 @@
         </template>
       </el-table-column>
 
-      <!-- Name column — inline edit -->
       <el-table-column :label="t('parameter.name')" min-width="130">
         <template #default="{ row }">
           <div v-if="isEditingCell(row.id, 'name')" class="inline-edit-cell">
@@ -45,7 +43,6 @@
         </template>
       </el-table-column>
 
-      <!-- Data type column -->
       <el-table-column :label="t('parameter.dataType')" width="110">
         <template #default="{ row }">
           <el-select
@@ -58,7 +55,6 @@
         </template>
       </el-table-column>
 
-      <!-- Required column -->
       <el-table-column :label="t('parameter.required')" width="60" align="center">
         <template #default="{ row }">
           <el-switch
@@ -69,7 +65,6 @@
         </template>
       </el-table-column>
 
-      <!-- Description column — inline edit -->
       <el-table-column :label="t('parameter.description')" min-width="120">
         <template #default="{ row }">
           <div v-if="isEditingCell(row.id, 'description')" class="inline-edit-cell">
@@ -88,7 +83,6 @@
         </template>
       </el-table-column>
 
-      <!-- Validation rules column — inline tags + popover editor -->
       <el-table-column :label="t('parameter.validationRules')" min-width="200">
         <template #default="{ row }">
           <ValidationRulesPopover
@@ -120,7 +114,6 @@
         </template>
       </el-table-column>
 
-      <!-- Actions column -->
       <el-table-column :label="t('common.actions')" width="160" fixed="right">
         <template #default="{ row }">
           <el-button
@@ -139,7 +132,6 @@
       </el-table-column>
     </el-table>
 
-    <!-- DERIVED expression editor (expandable below row) -->
     <template v-for="param in flatDerivedParams" :key="'expr-' + param.id">
       <div v-if="expandedExpressionIds.has(param.id)" class="derived-expression-row">
         <div class="expression-label">{{ param.name }} — Expression:</div>
@@ -154,7 +146,6 @@
       </div>
     </template>
 
-    <!-- Context Menu -->
     <div
       v-show="contextMenuVisible"
       ref="contextMenuRef"
@@ -212,7 +203,6 @@ const dataTypes: DataType[] = ['STRING', 'NUMBER', 'DATE', 'BOOLEAN', 'ARRAY', '
 const tableRef = ref<any>(null)
 const inlineInputRef = ref<any>(null)
 
-// ── Inline editing state ──
 const inlineEdit = reactive({
   rowId: null as number | null,
   field: null as EditableField | null,
@@ -271,7 +261,6 @@ function activateInlineEdit(rowId: number, field: EditableField) {
   if (row) startInlineEdit(row, field)
 }
 
-// ── Data type change with child deletion warning ──
 async function handleDataTypeChange(row: ParameterDTO, newType: string) {
   if ((row.dataType === 'OBJECT' || row.dataType === 'ARRAY') && row.children?.length > 0) {
     if (newType !== 'OBJECT' && newType !== 'ARRAY') {
@@ -287,7 +276,6 @@ async function handleDataTypeChange(row: ParameterDTO, newType: string) {
   emit('update', row.id, { dataType: newType as DataType, version: row.version })
 }
 
-// ── Validation rules popover ──
 const validationPopoverRowId = ref<number | null>(null)
 
 function handleValidationSave(row: ParameterDTO, rules: ValidationRules) {
@@ -295,7 +283,6 @@ function handleValidationSave(row: ParameterDTO, rules: ValidationRules) {
   validationPopoverRowId.value = null
 }
 
-// ── Derived expression editor ──
 const expandedExpressionIds = ref(new Set<number>())
 
 const flatDerivedParams = computed(() => {
@@ -324,7 +311,6 @@ function getScopeLevel(paramId: number): 'root' | 'row' | 'object' {
   return 'root'
 }
 
-// ── Context menu ──
 const contextMenuVisible = ref(false)
 const contextMenuPos = ref({ x: 0, y: 0 })
 const contextRow = ref<ParameterDTO | null>(null)
@@ -382,7 +368,6 @@ onBeforeUnmount(() => {
   document.removeEventListener('click', hideContextMenu)
 })
 
-// ── Expand/Collapse ──
 function expandAll() {
   if (tableRef.value) {
     toggleAllRows(props.parameters, true)
@@ -404,7 +389,6 @@ function toggleAllRows(rows: ParameterDTO[], expand: boolean) {
   }
 }
 
-// ── Helpers ──
 function countRules(rules: ValidationRules | null): number {
   if (!rules) return 0
   return Object.keys(rules).filter(k => k !== 'custom_message' && (rules as any)[k] != null).length
@@ -553,3 +537,5 @@ defineExpose({ expandAll, collapseAll, activateInlineEdit, setCopiedParameter, g
   color: var(--el-color-danger);
 }
 </style>
+
+

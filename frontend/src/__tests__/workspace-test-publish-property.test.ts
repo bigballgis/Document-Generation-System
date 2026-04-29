@@ -6,7 +6,6 @@ import * as fc from 'fast-check'
 import type { CompositeCoverageReport, SegmentCoverageEntry } from '@/types/segment'
 import type { ReviewDTO } from '@/api/admin'
 
-// ── Pure functions extracted from TestingTab.vue ──
 
 function computeCoverageState(report: CompositeCoverageReport) {
   const overallCoveragePercent = report.overallCoveragePercent
@@ -24,7 +23,6 @@ function computeCoverageState(report: CompositeCoverageReport) {
   return { overallCoveragePercent, totalVariables, boundVariables, warningVisible, emptyStateVisible, color }
 }
 
-// ── Pure functions extracted from ReviewPublishTab.vue ──
 
 function computeReviewStatus(reviews: ReviewDTO[]) {
   const allReviewsApproved = reviews.length > 0 &&
@@ -33,14 +31,12 @@ function computeReviewStatus(reviews: ReviewDTO[]) {
   return { allReviewsApproved, hasRejectedReview }
 }
 
-// ── Pure function extracted from useWorkflowSteps.ts ──
 
 function hasFullCoverage(cov: CompositeCoverageReport | null): boolean {
   if (!cov) return false
   return cov.overallCoveragePercent >= 100 && cov.segmentCoverages.length > 0
 }
 
-// ── Generators ──
 
 const arbSegmentCoverageEntry: fc.Arbitrary<SegmentCoverageEntry> = fc.record({
   segmentName: fc.string({ minLength: 1, maxLength: 30 }),
@@ -91,7 +87,6 @@ const arbReviewDTO: fc.Arbitrary<ReviewDTO> = fc.record({
   updatedAt: fc.constant('2024-06-01T00:00:00'),
 })
 
-// ── Property 1: Coverage display state consistency ──
 
 describe('Property 1: Coverage display state consistency', () => {
   it('totalVariables equals sum of segment totalVariables, boundVariables equals sum of segment boundVariables', () => {
@@ -149,7 +144,6 @@ describe('Property 1: Coverage display state consistency', () => {
   })
 })
 
-// ── Property 2: Review status indicator correctness ──
 
 describe('Property 2: Review status indicator correctness', () => {
   it('allReviewsApproved iff every review is APPROVED or CONDITIONAL_APPROVED', () => {
@@ -198,7 +192,6 @@ describe('Property 2: Review status indicator correctness', () => {
   })
 })
 
-// ── Property 5: Workflow Step 5 completion calculation ──
 
 describe('Property 5: Workflow Step 5 completion calculation', () => {
   it('Step 5 completed iff coverage is non-null AND overallCoveragePercent >= 100 AND segmentCoverages.length > 0', () => {
@@ -218,3 +211,4 @@ describe('Property 5: Workflow Step 5 completion calculation', () => {
     )
   })
 })
+

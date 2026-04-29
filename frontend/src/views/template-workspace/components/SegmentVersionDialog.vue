@@ -6,7 +6,6 @@
     :close-on-click-modal="false"
     @closed="handleClosed"
   >
-    <!-- Publish action -->
     <div class="publish-row">
       <el-input
         v-model="publishComment"
@@ -23,7 +22,6 @@
       </el-button>
     </div>
 
-    <!-- Version list -->
     <el-table
       v-loading="loadingVersions"
       :data="versions"
@@ -60,7 +58,6 @@
       </el-table-column>
     </el-table>
 
-    <!-- Version comparison -->
     <div v-if="compareA != null || compareB != null" class="compare-section">
       <div class="compare-header">
         <span>{{ t('workspace.segment.compareTitle') }}:</span>
@@ -82,14 +79,12 @@
         </el-button>
       </div>
 
-      <!-- Diff result -->
       <template v-if="diffResult">
         <div class="diff-info">
           <el-tag v-if="diffResult.diffs.length === 0 && !diffResult.filePathChanged && !diffResult.contentChanged" type="success" size="small">
             {{ t('workspace.segment.noDifferences') }}
           </el-tag>
         </div>
-        <!-- File path change -->
         <div v-if="diffResult.filePathChanged" class="diff-file-change">
           <div class="diff-file-label">{{ t('workspace.segment.fileChanged') }}</div>
           <div class="diff-file-paths">
@@ -123,7 +118,6 @@
           </el-table-column>
         </el-table>
 
-        <!-- Content diff section -->
         <div v-if="diffResult.contentChanged" class="content-diff-section">
           <div class="content-diff-header">
             <el-tag size="small" type="info">{{ t('workspace.segment.contentDiff.title') }}</el-tag>
@@ -139,7 +133,6 @@
           />
           <div class="content-diff-view">
             <template v-for="(item, idx) in visibleDiffLines" :key="idx">
-              <!-- Collapsed EQUAL lines -->
               <div v-if="item.collapsed" class="diff-line diff-line-collapsed" @click="expandGroup(item.groupId)">
                 <span class="diff-line-num">&nbsp;</span>
                 <span class="diff-line-num">&nbsp;</span>
@@ -149,7 +142,6 @@
                   — {{ t('workspace.segment.contentDiff.expandLines') }}
                 </span>
               </div>
-              <!-- Normal lines -->
               <template v-else-if="item.line">
                 <template v-if="item.line.type === 'MODIFIED'">
                   <div class="diff-line diff-line-removed">
@@ -327,7 +319,6 @@ function diffTypeTag(type: string) {
   return (map[type] || 'info') as any
 }
 
-// ── Content diff helpers ──
 
 interface ProcessedDiffItem {
   collapsed?: boolean
@@ -537,3 +528,5 @@ function diffLineText(line: ContentDiffLine) {
   color: var(--el-color-primary);
 }
 </style>
+
+

@@ -1,10 +1,8 @@
-// ── Segment Types ──
 
 export type SegmentType = 'COVER' | 'TOC' | 'CHAPTER' | 'TABLE' | 'SIGNATURE' | 'LEGAL' | 'APPENDIX'
 
 export type PageNumberFormat = 'ARABIC' | 'ROMAN' | 'ALPHA'
 
-// ── Assembly / Composite Types ──
 
 export interface AssemblySegmentEntry {
   filePath: string
@@ -42,7 +40,6 @@ export interface SelectivePreviewRequest {
   testData?: Record<string, unknown>
 }
 
-// ── Composite Preview ──
 
 export interface SegmentPreviewEntry {
   segmentName: string
@@ -55,7 +52,6 @@ export interface CompositePreview {
   segmentPreviews: SegmentPreviewEntry[]
 }
 
-// ── Coverage ──
 
 export interface SegmentCoverageEntry {
   segmentName: string
@@ -69,7 +65,6 @@ export interface CompositeCoverageReport {
   segmentCoverages: SegmentCoverageEntry[]
 }
 
-// ── Migration ──
 
 export interface MigrationResult {
   compositeTemplateId: number
@@ -79,3 +74,4 @@ export interface MigrationResult {
   migratedVariableBindings: number
   archivedOriginalTemplateId: number
 }
+

@@ -1,13 +1,11 @@
 <template>
   <div class="test-data-form">
-    <!-- Mode toggle -->
     <div class="form-header">
       <el-button size="small" @click="toggleMode">
         {{ mode === 'form' ? t('workspace.testForm.viewJson') : t('workspace.testForm.viewForm') }}
       </el-button>
     </div>
 
-    <!-- Form mode -->
     <div v-if="mode === 'form'" class="form-body">
       <el-form label-position="top" size="default">
         <FormFieldRenderer
@@ -22,7 +20,6 @@
       </el-form>
     </div>
 
-    <!-- JSON mode -->
     <div v-else class="json-body">
       <el-input
         v-model="jsonText"
@@ -128,3 +125,4 @@ function handleJsonBlur() {
   height: 100%;
 }
 </style>
+

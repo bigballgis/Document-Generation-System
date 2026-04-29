@@ -5,7 +5,6 @@ import { describe, it, expect } from 'vitest'
 import * as fc from 'fast-check'
 import type { StageDefinition } from '@/types/workspace'
 
-// ── Pure function extracted from useStageAvailability for testability ──
 
 interface StoreSnapshot {
   templateStatus: string
@@ -76,7 +75,6 @@ function computeStages(s: StoreSnapshot): StageDefinition[] {
   }
 }
 
-// ── Generators ──
 
 const templateStatuses = ['DRAFT', 'IN_TEST', 'PENDING_REVIEW', 'REVIEWED', 'ACTIVE', 'ARCHIVED'] as const
 
@@ -93,7 +91,6 @@ const arbStoreSnapshot: fc.Arbitrary<StoreSnapshot> = fc.record({
   segments: fc.array(arbSegment, { minLength: 0, maxLength: 10 }),
 })
 
-// ── Property 1: 阶段可用性与完成状态一致性 ──
 
 describe('Property 1: 阶段可用性与完成状态一致性', () => {
   it('Sub-property 1: array length is always 4, order is [design, test, approval, publish]', () => {
@@ -241,3 +238,4 @@ describe('Property 1: 阶段可用性与完成状态一致性', () => {
     )
   })
 })
+

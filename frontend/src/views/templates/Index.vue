@@ -328,7 +328,7 @@ async function handleClone(row: TemplateDTO) {
     await cloneTemplate(row.id)
     ElMessage.success(t('template.cloneSuccess'))
     fetchTemplates()
-  } catch { /* handled */ }
+  } catch {}
 }
 
 async function handleActivate(row: TemplateDTO) {
@@ -337,7 +337,7 @@ async function handleActivate(row: TemplateDTO) {
     await activateTemplate(row.id)
     ElMessage.success(t('template.activateSuccess'))
     fetchTemplates()
-  } catch { /* cancelled or error */ }
+  } catch {}
 }
 
 async function handleArchive(row: TemplateDTO) {
@@ -346,7 +346,7 @@ async function handleArchive(row: TemplateDTO) {
     await archiveTemplate(row.id)
     ElMessage.success(t('template.archiveSuccess'))
     fetchTemplates()
-  } catch { /* cancelled or error */ }
+  } catch {}
 }
 
 async function handleDelete(row: TemplateDTO) {
@@ -359,7 +359,7 @@ async function handleDelete(row: TemplateDTO) {
     await deleteTemplate(row.id)
     ElMessage.success(t('message.deleteSuccess'))
     fetchTemplates()
-  } catch { /* cancelled or error */ }
+  } catch {}
 }
 
 async function handleImportDocx(event: Event) {
@@ -370,7 +370,7 @@ async function handleImportDocx(event: Event) {
     await importDocx(file)
     ElMessage.success(t('message.importSuccess'))
     fetchTemplates()
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     input.value = ''
   }
 }
@@ -383,7 +383,7 @@ async function handleImportConfig(event: Event) {
     await importConfig(file)
     ElMessage.success(t('message.importSuccess'))
     fetchTemplates()
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     input.value = ''
   }
 }
@@ -396,7 +396,7 @@ async function handleImportZip(event: Event) {
     await importCompositeFromZip(file)
     ElMessage.success(t('message.importSuccess'))
     fetchTemplates()
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     input.value = ''
   }
 }

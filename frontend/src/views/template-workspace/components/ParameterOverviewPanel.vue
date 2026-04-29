@@ -6,7 +6,6 @@
     size="420px"
     @update:model-value="emit('update:visible', $event)"
   >
-    <!-- View mode toggle -->
     <div v-if="!editingParam" class="view-toggle">
       <el-radio-group v-model="viewMode" size="small">
         <el-radio-button value="tree">{{ t('workspace.design.overview.treeView') }}</el-radio-button>
@@ -14,7 +13,6 @@
       </el-radio-group>
     </div>
 
-    <!-- ═══ Detail Edit View ═══ -->
     <div v-if="editingParam" class="detail-view">
       <div class="detail-back" @click="editingParam = null">
         <el-icon><ArrowLeft /></el-icon>
@@ -37,7 +35,6 @@
           <el-input v-model="editForm.description" type="textarea" :rows="2" />
         </el-form-item>
 
-        <!-- Validation Rules inline -->
         <el-divider content-position="left">{{ t('parameter.validationRules') }}</el-divider>
         <ValidationRulesPopover
           :visible="rulesPopoverVisible"
@@ -66,7 +63,6 @@
       </el-form>
     </div>
 
-    <!-- ═══ Tree View with drill-down ═══ -->
     <div v-else-if="viewMode === 'tree'" class="tree-view">
       <el-breadcrumb v-if="breadcrumb.length > 1" separator="/" class="overview-breadcrumb">
         <el-breadcrumb-item
@@ -98,7 +94,6 @@
       <el-empty v-else :description="t('parameter.empty')" />
     </div>
 
-    <!-- ═══ JSON Schema View ═══ -->
     <div v-else class="schema-view">
       <pre class="schema-code">{{ jsonSchemaText }}</pre>
     </div>
@@ -128,7 +123,6 @@ const store = useTemplateWorkspaceStore()
 const viewMode = ref<'tree' | 'schema'>('tree')
 const leafDataTypes: DataType[] = ['STRING', 'NUMBER', 'DATE', 'BOOLEAN']
 
-// ── Breadcrumb drill-down ──
 interface BreadcrumbItem { id: number | null; name: string }
 const breadcrumb = ref<BreadcrumbItem[]>([{ id: null, name: 'Root' }])
 
@@ -164,7 +158,6 @@ function navigateToBreadcrumb(index: number) {
   breadcrumb.value = breadcrumb.value.slice(0, index + 1)
 }
 
-// ── Detail editing ──
 const editingParam = ref<ParameterDTO | null>(null)
 const saving = ref(false)
 const rulesPopoverVisible = ref(false)
@@ -233,7 +226,6 @@ async function saveDetail() {
   }
 }
 
-// ── Helpers ──
 function dataTypeTagType(dt: string): 'primary' | 'success' | 'warning' | 'danger' | 'info' | undefined {
   switch (dt) {
     case 'STRING': return undefined; case 'NUMBER': return 'success'; case 'DATE': return 'warning'
@@ -339,3 +331,5 @@ const jsonSchemaText = computed(() => JSON.stringify({ type: 'object', ...toJson
   margin: 0;
 }
 </style>
+
+

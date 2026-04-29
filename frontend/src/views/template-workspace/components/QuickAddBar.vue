@@ -18,8 +18,7 @@ import { useI18n } from 'vue-i18n'
 import { createParameter } from '@/api/parameters'
 import { ElMessage } from 'element-plus'
 import type { ParameterDTO, CreateParameterRequest } from '@/types/parameter'
-
-const NAME_REGEX = /^[a-zA-Z_][a-zA-Z0-9_-]*$/
+import { PARAMETER_NAME_REGEX } from '@/constants/parameterNamePattern'
 
 const props = defineProps<{
   templateId: number
@@ -45,7 +44,7 @@ async function handleAdd() {
 
   // Validate each segment
   for (const seg of segments) {
-    if (!NAME_REGEX.test(seg)) {
+    if (!PARAMETER_NAME_REGEX.test(seg)) {
       errorMsg.value = t('parameter.quickAdd.invalidNameError')
       return
     }

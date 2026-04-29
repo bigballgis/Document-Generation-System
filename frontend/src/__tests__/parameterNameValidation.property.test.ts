@@ -8,11 +8,10 @@
  */
 import { describe, it, expect } from 'vitest'
 import * as fc from 'fast-check'
-
-const NAME_REGEX = /^[a-zA-Z_][a-zA-Z0-9_-]*$/
+import { PARAMETER_NAME_REGEX } from '@/constants/parameterNamePattern'
 
 function isValidParameterName(name: string): boolean {
-  return NAME_REGEX.test(name)
+  return PARAMETER_NAME_REGEX.test(name)
 }
 
 describe('Property 11: 参数名称格式校验', () => {
@@ -59,7 +58,7 @@ describe('Property 11: 参数名称格式校验', () => {
       fc.property(
         fc.string({ minLength: 0, maxLength: 20 }),
         (str) => {
-          const expected = NAME_REGEX.test(str)
+          const expected = PARAMETER_NAME_REGEX.test(str)
           expect(isValidParameterName(str)).toBe(expected)
         },
       ),

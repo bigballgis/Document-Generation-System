@@ -29,7 +29,6 @@
     </el-form>
 
     <template v-if="diffResult">
-      <!-- Summary -->
       <el-card shadow="never" style="margin-bottom: 16px">
         <template #header>{{ $t('template.diffSummary') }}</template>
         <el-row :gutter="20">
@@ -51,7 +50,6 @@
         </el-row>
       </el-card>
 
-      <!-- Side-by-side diff -->
       <el-card shadow="never">
         <el-table :data="allDiffs" stripe>
           <el-table-column prop="field" label="Field" min-width="180" />
@@ -120,7 +118,7 @@ function diffTagType(type: string) {
 async function fetchVersions() {
   try {
     versions.value = await getTemplateVersions(props.templateId)
-  } catch { /* handled */ }
+  } catch {}
 }
 
 async function handleCompare() {
@@ -128,7 +126,7 @@ async function handleCompare() {
   loading.value = true
   try {
     diffResult.value = await getVersionDiff(props.templateId, versionA.value!, versionB.value!)
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     loading.value = false
   }
 }
@@ -149,3 +147,4 @@ onMounted(fetchVersions)
   text-decoration: line-through;
 }
 </style>
+

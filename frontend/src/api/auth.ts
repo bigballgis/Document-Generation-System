@@ -19,7 +19,6 @@ export function refreshTokenApi(refreshToken: string) {
   return request.post<any, TokenPair>('/auth/refresh', { refreshToken })
 }
 
-/** Request password reset email */
 export function resetPassword(email: string) {
   return request.post('/auth/reset-password', { email })
 }

@@ -141,9 +141,7 @@ async function handleRegister() {
     })
     ElMessage.success(t('auth.registerSuccess'))
     router.push('/')
-  } catch {
-    // Error already handled by interceptor
-  } finally {
+  } catch {} finally {
     loading.value = false
   }
 }

@@ -12,11 +12,9 @@
         :data-node-id="node.id"
         :data-node-type="node.type"
       >
-        <!-- ═══ Content Segment Card ═══ -->
         <div v-if="node.type === 'content'" class="segment-card" :class="{ 'is-disabled': !getSegment(node)?.enabled }">
           <div class="segment-type-bar" :style="{ backgroundColor: getSegmentColor(node) }" />
 
-          <!-- Row 1: identity + actions -->
           <div class="card-row card-row-top">
             <div class="card-identity">
               <el-tag size="small" :color="getSegmentColor(node)" effect="dark" class="type-tag">
@@ -47,7 +45,6 @@
             </div>
           </div>
 
-          <!-- Row 2: config toggles -->
           <div v-if="!readonly" class="card-row card-row-config">
             <el-checkbox
               :model-value="getSegment(node)?.enabled ?? true"
@@ -62,12 +59,10 @@
           </div>
         </div>
 
-        <!-- ═══ Control Node Card (Header / Footer / Page Number) ═══ -->
         <div v-else class="control-node-card" :class="`control-node--${node.type}`">
           <el-icon :size="14"><component :is="controlNodeIcon(node.type)" /></el-icon>
           <span class="control-label">{{ controlNodeLabel(node.type) }}</span>
 
-          <!-- Page Number config -->
           <template v-if="node.type === 'page-number'">
             <el-select
               v-if="!readonly"
@@ -91,14 +86,12 @@
             />
           </template>
 
-          <!-- Header/Footer edit button -->
           <el-button
             v-if="(node.type === 'header' || node.type === 'footer') && !readonly"
             size="small" text type="primary" style="margin-left: auto;"
             @click.stop="$emit('edit-header-footer', node)"
           >{{ t('workspace.design.canvas.editHeaderFooter') }}</el-button>
 
-          <!-- Delete -->
           <el-button v-if="!readonly" size="small" text type="danger" class="control-delete-btn" @click.stop="$emit('remove-node', index)">
             <el-icon><Delete /></el-icon>
           </el-button>
@@ -106,7 +99,6 @@
       </div>
     </div>
 
-    <!-- Naming dialog -->
     <el-dialog v-model="namingDialogVisible" :title="t('workspace.segment.createNew')" width="400px" :close-on-click-modal="false" @closed="resetNamingDialog">
       <el-form @submit.prevent="confirmCreateSegment">
         <el-form-item :error="namingError">
@@ -190,7 +182,6 @@ function controlNodeLabel(type: string): string {
   return t(map[type] || type)
 }
 
-// ── Drag from ComponentPanel ──
 function handleDragAdd(evt: Sortable.SortableEvent) {
   const itemEl = evt.item
   const category = itemEl.getAttribute('data-category')
@@ -224,7 +215,6 @@ async function confirmCreateSegment() {
 }
 function resetNamingDialog() { newSegmentName.value = ''; namingError.value = '' }
 
-// ── Sortable ──
 function initSortable() {
   if (!canvasListRef.value || props.readonly) return
   sortableInstance = Sortable.create(canvasListRef.value, {
@@ -300,3 +290,5 @@ onBeforeUnmount(() => { sortableInstance?.destroy() })
 .drag-ghost { opacity: 0.4; background: var(--el-color-primary-light-9); }
 .canvas-node-wrapper { position: relative; }
 </style>
+
+

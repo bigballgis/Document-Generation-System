@@ -1,6 +1,5 @@
 <template>
   <div class="dashboard-page">
-    <!-- Header with time range & auto-refresh -->
     <div class="dashboard-header">
       <h2>{{ $t('dashboard.title') }}</h2>
       <div class="header-controls">
@@ -27,7 +26,6 @@
       </div>
     </div>
 
-    <!-- Overview stat cards -->
     <el-row :gutter="16" class="overview-row">
       <el-col :xs="12" :sm="6">
         <el-card shadow="hover" class="stat-card">
@@ -75,7 +73,6 @@
       </el-col>
     </el-row>
 
-    <!-- Charts row: API trend + Success rate -->
     <el-row :gutter="16" class="chart-row">
       <el-col :xs="24" :lg="16">
         <el-card shadow="hover">
@@ -91,7 +88,6 @@
       </el-col>
     </el-row>
 
-    <!-- Data source health + System resources -->
     <el-row :gutter="16" class="bottom-row">
       <el-col :xs="24" :lg="12">
         <el-card shadow="hover">
@@ -167,7 +163,6 @@ import {
 
 const { t } = useI18n()
 
-// --- State ---
 const timeRange = ref(60) // minutes
 const autoRefreshEnabled = ref(true)
 const refreshInterval = ref(30) // seconds
@@ -182,14 +177,12 @@ const apiMetrics = ref<ApiCallMetricDTO[]>([])
 const dataSourceHealth = ref<DataSourceHealthDTO[]>([])
 const resources = ref<Partial<SystemResourceDTO>>({})
 
-// --- Charts ---
 const apiTrendChartRef = ref<HTMLElement>()
 const successRateChartRef = ref<HTMLElement>()
 let apiTrendChart: echarts.ECharts | null = null
 let successRateChart: echarts.ECharts | null = null
 let refreshTimer: ReturnType<typeof setInterval> | null = null
 
-// --- Progress bar color thresholds ---
 const progressColor = [
   { color: '#67c23a', percentage: 60 },
   { color: '#e6a23c', percentage: 80 },
@@ -203,11 +196,10 @@ function formatBytes(bytes: number): string {
   return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + units[i]
 }
 
-// --- Data fetching ---
 async function fetchOverview() {
   try {
     overview.value = await getOverview()
-  } catch { /* handled by interceptor */ }
+  } catch {}
 }
 
 async function fetchApiMetrics() {
@@ -215,19 +207,19 @@ async function fetchApiMetrics() {
     apiMetrics.value = await getApiMetrics(timeRange.value)
     renderApiTrendChart()
     renderSuccessRateChart()
-  } catch { /* handled by interceptor */ }
+  } catch {}
 }
 
 async function fetchDataSourceHealth() {
   try {
     dataSourceHealth.value = await getDataSourceHealth()
-  } catch { /* handled by interceptor */ }
+  } catch {}
 }
 
 async function fetchSystemResources() {
   try {
     resources.value = await getSystemResources()
-  } catch { /* handled by interceptor */ }
+  } catch {}
 }
 
 async function refreshAll() {
@@ -243,7 +235,6 @@ function onTimeRangeChange() {
   fetchApiMetrics()
 }
 
-// --- Chart rendering ---
 function renderApiTrendChart() {
   if (!apiTrendChartRef.value) return
   if (!apiTrendChart) {
@@ -322,7 +313,6 @@ function renderSuccessRateChart() {
   }, true)
 }
 
-// --- Auto-refresh ---
 function startAutoRefresh() {
   stopAutoRefresh()
   if (autoRefreshEnabled.value) {
@@ -341,13 +331,11 @@ watch([autoRefreshEnabled, refreshInterval], () => {
   startAutoRefresh()
 })
 
-// --- Resize handling ---
 function handleResize() {
   apiTrendChart?.resize()
   successRateChart?.resize()
 }
 
-// --- Lifecycle ---
 onMounted(async () => {
   await refreshAll()
   await nextTick()
@@ -466,3 +454,4 @@ onBeforeUnmount(() => {
   font-weight: 500;
 }
 </style>
+

@@ -12,7 +12,6 @@ import type { TestCaseDTO } from '@/api/market'
 import type { ReviewDTO, PermissionDTO } from '@/api/admin'
 
 export const useTemplateWorkspaceStore = defineStore('templateWorkspace', () => {
-  // ── State ──
   const templateId = ref<number>(0)
   const template = ref<TemplateDTO | null>(null)
   const assemblyConfig = ref<AssemblyConfig | null>(null)
@@ -33,13 +32,11 @@ export const useTemplateWorkspaceStore = defineStore('templateWorkspace', () => 
   const criticalError = ref<string | null>(null)
   const warnings = ref<Record<string, string>>({})
 
-  // ── Derived ──
   const templateStatus = computed(() => template.value?.status ?? 'DRAFT')
   const isActive = computed(() => templateStatus.value === 'ACTIVE')
   const isDraft = computed(() => templateStatus.value === 'DRAFT')
   const isInTest = computed(() => templateStatus.value === 'IN_TEST')
 
-  // ── Actions ──
   async function initWorkspace(id: number): Promise<void> {
     if (templateId.value !== 0 && templateId.value !== id) {
       $reset()
@@ -214,3 +211,4 @@ export const useTemplateWorkspaceStore = defineStore('templateWorkspace', () => 
     refreshVersions, refreshPermissions, $reset,
   }
 })
+

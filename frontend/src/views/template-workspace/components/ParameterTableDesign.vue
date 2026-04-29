@@ -1,6 +1,5 @@
 <template>
   <div class="parameter-table-design">
-    <!-- Header bar: breadcrumb + actions -->
     <div class="table-header">
       <el-breadcrumb separator="/" class="table-breadcrumb">
         <el-breadcrumb-item
@@ -24,7 +23,6 @@
       </div>
     </div>
 
-    <!-- Table view -->
     <ParameterTableView
       ref="tableViewRef"
       :parameters="currentLevelParameters"
@@ -34,7 +32,6 @@
       @refresh="handleRefresh"
     />
 
-    <!-- Add Field Dialog -->
     <el-dialog
       v-model="addDialogVisible"
       :title="t('workspace.design.table.addField')"
@@ -81,13 +78,13 @@ import { useTemplateWorkspaceStore } from '@/stores/templateWorkspace'
 import { createParameter } from '@/api/parameters'
 import type { ParameterBreadcrumbItem } from '@/types/workspace'
 import type { ParameterDTO, DataType } from '@/types/parameter'
+import { PARAMETER_NAME_REGEX } from '@/constants/parameterNamePattern'
 import ParameterTableView from './ParameterTableView.vue'
 
 const MAX_DEPTH = 5
 // Extended field types: includes data types + virtual "FORMULA" type
 type FieldType = DataType | 'FORMULA'
 const allFieldTypes: FieldType[] = ['STRING', 'NUMBER', 'DATE', 'BOOLEAN', 'ARRAY', 'OBJECT', 'FORMULA']
-const PARAM_NAME_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]*$/
 
 defineProps<{
   readonly: boolean
@@ -97,7 +94,6 @@ const { t } = useI18n()
 const store = useTemplateWorkspaceStore()
 const tableViewRef = ref()
 
-// ── Breadcrumb state ──
 const breadcrumbPath = ref<ParameterBreadcrumbItem[]>([
   { id: null, name: t('workspace.design.table.main'), tableType: 'main' },
 ])
@@ -127,7 +123,6 @@ function findParameterById(params: ParameterDTO[], id: number): ParameterDTO | n
   return null
 }
 
-// ── Navigation ──
 function handleNavigate(param: ParameterDTO) {
   if (breadcrumbPath.value.length >= MAX_DEPTH) return
   const tableType = param.dataType === 'ARRAY' ? 'sub' : 'related'
@@ -143,14 +138,13 @@ async function handleRefresh() {
   await store.refreshParameters()
 }
 
-// ── Add Field Dialog ──
 const addDialogVisible = ref(false)
 const newField = ref({ name: '', fieldType: 'STRING' as FieldType })
 const newFieldError = ref('')
 
 watch(() => newField.value.name, (val) => {
   if (!val.trim()) { newFieldError.value = ''; return }
-  if (!PARAM_NAME_REGEX.test(val)) {
+  if (!PARAMETER_NAME_REGEX.test(val)) {
     newFieldError.value = t('workspace.design.table.nameInvalid')
     return
   }
@@ -246,3 +240,5 @@ async function submitNewField() {
   margin-top: 4px;
 }
 </style>
+
+

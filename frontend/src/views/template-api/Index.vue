@@ -1,6 +1,5 @@
 <template>
   <div class="api-management-page">
-    <!-- Header -->
     <div class="page-header">
       <div class="header-left">
         <h2>{{ t('workspace.api.title') }} — {{ template?.name ?? '' }}</h2>
@@ -11,7 +10,6 @@
     <el-skeleton v-if="loading" :rows="8" animated />
 
     <template v-else-if="template">
-      <!-- Version List -->
       <el-card shadow="never" style="margin-bottom: 16px">
         <template #header>{{ t('workspace.api.versions') }}</template>
         <el-empty v-if="versions.length === 0" :description="t('workspace.api.noActiveVersions')" />
@@ -25,7 +23,6 @@
         </el-table>
       </el-card>
 
-      <!-- API Endpoint Info -->
       <ApiEndpointInfo
         :template-id="templateId"
         :api-keys="apiKeys"
@@ -36,7 +33,6 @@
         @create-api-key="handleCreateApiKey"
       />
 
-      <!-- API Key Management -->
       <el-card shadow="never" style="margin-top: 16px">
         <template #header>{{ t('workspace.api.keys') }}</template>
         <el-table :data="apiKeys" stripe v-loading="apiKeysLoading">
@@ -97,7 +93,6 @@ async function loadData() {
     versions.value = vers
     await loadApiKeys()
   } catch {
-    // handled by interceptor
   } finally {
     loading.value = false
   }
@@ -109,7 +104,6 @@ async function loadApiKeys() {
     const result = await getApiKeys({ page: 0, size: 20 })
     apiKeys.value = result.content
   } catch {
-    // silent
   } finally {
     apiKeysLoading.value = false
   }
@@ -151,3 +145,4 @@ onMounted(() => loadData())
   font-size: 20px;
 }
 </style>
+

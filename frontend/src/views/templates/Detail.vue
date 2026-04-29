@@ -295,7 +295,6 @@ const tagList = ref<TagDTO[]>([])
 
 const templateId = Number(route.params.id)
 
-// Review state
 const reviews = ref<ReviewDTO[]>([])
 const reviewsLoading = ref(false)
 const reviewPage = ref(1)
@@ -309,10 +308,8 @@ const conditionalApproveComment = ref('')
 const conditionalApproveSuggestions = ref<string[]>([])
 const currentReviewId = ref<number>(0)
 
-// State transitions
 const availableTransitions = ref<string[]>([])
 
-// Scan variables & test case import
 const scanLoading = ref(false)
 const testCaseFileInput = ref<HTMLInputElement | null>(null)
 const testCaseMgmtRef = ref<ComponentPublicInstance<{ refreshTestCases: () => Promise<void> }> | null>(null)
@@ -348,7 +345,7 @@ async function fetchTemplate() {
   try {
     template.value = await getTemplate(templateId)
     fetchTransitions()
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     loading.value = false
   }
 }
@@ -358,7 +355,7 @@ async function fetchFilters() {
     const [cats, tags] = await Promise.all([getCategories(), getTags()])
     categoryTree.value = cats
     tagList.value = tags
-  } catch { /* ignore */ }
+  } catch {}
 }
 
 function openEditDialog() {
@@ -378,7 +375,7 @@ async function handleClone() {
   try {
     await cloneTemplate(templateId)
     ElMessage.success(t('template.cloneSuccess'))
-  } catch { /* handled */ }
+  } catch {}
 }
 
 async function handleActivate() {
@@ -387,7 +384,7 @@ async function handleActivate() {
     await activateTemplate(templateId)
     ElMessage.success(t('template.activateSuccess'))
     fetchTemplate()
-  } catch { /* cancelled */ }
+  } catch {}
 }
 
 async function handleArchive() {
@@ -396,10 +393,9 @@ async function handleArchive() {
     await archiveTemplate(templateId)
     ElMessage.success(t('template.archiveSuccess'))
     fetchTemplate()
-  } catch { /* cancelled */ }
+  } catch {}
 }
 
-// Review helpers
 type ReviewTagType = 'primary' | 'success' | 'info' | 'warning' | 'danger'
 
 function reviewStatusTagType(status: string): ReviewTagType {
@@ -422,7 +418,7 @@ async function fetchReviews() {
     const res = await getTemplateReviews(templateId, { page: reviewPage.value - 1, size: reviewSize.value })
     reviews.value = res.content
     reviewTotal.value = res.totalElements
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     reviewsLoading.value = false
   }
 }
@@ -436,7 +432,7 @@ async function handleSubmitForReviewFromDialog(reviewerIds: number[], reviewLeve
     await fetchReviews()
     fetchTemplate()
     fetchTransitions()
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     submitReviewLoading.value = false
   }
 }
@@ -458,7 +454,7 @@ async function handleConditionalApprove() {
     ElMessage.success(t('review.approveSuccess'))
     conditionalApproveDialogVisible.value = false
     fetchReviews()
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     conditionalApproveLoading.value = false
   }
 }
@@ -467,13 +463,13 @@ async function handleReviewInEditor() {
   try {
     const url = await getReviewEditorUrl(templateId)
     window.open(url, '_blank')
-  } catch { /* handled */ }
+  } catch {}
 }
 
 async function fetchTransitions() {
   try {
     availableTransitions.value = await getAvailableTransitions(templateId)
-  } catch { /* handled */ }
+  } catch {}
 }
 
 async function handleSubmitToTest() {
@@ -482,7 +478,7 @@ async function handleSubmitToTest() {
     ElMessage.success(t('workspace.design.submitToTestSuccess'))
     fetchTemplate()
     fetchTransitions()
-  } catch { /* handled */ }
+  } catch {}
 }
 
 async function handleExportDocx() {
@@ -494,7 +490,7 @@ async function handleExportDocx() {
     a.download = `${template.value?.name || 'template'}.docx`
     a.click()
     URL.revokeObjectURL(url)
-  } catch { /* handled */ }
+  } catch {}
 }
 
 async function handleExportConfig() {
@@ -506,7 +502,7 @@ async function handleExportConfig() {
     a.download = `${template.value?.name || 'template'}-config.json`
     a.click()
     URL.revokeObjectURL(url)
-  } catch { /* handled */ }
+  } catch {}
 }
 
 async function handleScanVariables() {
@@ -514,7 +510,7 @@ async function handleScanVariables() {
   try {
     const vars = await scanVariables(templateId)
     ElMessage.success(t('template.scanVariablesSuccess', { count: vars.length }))
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     scanLoading.value = false
   }
 }
@@ -528,7 +524,7 @@ async function handleExportCoverageReport() {
     a.download = `${template.value?.name || 'template'}-coverage.json`
     a.click()
     URL.revokeObjectURL(url)
-  } catch { /* handled */ }
+  } catch {}
 }
 
 async function handleExportTestCases() {
@@ -541,7 +537,7 @@ async function handleExportTestCases() {
     a.download = `${template.value?.name || 'template'}-test-cases.json`
     a.click()
     URL.revokeObjectURL(url)
-  } catch { /* handled */ }
+  } catch {}
 }
 
 async function handleImportTestCases(event: Event) {
@@ -553,7 +549,7 @@ async function handleImportTestCases(event: Event) {
     await importTestCases(templateId, text)
     ElMessage.success(t('message.importSuccess'))
     await testCaseMgmtRef.value?.refreshTestCases?.()
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     input.value = ''
   }
 }

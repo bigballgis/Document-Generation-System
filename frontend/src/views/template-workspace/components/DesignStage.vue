@@ -1,6 +1,5 @@
 <template>
   <div class="design-stage">
-    <!-- Single toolbar: design tabs + editor tabs + actions -->
     <div class="design-toolbar">
       <div class="toolbar-tabs">
         <div
@@ -13,7 +12,6 @@
           :class="{ active: activeView === 'segment-canvas' }"
           @click="switchToView('segment-canvas')"
         >{{ t('workspace.design.segmentArrangement') }}</div>
-        <!-- Editor tabs from SegmentCanvas -->
         <div
           v-for="tab in editorTabs"
           :key="tab.id"
@@ -48,7 +46,6 @@
       </div>
     </div>
 
-    <!-- View area -->
     <div class="view-area">
       <ParameterTableDesign v-show="activeView === 'parameter-table'" :readonly="readonly" />
       <SegmentCanvas
@@ -58,7 +55,6 @@
         :hide-tabs="true"
         @open-editor="handleOpenEditor"
       />
-      <!-- Editor tab content -->
       <div
         v-for="tab in editorTabs"
         :key="tab.id"
@@ -70,7 +66,6 @@
           <span>{{ tab.hint }}</span>
         </div>
         <div class="editor-with-sidebar">
-          <!-- Parameter sidebar for inserting variables -->
           <ParameterSidebar
             v-if="!readonly"
             :collapsed="sidebarCollapsed"
@@ -150,7 +145,6 @@ const submittingToTest = ref(false)
 const sidebarCollapsed = ref(false)
 const editorRefs: Record<string, any> = {}
 
-// ── Editor tabs (managed here, not in SegmentCanvas) ──
 interface EditorTab {
   id: string; title: string; type: 'segment' | 'header' | 'footer'
   segmentIndex: number; filePath: string; documentUrl: string
@@ -300,3 +294,5 @@ async function handleSubmitToTest() {
 
 :deep(.drag-source-active) { opacity: 0.5; }
 </style>
+
+

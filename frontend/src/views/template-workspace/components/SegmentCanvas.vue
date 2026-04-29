@@ -22,7 +22,6 @@
       </div>
     </div>
 
-    <!-- Segment Version Dialog -->
     <SegmentVersionDialog
       v-model="versionDialogVisible"
       :template-id="store.templateId"
@@ -156,7 +155,6 @@ function handleVersionRolledBack() {
   store.refreshAssemblyConfig()
 }
 
-// ── Auto-save with debounce ──
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
 const dirty = ref(false)
 
@@ -192,3 +190,5 @@ function handleRedo() { assemblyConfig.redo(); canvasNodes.setNodes(canvasNodes.
 .panel-col { width: 200px; flex-shrink: 0; }
 .canvas-col { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
 </style>
+
+

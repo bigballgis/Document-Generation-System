@@ -4,7 +4,6 @@
 import { describe, it, expect } from 'vitest'
 import * as fc from 'fast-check'
 
-// ── Pure functions extracted from components for testability ──
 
 /**
  * Determines if the Export Complete Package button should be disabled.
@@ -56,11 +55,9 @@ function isCompareDisabled(versionA: number | null, versionB: number | null): bo
   return versionA === null || versionB === null || versionA === versionB
 }
 
-// ── Generators ──
 
 const templateStatuses = ['DRAFT', 'PENDING_REVIEW', 'REVIEWED', 'ACTIVE', 'ARCHIVED'] as const
 
-// ── Property 1: Export button disabled state based on template status ──
 
 describe('Property 1: Export button disabled state based on template status', () => {
   it('Export Complete Package button is disabled iff status is DRAFT', () => {
@@ -77,7 +74,6 @@ describe('Property 1: Export button disabled state based on template status', ()
   })
 })
 
-// ── Property 2: Export summary counts match store state ──
 
 describe('Property 2: Export summary counts match store state', () => {
   it('summary counts equal array lengths', () => {
@@ -98,7 +94,6 @@ describe('Property 2: Export summary counts match store state', () => {
   })
 })
 
-// ── Property 3: Credential placeholder detection filters correctly ──
 
 describe('Property 3: Credential placeholder detection filters correctly', () => {
   const arbDataSource = fc.record({
@@ -141,7 +136,6 @@ describe('Property 3: Credential placeholder detection filters correctly', () =>
   })
 })
 
-// ── Property 4: Version compare button disabled when same version selected ──
 
 describe('Property 4: Version compare button disabled when same version selected', () => {
   it('Compare button disabled iff versionA is null OR versionB is null OR versionA === versionB', () => {
@@ -159,3 +153,4 @@ describe('Property 4: Version compare button disabled when same version selected
     )
   })
 })
+

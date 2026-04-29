@@ -12,13 +12,11 @@ import type {
   MigrationResult,
 } from '@/types/segment'
 
-// ── Composite Template CRUD ──
 
 export function createCompositeTemplate(data: CreateCompositeTemplateRequest) {
   return request.post<any, TemplateDTO>('/composite-templates', data)
 }
 
-// ── Assembly Config ──
 
 export function getAssemblyConfig(id: number) {
   return request.get<any, AssemblyConfig>(`/composite-templates/${id}/assembly-config`)
@@ -28,7 +26,6 @@ export function updateAssemblyConfig(id: number, data: UpdateAssemblyConfigReque
   return request.put<any, AssemblyConfig>(`/composite-templates/${id}/assembly-config`, data)
 }
 
-// ── Preview ──
 
 export function previewCompositeTemplate(id: number) {
   return request.post<any, CompositePreview>(`/composite-templates/${id}/preview`)
@@ -38,13 +35,11 @@ export function previewSelectiveSegments(id: number, data: SelectivePreviewReque
   return request.post<any, CompositePreview>(`/composite-templates/${id}/preview/selective`, data)
 }
 
-// ── Coverage ──
 
 export function getCompositeCoverage(id: number) {
   return request.get<any, CompositeCoverageReport>(`/composite-templates/${id}/coverage`)
 }
 
-// ── Upload Segment ──
 
 export function uploadSegment(templateId: number, file: File, name: string, segmentType?: string) {
   const formData = new FormData()
@@ -60,7 +55,6 @@ export function uploadSegment(templateId: number, file: File, name: string, segm
   )
 }
 
-// ── Import / Export ──
 
 export function exportCompositeAsZip(id: number) {
   return request.get(`/composite-templates/${id}/export`, {
@@ -78,13 +72,11 @@ export function importCompositeFromZip(file: File) {
   return uploadFile<TemplateDTO>('/composite-templates/import', file)
 }
 
-// ── Migration ──
 
 export function migrateToComposite(templateId: number) {
   return request.post<any, MigrationResult>(`/templates/${templateId}/migrate-to-composite`)
 }
 
-// ── Blank Segment / Header-Footer / OnlyOffice URL ──
 
 export function createBlankSegment(templateId: number, name: string, segmentType?: string) {
   return request.post<any, AssemblySegmentEntry>(
@@ -111,7 +103,6 @@ export function signOnlyOfficeConfig(config: Record<string, any>): Promise<{ tok
   return request.post<any, { token: string }>('/templates/onlyoffice/sign', config)
 }
 
-// ── Segment Version Management ──
 
 export interface SegmentVersionDTO {
   id: number
@@ -190,3 +181,4 @@ export function rollbackSegmentVersion(
     `/composite-templates/${templateId}/segments/${encodeURIComponent(segmentName)}/rollback/${targetVersion}`,
   )
 }
+

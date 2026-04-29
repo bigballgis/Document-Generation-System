@@ -5,7 +5,6 @@
       <p class="hint-body">{{ $t('test.hintBody') }}</p>
     </el-alert>
 
-    <!-- Toolbar -->
     <div class="toolbar">
       <el-button type="primary" @click="openCreateDialog">{{ $t('test.create') }}</el-button>
       <el-button :loading="runAllLoading" @click="handleRunAll">
@@ -23,7 +22,6 @@
       <el-button @click="handleSearch">{{ $t('common.search') }}</el-button>
     </div>
 
-    <!-- Test Report Summary -->
     <el-card v-if="report" shadow="never" style="margin-bottom: 16px">
       <el-row :gutter="16">
         <el-col :span="6">
@@ -42,7 +40,6 @@
       </el-row>
     </el-card>
 
-    <!-- Test Cases Table -->
     <el-table :data="testCases" v-loading="loading" border stripe>
       <el-table-column prop="name" :label="$t('test.name')" min-width="160" />
       <el-table-column prop="comparisonType" :label="$t('test.compareMode')" width="150">
@@ -103,7 +100,6 @@
       />
     </div>
 
-    <!-- Create/Edit Dialog -->
     <el-dialog v-model="dialogVisible" :title="editingCase ? $t('test.edit') : $t('test.create')" width="720px">
       <el-form :model="form" label-width="150px">
         <el-form-item :label="$t('test.name')" required>
@@ -274,7 +270,7 @@ async function fetchTestCases() {
       if (tc.lastRun) merged[tc.id] = tc.lastRun
     }
     resultMap.value = merged
-  } catch { /* handled by interceptor */ } finally {
+  } catch {} finally {
     loading.value = false
   }
 }
@@ -329,7 +325,7 @@ async function handleSave() {
     ElMessage.success(t('message.saveSuccess'))
     dialogVisible.value = false
     fetchTestCases()
-  } catch { /* interceptor */ } finally {
+  } catch {} finally {
     saving.value = false
   }
 }
@@ -343,7 +339,7 @@ async function handleDelete(row: TestCaseDTO) {
     delete nextMap[row.id]
     resultMap.value = nextMap
     fetchTestCases()
-  } catch { /* cancelled */ }
+  } catch {}
 }
 
 async function handleRunSingle(row: TestCaseDTO) {
@@ -355,7 +351,7 @@ async function handleRunSingle(row: TestCaseDTO) {
       isTestPassed(result) ? t('test.passed') : t('test.failed'),
     )
     await fetchTestCases()
-  } catch { /* interceptor */ } finally {
+  } catch {} finally {
     runningId.value = null
   }
 }
@@ -371,7 +367,7 @@ async function handleRunAll() {
     ElMessage.success(`${rpt.passedCount}/${rpt.totalCount} ${t('test.passed')}`)
     currentPage.value = 1
     await fetchTestCases()
-  } catch { /* interceptor */ } finally {
+  } catch {} finally {
     runAllLoading.value = false
   }
 }
@@ -431,3 +427,4 @@ pre {
   word-break: break-word;
 }
 </style>
+

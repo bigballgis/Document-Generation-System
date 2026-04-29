@@ -67,7 +67,7 @@ async function fetchWebhooks() {
   loading.value = true
   try {
     webhooks.value = await listWebhooks(props.templateId)
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     loading.value = false
   }
 }
@@ -101,7 +101,7 @@ async function handleDelete(row: WebhookConfigDTO) {
     await deleteWebhook(row.id)
     ElMessage.success(t('message.deleteSuccess'))
     fetchWebhooks()
-  } catch { /* cancelled */ }
+  } catch {}
 }
 
 onMounted(fetchWebhooks)

@@ -297,9 +297,7 @@ async function runSingleTrial(row: TestCaseDTO) {
     if (trialRecordsVisible.value && trialRecordsContext.value?.id === row.id) {
       trialRecordsKey.value += 1
     }
-  } catch {
-    /* interceptor */
-  } finally {
+  } catch {} finally {
     runningId.value = null
   }
 }
@@ -385,9 +383,7 @@ async function handleRunAllTrials() {
       trialRecordsKey.value += 1
     }
     readinessKey.value += 1
-  } catch {
-    /* interceptor */
-  } finally {
+  } catch {} finally {
     runAllLoading.value = false
   }
 }

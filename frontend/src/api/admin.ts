@@ -1,7 +1,6 @@
 import request from './request'
 import type { PageResult } from '@/types'
 
-// ---- Tenant Types ----
 export interface TenantDTO {
   id: number
   name: string
@@ -32,7 +31,6 @@ export interface TenantUsageDTO {
   maxStorageGb: number
 }
 
-// ---- User Types ----
 export interface UserDTO {
   id: number
   username: string
@@ -52,7 +50,6 @@ export interface UpdateUserRequest {
   teamId?: number | null
 }
 
-// ---- Permission Types ----
 export interface PermissionDTO {
   id: number
   templateId: number
@@ -70,7 +67,6 @@ export interface GrantPermissionRequest {
   permissionType: 'VIEW' | 'EDIT' | 'DELETE' | 'CALL_API'
 }
 
-// ---- API Key Types ----
 export interface ApiKeyDTO {
   id: number
   name: string
@@ -98,7 +94,6 @@ export interface CreateApiKeyResponse {
   expiresAt?: string
 }
 
-// ---- Review Types ----
 export interface ReviewDTO {
   id: number
   templateId: number
@@ -114,7 +109,6 @@ export interface ReviewDTO {
   updatedAt: string
 }
 
-// ---- Tenant API ----
 export function getTenants(params: { page: number; size: number; keyword?: string }) {
   return request.get<any, PageResult<TenantDTO>>('/tenants', { params })
 }
@@ -139,7 +133,6 @@ export function getTenantUsage(id: number) {
   return request.get<any, TenantUsageDTO>(`/tenants/${id}/usage`)
 }
 
-// ---- User API ----
 export function getUsers(params: { page: number; size: number; keyword?: string }) {
   return request.get<any, PageResult<UserDTO>>('/users', { params })
 }
@@ -148,7 +141,6 @@ export function updateUser(id: number, data: UpdateUserRequest) {
   return request.put<any, UserDTO>(`/users/${id}`, data)
 }
 
-// ---- Permission API ----
 export function getTemplatePermissions(templateId: number) {
   return request.get<any, PermissionDTO[]>(`/templates/${templateId}/permissions`)
 }
@@ -161,7 +153,6 @@ export function revokePermission(templateId: number, permId: number) {
   return request.delete(`/templates/${templateId}/permissions/${permId}`)
 }
 
-// ---- API Key API ----
 export function getApiKeys(params: { page: number; size: number }) {
   return request.get<any, PageResult<ApiKeyDTO>>('/api-keys', { params })
 }
@@ -182,7 +173,6 @@ export function disableApiKey(id: number) {
   return request.put(`/api-keys/${id}/disable`)
 }
 
-// ---- Review API ----
 export function getReviews(params: { page: number; size: number; status?: string }) {
   return request.get<any, PageResult<ReviewDTO>>('/reviews', { params })
 }
@@ -215,7 +205,6 @@ export function getReviewEditorUrl(templateId: number) {
   return request.get<any, string>(`/templates/${templateId}/reviews/editor-url`)
 }
 
-// ---- User Detail & Delete ----
 export function getUser(id: number) {
   return request.get<any, UserDTO>(`/users/${id}`)
 }
@@ -224,7 +213,7 @@ export function deleteUser(id: number) {
   return request.delete(`/users/${id}`)
 }
 
-// ---- Tenant Detail ----
 export function getTenant(id: number) {
   return request.get<any, TenantDTO>(`/tenants/${id}`)
 }
+

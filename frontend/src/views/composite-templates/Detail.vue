@@ -17,7 +17,6 @@
     </div>
 
     <template v-if="template">
-      <!-- Basic Info -->
       <el-card shadow="never" style="margin-bottom: 16px">
         <el-descriptions :column="3" border>
           <el-descriptions-item :label="$t('common.status')">
@@ -41,13 +40,10 @@
         </el-descriptions>
       </el-card>
 
-      <!-- Coverage Indicator -->
       <CoverageIndicator :template-id="templateId" />
 
-      <!-- Tabs -->
       <el-tabs v-model="activeTab" type="border-card" style="margin-top: 16px">
         <el-tab-pane :label="$t('composite.segments')" name="segments">
-          <!-- Segment list from assembly config -->
           <el-table :data="assemblySegments" v-loading="configLoading" stripe>
             <el-table-column prop="name" :label="$t('common.name')" min-width="180" />
             <el-table-column :label="$t('common.type')" width="120">
@@ -70,7 +66,6 @@
       </el-tabs>
     </template>
 
-    <!-- Migration Dialog -->
     <MigrationDialog v-model:visible="migrationDialogVisible" @migrated="fetchTemplate" />
   </div>
 </template>
@@ -110,7 +105,7 @@ async function fetchTemplate() {
   loading.value = true
   try {
     template.value = await getTemplate(templateId)
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     loading.value = false
   }
 }
@@ -120,7 +115,7 @@ async function fetchAssemblyConfig() {
   try {
     const config = await getAssemblyConfig(templateId)
     assemblySegments.value = config.segments ?? []
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     configLoading.value = false
   }
 }
@@ -129,7 +124,7 @@ async function handlePreview() {
   try {
     await previewCompositeTemplate(templateId)
     ElMessage.success(t('common.preview'))
-  } catch { /* handled */ }
+  } catch {}
 }
 
 onMounted(() => {
@@ -145,3 +140,4 @@ onMounted(() => {
 .header-left h2 { margin: 0; }
 .header-actions { display: flex; gap: 8px; }
 </style>
+

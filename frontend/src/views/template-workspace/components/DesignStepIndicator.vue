@@ -10,10 +10,8 @@
       }"
       @click="emit('update:currentStep', step.name)"
     >
-      <!-- Connector line (before each step except first) -->
       <div v-if="idx > 0" class="step-connector" />
 
-      <!-- Step circle -->
       <div class="step-circle">
         <el-icon v-if="stepStatuses[step.name] === 'completed'" :size="14">
           <Check />
@@ -21,7 +19,6 @@
         <span v-else>{{ idx + 1 }}</span>
       </div>
 
-      <!-- Step label -->
       <span class="step-label">{{ step.label }}</span>
     </div>
   </div>
@@ -139,3 +136,4 @@ const steps = computed(() => [
   color: var(--el-color-primary);
 }
 </style>
+

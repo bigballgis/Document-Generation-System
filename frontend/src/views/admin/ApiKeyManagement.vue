@@ -59,7 +59,6 @@
       />
     </div>
 
-    <!-- Create Dialog -->
     <el-dialog v-model="createDialogVisible" :title="$t('admin.apiKey.create')" width="480px" destroy-on-close>
       <el-form ref="formRef" :model="form" label-width="140px">
         <el-form-item :label="$t('admin.apiKey.name')" prop="name" :rules="[{ required: true, message: 'Required' }]">
@@ -84,7 +83,6 @@
       </template>
     </el-dialog>
 
-    <!-- Show Key Dialog -->
     <el-dialog v-model="keyDialogVisible" :title="$t('admin.apiKey.key')" width="500px" :close-on-click-modal="false">
       <el-alert :title="$t('admin.apiKey.keyHint')" type="warning" show-icon :closable="false" style="margin-bottom: 16px" />
       <el-input :model-value="createdKey" readonly>
@@ -142,7 +140,7 @@ async function loadData() {
     const res = await getApiKeys({ page: page.value - 1, size: pageSize.value })
     list.value = res.content || []
     total.value = res.totalElements || 0
-  } catch { /* interceptor */ } finally {
+  } catch {} finally {
     loading.value = false
   }
 }
@@ -172,7 +170,7 @@ async function handleCreate() {
     createdKey.value = res.key
     keyDialogVisible.value = true
     loadData()
-  } catch { /* interceptor */ } finally {
+  } catch {} finally {
     saving.value = false
   }
 }
@@ -194,7 +192,7 @@ async function toggleEnabled(apiKey: ApiKeyDTO) {
     }
     ElMessage.success(t('message.operationSuccess'))
     loadData()
-  } catch { /* cancelled */ }
+  } catch {}
 }
 
 async function handleDelete(id: number) {
@@ -202,7 +200,7 @@ async function handleDelete(id: number) {
     await deleteApiKey(id)
     ElMessage.success(t('message.deleteSuccess'))
     loadData()
-  } catch { /* interceptor */ }
+  } catch {}
 }
 
 onMounted(() => loadData())
@@ -220,3 +218,4 @@ onMounted(() => loadData())
   margin-top: 16px;
 }
 </style>
+

@@ -1,6 +1,5 @@
 <template>
   <div class="component-panel">
-    <!-- Undo/Redo buttons -->
     <div v-if="!readonly && (canUndo !== undefined)" class="undo-redo-bar">
       <el-button size="small" :disabled="!canUndo" circle @click="$emit('undo')">
         <el-icon><RefreshLeft /></el-icon>
@@ -10,7 +9,6 @@
       </el-button>
     </div>
 
-    <!-- Content Segments -->
     <div class="panel-section">
       <div class="section-title">{{ t('workspace.design.canvas.contentSegments') }}</div>
       <div ref="segmentListRef" class="component-list">
@@ -30,7 +28,6 @@
 
     <el-divider />
 
-    <!-- Control Nodes (Header, Footer, Page Number Rule) -->
     <div class="panel-section">
       <div class="section-title">{{ t('workspace.design.canvas.controlNodes') }}</div>
       <div ref="controlListRef" class="component-list">
@@ -116,3 +113,4 @@ onBeforeUnmount(() => { segmentSortable?.destroy(); controlSortable?.destroy() }
 .drag-source-active { opacity: 0.5; }
 .el-divider { margin: 12px 0; }
 </style>
+

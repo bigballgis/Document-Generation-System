@@ -4,7 +4,6 @@
       <h2>{{ $t('task.title') }}</h2>
     </div>
 
-    <!-- Filters -->
     <el-card class="filter-card" shadow="never">
       <el-form :inline="true" @submit.prevent="handleSearch">
         <el-form-item :label="$t('task.status')">
@@ -39,7 +38,6 @@
       </el-form>
     </el-card>
 
-    <!-- Table -->
     <el-card shadow="never" style="margin-top: 16px">
       <el-table :data="tasks" v-loading="loading" stripe>
         <el-table-column prop="taskId" :label="$t('task.taskId')" min-width="220" show-overflow-tooltip />
@@ -177,7 +175,7 @@ async function fetchTasks() {
     tasks.value = res.content
     total.value = res.totalElements
     startPollingForRunningTask()
-  } catch { /* interceptor handles */ } finally {
+  } catch {} finally {
     loading.value = false
   }
 }
@@ -219,7 +217,7 @@ async function handleDownload(row: AsyncTaskDTO) {
     const filename = `task-${row.taskId}-result.zip`
     triggerBlobDownload(blob, filename)
     ElMessage.success(t('message.downloadStarted'))
-  } catch { /* interceptor handles */ }
+  } catch {}
 }
 
 // Watch polled task for status changes — refresh list when task completes
@@ -271,3 +269,4 @@ onBeforeUnmount(() => {
   margin-left: 4px;
 }
 </style>
+

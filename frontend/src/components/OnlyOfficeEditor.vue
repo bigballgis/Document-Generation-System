@@ -8,7 +8,6 @@
 import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useUserStore } from '@/stores/user'
-import { useLocale } from '@/composables/useLocale'
 import { signOnlyOfficeConfig } from '@/api/composite-templates'
 
 export interface OnlyOfficeEditorProps {
@@ -44,8 +43,7 @@ const emit = defineEmits<{
 }>()
 
 const userStore = useUserStore()
-const { locale } = useLocale()
-const { t } = useI18n()
+const { locale, t } = useI18n()
 
 const editorContainerId = `onlyoffice-editor-${Date.now()}`
 const editorInstanceRef = ref<any>(null)

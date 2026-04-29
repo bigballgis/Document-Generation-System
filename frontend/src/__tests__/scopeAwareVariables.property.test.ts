@@ -14,7 +14,6 @@ import { describe, it, expect } from 'vitest'
 import * as fc from 'fast-check'
 import type { ParameterDTO, DataType } from '@/types/parameter'
 
-// ── Helpers ──
 
 function makeParam(
   id: number,
@@ -49,7 +48,6 @@ function makeParam(
   }
 }
 
-// ── Pure logic under test (mirrors ParameterTreeTable.vue) ──
 
 function flattenAll(params: ParameterDTO[]): ParameterDTO[] {
   const result: ParameterDTO[] = []
@@ -91,7 +89,6 @@ function getScopeLevel(parameters: ParameterDTO[], paramId: number): 'root' | 'r
   return 'root'
 }
 
-// ── Arbitraries ──
 
 describe('Property 11: 作用域感知变量列表', () => {
   // Feature: array-aggregation-and-row-derived, Property 11: 作用域感知变量列表
@@ -246,3 +243,4 @@ describe('Property 11: 作用域感知变量列表', () => {
     )
   })
 })
+

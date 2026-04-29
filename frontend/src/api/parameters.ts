@@ -9,7 +9,6 @@ import type {
   AggregationSchemaDTO,
 } from '@/types/parameter'
 
-// ── CRUD ──
 
 export function getParameters(templateId: number) {
   return request.get<any, ParameterDTO[]>(`/templates/${templateId}/parameters`)
@@ -33,7 +32,6 @@ export function deleteParameter(id: number) {
   return request.delete(`/parameters/${id}`)
 }
 
-// ── Scan & Auto-create ──
 
 export function scanPlaceholders(templateId: number) {
   return request.post<any, ScanResultDTO>(`/templates/${templateId}/parameters/scan`)
@@ -43,13 +41,11 @@ export function autoCreateParameters(templateId: number) {
   return request.post<any, ParameterDTO[]>(`/templates/${templateId}/parameters/auto-create`)
 }
 
-// ── Schema ──
 
 export function getParameterSchema(templateId: number) {
   return request.get<any, ParameterSchemaDTO>(`/templates/${templateId}/parameter-schema`)
 }
 
-// ── Batch Operations ──
 
 export function batchDeleteParameters(templateId: number, ids: number[]) {
   return request.post(`/templates/${templateId}/parameters/batch-delete`, { ids })
@@ -69,8 +65,8 @@ export function jsonImportParameters(templateId: number, jsonData: string, paren
   )
 }
 
-// ── Aggregation Schema ──
 
 export function getAggregationSchema(templateId: number) {
   return request.get<any, AggregationSchemaDTO[]>(`/templates/${templateId}/aggregation-schema`)
 }
+

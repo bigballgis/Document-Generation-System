@@ -59,7 +59,6 @@ const scanResult = ref<ScanResultDTO | null>(null)
 const jsonSchemaFlash = ref(false)
 const sampleBodyFlash = ref(false)
 
-// Debounced scan
 let scanTimer: ReturnType<typeof setTimeout> | null = null
 let scanAbortController: AbortController | null = null
 
@@ -71,9 +70,7 @@ const sampleBodyText = computed(() => {
   return JSON.stringify(generateSampleBody(props.parameters), null, 2)
 })
 
-// Watch for parameter changes — trigger highlight flash and debounced scan
 watch(() => props.parameters, () => {
-  // Flash highlight
   jsonSchemaFlash.value = true
   sampleBodyFlash.value = true
   setTimeout(() => {
@@ -81,7 +78,6 @@ watch(() => props.parameters, () => {
     sampleBodyFlash.value = false
   }, 600)
 
-  // Debounced scan (2 seconds)
   if (scanTimer) clearTimeout(scanTimer)
   scanTimer = setTimeout(() => {
     debouncedScan()
@@ -89,7 +85,6 @@ watch(() => props.parameters, () => {
 }, { deep: true })
 
 async function debouncedScan() {
-  // Cancel previous request
   if (scanAbortController) {
     scanAbortController.abort()
   }
@@ -97,17 +92,13 @@ async function debouncedScan() {
 
   try {
     scanResult.value = await scanPlaceholders(props.templateId)
-  } catch {
-    // Silent failure — keep previous scan result
-  }
+  } catch {}
 }
 
 async function handleScan() {
   try {
     scanResult.value = await scanPlaceholders(props.templateId)
-  } catch {
-    // Silent failure
-  }
+  } catch {}
 }
 </script>
 

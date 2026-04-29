@@ -6,7 +6,6 @@
     <div class="validation-rules-popover">
       <h4>{{ t('parameter.validation.title') }}</h4>
 
-      <!-- Presets quick-fill -->
       <div v-if="availablePresets.length > 0" class="presets-section">
         <span class="presets-label">{{ t('parameter.validation.presets') }}</span>
         <div class="presets-row">
@@ -24,7 +23,6 @@
         </div>
       </div>
 
-      <!-- STRING rules -->
       <template v-if="dataType === 'STRING'">
         <div class="rule-row">
           <span>{{ t('parameter.validation.notBlank') }}</span>
@@ -44,7 +42,6 @@
         </div>
       </template>
 
-      <!-- NUMBER rules -->
       <template v-if="dataType === 'NUMBER'">
         <div class="rule-row">
           <span>{{ t('parameter.validation.min') }}</span>
@@ -56,7 +53,6 @@
         </div>
       </template>
 
-      <!-- ARRAY rules -->
       <template v-if="dataType === 'ARRAY'">
         <div class="rule-row">
           <span>{{ t('parameter.validation.minItems') }}</span>
@@ -68,7 +64,6 @@
         </div>
       </template>
 
-      <!-- DATE rules -->
       <template v-if="dataType === 'DATE'">
         <div class="rule-row">
           <span>{{ t('parameter.validation.dateFormat') }}</span>
@@ -91,7 +86,6 @@
         </div>
       </template>
 
-      <!-- Enum values (STRING, NUMBER) -->
       <template v-if="dataType === 'STRING' || dataType === 'NUMBER'">
         <div class="rule-row rule-row-vertical">
           <span>{{ t('parameter.validation.enumValues') }}</span>
@@ -121,7 +115,6 @@
         </div>
       </template>
 
-      <!-- Custom message -->
       <div class="rule-row rule-row-vertical">
         <span>{{ t('parameter.validation.customMessage') }}</span>
         <el-input v-model="localRules.custom_message" size="small" />
@@ -165,9 +158,7 @@ const localRules = reactive<ValidationRules>({})
 const newEnumValue = ref('')
 const activePreset = ref<string | null>(null)
 
-// ── Presets definition ──
 const allPresets: RulePreset[] = [
-  // ── STRING presets ──
   { key: 'email', label: '📧 Email', dataType: 'STRING', rules: { not_blank: true, max_length: 254, pattern: '^[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}$' } },
   { key: 'phone', label: '📱 Phone', dataType: 'STRING', rules: { not_blank: true, pattern: '^\\+?[0-9\\-\\s()]{7,20}$' } },
   { key: 'hkid', label: '🪪 HKID', dataType: 'STRING', rules: { not_blank: true, pattern: '^[A-Z]{1,2}[0-9]{6}[0-9A]$' } },
@@ -183,12 +174,10 @@ const allPresets: RulePreset[] = [
   { key: 'ref_no', label: '🔢 Ref No.', dataType: 'STRING', rules: { not_blank: true, max_length: 50, pattern: '^[A-Z0-9\\-/]+$' } },
   { key: 'url', label: '🔗 URL', dataType: 'STRING', rules: { not_blank: true, max_length: 2048, pattern: '^https?://.+' } },
   { key: 'postal', label: '📮 Postal', dataType: 'STRING', rules: { not_blank: true, pattern: '^[A-Z0-9\\s\\-]{3,10}$' } },
-  // ── NUMBER presets ──
   { key: 'amount', label: '💰 Amount', dataType: 'NUMBER', rules: { min: 0 } },
   { key: 'rate', label: '% Rate', dataType: 'NUMBER', rules: { min: 0, max: 100 } },
   { key: 'quantity', label: '📦 Quantity', dataType: 'NUMBER', rules: { min: 1 } },
   { key: 'tenor', label: '📅 Tenor', dataType: 'NUMBER', rules: { min: 1, max: 360 } },
-  // ── DATE presets ──
   { key: 'iso_date', label: '📅 ISO', dataType: 'DATE', rules: { date_format: 'YYYY-MM-DD' } },
   { key: 'datetime', label: '🕐 DateTime', dataType: 'DATE', rules: { date_format: 'YYYY-MM-DD HH:mm:ss' } },
   { key: 'dd_mm_yyyy', label: '📅 DD/MM/YYYY', dataType: 'DATE', rules: { date_format: 'DD-MM-YYYY' } },
@@ -339,3 +328,5 @@ function handleSave() {
   border-top: 1px solid var(--el-border-color-lighter);
 }
 </style>
+
+

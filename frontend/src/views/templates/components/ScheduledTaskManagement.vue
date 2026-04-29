@@ -1,11 +1,9 @@
 <template>
   <div class="scheduled-task-management">
-    <!-- Toolbar -->
     <div class="toolbar">
       <el-button type="primary" @click="openCreateDialog">{{ $t('schedule.create') }}</el-button>
     </div>
 
-    <!-- Tasks Table -->
     <el-table :data="tasks" v-loading="loading" border stripe>
       <el-table-column prop="name" :label="$t('common.name')" min-width="140" />
       <el-table-column prop="cronExpression" :label="$t('schedule.cronExpression')" width="160" />
@@ -43,7 +41,6 @@
       </el-table-column>
     </el-table>
 
-    <!-- Create/Edit Dialog -->
     <el-dialog v-model="dialogVisible" :title="editingTask ? $t('schedule.edit') : $t('schedule.create')" width="520px">
       <el-form :model="form" label-width="140px">
         <el-form-item :label="$t('common.name')" required>
@@ -66,7 +63,6 @@
       </template>
     </el-dialog>
 
-    <!-- Execution History Dialog -->
     <el-dialog v-model="historyVisible" :title="$t('schedule.executionHistory')" width="700px">
       <el-table :data="executions" v-loading="historyLoading" border stripe>
         <el-table-column prop="executionTime" :label="$t('schedule.executionTime')" width="180" />
@@ -114,7 +110,6 @@ const { t } = useI18n()
 const loading = ref(false)
 const tasks = ref<ScheduledTaskDTO[]>([])
 
-// Dialog
 const dialogVisible = ref(false)
 const editingTask = ref<ScheduledTaskDTO | null>(null)
 const saving = ref(false)
@@ -125,7 +120,6 @@ const form = reactive({
   dataSourceParams: '',
 })
 
-// History
 const historyVisible = ref(false)
 const historyLoading = ref(false)
 const executions = ref<TaskExecutionDTO[]>([])
@@ -141,7 +135,7 @@ async function fetchTasks() {
   loading.value = true
   try {
     tasks.value = await getScheduledTasks(props.templateId)
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     loading.value = false
   }
 }
@@ -177,7 +171,7 @@ async function handleSave() {
     ElMessage.success(t('message.saveSuccess'))
     dialogVisible.value = false
     fetchTasks()
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     saving.value = false
   }
 }
@@ -193,7 +187,7 @@ async function handleToggle(row: ScheduledTaskDTO, enable: boolean) {
     }
     ElMessage.success(t('message.operationSuccess'))
     fetchTasks()
-  } catch { /* cancelled */ }
+  } catch {}
 }
 
 async function handleDelete(row: ScheduledTaskDTO) {
@@ -202,7 +196,7 @@ async function handleDelete(row: ScheduledTaskDTO) {
     await deleteScheduledTask(row.id)
     ElMessage.success(t('message.deleteSuccess'))
     fetchTasks()
-  } catch { /* cancelled */ }
+  } catch {}
 }
 
 async function openHistory(row: ScheduledTaskDTO) {
@@ -219,7 +213,7 @@ async function fetchExecutions() {
     const result = await getTaskExecutions(currentTaskId.value, executionPage.value - 1)
     executions.value = result.content
     executionTotal.value = result.totalElements
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     historyLoading.value = false
   }
 }
@@ -234,3 +228,4 @@ onMounted(fetchTasks)
   margin-bottom: 16px;
 }
 </style>
+

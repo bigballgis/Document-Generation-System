@@ -1,6 +1,5 @@
 <template>
   <div class="segment-detail-design">
-    <!-- Empty state: no enabled segments -->
     <div v-if="enabledSegments.length === 0" class="empty-state">
       <el-empty :description="t('workspace.editor.empty')">
         <template #image>
@@ -9,9 +8,7 @@
       </el-empty>
     </div>
 
-    <!-- Main layout -->
     <template v-else>
-      <!-- Segment selector + isolation hint -->
       <div class="detail-header">
         <el-select
           v-model="selectedSegmentIndex"
@@ -32,7 +29,6 @@
         </div>
       </div>
 
-      <!-- Editor + Sidebar -->
       <div class="detail-main">
         <div class="editor-area" :class="{ 'full-width': sidebarCollapsed }">
           <div v-if="editorReady && currentSegment" class="editor-wrapper">
@@ -95,7 +91,6 @@ const selectedSegmentIndex = ref(0)
 const sidebarCollapsed = ref(false)
 const editorRef = ref<InstanceType<typeof OnlyOfficeEditor> | null>(null)
 
-// Editor state
 const editorReady = ref(false)
 const editorLoading = ref(false)
 const editorError = ref('')
@@ -156,16 +151,13 @@ async function loadEditor() {
   }
 }
 
-function onEditorReady() {
-  // Editor loaded successfully
-}
+function onEditorReady() {}
 
 function onEditorError(message: string) {
   editorError.value = message
   ElMessage.error(message)
 }
 
-// Parameter insertion via OnlyOfficeEditor expose methods
 function handleInsertVariable(paramPath: string) {
   editorRef.value?.insertVariable(paramPath)
 }
@@ -178,7 +170,6 @@ function handleInsertCondition(expr: string) {
   editorRef.value?.insertCondition(expr)
 }
 
-// Reload editor when segment selection changes
 watch(selectedSegmentIndex, () => {
   if (enabledSegments.value.length > 0) {
     loadEditor()
@@ -249,3 +240,4 @@ watch(selectedSegmentIndex, () => {
   padding: 24px;
 }
 </style>
+

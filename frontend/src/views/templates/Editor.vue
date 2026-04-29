@@ -11,7 +11,6 @@
         </h3>
       </div>
       <div class="header-actions">
-        <!-- Mode switch button group (only in edit mode) -->
         <el-button-group v-if="!isPreview && template">
           <el-button
             :type="editorMode === 'onlyoffice' ? 'primary' : 'default'"
@@ -45,7 +44,6 @@
     </div>
 
     <div v-if="editorReady" class="editor-body">
-      <!-- OnlyOffice visual editor -->
       <OnlyOfficeEditor
         v-show="editorMode === 'onlyoffice'"
         :document-url="documentUrl"
@@ -59,7 +57,6 @@
         @close="goBack"
       />
 
-      <!-- Monaco code editor -->
       <MonacoEditor
         v-if="editorMode === 'monaco'"
         v-model="monacoContent"
@@ -260,3 +257,4 @@ onMounted(() => {
   justify-content: center;
 }
 </style>
+

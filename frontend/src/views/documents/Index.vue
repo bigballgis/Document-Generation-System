@@ -170,7 +170,7 @@ async function fetchDocuments() {
     const res = await getDocuments(query)
     documents.value = res.content
     total.value = res.totalElements
-  } catch { /* interceptor handles */ } finally {
+  } catch {} finally {
     loading.value = false
   }
 }
@@ -221,7 +221,7 @@ async function handleDownload(row: GeneratedDocumentDTO) {
     const filename = `document-${row.id}.${row.format.toLowerCase()}`
     triggerBlobDownload(blob, filename)
     ElMessage.success(t('message.downloadStarted'))
-  } catch { /* interceptor handles */ }
+  } catch {}
 }
 
 function onMerged() {

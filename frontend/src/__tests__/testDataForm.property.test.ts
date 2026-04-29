@@ -17,7 +17,6 @@ import { buildFormFields } from '@/composables/useTestDataForm'
 import type { ParameterDTO, DataType } from '@/types/parameter'
 import type { FormField } from '@/types/testDataForm'
 
-// ── Generators ──
 
 const leafDataTypes: DataType[] = ['STRING', 'NUMBER', 'BOOLEAN', 'DATE']
 
@@ -125,7 +124,6 @@ function arbParameterTree(maxDepth: number): fc.Arbitrary<ParameterDTO> {
 
 const arbParameterList = fc.array(arbParameterTree(3), { minLength: 1, maxLength: 5 })
 
-// ── Helpers ──
 
 function countNodes(params: ParameterDTO[]): number {
   let count = 0
@@ -186,7 +184,6 @@ function verifyIsomorphism(params: ParameterDTO[], fields: FormField[]): void {
   }
 }
 
-// ── Property Tests ──
 
 describe('Property 2: Parameter tree to form field tree isomorphic mapping', () => {
   it('should produce isomorphic form field tree for any parameter tree', { timeout: 30000 }, () => {
@@ -205,3 +202,4 @@ describe('Property 2: Parameter tree to form field tree isomorphic mapping', () 
     )
   })
 })
+

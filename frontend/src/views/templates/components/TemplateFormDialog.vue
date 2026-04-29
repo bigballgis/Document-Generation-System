@@ -139,7 +139,7 @@ async function handleSave() {
       ElMessage.success(t('message.createSuccess'))
     }
     emit('saved')
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     saving.value = false
   }
 }

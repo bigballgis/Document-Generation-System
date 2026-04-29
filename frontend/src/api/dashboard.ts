@@ -1,6 +1,5 @@
 import request from './request'
 
-// --- Types ---
 
 export interface SystemOverviewDTO {
   totalTemplates: number
@@ -50,7 +49,6 @@ export interface SystemResourceDTO {
   redisMemory: RedisMemory
 }
 
-// --- API Functions ---
 
 export function getOverview() {
   return request.get<any, SystemOverviewDTO>('/dashboard/overview')
@@ -69,5 +67,6 @@ export function getDataSourceHealth() {
 export function getSystemResources() {
   return request.get<any, SystemResourceDTO>('/dashboard/system-resources')
 }
+
 
 

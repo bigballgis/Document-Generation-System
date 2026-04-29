@@ -2,7 +2,6 @@
   <div class="market-page">
     <h2>{{ $t('market.title') }}</h2>
 
-    <!-- Search & Filters -->
     <el-card shadow="never" style="margin-bottom: 16px">
       <el-row :gutter="16" align="middle">
         <el-col :span="8">
@@ -41,7 +40,6 @@
       </el-row>
     </el-card>
 
-    <!-- Template Grid -->
     <el-row :gutter="16" v-loading="loading">
       <el-col v-for="item in templates" :key="item.id" :xs="24" :sm="12" :md="8" :lg="6">
         <el-card shadow="hover" class="market-card">
@@ -74,7 +72,6 @@
       {{ $t('common.noData') }}
     </div>
 
-    <!-- Pagination -->
     <div v-if="total > 0" class="pagination-wrapper">
       <el-pagination
         v-model:current-page="currentPage"
@@ -87,7 +84,6 @@
       />
     </div>
 
-    <!-- Share Dialog -->
     <el-dialog v-model="shareDialogVisible" :title="$t('market.share')" width="480px">
       <el-form :model="shareForm" label-width="120px">
         <el-form-item :label="$t('template.name')">
@@ -137,7 +133,6 @@ const currentPage = computed({
   set: (val: number) => { query.page = val - 1 },
 })
 
-// Share dialog
 const shareDialogVisible = ref(false)
 const shareLoading = ref(false)
 const shareForm = reactive({ templateId: '' as string | number, scope: 'TENANT_INTERNAL' as const })
@@ -148,7 +143,7 @@ async function fetchTemplates() {
     const result = await searchMarketTemplates(query)
     templates.value = result.content
     total.value = result.totalElements
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     loading.value = false
   }
 }
@@ -166,7 +161,7 @@ async function handleCopy(item: MarketTemplateDTO) {
     )
     await copyFromMarket(item.id)
     ElMessage.success(t('market.copySuccess'))
-  } catch { /* cancelled */ }
+  } catch {}
 }
 
 async function handleShare() {
@@ -177,7 +172,7 @@ async function handleShare() {
     ElMessage.success(t('market.shareSuccess'))
     shareDialogVisible.value = false
     fetchTemplates()
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     shareLoading.value = false
   }
 }
@@ -237,3 +232,4 @@ onMounted(fetchTemplates)
   margin-top: 20px;
 }
 </style>
+

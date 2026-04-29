@@ -1,9 +1,7 @@
 <template>
   <div class="template-workspace">
-    <!-- Loading skeleton -->
     <el-skeleton v-if="store.loading" :rows="12" animated />
 
-    <!-- Critical error -->
     <div v-else-if="store.criticalError" class="error-page">
       <el-result icon="error" :title="$t('workspace.criticalError')" :sub-title="store.criticalError">
         <template #extra>
@@ -13,9 +11,7 @@
       </el-result>
     </div>
 
-    <!-- Workspace content -->
     <template v-else-if="store.template">
-      <!-- Page header with inline stage indicator -->
       <div class="workspace-header">
         <div class="header-left">
           <h2 class="template-name">{{ store.template.name }}</h2>
@@ -32,7 +28,6 @@
         <el-button @click="router.push('/templates')">{{ $t('workspace.backToList') }}</el-button>
       </div>
 
-      <!-- ACTIVE banner -->
       <el-alert
         v-if="store.isActive"
         type="warning"
@@ -46,7 +41,6 @@
         </el-button>
       </el-alert>
 
-      <!-- SINGLE migration prompt -->
       <el-alert
         v-if="store.template.templateType === 'SINGLE'"
         type="info"
@@ -60,7 +54,6 @@
         </el-button>
       </el-alert>
 
-      <!-- Non-critical warnings -->
       <el-alert
         v-for="(msg, section) in store.warnings"
         :key="section"
@@ -72,10 +65,8 @@
         style="margin-bottom: 8px"
       />
 
-      <!-- Stage loading skeleton -->
       <el-skeleton v-if="stageLoading" :rows="8" animated style="margin-top: 16px" />
 
-      <!-- Stage views (replaces el-tabs) -->
       <KeepAlive v-else>
         <component
           :is="currentStageComponent"
@@ -278,3 +269,4 @@ onBeforeUnmount(() => {
   min-height: 400px;
 }
 </style>
+

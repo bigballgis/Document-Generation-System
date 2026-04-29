@@ -7,7 +7,6 @@
       </el-button>
     </div>
 
-    <!-- Filters -->
     <el-card class="filter-card" shadow="never">
       <el-form :inline="true" @submit.prevent="handleSearch">
         <el-form-item :label="$t('common.search')">
@@ -26,7 +25,6 @@
       </el-form>
     </el-card>
 
-    <!-- Table -->
     <el-card shadow="never" style="margin-top: 16px">
       <el-table :data="templates" v-loading="loading" stripe>
         <el-table-column prop="name" :label="$t('composite.name')" min-width="200">
@@ -76,7 +74,6 @@
       </div>
     </el-card>
 
-    <!-- Create Dialog -->
     <el-dialog v-model="createDialogVisible" :title="$t('composite.create')" width="500px">
       <el-form ref="createFormRef" :model="createForm" :rules="createRules" label-width="100px">
         <el-form-item :label="$t('composite.name')" prop="name">
@@ -148,7 +145,7 @@ async function fetchTemplates() {
     const res = await getTemplates({ ...query, page: query.page })
     templates.value = res.content
     total.value = res.totalElements
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     loading.value = false
   }
 }
@@ -181,7 +178,7 @@ async function handleCreate() {
     createForm.name = ''
     createForm.description = ''
     router.push(`/composite-templates/${result.id}/editor`)
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     creating.value = false
   }
 }
@@ -196,7 +193,7 @@ async function handleDelete(row: TemplateDTO) {
     await deleteTemplate(row.id)
     ElMessage.success(t('message.deleteSuccess'))
     fetchTemplates()
-  } catch { /* cancelled or error */ }
+  } catch {}
 }
 
 onMounted(() => {
@@ -213,3 +210,4 @@ onMounted(() => {
 .template-link { color: var(--el-color-primary); text-decoration: none; font-weight: 500; }
 .template-link:hover { text-decoration: underline; }
 </style>
+

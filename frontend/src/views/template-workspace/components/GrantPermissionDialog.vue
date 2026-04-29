@@ -85,9 +85,7 @@ watch(() => form.granteeType, async (type) => {
         teams.value = await listTeams(tenantId)
       }
     }
-  } catch {
-    /* silent */
-  } finally {
+  } catch {} finally {
     loadingGrantees.value = false
   }
 }, { immediate: true })

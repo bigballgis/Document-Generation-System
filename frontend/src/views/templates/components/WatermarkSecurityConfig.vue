@@ -1,7 +1,6 @@
 <template>
   <div class="watermark-security-config">
     <el-row :gutter="24">
-      <!-- Watermark Settings -->
       <el-col :span="12">
         <el-card shadow="never">
           <template #header>{{ $t('watermark.title') }}</template>
@@ -56,7 +55,6 @@
         </el-card>
       </el-col>
 
-      <!-- Security Settings -->
       <el-col :span="12">
         <el-card shadow="never">
           <template #header>{{ $t('security.title') }}</template>
@@ -132,3 +130,4 @@ async function handleSave() {
   padding: 0;
 }
 </style>
+

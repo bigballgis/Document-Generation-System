@@ -168,9 +168,7 @@ async function handleSave() {
       ElMessage.success(t('message.saveSuccess'))
       emit('saved', { id: props.testCase.id, previousKey: props.tabKey })
     }
-  } catch {
-    /* interceptor */
-  } finally {
+  } catch {} finally {
     saving.value = false
   }
 }
@@ -182,9 +180,7 @@ async function handleDelete() {
     await deleteTestCase(props.testCase.id)
     ElMessage.success(t('message.deleteSuccess'))
     emit('deleted', props.testCase.id)
-  } catch {
-    /* cancelled */
-  }
+  } catch {}
 }
 
 async function handleRun() {
@@ -196,9 +192,7 @@ async function handleRun() {
       isTestPassed(result) ? t('test.passed') : t('test.failed'),
     )
     emit('run-complete')
-  } catch {
-    /* interceptor */
-  } finally {
+  } catch {} finally {
     running.value = false
   }
 }

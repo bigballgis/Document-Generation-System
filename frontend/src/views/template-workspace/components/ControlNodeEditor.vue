@@ -7,13 +7,11 @@
     destroy-on-close
     @update:model-value="$emit('update:visible', $event)"
   >
-    <!-- Content isolation hint bar -->
     <div class="isolation-hint" :class="`isolation-hint--${nodeType}`">
       <el-icon><WarningFilled /></el-icon>
       <span>{{ isolationHintText }}</span>
     </div>
 
-    <!-- OnlyOffice Editor -->
     <div class="editor-container">
       <OnlyOfficeEditor
         v-if="visible && documentUrl"
@@ -167,3 +165,4 @@ watch(() => props.visible, (val) => {
   padding: 24px;
 }
 </style>
+

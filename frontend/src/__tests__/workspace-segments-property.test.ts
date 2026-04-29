@@ -6,7 +6,6 @@ import * as fc from 'fast-check'
 import type { AssemblySegmentEntry } from '@/types/segment'
 import { useAssemblyConfig } from '@/composables/useAssemblyConfig'
 
-// ── Generators (inline mode: filePath/name/segmentType instead of segmentId) ──
 
 const arbAssemblySegmentEntry: fc.Arbitrary<AssemblySegmentEntry> = fc.record({
   filePath: fc.stringMatching(/^segments\/\d+\/[a-z]+\.docx$/),
@@ -126,3 +125,4 @@ describe('Property 6: useAssemblyConfig 操作不变量 (inline mode)', () => {
     )
   })
 })
+

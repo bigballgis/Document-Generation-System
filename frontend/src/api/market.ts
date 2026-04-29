@@ -1,7 +1,6 @@
 import request from './request'
 import type { PageResult } from '@/types'
 
-// --- Market Types ---
 
 export interface MarketTemplateDTO {
   id: number
@@ -29,7 +28,6 @@ export interface ShareRequest {
   scope: 'TENANT_INTERNAL' | 'GLOBAL'
 }
 
-// --- Test Case Types (aligned with backend JSON field names) ---
 
 export type ComparisonType = 'VARIABLE_VALUE' | 'TEXT_CONTENT' | 'FILE_SNAPSHOT'
 
@@ -82,7 +80,6 @@ export function isTestPassed(result: TestResultDTO): boolean {
   return result.status === 'PASSED'
 }
 
-// --- Scheduled Task Types ---
 
 export interface ScheduledTaskDTO {
   id: number
@@ -114,7 +111,6 @@ export interface TaskExecutionDTO {
   errorMessage?: string
 }
 
-// --- Market API ---
 
 export function searchMarketTemplates(query: MarketQuery) {
   return request.get<any, PageResult<MarketTemplateDTO>>('/market/templates', {
@@ -137,7 +133,6 @@ export function shareToMarket(templateId: number, data: ShareRequest) {
   return request.post(`/templates/${templateId}/share`, data)
 }
 
-// --- Test Case API ---
 
 export interface ListTestCasesQuery {
   page?: number
@@ -183,7 +178,6 @@ export function runAllTestCases(templateId: number) {
   return request.post<any, TestReportDTO>(`/templates/${templateId}/test-cases/run-all`)
 }
 
-// --- Scheduled Task API ---
 
 export function getScheduledTasks(templateId: number) {
   return request.get<any, ScheduledTaskDTO[]>(`/templates/${templateId}/scheduled-tasks`)
@@ -226,3 +220,4 @@ export function importTestCases(templateId: number, json: string) {
     headers: { 'Content-Type': 'application/json' },
   })
 }
+

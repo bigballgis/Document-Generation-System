@@ -98,9 +98,7 @@ async function handleLogin() {
     await userStore.login({ username: form.username, password: form.password })
     ElMessage.success(t('auth.loginSuccess'))
     router.push('/')
-  } catch {
-    // Error already handled by interceptor
-  } finally {
+  } catch {} finally {
     loading.value = false
   }
 }

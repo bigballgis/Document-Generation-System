@@ -36,7 +36,6 @@ function redirectToLogin() {
   }
 }
 
-// Request interceptor — attach JWT token
 service.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = getAccessToken()
@@ -48,7 +47,6 @@ service.interceptors.request.use(
   (error) => Promise.reject(error),
 )
 
-// Response interceptor — handle 401 with token refresh
 service.interceptors.response.use(
   (response: AxiosResponse) => response.data,
   async (error: AxiosError) => {

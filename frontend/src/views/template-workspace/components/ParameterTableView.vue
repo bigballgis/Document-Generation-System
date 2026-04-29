@@ -1,6 +1,5 @@
 <template>
   <div ref="containerRef" class="parameter-table-view">
-    <!-- Unified table: all parameter types in one table -->
     <el-table
       ref="tableRef"
       :data="sortedParameters"
@@ -10,14 +9,12 @@
       :max-height="tableMaxHeight"
       :empty-text="t('parameter.empty')"
     >
-      <!-- Drag handle column -->
       <el-table-column v-if="!readonly" width="40" align="center">
         <template #default>
           <span class="drag-handle">⠿</span>
         </template>
       </el-table-column>
 
-      <!-- Name column (inline editable) + click-to-navigate for ARRAY/OBJECT -->
       <el-table-column :label="t('workspace.design.table.fieldName')" min-width="140">
         <template #default="{ row }">
           <div class="name-cell">
@@ -41,7 +38,6 @@
               </el-tooltip>
             </div>
             <template v-else>
-              <!-- Navigable rows: click name to drill in -->
               <span
                 v-if="isNavigable(row)"
                 class="editable-cell navigable-name"
@@ -50,7 +46,6 @@
                 {{ row.name }}
                 <span class="children-count">{{ row.children?.length ?? 0 }} {{ t('workspace.design.table.fieldName') }} ›</span>
               </span>
-              <!-- Regular rows: click to edit name -->
               <span
                 v-else
                 class="editable-cell"
@@ -62,7 +57,6 @@
         </template>
       </el-table-column>
 
-      <!-- Type column (inline editable via select, with i18n labels) -->
       <el-table-column :label="t('workspace.design.table.fieldType')" width="110">
         <template #default="{ row }">
           <el-select
@@ -90,7 +84,6 @@
         </template>
       </el-table-column>
 
-      <!-- Required column (switch, hidden for DERIVED/Formula) -->
       <el-table-column :label="t('workspace.design.table.required')" width="70" align="center">
         <template #default="{ row }">
           <el-switch
@@ -104,10 +97,8 @@
         </template>
       </el-table-column>
 
-      <!-- Advanced column: validation rules for REQUEST, expression for DERIVED -->
       <el-table-column :label="t('workspace.design.table.advanced')" min-width="200">
         <template #default="{ row }">
-          <!-- DERIVED (Formula) fields: show expression editor -->
           <template v-if="row.parameterType === 'DERIVED'">
             <div class="expression-cell" @click="!readonly && openExpressionEditor(row)">
               <el-tag size="small" type="primary" class="formula-tag">
@@ -120,11 +111,9 @@
               </span>
             </div>
           </template>
-          <!-- Navigable (ARRAY/OBJECT) fields: show dash -->
           <template v-else-if="isNavigable(row)">
             <span class="default-value">—</span>
           </template>
-          <!-- Regular REQUEST fields: show validation rules -->
           <template v-else>
             <ValidationRulesPopover
               :visible="validationPopoverRowId === row.id"
@@ -156,7 +145,6 @@
         </template>
       </el-table-column>
 
-      <!-- Actions column -->
       <el-table-column v-if="!readonly" :label="t('common.actions')" width="60" align="center">
         <template #default="{ row }">
           <el-popconfirm
@@ -173,7 +161,6 @@
       </el-table-column>
     </el-table>
 
-    <!-- Expression editor dialog (outside table to avoid v-for conflicts) -->
     <el-dialog
       v-model="expressionDialogVisible"
       :title="t('workspace.design.table.editFormula')"
@@ -217,6 +204,7 @@ import {
   updateParameter, deleteParameter, batchUpdateParameters,
 } from '@/api/parameters'
 import type { ParameterDTO, DataType, ValidationRules } from '@/types/parameter'
+import { PARAMETER_NAME_REGEX } from '@/constants/parameterNamePattern'
 import ValidationRulesPopover from './ValidationRulesPopover.vue'
 
 const ALL_DATA_TYPES: DataType[] = ['STRING', 'NUMBER', 'DATE', 'BOOLEAN', 'ARRAY', 'OBJECT']
@@ -238,7 +226,6 @@ const tableRef = ref()
 const containerRef = ref<HTMLElement>()
 const tableMaxHeight = ref(400)
 
-// ── Dynamic table height ──
 let resizeObserver: ResizeObserver | null = null
 
 function updateTableHeight() {
@@ -263,23 +250,19 @@ onBeforeUnmount(() => {
   resizeObserver?.disconnect()
 })
 
-// ── All parameters in one sorted list ──
 const sortedParameters = computed(() =>
   [...props.parameters].sort((a, b) => a.sortOrder - b.sortOrder),
 )
 
 const allDataTypes = ALL_DATA_TYPES
 
-// ── Parameter name validation ──
-// Must be a valid JSON key / docxtemplater placeholder: [a-zA-Z_][a-zA-Z0-9_]*
-const PARAM_NAME_REGEX = /^[a-zA-Z_][a-zA-Z0-9_]*$/
 const nameValidationError = ref('')
 
 function validateParamName(value: string, excludeId?: number): string {
   if (!value || !value.trim()) {
     return t('workspace.design.table.nameRequired')
   }
-  if (!PARAM_NAME_REGEX.test(value)) {
+  if (!PARAMETER_NAME_REGEX.test(value)) {
     return t('workspace.design.table.nameInvalid')
   }
   // Check duplicate among siblings
@@ -296,7 +279,6 @@ function isNavigable(row: ParameterDTO): boolean {
   return row.dataType === 'ARRAY' || row.dataType === 'OBJECT'
 }
 
-// ── i18n data type labels ──
 function dataTypeLabel(dt: string): string {
   const key = `workspace.design.table.dataType.${dt}`
   const translated = t(key)
@@ -316,7 +298,6 @@ function dataTypeTagType(dt: string): 'primary' | 'success' | 'warning' | 'dange
   }
 }
 
-// ── Inline editing ──
 interface EditingCell {
   id: number
   field: 'name' | 'dataType'
@@ -361,7 +342,6 @@ async function commitEdit(row: ParameterDTO) {
   }
 }
 
-// ── Toggle required ──
 async function handleToggleRequired(row: ParameterDTO, val: boolean) {
   try {
     await updateParameter(row.id, { required: val, version: row.version })
@@ -371,7 +351,6 @@ async function handleToggleRequired(row: ParameterDTO, val: boolean) {
   }
 }
 
-// ── Delete ──
 function getDeleteWarning(param: ParameterDTO): string {
   if (isNavigable(param) && param.children?.length > 0) {
     return t('workspace.design.table.deleteWarning')
@@ -389,10 +368,8 @@ async function handleDelete(row: ParameterDTO) {
   }
 }
 
-// ── Validation rules ──
 const validationPopoverRowId = ref<number | null>(null)
 
-// ── Expression editing (for DERIVED/Formula fields) ──
 const expressionEditRowId = ref<number | null>(null)
 const expressionEditText = ref('')
 const expressionEditType = ref('JAVASCRIPT')
@@ -467,7 +444,6 @@ async function handleValidationSave(row: ParameterDTO, rules: ValidationRules) {
   }
 }
 
-// ── Drag sort (all types participate) ──
 let sortableInstance: Sortable | null = null
 
 function initSortable() {
@@ -670,3 +646,5 @@ watch(() => sortedParameters.value.length, () => {
   display: none !important;
 }
 </style>
+
+

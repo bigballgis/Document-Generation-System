@@ -29,7 +29,6 @@
       </el-table-column>
     </el-table>
 
-    <!-- Bind Dialog -->
     <el-dialog v-model="bindDialogVisible" :title="$t('template.bindVariable')" width="480px">
       <el-form label-width="120px">
         <el-form-item :label="$t('template.variableName')">
@@ -78,7 +77,7 @@ async function fetchVariables() {
   loading.value = true
   try {
     variables.value = await getTemplateVariables(props.templateId)
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     loading.value = false
   }
 }
@@ -103,10 +102,11 @@ async function handleBind() {
     ElMessage.success(t('message.operationSuccess'))
     bindDialogVisible.value = false
     fetchVariables()
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     bindSaving.value = false
   }
 }
 
 onMounted(fetchVariables)
 </script>
+

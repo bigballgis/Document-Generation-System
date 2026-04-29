@@ -2,7 +2,6 @@
   <div class="audit-page">
     <h2>{{ $t('audit.title') }}</h2>
 
-    <!-- Filters -->
     <el-card shadow="never" class="filter-card">
       <el-form :inline="true" :model="filters">
         <el-form-item :label="$t('audit.filterByType')">
@@ -33,13 +32,11 @@
       </el-form>
     </el-card>
 
-    <!-- Export buttons -->
     <div class="export-bar">
       <el-button @click="handleExport('CSV')">{{ $t('audit.exportCsv') }}</el-button>
       <el-button @click="handleExport('JSON')">{{ $t('audit.exportJson') }}</el-button>
     </div>
 
-    <!-- Table -->
     <el-table v-loading="loading" :data="list" stripe>
       <el-table-column prop="operationType" :label="$t('audit.operationType')" width="180">
         <template #default="{ row }">
@@ -63,7 +60,6 @@
       <el-table-column prop="operationDetail" :label="$t('audit.operationDetail')" min-width="200" show-overflow-tooltip />
     </el-table>
 
-    <!-- Pagination -->
     <div class="pagination-wrapper">
       <el-pagination
         v-model:current-page="page"
@@ -121,7 +117,7 @@ async function loadData() {
     })
     list.value = res.content || []
     total.value = res.totalElements || 0
-  } catch { /* interceptor */ } finally {
+  } catch {} finally {
     loading.value = false
   }
 }
@@ -153,7 +149,7 @@ async function handleExport(format: 'CSV' | 'JSON') {
     a.click()
     URL.revokeObjectURL(url)
     ElMessage.success(t('message.exportSuccess'))
-  } catch { /* interceptor */ }
+  } catch {}
 }
 
 onMounted(() => loadData())
@@ -183,3 +179,4 @@ onMounted(() => loadData())
   margin-top: 16px;
 }
 </style>
+

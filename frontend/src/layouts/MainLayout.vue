@@ -1,6 +1,5 @@
 <template>
   <el-container class="main-layout">
-    <!-- Top header with red gradient -->
     <el-header class="app-header">
       <div class="header-left">
         <div class="logo">
@@ -43,7 +42,6 @@
     </el-header>
 
     <el-container class="app-body">
-      <!-- White sidebar -->
       <el-aside :width="isCollapsed ? '64px' : '240px'" class="app-aside">
         <el-scrollbar>
           <el-menu
@@ -85,7 +83,6 @@
         </el-scrollbar>
       </el-aside>
 
-      <!-- Main content -->
       <el-main class="app-main">
         <router-view />
       </el-main>
@@ -296,3 +293,4 @@ function handleUserCommand(command: string) {
   overflow-y: auto;
 }
 </style>
+

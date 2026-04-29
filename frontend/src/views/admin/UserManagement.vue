@@ -50,7 +50,6 @@
       />
     </div>
 
-    <!-- Assign Role Dialog -->
     <el-dialog v-model="roleDialogVisible" :title="$t('admin.user.assignRole')" width="400px" destroy-on-close>
       <el-form label-width="80px">
         <el-form-item :label="$t('admin.user.role')">
@@ -111,7 +110,7 @@ async function loadData() {
     const res = await getUsers({ page: page.value - 1, size: pageSize.value, keyword: keyword.value || undefined })
     list.value = res.content || []
     total.value = res.totalElements || 0
-  } catch { /* interceptor */ } finally {
+  } catch {} finally {
     loading.value = false
   }
 }
@@ -130,7 +129,7 @@ async function handleAssignRole() {
     ElMessage.success(t('message.updateSuccess'))
     roleDialogVisible.value = false
     loadData()
-  } catch { /* interceptor */ } finally {
+  } catch {} finally {
     saving.value = false
   }
 }
@@ -150,3 +149,4 @@ onMounted(() => loadData())
   margin-top: 16px;
 }
 </style>
+

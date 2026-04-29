@@ -1,14 +1,11 @@
 <template>
   <div class="parameter-sidebar" :class="{ 'is-collapsed': collapsed }">
-    <!-- Collapsed -->
     <div v-if="collapsed" class="sidebar-collapsed" @click="emit('update:collapsed', false)">
       <el-icon :size="20"><List /></el-icon>
       <span class="collapsed-label">{{ t('workspace.design.sidebar.parameterList') }}</span>
     </div>
 
-    <!-- Expanded -->
     <div v-else class="sidebar-expanded">
-      <!-- Header -->
       <div class="sidebar-header">
         <el-input v-model="searchText" :placeholder="t('workspace.design.sidebar.search')" size="small" clearable :prefix-icon="Search" />
         <el-button size="small" circle @click="emit('update:collapsed', true)">
@@ -16,7 +13,6 @@
         </el-button>
       </div>
 
-      <!-- Breadcrumb navigation -->
       <div v-if="breadcrumb.length > 1" class="sidebar-breadcrumb">
         <span
           v-for="(item, idx) in breadcrumb"
@@ -30,9 +26,7 @@
         </span>
       </div>
 
-      <!-- Scrollable content area -->
       <div class="sidebar-content">
-        <!-- Parameter list -->
         <div v-if="filteredParams.length === 0" class="no-match">
           {{ t('workspace.design.sidebar.noMatch') }}
         </div>
@@ -67,7 +61,6 @@
           </el-tooltip>
         </div>
 
-        <!-- Aggregation tags (inside ARRAY context) -->
         <div v-if="currentArrayAggregations.length > 0" class="section-block">
           <div class="section-label" style="padding: 8px 12px 0">{{ t('workspace.design.sidebar.aggregationProperties') }}</div>
           <div class="agg-tags">
@@ -82,7 +75,6 @@
           </div>
         </div>
 
-        <!-- ═══ Collapsible: Expression Filters ═══ -->
         <div v-if="!readonly" class="section-block">
           <div class="section-header" @click="filtersExpanded = !filtersExpanded">
             <el-icon class="section-arrow" :class="{ expanded: filtersExpanded }"><ArrowRight /></el-icon>
@@ -135,7 +127,6 @@
           </el-collapse-transition>
         </div>
 
-        <!-- ═══ Collapsible: Condition Block ═══ -->
         <div v-if="!readonly" class="section-block">
           <div class="section-header" @click="conditionExpanded = !conditionExpanded">
             <el-icon class="section-arrow" :class="{ expanded: conditionExpanded }"><ArrowRight /></el-icon>
@@ -194,7 +185,6 @@
         </div>
       </div>
 
-      <!-- Inline creator (pinned to bottom) -->
       <div v-if="!readonly" class="inline-creator">
         <el-button v-if="!showCreator" size="small" text type="primary" @click="showCreator = true">
           {{ t('workspace.design.sidebar.inlineCreate') }}
@@ -209,7 +199,6 @@
         </div>
       </div>
 
-      <!-- Save draft (pinned to bottom). Template review is submitted from Test/Approval, not here. -->
       <div v-if="!readonly && store.isDraft" class="sidebar-actions">
         <el-button type="primary" :loading="saving" class="sidebar-save-btn" @click="handleSave">
           {{ t('workspace.design.sidebar.save') }}
@@ -242,7 +231,6 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const store = useTemplateWorkspaceStore()
 
-// ── Shared helpers ──
 function findParamById(params: ParameterDTO[], id: number): ParameterDTO | null {
   for (const p of params) {
     if (p.id === id) return p
@@ -261,10 +249,8 @@ function dataTypeTagColor(dt: DataType): 'success' | 'warning' | 'danger' | 'inf
   }
 }
 
-// ── Search ──
 const searchText = ref('')
 
-// ── Breadcrumb navigation ──
 interface BreadcrumbItem { id: number | null; name: string }
 const breadcrumb = ref<BreadcrumbItem[]>([{ id: null, name: 'Root' }])
 
@@ -298,7 +284,6 @@ function handleQuickLoop(p: ParameterDTO) {
   emit('insert-loop', `{#${p.name}}\n\n{/${p.name}}`)
 }
 
-// ── Aggregation tags ──
 const currentArrayAggregations = computed(() => {
   const last = breadcrumb.value[breadcrumb.value.length - 1]
   if (last.id === null) return []
@@ -328,7 +313,6 @@ const currentArrayAggregations = computed(() => {
   return tags
 })
 
-// ── Condition variable options (level-aware) ──
 /** Only show params at the current breadcrumb level + aggregation virtuals if inside ARRAY */
 const currentLevelConditionOptions = computed(() => {
   const result: { path: string; dataType: DataType | string }[] = []
@@ -365,7 +349,6 @@ const currentLevelConditionOptions = computed(() => {
   return result
 })
 
-// ── Condition block ──
 const conditionExpanded = ref(true)
 const filtersExpanded = ref(false)
 const conditionMode = ref<'simple' | 'advanced'>('simple')
@@ -406,7 +389,6 @@ function handleAddCondition() {
   conditionValue.value = ''
 }
 
-// ── Expression filter definitions ──
 const stringFilters = [
   { label: 'upper', syntax: '| upper', example: '{name | upper} → "JOHN"' },
   { label: 'lower', syntax: '| lower', example: '{name | lower} → "john"' },
@@ -449,7 +431,6 @@ function copyFilter(syntax: string) {
   })
 }
 
-// ── Inline creator ──
 const allDataTypes: DataType[] = ['STRING', 'NUMBER', 'DATE', 'BOOLEAN', 'ARRAY', 'OBJECT']
 const showCreator = ref(false)
 const newParamName = ref('')
@@ -471,7 +452,6 @@ async function handleCreateParameter() {
   } finally { creating.value = false }
 }
 
-// ── Save draft (assembly) ──
 const saving = ref(false)
 
 async function handleSave() {
@@ -585,3 +565,5 @@ async function handleSave() {
   color: var(--el-text-color-secondary);
 }
 </style>
+
+

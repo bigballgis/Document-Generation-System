@@ -112,7 +112,7 @@ async function handleSave() {
     }
     emit('saved')
     emit('update:visible', false)
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     saving.value = false
   }
 }

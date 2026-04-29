@@ -15,7 +15,6 @@ import type { DataType } from '@/types/parameter'
 // Feature: design-stage-layout, Property 10: Parameter search and filter correctness
 // **Validates: Requirements 9.2, 9.3**
 
-// ── Pure functions extracted from ParameterSidebar logic ──
 
 /** Generate insert text for a parameter variable tag */
 function generateVariableInsertText(parameterPath: string): string {
@@ -50,7 +49,6 @@ function searchAndFilter(
   })
 }
 
-// ── Arbitraries ──
 
 const ALL_DATA_TYPES: DataType[] = ['STRING', 'NUMBER', 'DATE', 'BOOLEAN', 'ARRAY', 'OBJECT']
 const dataTypeArb: fc.Arbitrary<DataType> = fc.constantFrom(...ALL_DATA_TYPES)
@@ -193,3 +191,4 @@ describe('Property 10: Parameter search and filter correctness', () => {
     )
   })
 })
+
