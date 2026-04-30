@@ -1,4 +1,4 @@
-// Feature: remove-segment-library, Property 6: useAssemblyConfig 操作不变量
+// Feature: remove-segment-library, Property 6: useAssemblyConfig operation invariants
 // **Validates: Requirements 6.5**
 
 import { describe, it, expect } from 'vitest'
@@ -55,7 +55,7 @@ function applyOperation(config: ReturnType<typeof useAssemblyConfig>, op: Operat
   }
 }
 
-describe('Property 6: useAssemblyConfig 操作不变量 (inline mode)', () => {
+describe('Property 6: useAssemblyConfig operation invariants (inline mode)', () => {
   it('after each operation, positions are consecutive 0..length-1, and undo restores previous state', () => {
     fc.assert(
       fc.property(

@@ -1,5 +1,5 @@
 /**
- * Property 4: 拖拽排序后 sort_order 连续性
+ * Property 4: after drag reorder, sort_order is contiguous
  * Feature: parameter-settings-ux
  * **Validates: Requirements 4.3, 4.5**
  *
@@ -27,7 +27,7 @@ function reorder<T>(arr: T[], fromIndex: number, toIndex: number): T[] {
   return result
 }
 
-describe('Property 4: 拖拽排序后 sort_order 连续性', () => {
+describe('Property 4: after drag reorder, sort_order is contiguous', () => {
   it('sort_order values are contiguous integers starting from 0', () => {
     fc.assert(
       fc.property(

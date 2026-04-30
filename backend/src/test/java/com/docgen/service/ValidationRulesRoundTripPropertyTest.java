@@ -188,7 +188,7 @@ class ValidationRulesRoundTripPropertyTest {
             rules.put("min_length", minLen);
             rules.put("max_length", maxLen);
             rules.put("enum_values", enumVals);
-            rules.put("custom_message", "自定义错误消息");
+            rules.put("custom_message", "Custom validation message");
             return rules;
         });
     }

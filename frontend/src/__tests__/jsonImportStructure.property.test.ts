@@ -1,5 +1,5 @@
 /**
- * Property 2: JSON 导入结构正确性
+ * Property 2: JSON import structural correctness
  * Feature: parameter-settings-ux
  * **Validates: Requirements 3.2, 3.4, 3.5, 3.7**
  *
@@ -33,7 +33,7 @@ function getMaxDepth(params: any[], currentDepth: number): number {
   return max
 }
 
-describe('Property 2: JSON 导入结构正确性', () => {
+describe('Property 2: JSON import structural correctness', () => {
   it('each top-level key becomes a root parameter', () => {
     fc.assert(
       fc.property(shallowJsonArb, (obj) => {

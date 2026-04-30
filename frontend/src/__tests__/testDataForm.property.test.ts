@@ -1,6 +1,6 @@
 /**
  * Feature: template-workflow-stages
- * Property 2: 参数树到表单控件树同构映射
+ * Property 2: parameter tree to form control tree isomorphic mapping
  * **Validates: Requirements 8.1, 8.2, 8.3, 8.4**
  *
  * Verifies that buildFormFields output is isomorphic to the parameter tree:

@@ -40,7 +40,7 @@ class EncryptionServiceTest {
 
     @Test
     void encryptDecrypt_unicodeContent_returnsOriginal() {
-        String original = "密码🔑パスワード";
+        String original = "password🔑パスワード";
         String encrypted = encryptionService.encrypt(original);
         assertEquals(original, encryptionService.decrypt(encrypted));
     }

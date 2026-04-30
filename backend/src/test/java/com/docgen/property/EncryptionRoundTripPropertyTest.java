@@ -85,11 +85,11 @@ class EncryptionRoundTripPropertyTest {
                         .ofMinLength(1).ofMaxLength(30),
                 // Unicode: emoji and mixed content (realistic sensitive values)
                 Arbitraries.of(
-                        "密码🔑パスワード",
+                        "password🔑パスワード",
                         "🎉🚀💻🔒",
                         "café résumé naïve",
                         "Ñoño año",
-                        "数据源密码: p@$$w0rd!",
+                        "Data source password: p@$$w0rd!",
                         "Bearer eyJhbGciOiJIUzI1NiJ9.test.sig",
                         "Basic dXNlcjpwYXNz",
                         "\u0000\u0001\u0002\u0003",

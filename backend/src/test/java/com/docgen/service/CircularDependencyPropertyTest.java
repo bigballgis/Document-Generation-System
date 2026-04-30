@@ -18,7 +18,7 @@ import static org.mockito.Mockito.*;
  *
  * <p><b>Validates: Requirements 3.5</b></p>
  */
-// Feature: array-aggregation-and-row-derived, Property 5: 同级循环依赖检测
+// Feature: array-aggregation-and-row-derived, Property 5: sibling circular dependency detection
 class CircularDependencyPropertyTest {
 
     private static final Long TEMPLATE_ID = 1L;
@@ -48,7 +48,7 @@ class CircularDependencyPropertyTest {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // Property 5: 同级循环依赖检测
+    // Property 5: sibling circular dependency detection
     // ═══════════════════════════════════════════════════════════════
 
     /**

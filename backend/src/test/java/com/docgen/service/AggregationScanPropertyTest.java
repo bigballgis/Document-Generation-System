@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p><b>Validates: Requirements 8.1, 8.2, 8.3</b></p>
  */
-// Feature: array-aggregation-and-row-derived, Property 9: 聚合占位符扫描正确性
+// Feature: array-aggregation-and-row-derived, Property 9: aggregation placeholder scan correctness
 class AggregationScanPropertyTest {
 
     private final TemplateScanService scanService;
@@ -24,7 +24,7 @@ class AggregationScanPropertyTest {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // Property 9: 聚合占位符扫描正确性
+    // Property 9: aggregation placeholder scan correctness
     // ═══════════════════════════════════════════════════════════════
 
     /**

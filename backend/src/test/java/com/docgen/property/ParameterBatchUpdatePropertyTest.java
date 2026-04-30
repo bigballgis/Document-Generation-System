@@ -26,7 +26,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
- * Property 9: 批量更新原子性
+ * Property 9: batch update atomicity
  *
  * For any batch-update request where at least one item contains invalid data
  * (e.g., duplicate name, invalid data_type), the Batch_API SHALL reject the entire batch:

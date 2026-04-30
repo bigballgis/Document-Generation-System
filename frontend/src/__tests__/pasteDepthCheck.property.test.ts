@@ -1,5 +1,5 @@
 /**
- * Property 12: 粘贴深度检查
+ * Property 12: paste depth check
  * Feature: parameter-settings-ux
  * **Validates: Requirements 11.5**
  *
@@ -20,7 +20,7 @@ function isPasteAllowed(targetDepth: number, sourceMaxDepth: number): boolean {
   return targetDepth + sourceMaxDepth - 1 <= MAX_DEPTH
 }
 
-describe('Property 12: 粘贴深度检查', () => {
+describe('Property 12: paste depth check', () => {
   it('paste is allowed when D + S - 1 <= 5', () => {
     fc.assert(
       fc.property(

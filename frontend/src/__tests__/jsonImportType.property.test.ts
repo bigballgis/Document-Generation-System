@@ -1,5 +1,5 @@
 /**
- * Property 3: JSON 导入类型推断正确性
+ * Property 3: JSON import type inference correctness
  * Feature: parameter-settings-ux
  * **Validates: Requirements 3.3**
  *
@@ -9,7 +9,7 @@ import { describe, it, expect } from 'vitest'
 import * as fc from 'fast-check'
 import { inferPrimitiveType } from '@/composables/useJsonImport'
 
-describe('Property 3: JSON 导入类型推断正确性', () => {
+describe('Property 3: JSON import type inference correctness', () => {
   it('string values infer to STRING', () => {
     fc.assert(
       fc.property(fc.string(), (val) => {

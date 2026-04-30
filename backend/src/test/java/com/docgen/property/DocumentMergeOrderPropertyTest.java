@@ -22,7 +22,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Property 19: 文档合并顺序正确性
+ * Property 19: document merge order correctness
  *
  * For any document ID list [A, B, C], the base64 segment buffers sent to the
  * Node.js {@code /merge-segments} endpoint must be in the same order as the input document ID list.
@@ -38,7 +38,7 @@ class DocumentMergeOrderPropertyTest {
      * **Validates: Requirements 40.1, 40.3, 40.4**
      */
     @Property(tries = 100)
-    @Label("Feature: low-code-document-generation-system, Property 19: 文档合并顺序正确性")
+    @Label("Feature: low-code-document-generation-system, Property 19: document merge order correctness")
     @SuppressWarnings("unchecked")
     void mergeOrderMatchesInputOrder(
             @ForAll @Size(min = 2, max = 10) List<@IntRange(min = 1, max = 1000) Integer> docIdValues) {

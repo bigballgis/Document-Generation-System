@@ -17,7 +17,7 @@ import static org.mockito.Mockito.*;
  *
  * <p><b>Validates: Requirements 4.2, 4.3</b></p>
  */
-// Feature: array-aggregation-and-row-derived, Property 6: DERIVED 作用域隔离
+// Feature: array-aggregation-and-row-derived, Property 6: DERIVED scope isolation
 class RowDerivedIsolationPropertyTest {
 
     private static final Long TEMPLATE_ID = 1L;
@@ -42,7 +42,7 @@ class RowDerivedIsolationPropertyTest {
      * <p><b>Validates: Requirements 4.2, 4.3</b></p>
      */
     @Property(tries = 200)
-    @Label("Property 6: DERIVED 作用域隔离")
+    @Label("Property 6: DERIVED scope isolation")
     void modifyingRowJ_doesNotAffectRowI(
             @ForAll("arrayWithDerived") ArrayDerivedTestData testData
     ) {

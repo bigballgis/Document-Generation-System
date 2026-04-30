@@ -20,7 +20,7 @@ import static org.mockito.Mockito.*;
  *
  * <p><b>Validates: Requirements 3.3, 3.4</b></p>
  */
-// Feature: array-aggregation-and-row-derived, Property 4: 表达式作用域验证
+// Feature: array-aggregation-and-row-derived, Property 4: expression scope validation
 class ExpressionScopePropertyTest {
 
     private static final Long TEMPLATE_ID = 1L;
@@ -48,7 +48,7 @@ class ExpressionScopePropertyTest {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // Property 4: 表达式作用域验证
+    // Property 4: expression scope validation
     // ═══════════════════════════════════════════════════════════════
 
     /**

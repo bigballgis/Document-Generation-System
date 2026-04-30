@@ -22,7 +22,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Property 13: 模板覆盖率计算正确性 (updated for three-dimensional coverage)
+ * Property 13: template coverage calculation correctness (updated for three-dimensional coverage)
  *
  * For any set of parameters and test cases, the parameter coverage percentage
  * should equal (coveredParams / totalParams) × 100%, and overall coverage

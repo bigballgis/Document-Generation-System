@@ -31,7 +31,7 @@ import static org.mockito.Mockito.*;
 /**
  * Property-based test for export constraint enforcement.
  *
- * <p>Feature: template-workflow-stages, Property 3: 导出约束后端强制</p>
+ * <p>Feature: template-workflow-stages, Property 3: export constraint enforced server-side</p>
  * <p><b>Validates: Requirements 12.1</b></p>
  *
  * For any TemplateState that is neither ACTIVE nor DRAFT, exportAsZip must throw BusinessException

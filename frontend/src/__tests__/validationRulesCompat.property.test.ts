@@ -1,5 +1,5 @@
 /**
- * Property 5: 校验规则与数据类型兼容矩阵
+ * Property 5: validation rules vs data type compatibility matrix
  * Feature: parameter-settings-ux
  * **Validates: Requirements 5.3**
  *
@@ -53,7 +53,7 @@ const expectedMatrix: Record<DataType, string[]> = {
   OBJECT: ['not_null'],
 }
 
-describe('Property 5: 校验规则与数据类型兼容矩阵', () => {
+describe('Property 5: validation rules vs data type compatibility matrix', () => {
   it('applicable rules match the expected compatibility matrix', () => {
     fc.assert(
       fc.property(dataTypeArb, (dataType) => {

@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p><b>Validates: Requirements 9.5</b></p>
  */
-// Feature: array-aggregation-and-row-derived, Property 10: 命名空间隔离
+// Feature: array-aggregation-and-row-derived, Property 10: namespace isolation
 class NamePatternPropertyTest {
 
     /**
@@ -20,7 +20,7 @@ class NamePatternPropertyTest {
     private static final Pattern NAME_PATTERN = Pattern.compile("^[a-zA-Z_][a-zA-Z0-9_-]*$");
 
     // ═══════════════════════════════════════════════════════════════
-    // Property 10: 命名空间隔离
+    // Property 10: namespace isolation
     // ═══════════════════════════════════════════════════════════════
 
     /**

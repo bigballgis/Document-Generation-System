@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Property-based test for ContentIsolationValidator — Property 9: Content isolation validation completeness.
  *
- * <p><b>Feature: design-stage-layout, Property 9: 内容隔离校验完备性</b></p>
+ * <p><b>Feature: design-stage-layout, Property 9: content isolation validation completeness</b></p>
  * <p><b>Validates: Requirements 6.4, 6.5, 6.6</b></p>
  *
  * <p>For any .docx file and expected content type (body/header/footer),

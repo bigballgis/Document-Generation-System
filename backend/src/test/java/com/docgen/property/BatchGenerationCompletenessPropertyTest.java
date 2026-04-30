@@ -30,7 +30,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Property 18: 批量生成完整性
+ * Property 18: batch generation completeness
  *
  * For any batch generation request with N data sets (1 ≤ N ≤ 1000),
  * after the batch task completes:
@@ -47,7 +47,7 @@ class BatchGenerationCompletenessPropertyTest {
      * **Validates: Requirements 24.2, 24.4, 24.5, 24.7**
      */
     @Property(tries = 100)
-    @Label("Feature: low-code-document-generation-system, Property 18: 批量生成完整性")
+    @Label("Feature: low-code-document-generation-system, Property 18: batch generation completeness")
     void batchGenerationCompleteness(
             @ForAll @IntRange(min = 1, max = 50) int totalDataSets,
             @ForAll @IntRange(min = 0, max = 100) int failPercentage) {

@@ -1,5 +1,5 @@
 /**
- * Property 6: 衍生参数表达式编辑器参数排除
+ * Property 6: derived-parameter expression editor excludes self
  * Feature: parameter-settings-ux
  * **Validates: Requirements 6.4**
  *
@@ -42,7 +42,7 @@ function getAvailableParamsForExpression(allParams: ParameterDTO[], currentId: n
 
 const paramNameArb = fc.stringMatching(/^[a-zA-Z_][a-zA-Z0-9_]{0,8}$/)
 
-describe('Property 6: 衍生参数表达式编辑器参数排除', () => {
+describe('Property 6: derived-parameter expression editor excludes self', () => {
   it('current DERIVED parameter is excluded from available list', () => {
     fc.assert(
       fc.property(

@@ -17,7 +17,7 @@ import static org.mockito.Mockito.*;
  *
  * <p><b>Validates: Requirements 4.4</b></p>
  */
-// Feature: array-aggregation-and-row-derived, Property 7: Sort-Order 求值依赖
+// Feature: array-aggregation-and-row-derived, Property 7: sort-order evaluation dependency
 class SortOrderEvaluationPropertyTest {
 
     private static final Long TEMPLATE_ID = 1L;
@@ -51,7 +51,7 @@ class SortOrderEvaluationPropertyTest {
      * <p><b>Validates: Requirements 4.4</b></p>
      */
     @Property(tries = 200)
-    @Label("Property 7: Sort-Order 求值依赖")
+    @Label("Property 7: sort-order evaluation dependency")
     void derivedParamsEvaluatedInSortOrder_contextAccumulates(
             @ForAll("chainTestData") ChainTestData testData
     ) {

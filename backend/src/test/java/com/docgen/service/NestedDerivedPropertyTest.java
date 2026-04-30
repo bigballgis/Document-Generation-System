@@ -18,7 +18,7 @@ import static org.mockito.Mockito.*;
  *
  * <p><b>Validates: Requirements 4.10</b></p>
  */
-// Feature: array-aggregation-and-row-derived, Property 8: 递归嵌套 DERIVED 求值
+// Feature: array-aggregation-and-row-derived, Property 8: recursive nested DERIVED evaluation
 class NestedDerivedPropertyTest {
 
     private static final Long TEMPLATE_ID = 1L;
@@ -56,7 +56,7 @@ class NestedDerivedPropertyTest {
      * <p><b>Validates: Requirements 4.10</b></p>
      */
     @Property(tries = 200)
-    @Label("Property 8: 递归嵌套 DERIVED 求值")
+    @Label("Property 8: recursive nested DERIVED evaluation")
     void innerLevelDerivedEvaluatedBeforeOuterLevel(
             @ForAll("nestedDerivedData") NestedDerivedTestData testData
     ) {

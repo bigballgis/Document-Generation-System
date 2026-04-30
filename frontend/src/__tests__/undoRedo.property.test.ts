@@ -1,5 +1,5 @@
 /**
- * Property 7: Undo/Redo 栈不变量
+ * Property 7: Undo/Redo stack invariants
  * Feature: parameter-settings-ux
  * **Validates: Requirements 8.2, 8.3, 8.6**
  *
@@ -24,7 +24,7 @@ function makeOp(type: 'add' | 'edit' | 'delete'): UndoRedoOperation {
 const opTypeArb = fc.constantFrom('add' as const, 'edit' as const, 'delete' as const)
 const actionArb = fc.constantFrom('push', 'undo', 'redo')
 
-describe('Property 7: Undo/Redo 栈不变量', () => {
+describe('Property 7: Undo/Redo stack invariants', () => {
   it('stack size never exceeds maxSize', () => {
     fc.assert(
       fc.property(

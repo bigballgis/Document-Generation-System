@@ -1,4 +1,4 @@
-// Feature: template-workflow-stages, Property 1: 阶段可用性与完成状态一致性
+// Feature: template-workflow-stages, Property 1: stage availability matches completion state
 // **Validates: Requirements 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 3.1, 3.2, 3.3, 3.4**
 
 import { describe, it, expect } from 'vitest'
@@ -92,7 +92,7 @@ const arbStoreSnapshot: fc.Arbitrary<StoreSnapshot> = fc.record({
 })
 
 
-describe('Property 1: 阶段可用性与完成状态一致性', () => {
+describe('Property 1: stage availability matches completion state', () => {
   it('Sub-property 1: array length is always 4, order is [design, test, approval, publish]', () => {
     fc.assert(
       fc.property(arbStoreSnapshot, (snapshot) => {

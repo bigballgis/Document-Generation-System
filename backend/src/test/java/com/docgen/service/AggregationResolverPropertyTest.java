@@ -17,8 +17,8 @@ import static org.mockito.Mockito.mock;
  *
  * <p><b>Validates: Requirements 1.1, 1.2, 1.3, 1.4, 1.6, 1.7, 1.9, 1.10</b></p>
  */
-// Feature: array-aggregation-and-row-derived, Property 1: 聚合计算数学正确性
-// Feature: array-aggregation-and-row-derived, Property 2: 嵌套 ARRAY 聚合独立性
+// Feature: array-aggregation-and-row-derived, Property 1: aggregation math correctness
+// Feature: array-aggregation-and-row-derived, Property 2: nested ARRAY aggregation independence
 class AggregationResolverPropertyTest {
 
     private static final Long TEMPLATE_ID = 1L;
@@ -43,7 +43,7 @@ class AggregationResolverPropertyTest {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // Property 1: 聚合计算数学正确性
+    // Property 1: aggregation math correctness
     // ═══════════════════════════════════════════════════════════════
 
     /**
@@ -53,7 +53,7 @@ class AggregationResolverPropertyTest {
      * <p><b>Validates: Requirements 1.1, 1.2, 1.3, 1.4, 1.6, 1.7, 1.10</b></p>
      */
     @Property(tries = 200)
-    @Label("Property 1: 聚合计算数学正确性")
+    @Label("Property 1: aggregation math correctness")
     void aggregationMathCorrectness(
             @ForAll("randomArrayData") ArrayTestData testData
     ) {
@@ -144,7 +144,7 @@ class AggregationResolverPropertyTest {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // Property 2: 嵌套 ARRAY 聚合独立性
+    // Property 2: nested ARRAY aggregation independence
     // ═══════════════════════════════════════════════════════════════
 
     /**
@@ -154,7 +154,7 @@ class AggregationResolverPropertyTest {
      * <p><b>Validates: Requirements 1.9</b></p>
      */
     @Property(tries = 200)
-    @Label("Property 2: 嵌套 ARRAY 聚合独立性")
+    @Label("Property 2: nested ARRAY aggregation independence")
     void nestedArrayAggregationIndependence(
             @ForAll("nestedArrayData") NestedArrayTestData testData
     ) {

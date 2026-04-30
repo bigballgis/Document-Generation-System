@@ -1,5 +1,5 @@
 /**
- * Property 6: 表达式安全沙箱隔离性
+ * Property 6: expression sandbox isolation
  *
  * For any JavaScript expression that attempts to access fs, http, net,
  * child_process, process, eval, or Function constructor, the sandbox
@@ -7,7 +7,7 @@
  *
  * **Validates: Requirements 5.9, 51.3-51.6**
  *
- * Feature: low-code-document-generation-system, Property 6: 表达式安全沙箱隔离性
+ * Feature: low-code-document-generation-system, Property 6: expression sandbox isolation
  */
 
 const fc = require('fast-check');
@@ -48,7 +48,7 @@ const EVAL_FUNCTION_EXPRESSIONS = [
   '(function(){return eval("1");})()',
 ];
 
-describe('Property 6: 表达式安全沙箱隔离性', () => {
+describe('Property 6: expression sandbox isolation', () => {
   /**
    * **Validates: Requirements 5.9, 51.3-51.6**
    *

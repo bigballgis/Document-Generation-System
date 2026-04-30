@@ -1,5 +1,5 @@
 /**
- * Property 1: 智能命名唯一性
+ * Property 1: smart naming uniqueness
  * Feature: parameter-settings-ux
  * **Validates: Requirements 2.1, 2.2, 2.3, 2.4**
  *
@@ -21,7 +21,7 @@ const existingNamesArb = fc.array(
   { minLength: 0, maxLength: 30 },
 )
 
-describe('Property 1: 智能命名唯一性', () => {
+describe('Property 1: smart naming uniqueness', () => {
   it('generated name follows correct prefix pattern and is unique among siblings', () => {
     fc.assert(
       fc.property(scopeArb, existingNamesArb, (scope, existingNames) => {

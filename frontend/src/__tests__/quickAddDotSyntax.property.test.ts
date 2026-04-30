@@ -1,5 +1,5 @@
 /**
- * Property 10: 点号语法嵌套结构解析
+ * Property 10: dotted-name nested structure parsing
  * Feature: parameter-settings-ux
  * **Validates: Requirements 10.3**
  *
@@ -21,7 +21,7 @@ function parseDotSyntax(input: string): Array<{ name: string; dataType: 'OBJECT'
 
 const validSegmentArb = fc.stringMatching(/^[a-zA-Z_][a-zA-Z0-9_]{0,8}$/)
 
-describe('Property 10: 点号语法嵌套结构解析', () => {
+describe('Property 10: dotted-name nested structure parsing', () => {
   it('intermediate segments are OBJECT, final segment is STRING', () => {
     fc.assert(
       fc.property(

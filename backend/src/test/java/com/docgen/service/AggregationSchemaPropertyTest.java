@@ -17,7 +17,7 @@ import static org.mockito.Mockito.*;
  *
  * <p><b>Validates: Requirements 2.2, 2.3, 2.5, 2.6, 5.5</b></p>
  */
-// Feature: array-aggregation-and-row-derived, Property 3: 聚合 Schema 完整性
+// Feature: array-aggregation-and-row-derived, Property 3: aggregation schema completeness
 class AggregationSchemaPropertyTest {
 
     private static final Long TEMPLATE_ID = 1L;
@@ -37,7 +37,7 @@ class AggregationSchemaPropertyTest {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // Property 3: 聚合 Schema 完整性
+    // Property 3: aggregation schema completeness
     // ═══════════════════════════════════════════════════════════════
 
     /**
@@ -50,7 +50,7 @@ class AggregationSchemaPropertyTest {
      * <p><b>Validates: Requirements 2.2, 2.3, 2.5, 2.6, 5.5</b></p>
      */
     @Property(tries = 200)
-    @Label("Property 3: 聚合 Schema 完整性")
+    @Label("Property 3: aggregation schema completeness")
     void aggregationSchemaCompleteness(
             @ForAll("randomParameterTree") ParamTreeTestData testData
     ) {

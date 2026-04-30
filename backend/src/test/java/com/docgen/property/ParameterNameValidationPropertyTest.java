@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
 /**
- * Property 11: 参数名称格式校验
+ * Property 11: parameter name format validation
  *
  * For any string, the parameter name validation SHALL accept the string if and only if
  * it matches the regex {@code ^[a-zA-Z_][a-zA-Z0-9_-]*$}.

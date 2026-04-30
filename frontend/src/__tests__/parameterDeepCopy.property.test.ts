@@ -1,5 +1,5 @@
 /**
- * Property 8: 参数深拷贝完整性
+ * Property 8: parameter deep copy completeness
  * Feature: parameter-settings-ux
  * **Validates: Requirements 8.5, 11.2**
  *
@@ -92,7 +92,7 @@ const leafParamArb = fc.record({
   id: Math.floor(Math.random() * 10000),
 }))
 
-describe('Property 8: 参数深拷贝完整性', () => {
+describe('Property 8: parameter deep copy completeness', () => {
   it('deep copy preserves all attributes except id, name suffix, parentId', () => {
     fc.assert(
       fc.property(leafParamArb, (source) => {

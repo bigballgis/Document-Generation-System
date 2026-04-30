@@ -1,5 +1,5 @@
 /**
- * Property 11: 参数名称格式校验
+ * Property 11: parameter name format validation
  * Feature: parameter-settings-ux
  * **Validates: Requirements 10.6**
  *
@@ -14,7 +14,7 @@ function isValidParameterName(name: string): boolean {
   return PARAMETER_NAME_REGEX.test(name)
 }
 
-describe('Property 11: 参数名称格式校验', () => {
+describe('Property 11: parameter name format validation', () => {
   it('valid names always pass validation', () => {
     const validNameArb = fc.stringMatching(/^[a-zA-Z_][a-zA-Z0-9_-]{0,20}$/)
     fc.assert(

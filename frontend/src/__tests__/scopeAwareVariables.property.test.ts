@@ -1,6 +1,6 @@
 /**
- * Property 11: 作用域感知变量列表
- * Feature: array-aggregation-and-row-derived, Property 11: 作用域感知变量列表
+ * Property 11: scope-aware variable list
+ * Feature: array-aggregation-and-row-derived, Property 11: scope-aware variable list
  * **Validates: Requirements 6.1, 6.2, 6.3**
  *
  * For any non-root DERIVED parameter (under ARRAY or OBJECT parent),
@@ -90,8 +90,8 @@ function getScopeLevel(parameters: ParameterDTO[], paramId: number): 'root' | 'r
 }
 
 
-describe('Property 11: 作用域感知变量列表', () => {
-  // Feature: array-aggregation-and-row-derived, Property 11: 作用域感知变量列表
+describe('Property 11: scope-aware variable list', () => {
+  // Feature: array-aggregation-and-row-derived, Property 11: scope-aware variable list
 
   it('root-level DERIVED sees all root params except self', () => {
     fc.assert(
