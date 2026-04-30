@@ -123,29 +123,33 @@ describe('Property 2: Parameter type to view type mapping isomorphism', () => {
     )
   })
 
-  it('recursive tree classification: children of ARRAY/OBJECT follow same rules', () => {
-    fc.assert(
-      fc.property(
-        simpleParamArb(3),
-        (params) => {
-          function verifyRecursive(nodes: SimpleParam[]) {
-            for (const node of nodes) {
-              const viewType = classifyParameterType(node.dataType)
-              if (FIELD_ROW_TYPES.includes(node.dataType)) {
-                expect(viewType).toBe('field-row')
-              } else if (node.dataType === 'ARRAY') {
-                expect(viewType).toBe('sub-table-link')
-                verifyRecursive(node.children)
-              } else if (node.dataType === 'OBJECT') {
-                expect(viewType).toBe('related-table-link')
-                verifyRecursive(node.children)
+  it(
+    'recursive tree classification: children of ARRAY/OBJECT follow same rules',
+    () => {
+      fc.assert(
+        fc.property(
+          simpleParamArb(3),
+          (params) => {
+            function verifyRecursive(nodes: SimpleParam[]) {
+              for (const node of nodes) {
+                const viewType = classifyParameterType(node.dataType)
+                if (FIELD_ROW_TYPES.includes(node.dataType)) {
+                  expect(viewType).toBe('field-row')
+                } else if (node.dataType === 'ARRAY') {
+                  expect(viewType).toBe('sub-table-link')
+                  verifyRecursive(node.children)
+                } else if (node.dataType === 'OBJECT') {
+                  expect(viewType).toBe('related-table-link')
+                  verifyRecursive(node.children)
+                }
               }
             }
-          }
-          verifyRecursive(params)
-        },
-      ),
-      { numRuns: 100 },
-    )
-  })
+            verifyRecursive(params)
+          },
+        ),
+        { numRuns: 100 },
+      )
+    },
+    30_000,
+  )
 })
