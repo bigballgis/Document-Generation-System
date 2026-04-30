@@ -617,14 +617,23 @@
     "rotation": "Rotation Angle",
     "image": "Watermark Image",
     "position": "Position",
-    "dynamicContent": "Dynamic Content (use template variables)"
+    "dynamicContent": "Dynamic Content (use template variables)",
+    "compositeOnlyNotice": "Post-merge watermarks are applied when generating composite documents. Single-template generation does not use this configuration yet.",
+    "imageSourcePlaceholder": "Paste Base64 or data:image/png;base64,... content",
+    "chooseFile": "Choose image file",
+    "clearWatermarkConfig": "Clear watermark settings",
+    "imageSourceHint": "Remote HTTP(S) URLs are not supported. Use inline Base64 or a data: URI from “Choose image file”.",
+    "validationTextRequired": "Enter watermark text or turn off text watermark.",
+    "validationImageRequired": "Paste image data or choose a file, or turn off image watermark.",
+    "validationNoRemoteImageUrl": "Remote image URLs are not allowed."
   },
   "security": {
     "title": "Security Settings",
     "pdfPassword": "PDF Password",
     "disablePrint": "Disable Printing",
     "disableCopy": "Disable Copying",
-    "disableEdit": "Disable Editing"
+    "disableEdit": "Disable Editing",
+    "notPersistedHint": "PDF protection below is not saved to the server yet. Watermark settings on the left are persisted."
   },
   "webhook": {
     "title": "Webhooks",

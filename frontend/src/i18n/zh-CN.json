@@ -616,14 +616,23 @@
     "rotation": "旋转角度",
     "image": "水印图片",
     "position": "位置",
-    "dynamicContent": "动态内容（使用模板变量）"
+    "dynamicContent": "动态内容（使用模板变量）",
+    "compositeOnlyNotice": "合并生成组合文档时会应用此处水印配置；单模板生成流程暂不使用该配置。",
+    "imageSourcePlaceholder": "粘贴 Base64 或 data:image/png;base64,...",
+    "chooseFile": "选择图片文件",
+    "clearWatermarkConfig": "清除水印配置",
+    "imageSourceHint": "不支持远程 HTTP(S) 图片地址，请使用 Base64 或通过「选择图片文件」生成 data: URI。",
+    "validationTextRequired": "请输入水印文本，或关闭文字水印。",
+    "validationImageRequired": "请粘贴图片数据或选择文件，或关闭图片水印。",
+    "validationNoRemoteImageUrl": "不允许使用远程图片 URL。"
   },
   "security": {
     "title": "安全设置",
     "pdfPassword": "PDF 密码",
     "disablePrint": "禁止打印",
     "disableCopy": "禁止复制",
-    "disableEdit": "禁止编辑"
+    "disableEdit": "禁止编辑",
+    "notPersistedHint": "下方 PDF 保护选项暂未保存到服务器；左侧水印配置会持久化。"
   },
   "webhook": {
     "title": "Webhook",

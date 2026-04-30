@@ -610,14 +610,23 @@
     "rotation": "旋轉角度",
     "image": "浮水印圖片",
     "position": "位置",
-    "dynamicContent": "動態內容（使用範本變數）"
+    "dynamicContent": "動態內容（使用範本變數）",
+    "compositeOnlyNotice": "合併產生組合文件時會套用此處浮水印；單一範本產生流程尚不使用此設定。",
+    "imageSourcePlaceholder": "貼上 Base64 或 data:image/png;base64,...",
+    "chooseFile": "選擇圖片檔",
+    "clearWatermarkConfig": "清除浮水印設定",
+    "imageSourceHint": "不支援遠端 HTTP(S) 圖片網址；請使用 Base64 或「選擇圖片檔」產生 data: URI。",
+    "validationTextRequired": "請輸入浮水印文字，或關閉文字浮水印。",
+    "validationImageRequired": "請貼上圖片資料或選擇檔案，或關閉圖片浮水印。",
+    "validationNoRemoteImageUrl": "不允許使用遠端圖片 URL。"
   },
   "security": {
     "title": "安全設定",
     "pdfPassword": "PDF 密碼",
     "disablePrint": "禁止列印",
     "disableCopy": "禁止複製",
-    "disableEdit": "禁止編輯"
+    "disableEdit": "禁止編輯",
+    "notPersistedHint": "下列 PDF 保護選項尚未儲存至伺服器；左側浮水印設定會持久化。"
   },
   "webhook": {
     "title": "Webhook",
