@@ -74,18 +74,18 @@ public class BatchDocumentService {
     public AsyncTaskDTO submitBatchGeneration(Long templateId, BatchGenerateRequest request) {
         Template template = templateRepository.findById(templateId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TEMPLATE_NOT_FOUND,
-                        "模板不存在: " + templateId, HttpStatus.NOT_FOUND));
+                        "Template not found: " + templateId, HttpStatus.NOT_FOUND));
 
         templateGenerationEligibilityService.requireActiveForDocumentGeneration(template, templateId);
 
         if (request.getDataSets() == null || request.getDataSets().isEmpty()) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "数据集不能为空", HttpStatus.BAD_REQUEST);
+                    "Data sets must not be empty", HttpStatus.BAD_REQUEST);
         }
 
         if (request.getDataSets().size() > MAX_BATCH_SIZE) {
             throw new BusinessException(ErrorCode.GENERATE_BATCH_LIMIT_EXCEEDED,
-                    "批量生成最多支持 " + MAX_BATCH_SIZE + " 个文档",
+                    "Batch generation supports at most " + MAX_BATCH_SIZE + " documents",
                     HttpStatus.BAD_REQUEST);
         }
 
@@ -119,7 +119,7 @@ public class BatchDocumentService {
             Template template = templateRepository.findById(templateId).orElse(null);
             if (template == null) {
                 task.setStatus("FAILED");
-                task.setErrorMessage("模板不存在: " + templateId);
+                task.setErrorMessage("Template not found: " + templateId);
                 task.setCompletedAt(Instant.now());
                 asyncTaskRepository.save(task);
                 return;
@@ -266,7 +266,7 @@ public class BatchDocumentService {
             return baos.toByteArray();
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.GENERATE_FAILED,
-                    "ZIP 打包失败: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Failed to build ZIP archive: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 

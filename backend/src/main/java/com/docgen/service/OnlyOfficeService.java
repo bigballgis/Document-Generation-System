@@ -151,7 +151,7 @@ public class OnlyOfficeService {
     public String generatePresignedUrl(Long templateId) {
         Template template = templateRepository.findById(templateId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TEMPLATE_NOT_FOUND,
-                        "模板不存在: " + templateId, HttpStatus.NOT_FOUND));
+                        "Template not found: " + templateId, HttpStatus.NOT_FOUND));
 
         try {
             return minioClient.getPresignedObjectUrl(
@@ -165,7 +165,7 @@ public class OnlyOfficeService {
             log.error("Failed to generate presigned URL for template {}: {}",
                     templateId, e.getMessage(), e);
             throw new BusinessException(ErrorCode.ONLYOFFICE_URL_FAILED,
-                    "生成文档访问链接失败", HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Failed to generate document access URL", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 
@@ -291,7 +291,7 @@ public class OnlyOfficeService {
             log.error("Failed to save OnlyOffice edited document for template {}: {}",
                     templateId, e.getMessage(), e);
             throw new BusinessException(ErrorCode.ONLYOFFICE_CALLBACK_FAILED,
-                    "保存编辑文档失败", HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Failed to persist edited document from OnlyOffice", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 

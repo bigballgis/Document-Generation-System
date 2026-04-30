@@ -46,7 +46,7 @@ public class TagService {
 
         if (tagRepository.existsByTenantIdAndName(tenantId, request.getName())) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "标签名称在该租户下已存在", HttpStatus.CONFLICT);
+                    "Tag name already exists for this tenant", HttpStatus.CONFLICT);
         }
 
         TemplateTag tag = new TemplateTag();
@@ -66,7 +66,7 @@ public class TagService {
         if (!tag.getName().equals(request.getName())
                 && tagRepository.existsByTenantIdAndName(tenantId, request.getName())) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "标签名称在该租户下已存在", HttpStatus.CONFLICT);
+                    "Tag name already exists for this tenant", HttpStatus.CONFLICT);
         }
 
         tag.setName(request.getName());

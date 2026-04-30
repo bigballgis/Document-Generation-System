@@ -264,7 +264,7 @@ public class CompositeTemplateService {
     private Template findCompositeTemplateOrThrow(Long templateId) {
         Template template = templateRepository.findById(templateId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.TEMPLATE_NOT_FOUND, "模板不存在: " + templateId));
+                        ErrorCode.TEMPLATE_NOT_FOUND, "Template not found: " + templateId));
 
         if (!"COMPOSITE".equals(template.getTemplateType())) {
             throw new BusinessException(ErrorCode.TEMPLATE_NOT_FOUND,
