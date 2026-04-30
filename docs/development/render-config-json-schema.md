@@ -33,3 +33,12 @@ Composite template ZIP packages may include an optional root entry **`render-con
 ## Persistence
 
 Validated JSON is stored in PostgreSQL column **`templates.render_config`** (JSONB). Export includes `render-config.json` only when this column contains a non-empty effective configuration.
+
+## REST API (same schema)
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `PUT` | `/api/templates/{id}/render-config` | Body: `RenderConfigDocument` JSON. Validates like ZIP import; creates a template version snapshot. |
+| `DELETE` | `/api/templates/{id}/render-config` | Clears `render_config`; creates a version snapshot. |
+
+`GET /api/templates/{id}` returns `renderConfig` as a JSON string when present (same shape as stored in DB).

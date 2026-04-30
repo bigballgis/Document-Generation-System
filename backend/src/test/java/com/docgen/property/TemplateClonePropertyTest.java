@@ -7,7 +7,9 @@ import com.docgen.entity.TemplateVersion;
 import com.docgen.repository.TemplateRepository;
 import com.docgen.repository.TemplateTagMappingRepository;
 import com.docgen.repository.TemplateVersionRepository;
+import com.docgen.service.RenderConfigValidator;
 import com.docgen.service.TemplateService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.docgen.util.TenantContext;
 import io.minio.MinioClient;
 import io.minio.ObjectWriteResponse;
@@ -55,8 +57,12 @@ class TemplateClonePropertyTest {
 
         TemplateVersionRepository templateVersionRepository = mock(TemplateVersionRepository.class);
         TemplateTagMappingRepository tagMappingRepository = mock(TemplateTagMappingRepository.class);
+        RenderConfigValidator renderConfigValidator = mock(RenderConfigValidator.class);
+        org.mockito.Mockito.lenient().doNothing().when(renderConfigValidator)
+                .validateForImport(org.mockito.ArgumentMatchers.any());
         TemplateService templateService = new TemplateService(templateRepository, templateVersionRepository, tagMappingRepository,
-                mock(com.docgen.repository.UserRepository.class), mock(com.docgen.repository.TeamRepository.class), minioClient);
+                mock(com.docgen.repository.UserRepository.class), mock(com.docgen.repository.TeamRepository.class), minioClient,
+                new ObjectMapper(), renderConfigValidator);
         Field bucketField = TemplateService.class.getDeclaredField("bucketName");
         bucketField.setAccessible(true);
         bucketField.set(templateService, "docgen-test");

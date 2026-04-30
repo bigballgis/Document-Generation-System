@@ -65,8 +65,13 @@ class TemplatePersistencePropertyTest {
             team.setTenantId(tenantId);
             return Optional.of(team);
         });
+        com.docgen.service.RenderConfigValidator renderConfigValidator =
+                mock(com.docgen.service.RenderConfigValidator.class);
+        org.mockito.Mockito.lenient().doNothing().when(renderConfigValidator)
+                .validateForImport(org.mockito.ArgumentMatchers.any());
         TemplateService templateService = new TemplateService(templateRepository, templateVersionRepository, tagMappingRepository,
-                userRepository, teamRepository, minioClient);
+                userRepository, teamRepository, minioClient,
+                new com.fasterxml.jackson.databind.ObjectMapper(), renderConfigValidator);
         Field bucketField = TemplateService.class.getDeclaredField("bucketName");
         bucketField.setAccessible(true);
         bucketField.set(templateService, "docgen-test");

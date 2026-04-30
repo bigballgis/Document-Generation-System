@@ -3,6 +3,24 @@ import type { PageResult } from '@/types'
 import type { ScenarioReadinessReportDTO } from '@/types/scenarioReadiness'
 
 
+/** Matches backend RenderConfigDocument / render-config.json (REQ-R7-001). */
+export interface RenderConfigDocument {
+  schemaVersion?: number
+  textWatermark?: {
+    text: string
+    fontSize?: number
+    color?: string
+    opacity?: number
+    rotation?: number
+  }
+  imageWatermark?: {
+    imageSource: string
+    position?: string
+    opacity?: number
+  }
+  barcodes?: unknown[]
+}
+
 export interface TemplateDTO {
   id: number
   name: string
@@ -16,6 +34,8 @@ export interface TemplateDTO {
   reviewRequired: boolean
   tenantId: number
   templateType: 'SINGLE' | 'COMPOSITE'
+  /** JSON string of {@link RenderConfigDocument} when set */
+  renderConfig?: string | null
   createdAt: string
   updatedAt: string
   createdBy?: string
@@ -152,6 +172,14 @@ export function createTemplate(data: CreateTemplateRequest) {
 
 export function updateTemplate(id: number, data: UpdateTemplateRequest) {
   return request.put<any, TemplateDTO>(`/templates/${id}`, data)
+}
+
+export function updateTemplateRenderConfig(templateId: number, body: RenderConfigDocument) {
+  return request.put<any, TemplateDTO>(`/templates/${templateId}/render-config`, body)
+}
+
+export function clearTemplateRenderConfig(templateId: number) {
+  return request.delete<any, TemplateDTO>(`/templates/${templateId}/render-config`)
 }
 
 export function deleteTemplate(id: number) {

@@ -54,8 +54,11 @@ class TemplateVersionPropertyTest {
         TemplateVersionRepository templateVersionRepository = mock(TemplateVersionRepository.class);
         MinioClient minioClient = mock(MinioClient.class);
 
+        com.docgen.service.RenderConfigValidator rcv = mock(com.docgen.service.RenderConfigValidator.class);
+        org.mockito.Mockito.lenient().doNothing().when(rcv).validateForImport(org.mockito.ArgumentMatchers.any());
         TemplateService templateService = new TemplateService(templateRepository, templateVersionRepository, mock(TemplateTagMappingRepository.class),
-                mock(com.docgen.repository.UserRepository.class), mock(com.docgen.repository.TeamRepository.class), minioClient);
+                mock(com.docgen.repository.UserRepository.class), mock(com.docgen.repository.TeamRepository.class), minioClient,
+                new com.fasterxml.jackson.databind.ObjectMapper(), rcv);
         Field bucketField = TemplateService.class.getDeclaredField("bucketName");
         bucketField.setAccessible(true);
         bucketField.set(templateService, "docgen-test");

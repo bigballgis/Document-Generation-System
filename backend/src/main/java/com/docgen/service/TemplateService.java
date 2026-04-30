@@ -1,6 +1,7 @@
 package com.docgen.service;
 
 import com.docgen.dto.CreateTemplateRequest;
+import com.docgen.dto.RenderConfigDocument;
 import com.docgen.dto.ReviewerCandidateDTO;
 import com.docgen.dto.TemplateDTO;
 import com.docgen.dto.TemplateQueryRequest;
@@ -20,6 +21,8 @@ import com.docgen.repository.TemplateTagMappingRepository;
 import com.docgen.repository.TemplateVersionRepository;
 import com.docgen.repository.UserRepository;
 import com.docgen.util.TenantContext;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.CopyObjectArgs;
@@ -57,6 +60,8 @@ public class TemplateService {
     private final UserRepository userRepository;
     private final TeamRepository teamRepository;
     private final MinioClient minioClient;
+    private final ObjectMapper objectMapper;
+    private final RenderConfigValidator renderConfigValidator;
 
     @Value("${minio.bucket-name:docgen}")
     private String bucketName;
@@ -66,13 +71,17 @@ public class TemplateService {
                            TemplateTagMappingRepository tagMappingRepository,
                            UserRepository userRepository,
                            TeamRepository teamRepository,
-                           MinioClient minioClient) {
+                           MinioClient minioClient,
+                           ObjectMapper objectMapper,
+                           RenderConfigValidator renderConfigValidator) {
         this.templateRepository = templateRepository;
         this.templateVersionRepository = templateVersionRepository;
         this.tagMappingRepository = tagMappingRepository;
         this.userRepository = userRepository;
         this.teamRepository = teamRepository;
         this.minioClient = minioClient;
+        this.objectMapper = objectMapper;
+        this.renderConfigValidator = renderConfigValidator;
     }
 
     /**
@@ -242,6 +251,56 @@ public class TemplateService {
 
         log.info("Template updated: id={}", saved.getId());
         return toDTO(saved);
+    }
+
+    /**
+     * Replace post-merge render configuration (watermark). Validates with the same rules as composite ZIP import.
+     */
+    @Transactional
+    public TemplateDTO updateRenderConfig(Long templateId, RenderConfigDocument doc) {
+        Template template = findTemplateOrThrow(templateId);
+        assertSameTenant(template);
+        if (doc == null) {
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                    "render-config body is required", HttpStatus.BAD_REQUEST);
+        }
+        renderConfigValidator.validateForImport(doc);
+        try {
+            if (doc.isEffectivelyEmpty()) {
+                template.setRenderConfig(null);
+            } else {
+                template.setRenderConfig(objectMapper.writeValueAsString(doc));
+            }
+        } catch (JsonProcessingException e) {
+            throw new BusinessException(ErrorCode.INTERNAL_ERROR,
+                    "Failed to serialize render config", HttpStatus.INTERNAL_SERVER_ERROR, e);
+        }
+        Template saved = templateRepository.save(template);
+        createVersionSnapshot(saved);
+        log.info("Template render-config updated: id={}", saved.getId());
+        return toDTO(saved);
+    }
+
+    /**
+     * Clears stored render configuration (no watermarks from render_config at generation).
+     */
+    @Transactional
+    public TemplateDTO clearRenderConfig(Long templateId) {
+        Template template = findTemplateOrThrow(templateId);
+        assertSameTenant(template);
+        template.setRenderConfig(null);
+        Template saved = templateRepository.save(template);
+        createVersionSnapshot(saved);
+        log.info("Template render-config cleared: id={}", saved.getId());
+        return toDTO(saved);
+    }
+
+    private void assertSameTenant(Template template) {
+        Long tenantId = TenantContext.getCurrentTenantId();
+        if (tenantId != null && template.getTenantId() != null && !template.getTenantId().equals(tenantId)) {
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                    "Template not accessible in current tenant context", HttpStatus.FORBIDDEN);
+        }
     }
 
     /**

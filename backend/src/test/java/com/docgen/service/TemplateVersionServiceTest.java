@@ -9,7 +9,9 @@ import com.docgen.exception.ResourceNotFoundException;
 import com.docgen.repository.TemplateRepository;
 import com.docgen.repository.TemplateTagMappingRepository;
 import com.docgen.repository.TemplateVersionRepository;
+import com.docgen.service.RenderConfigValidator;
 import com.docgen.util.TenantContext;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.minio.MinioClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,8 +46,11 @@ class TemplateVersionServiceTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        RenderConfigValidator rcv = mock(RenderConfigValidator.class);
+        lenient().doNothing().when(rcv).validateForImport(any());
         templateService = new TemplateService(templateRepository, templateVersionRepository, mock(TemplateTagMappingRepository.class),
-                mock(com.docgen.repository.UserRepository.class), mock(com.docgen.repository.TeamRepository.class), minioClient);
+                mock(com.docgen.repository.UserRepository.class), mock(com.docgen.repository.TeamRepository.class), minioClient,
+                new ObjectMapper(), rcv);
         Field bucketField = TemplateService.class.getDeclaredField("bucketName");
         bucketField.setAccessible(true);
         bucketField.set(templateService, "docgen-test");

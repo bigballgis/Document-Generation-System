@@ -91,6 +91,36 @@ public class TemplateController {
         return ResponseEntity.ok(templateService.listReviewerCandidates(id, reviewLevel));
     }
 
+    /**
+     * Replace stored post-merge render configuration (same schema as composite ZIP {@code render-config.json}).
+     */
+    @PutMapping(value = "/{id}/render-config", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<TemplateDTO> updateRenderConfig(
+            @PathVariable Long id,
+            @RequestBody RenderConfigDocument body) {
+        TemplateDTO updated = templateService.updateRenderConfig(id, body);
+        try {
+            coverageCheckService.checkCoverage(id);
+        } catch (Exception e) {
+            log.warn("Coverage check failed after render-config save for template {}: {}", id, e.getMessage());
+        }
+        return ResponseEntity.ok(updated);
+    }
+
+    /**
+     * Remove stored render configuration.
+     */
+    @DeleteMapping("/{id}/render-config")
+    public ResponseEntity<TemplateDTO> clearRenderConfig(@PathVariable Long id) {
+        TemplateDTO updated = templateService.clearRenderConfig(id);
+        try {
+            coverageCheckService.checkCoverage(id);
+        } catch (Exception e) {
+            log.warn("Coverage check failed after render-config clear for template {}: {}", id, e.getMessage());
+        }
+        return ResponseEntity.ok(updated);
+    }
+
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<TemplateDTO> updateTemplate(
             @PathVariable Long id,

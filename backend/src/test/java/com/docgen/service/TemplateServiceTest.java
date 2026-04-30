@@ -1,7 +1,9 @@
 package com.docgen.service;
 
 import com.docgen.dto.CreateTemplateRequest;
+import com.docgen.dto.RenderConfigDocument;
 import com.docgen.dto.ReviewerCandidateDTO;
+import com.docgen.dto.TextWatermarkConfig;
 import com.docgen.dto.TemplateDTO;
 import com.docgen.dto.TemplateQueryRequest;
 import com.docgen.dto.UpdateTemplateRequest;
@@ -18,6 +20,7 @@ import com.docgen.repository.TemplateTagMappingRepository;
 import com.docgen.repository.TemplateVersionRepository;
 import com.docgen.repository.UserRepository;
 import com.docgen.util.TenantContext;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.minio.MinioClient;
 import io.minio.ObjectWriteResponse;
 import org.junit.jupiter.api.AfterEach;
@@ -40,6 +43,8 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -63,12 +68,16 @@ class TemplateServiceTest {
     @Mock
     private TeamRepository teamRepository;
 
+    @Mock
+    private RenderConfigValidator renderConfigValidator;
+
     private TemplateService templateService;
 
     @BeforeEach
     void setUp() throws Exception {
+        lenient().doNothing().when(renderConfigValidator).validateForImport(any());
         templateService = new TemplateService(templateRepository, templateVersionRepository, tagMappingRepository,
-                userRepository, teamRepository, minioClient);
+                userRepository, teamRepository, minioClient, new ObjectMapper(), renderConfigValidator);
         // Set the @Value-injected bucketName field via reflection for unit tests
         Field bucketField = TemplateService.class.getDeclaredField("bucketName");
         bucketField.setAccessible(true);
@@ -422,6 +431,36 @@ class TemplateServiceTest {
 
         assertThrows(ResourceNotFoundException.class,
                 () -> templateService.cloneTemplate(99L));
+    }
+
+    @Test
+    void updateRenderConfig_valid_persistsJson() {
+        Template template = createTestTemplate();
+        when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
+        when(templateRepository.save(any(Template.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(templateVersionRepository.findMaxVersionNumber(anyLong())).thenReturn(Optional.of(1));
+
+        RenderConfigDocument doc = new RenderConfigDocument();
+        doc.setTextWatermark(new TextWatermarkConfig("WM"));
+
+        TemplateDTO dto = templateService.updateRenderConfig(1L, doc);
+
+        verify(renderConfigValidator).validateForImport(doc);
+        assertNotNull(dto.getRenderConfig());
+        assertTrue(dto.getRenderConfig().contains("WM"));
+    }
+
+    @Test
+    void clearRenderConfig_setsNull() {
+        Template template = createTestTemplate();
+        template.setRenderConfig("{\"schemaVersion\":1}");
+        when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
+        when(templateRepository.save(any(Template.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(templateVersionRepository.findMaxVersionNumber(anyLong())).thenReturn(Optional.of(1));
+
+        templateService.clearRenderConfig(1L);
+
+        verify(templateRepository).save(argThat((Template t) -> t.getRenderConfig() == null));
     }
 
 

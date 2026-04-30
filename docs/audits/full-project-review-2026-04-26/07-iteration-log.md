@@ -931,6 +931,14 @@ Remaining risks: New comment noise may accumulate; schedule periodic T01-style p
 Related tracking items: —  
 Next step: Use **`ai-readable-code-completion-report.md`** as baseline; spin follow-up cards only for approved extractions or inventories.
 
+## 2026-04-28 — REQ-R7 follow-up: REST API for `render_config`
+
+Workstream: WS-03 / template API  
+Summary: Added **`PUT /api/templates/{id}/render-config`** and **`DELETE /api/templates/{id}/render-config`** with **`RenderConfigDocument`** body validation via **`RenderConfigValidator`** (same rules as ZIP import). **`TemplateService`** gains **`updateRenderConfig`** / **`clearRenderConfig`** with tenant check and version snapshot. Frontend **`templates.ts`**: **`RenderConfigDocument`** type, **`updateTemplateRenderConfig`**, **`clearTemplateRenderConfig`**, **`TemplateDTO.renderConfig`**. Documentation: **`render-config-json-schema.md`** REST section.  
+Files changed: `TemplateController.java`, `TemplateService.java`, `TemplateServiceTest.java`, property/unit tests constructing **`TemplateService`**, `frontend/src/api/templates.ts`, `docs/development/render-config-json-schema.md`, `07-iteration-log.md`.  
+Validation: `mvn -q -DskipTests compile`; `mvn "-Dtest=TemplateServiceTest,TemplateVersionServiceTest,TemplateClonePropertyTest,TemplatePersistencePropertyTest,TemplateVersionPropertyTest" test`; `npm run type-check` (frontend).  
+Validation result: BUILD SUCCESS / type-check OK.
+
 ## 2026-04-28 — REQ-R7-001: Composite ZIP `render-config.json` (render_config column)
 
 Task ID: REQ-R7-001 / WS-03-T05–T06  
