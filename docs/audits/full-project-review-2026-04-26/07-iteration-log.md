@@ -992,10 +992,10 @@ Related tracking items: REQ-R7
 ## 2026-04-28 — REQ-R7: Vitest for WatermarkSecurityConfig
 
 Workstream: WS-03 / frontend tests  
-Summary: Added **`WatermarkSecurityConfig.test.ts`**: mocks **`@/api/templates`** and **`ElMessage`**; asserts **Save** disabled for **`SINGLE`**, not disabled for **`COMPOSITE`**, **Clear** invokes **`clearTemplateRenderConfig`** for single templates; **COMPOSITE** toggles text watermark and **Save** calls **`updateTemplateRenderConfig`** with payload; **SINGLE** **Save** click does not call update/clear APIs.  
+Summary: Added **`WatermarkSecurityConfig.test.ts`**: mocks **`@/api/templates`** and **`ElMessage`**; asserts **Save** disabled for **`SINGLE`**, not disabled for **`COMPOSITE`**, **Clear** invokes **`clearTemplateRenderConfig`** for single templates; **COMPOSITE** toggles text watermark and **Save** calls **`updateTemplateRenderConfig`** with payload; **COMPOSITE** with both watermarks off and **Save** calls **`clearTemplateRenderConfig`** only; **SINGLE** **Save** click does not call update/clear APIs.  
 Files changed: `frontend/src/__tests__/views/templates/WatermarkSecurityConfig.test.ts`, `07-iteration-log.md`.  
 Validation commands: `npx vitest run src/__tests__/views/templates/WatermarkSecurityConfig.test.ts` (from `frontend/`).  
-Validation result: 5 tests, exit 0.  
+Validation result: 6 tests, exit 0.  
 Related tracking items: REQ-R7  
 
 ## Entry Template

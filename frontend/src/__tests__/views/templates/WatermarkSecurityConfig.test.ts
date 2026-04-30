@@ -18,7 +18,7 @@ vi.mock('element-plus', async (importOriginal) => {
   }
 })
 
-import { ElSwitch } from 'element-plus'
+import { ElSwitch, ElMessage } from 'element-plus'
 import WatermarkSecurityConfig from '@/views/templates/components/WatermarkSecurityConfig.vue'
 import { getTemplate, clearTemplateRenderConfig, updateTemplateRenderConfig } from '@/api/templates'
 
@@ -53,6 +53,8 @@ describe('WatermarkSecurityConfig', () => {
     vi.mocked(getTemplate).mockResolvedValue(minimalTemplateDto(1, 'SINGLE', null) as any)
     vi.mocked(clearTemplateRenderConfig).mockResolvedValue(minimalTemplateDto(1, 'SINGLE', null) as any)
     vi.mocked(updateTemplateRenderConfig).mockResolvedValue(minimalTemplateDto(1, 'COMPOSITE', '{}') as any)
+    vi.mocked(ElMessage.success).mockClear()
+    vi.mocked(ElMessage.error).mockClear()
   })
 
   it('disables Save for SINGLE template after load', async () => {
@@ -87,6 +89,7 @@ describe('WatermarkSecurityConfig', () => {
     await flushPromises()
 
     expect(clearTemplateRenderConfig).toHaveBeenCalledWith(9)
+    expect(ElMessage.success).toHaveBeenCalled()
   })
 
   it('calls updateTemplateRenderConfig when COMPOSITE saves text watermark', async () => {
@@ -118,6 +121,22 @@ describe('WatermarkSecurityConfig', () => {
         }),
       }),
     )
+    expect(ElMessage.success).toHaveBeenCalled()
+  })
+
+  it('calls clearTemplateRenderConfig when COMPOSITE saves with no watermarks enabled', async () => {
+    vi.mocked(getTemplate).mockResolvedValue(minimalTemplateDto(22, 'COMPOSITE', null) as any)
+
+    const wrapper = mount(WatermarkSecurityConfig, { props: { templateId: 22 } })
+    await flushPromises()
+
+    const actionButtons = wrapper.find('.watermark-actions').findAll('button')
+    await actionButtons[0].trigger('click')
+    await flushPromises()
+
+    expect(clearTemplateRenderConfig).toHaveBeenCalledWith(22)
+    expect(updateTemplateRenderConfig).not.toHaveBeenCalled()
+    expect(ElMessage.success).toHaveBeenCalled()
   })
 
   it('does not call updateTemplateRenderConfig when SINGLE Save is triggered while disabled', async () => {
@@ -132,5 +151,7 @@ describe('WatermarkSecurityConfig', () => {
 
     expect(updateTemplateRenderConfig).not.toHaveBeenCalled()
     expect(clearTemplateRenderConfig).not.toHaveBeenCalled()
+    expect(ElMessage.success).not.toHaveBeenCalled()
+    expect(ElMessage.error).not.toHaveBeenCalled()
   })
 })
