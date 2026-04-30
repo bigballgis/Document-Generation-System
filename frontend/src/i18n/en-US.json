@@ -980,6 +980,9 @@
       "initFailed": "Failed to initialize OnlyOffice editor",
       "apiNotLoaded": "OnlyOffice API not loaded",
       "loadScriptFailed": "Failed to load OnlyOffice API",
+      "unknownEditorError": "Unknown editor error",
+      "defaultDocumentTitle": "Template.docx",
+      "guestUserName": "Guest",
       "openEditor": "Open Editor",
       "previewComposite": "Preview Composite",
       "selectivePreview": "Selective Preview",
@@ -1116,6 +1119,11 @@
       "versionDiffType": "Type",
       "versionDiffOldValue": "Old Value",
       "versionDiffNewValue": "New Value",
+      "versionDiffChangeType": {
+        "ADDED": "Added",
+        "REMOVED": "Removed",
+        "MODIFIED": "Modified"
+      },
       "grantPermission": "Grant Permission",
       "revokeConfirm": "Are you sure you want to revoke this permission?",
       "noPermissions": "No permissions configured. Click 'Grant Permission' to add.",

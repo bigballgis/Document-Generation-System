@@ -979,6 +979,9 @@
       "initFailed": "无法初始化 OnlyOffice 编辑器",
       "apiNotLoaded": "OnlyOffice API 未加载",
       "loadScriptFailed": "加载 OnlyOffice API 失败",
+      "unknownEditorError": "编辑器发生未知错误",
+      "defaultDocumentTitle": "Template.docx",
+      "guestUserName": "访客",
       "openEditor": "打开编辑器",
       "previewComposite": "预览组合文档",
       "selectivePreview": "选择性预览",
@@ -1115,6 +1118,11 @@
       "versionDiffType": "类型",
       "versionDiffOldValue": "旧值",
       "versionDiffNewValue": "新值",
+      "versionDiffChangeType": {
+        "ADDED": "新增",
+        "REMOVED": "删除",
+        "MODIFIED": "修改"
+      },
       "grantPermission": "授予权限",
       "revokeConfirm": "确定要撤销此权限吗？",
       "noPermissions": "暂无权限记录。点击「授予权限」添加。",

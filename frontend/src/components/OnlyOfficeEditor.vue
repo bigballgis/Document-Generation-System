@@ -28,7 +28,6 @@ export interface OnlyOfficeEditorProps {
 }
 
 const props = withDefaults(defineProps<OnlyOfficeEditorProps>(), {
-  documentTitle: 'Template.docx',
   callbackUrl: '',
   viewOnly: false,
   documentType: 'word',
@@ -95,7 +94,7 @@ function buildConfig() {
     document: {
       fileType: 'docx',
       key: props.documentKey,
-      title: props.documentTitle,
+      title: props.documentTitle ?? t('workspace.editor.defaultDocumentTitle'),
       url: props.documentUrl,
       permissions: {
         edit: !props.viewOnly,
@@ -116,7 +115,7 @@ function buildConfig() {
       callbackUrl: props.callbackUrl || undefined,
       user: {
         id: String(userStore.userInfo?.id || 'anonymous'),
-        name: userStore.userInfo?.username || 'Anonymous',
+        name: userStore.userInfo?.username || t('workspace.editor.guestUserName'),
       },
       customization: {
         autosave: true,
@@ -150,7 +149,7 @@ function buildConfig() {
         emit('close')
       },
       onError: (event: any) => {
-        emit('error', event?.data?.message || 'Unknown editor error')
+        emit('error', event?.data?.message || t('workspace.editor.unknownEditorError'))
       },
     },
   }

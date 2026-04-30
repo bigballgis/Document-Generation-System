@@ -103,7 +103,7 @@
           <el-table-column prop="field" :label="t('workspace.segment.diffField')" width="160" />
           <el-table-column :label="t('workspace.segment.diffType')" width="100">
             <template #default="{ row }">
-              <el-tag :type="diffTypeTag(row.changeType)" size="small">{{ row.changeType }}</el-tag>
+              <el-tag :type="diffTypeTag(row.changeType)" size="small">{{ formatDiffChangeType(row.changeType) }}</el-tag>
             </template>
           </el-table-column>
           <el-table-column :label="t('workspace.segment.diffOldValue')">
@@ -207,7 +207,7 @@ const emit = defineEmits<{
   (e: 'rolledBack'): void
 }>()
 
-const { t } = useI18n()
+const { t, te } = useI18n()
 
 const visible = ref(props.modelValue)
 watch(() => props.modelValue, (val) => { visible.value = val })
@@ -238,7 +238,7 @@ async function loadVersions() {
   try {
     versions.value = await getSegmentVersions(props.templateId, props.segmentName)
   } catch (e: any) {
-    ElMessage.error(e.response?.data?.message || e.message)
+    ElMessage.error(e.response?.data?.message || e.message || t('message.operationFailed'))
   } finally {
     loadingVersions.value = false
   }
@@ -253,7 +253,7 @@ async function handlePublish() {
     await loadVersions()
     emit('published')
   } catch (e: any) {
-    ElMessage.error(e.response?.data?.message || e.message)
+    ElMessage.error(e.response?.data?.message || e.message || t('message.operationFailed'))
   } finally {
     publishing.value = false
   }
@@ -284,7 +284,7 @@ async function handleCompare() {
       props.templateId, props.segmentName, compareA.value, compareB.value, true,
     )
   } catch (e: any) {
-    ElMessage.error(e.response?.data?.message || e.message)
+    ElMessage.error(e.response?.data?.message || e.message || t('message.operationFailed'))
   } finally {
     comparing.value = false
   }
@@ -296,8 +296,13 @@ async function handleRollback(targetVersion: number) {
     ElMessage.success(t('workspace.segment.rollbackSuccess'))
     emit('rolledBack')
   } catch (e: any) {
-    ElMessage.error(e.response?.data?.message || e.message)
+    ElMessage.error(e.response?.data?.message || e.message || t('message.operationFailed'))
   }
+}
+
+function formatDiffChangeType(code: string) {
+  const key = `workspace.settings.versionDiffChangeType.${code}`
+  return te(key) ? t(key) : code
 }
 
 function handleClosed() {

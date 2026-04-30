@@ -29,7 +29,7 @@
         <el-table-column prop="field" :label="t('workspace.settings.versionDiffField')" width="200" />
         <el-table-column :label="t('workspace.settings.versionDiffType')" width="120">
           <template #default="{ row }">
-            <el-tag :type="diffTypeTag(row.type)" size="small">{{ row.type }}</el-tag>
+            <el-tag :type="diffTypeTag(row.type)" size="small">{{ formatDiffChangeType(row.type) }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column :label="t('workspace.settings.versionDiffOldValue')">
@@ -56,7 +56,7 @@ import { getVersionDiff } from '@/api/templates'
 import type { VersionDiffResult } from '@/api/templates'
 
 const store = useTemplateWorkspaceStore()
-const { t } = useI18n()
+const { t, te } = useI18n()
 
 const versionA = ref<number | null>(null)
 const versionB = ref<number | null>(null)
@@ -96,6 +96,11 @@ function diffTypeTag(type: string): 'primary' | 'success' | 'danger' | 'warning'
     case 'MODIFIED': return 'warning'
     default: return 'info'
   }
+}
+
+function formatDiffChangeType(code: string) {
+  const key = `workspace.settings.versionDiffChangeType.${code}`
+  return te(key) ? t(key) : code
 }
 </script>
 

@@ -1018,6 +1018,25 @@ Validation result: **71** test files, **359** tests, exit **0**.
 Removed logs: none (already absent).  
 Related tracking items: WS-06-T05  
 
+## 2026-04-28 — WS-06-T07: i18n for reviewed components + request errors
+
+Workstream: WS-06  
+Task ID: WS-06-T07  
+Summary: Removed or replaced user-facing hardcoded strings in **`OnlyOfficeEditor.vue`** (default document title, guest display name, unknown editor error), **`VersionDiffPanel.vue`** and **`SegmentVersionDialog.vue`** (diff change type labels via shared **`workspace.settings.versionDiffChangeType.*`**; segment API error toasts fall back to **`message.operationFailed`**), and **`request.ts`** (generic error path uses **`message.operationFailed`** when no server message). Added i18n keys in **`en-US.json`**, **`zh-CN.json`**, **`zh-TW.json`**.  
+Files changed: `OnlyOfficeEditor.vue`, `VersionDiffPanel.vue`, `SegmentVersionDialog.vue`, `request.ts`, `en-US.json`, `zh-CN.json`, `zh-TW.json`, `07-iteration-log.md`.  
+Validation commands: `npm run type-check`; `npm test` (from `frontend/`).  
+Validation result: type-check OK; **71** files, **359** tests, exit **0**.  
+Keys added: `workspace.editor.unknownEditorError`, `workspace.editor.defaultDocumentTitle`, `workspace.editor.guestUserName`; `workspace.settings.versionDiffChangeType.ADDED|REMOVED|MODIFIED` (nested).  
+Related tracking items: WS-06-T07  
+
+## 2026-04-28 — FRONT-WS-06-T07 traceability matrix row
+
+Workstream: WS-06 / governance  
+Summary: Added **`FRONT-WS-06-T07`** to **`05-traceability-matrix.md`** linking WS-06-T07 implementation, i18n files, Vitest evidence, and **`Verified`** status.  
+Files changed: `05-traceability-matrix.md`, `07-iteration-log.md`.  
+Validation: documentation consistency only.  
+Related tracking items: FRONT-WS-06-T07, WS-06-T07  
+
 ## Entry Template
 
 ```text

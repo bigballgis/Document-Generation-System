@@ -109,7 +109,8 @@ service.interceptors.response.use(
     } else if (status === 429) {
       ElMessage.warning(i18n.global.t('message.tooManyRequests'))
     } else if (status !== 401) {
-      const message = (error.response?.data as any)?.message || error.message
+      const message =
+        (error.response?.data as any)?.message || error.message || i18n.global.t('message.operationFailed')
       ElMessage.error(message)
     }
 
