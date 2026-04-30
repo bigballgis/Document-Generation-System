@@ -103,7 +103,8 @@ public class DocumentGeneratorService {
         Map<String, Object> params = request.getParameters() != null
                 ? request.getParameters() : Collections.emptyMap();
 
-        String outputFormat = resolveOutputFormat(request.getOutputFormat(), template.getOutputFormat());
+        String outputFormat = resolveSingleDocumentOutputFormat(
+                request.getOutputFormat(), template.getOutputFormat(), template.getId());
         String storageStrategy = request.getStorageStrategy() != null
                 ? request.getStorageStrategy() : template.getStorageStrategy();
 
@@ -113,7 +114,7 @@ public class DocumentGeneratorService {
         // Step 2: Render DOCX via Docxtemplater service
         byte[] docxBytes = renderDocument(template.getTemplateFilePath(), data);
 
-        // Step 3: Single format only (WORD or PDF). BOTH is rejected — external clients must call /word and /pdf separately.
+        // Step 3: Single format only (WORD or PDF). Legacy template BOTH defaults to WORD in resolver.
         if ("PDF".equalsIgnoreCase(outputFormat)) {
             byte[] pdfBytes = convertToPdf(docxBytes);
             return documentStorageService.store(template, pdfBytes, "PDF", storageStrategy);
@@ -218,22 +219,35 @@ public class DocumentGeneratorService {
         }
     }
 
-    private String resolveOutputFormat(String requestFormat, String templateFormat) {
-        String resolved;
+    /**
+     * Resolves WORD/PDF for one generation call.
+     * <ul>
+     *   <li>If the client sets {@code outputFormat} on the request: BOTH is rejected; WORD/PDF honored.</li>
+     *   <li>If omitted: template default is used; legacy stored BOTH degrades to WORD with a warning.</li>
+     * </ul>
+     */
+    public static String resolveSingleDocumentOutputFormat(String requestFormat, String templateFormat, Long templateId) {
+        Logger resolutionLog = LoggerFactory.getLogger(DocumentGeneratorService.class);
         if (requestFormat != null && !requestFormat.isBlank()) {
-            resolved = requestFormat.toUpperCase();
-        } else {
-            resolved = templateFormat != null ? templateFormat.toUpperCase() : "WORD";
+            String r = requestFormat.trim().toUpperCase(Locale.ROOT);
+            rejectExplicitBothOutputFormat(r);
+            return r;
         }
-        rejectBothOutputFormat(resolved);
-        return resolved;
+        String t = templateFormat != null && !templateFormat.isBlank()
+                ? templateFormat.trim().toUpperCase(Locale.ROOT)
+                : "WORD";
+        if ("BOTH".equalsIgnoreCase(t)) {
+            resolutionLog.warn(
+                    "Template id={}: legacy output_format=BOTH in DB; single-request generation defaults to WORD "
+                            + "(call /word and /pdf separately for PDF).",
+                    templateId);
+            return "WORD";
+        }
+        return t;
     }
 
-    /**
-     * Single-request BOTH output is not supported; clients must call {@code /api/generate/{id}/word}
-     * and {@code /pdf} (or async variants) separately.
-     */
-    public static void rejectBothOutputFormat(String outputFormat) {
+    /** Request body must not ask for BOTH on single-shot APIs. */
+    public static void rejectExplicitBothOutputFormat(String outputFormat) {
         if (outputFormat != null && "BOTH".equalsIgnoreCase(outputFormat.trim())) {
             throw new BusinessException(ErrorCode.GENERATE_BOTH_NOT_SUPPORTED,
                     "Output format BOTH is not supported. Call POST /api/generate/{templateId}/word and "

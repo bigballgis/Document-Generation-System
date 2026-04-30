@@ -146,9 +146,8 @@ public class BatchDocumentService {
             int failCount = 0;
             List<Map<String, Object>> itemResults = new ArrayList<>();
 
-            String outputFormat = request.getOutputFormat() != null
-                    ? request.getOutputFormat() : template.getOutputFormat();
-            DocumentGeneratorService.rejectBothOutputFormat(outputFormat);
+            String outputFormat = DocumentGeneratorService.resolveSingleDocumentOutputFormat(
+                    request.getOutputFormat(), template.getOutputFormat(), template.getId());
             String extension = "PDF".equalsIgnoreCase(outputFormat) ? ".pdf" : ".docx";
 
             for (int i = 0; i < dataSets.size(); i++) {

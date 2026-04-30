@@ -7,7 +7,7 @@ public class GenerateDocumentRequest {
     /** Runtime parameters passed to data sources and expressions. */
     private Map<String, Object> parameters;
 
-    /** Output format for this request: WORD or PDF only. BOTH is not supported (call /word and /pdf separately). */
+    /** Output format for this request: WORD or PDF only. BOTH is rejected when sent explicitly; legacy template BOTH (DB) defaults to WORD server-side. */
     private String outputFormat;
 
     /** Storage strategy override: TEMP or PERSISTENT. Defaults to template's configured strategy. */

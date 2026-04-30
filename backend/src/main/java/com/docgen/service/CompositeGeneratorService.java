@@ -81,7 +81,8 @@ public class CompositeGeneratorService {
         String storageStrategy = request.getStorageStrategy() != null
                 ? request.getStorageStrategy() : template.getStorageStrategy();
 
-        String outputFormat = resolveOutputFormat(request.getOutputFormat(), template.getOutputFormat());
+        String outputFormat = DocumentGeneratorService.resolveSingleDocumentOutputFormat(
+                request.getOutputFormat(), template.getOutputFormat(), template.getId());
 
         // Step 1: Validate parameters and evaluate DERIVED parameters
         Map<String, Object> data = executePipeline(template, params);
@@ -111,17 +112,6 @@ public class CompositeGeneratorService {
                 assemblyResult.getTotalRenderTimeMs(), outputFormat);
 
         return response;
-    }
-
-    private static String resolveOutputFormat(String requestFormat, String templateFormat) {
-        String resolved;
-        if (requestFormat != null && !requestFormat.isBlank()) {
-            resolved = requestFormat.toUpperCase();
-        } else {
-            resolved = templateFormat != null ? templateFormat.toUpperCase() : "WORD";
-        }
-        DocumentGeneratorService.rejectBothOutputFormat(resolved);
-        return resolved;
     }
 
     private void attachSegmentMetadata(GenerateDocumentResponse response, AssemblyResult assemblyResult) {

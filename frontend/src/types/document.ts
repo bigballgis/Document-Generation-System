@@ -1,7 +1,7 @@
 
 export interface GenerateDocumentRequest {
   parameters?: Record<string, unknown>
-  outputFormat?: string       // 'WORD' | 'PDF' — BOTH not supported server-side
+  outputFormat?: string       // WORD | PDF; BOTH rejected if sent explicitly; legacy template BOTH treated as WORD server-side
   storageStrategy?: string    // 'TEMP' | 'PERSISTENT'
 }
 
