@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p><b>Validates: Requirements 13.2, 13.3, 13.4, 13.5, 13.6, 13.7</b></p>
  */
-@Tag("Feature: low-code-document-generation-system, Property 8: 数据验证规则正确性")
+@Tag("feature-low-code-document-generation-system-property-8")
 class DataValidationPropertyTest {
 
     private final DataValidationService service = new DataValidationService();

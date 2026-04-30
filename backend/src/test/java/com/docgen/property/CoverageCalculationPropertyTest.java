@@ -30,7 +30,7 @@ import static org.mockito.Mockito.*;
  *
  * <p><b>Validates: Requirements 8.2, 8.3, 8.4, 8.5</b></p>
  */
-@Tag("Feature: template-parameter-redesign, Property 13: 模板覆盖率计算正确性")
+@Tag("feature-template-parameter-redesign-property-13")
 class CoverageCalculationPropertyTest {
 
     private static final Long TEMPLATE_ID = 1L;

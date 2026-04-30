@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p><b>Validates: Requirements 7.1, 7.2</b></p>
  */
-@Tag("Feature: workspace-export-settings, Property 5: ZIP export contains all required files with credential masking")
+@Tag("feature-workspace-export-settings-property-5-zip-export-contains-all-required-files-with-credential-masking")
 class CompositeExportPropertyTest {
 
     private static final String CREDENTIAL_PLACEHOLDER = "__CREDENTIAL_PLACEHOLDER__";

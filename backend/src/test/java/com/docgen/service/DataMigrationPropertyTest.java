@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p><b>Validates: Requirements 9.2, 9.3, 9.9</b></p>
  */
-@Tag("Feature: template-parameter-redesign")
+@Tag("feature-template-parameter-redesign")
 class DataMigrationPropertyTest {
 
 
@@ -114,7 +114,7 @@ class DataMigrationPropertyTest {
      * <p><b>Validates: Requirements 9.2, 9.3, 9.9</b></p>
      */
     @Property(tries = 100)
-    @Tag("Property 32: Data migration correctness")
+    @Tag("property-32-data-migration-correctness")
     void migrationMapsCorrectly(
             @ForAll @IntRange(min = 0, max = 5) int numUnbound,
             @ForAll @IntRange(min = 0, max = 3) int numBound,
@@ -200,7 +200,7 @@ class DataMigrationPropertyTest {
      * it should NOT be migrated as DERIVED (the JOIN would fail in SQL).
      */
     @Property(tries = 50)
-    @Tag("Property 32: Data migration correctness")
+    @Tag("property-32-data-migration-correctness")
     void boundVariable_withNoMatchingExpression_notMigratedAsDerived(
             @ForAll @IntRange(min = 1, max = 3) int numOrphans
     ) {

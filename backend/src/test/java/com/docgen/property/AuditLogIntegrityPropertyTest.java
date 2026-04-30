@@ -19,7 +19,7 @@ import static org.mockito.Mockito.*;
  *
  * <p><b>Validates: Requirements 37.1-37.4</b></p>
  */
-@Tag("Feature: low-code-document-generation-system, Property 12: 审计日志完整性")
+@Tag("feature-low-code-document-generation-system-property-12")
 class AuditLogIntegrityPropertyTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();

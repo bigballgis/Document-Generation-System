@@ -18,7 +18,7 @@ import static org.mockito.Mockito.*;
  *
  * <p><b>Validates: Requirements 2.2</b></p>
  */
-@Tag("Feature: template-parameter-redesign")
+@Tag("feature-template-parameter-redesign")
 class TreeStructurePropertyTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -29,7 +29,7 @@ class TreeStructurePropertyTest {
      * equals the parameter's id, and roots have parent_id == null.
      */
     @Property(tries = 200)
-    @Tag("Property 10: Tree structure correctness")
+    @Tag("property-10-tree-structure-correctness")
     void treeNestingMatchesParentIdRelationships(
             @ForAll("randomParameterTrees") List<ParameterDefinition> flatParams
     ) {
@@ -82,7 +82,7 @@ class TreeStructurePropertyTest {
      * Property 10: Children at each level are ordered by sortOrder ascending.
      */
     @Property(tries = 200)
-    @Tag("Property 10: Tree structure correctness")
+    @Tag("property-10-tree-structure-correctness")
     void childrenAreOrderedBySortOrder(
             @ForAll("randomParameterTreesWithSortOrder") List<ParameterDefinition> flatParams
     ) {
@@ -98,7 +98,7 @@ class TreeStructurePropertyTest {
      * Property 10: Leaf nodes (no children in flat list) have empty children arrays in tree.
      */
     @Property(tries = 200)
-    @Tag("Property 10: Tree structure correctness")
+    @Tag("property-10-tree-structure-correctness")
     void leafNodesHaveEmptyChildren(
             @ForAll("randomParameterTrees") List<ParameterDefinition> flatParams
     ) {

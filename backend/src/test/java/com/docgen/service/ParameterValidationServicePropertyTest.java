@@ -20,7 +20,7 @@ import static org.mockito.Mockito.*;
  *
  * <p><b>Validates: Requirements 5.2, 5.5, 6.2, 6.3, 6.4, 6.5, 6.6, 6.10-6.23</b></p>
  */
-@Tag("Feature: template-parameter-redesign")
+@Tag("feature-template-parameter-redesign")
 class ParameterValidationServicePropertyTest {
 
     private static final Long TEMPLATE_ID = 1L;
@@ -77,7 +77,7 @@ class ParameterValidationServicePropertyTest {
      * <p><b>Validates: Requirements 5.2, 5.5</b></p>
      */
     @Property(tries = 100)
-    @Tag("Property 16: DERIVED parameter evaluation order")
+    @Tag("property-16-derived-parameter-evaluation-order")
     void derivedParamsEvaluatedInSortOrder_contextAccumulates(
             @ForAll @IntRange(min = 1, max = 5) int numDerived
     ) {
@@ -131,7 +131,7 @@ class ParameterValidationServicePropertyTest {
      * <p><b>Validates: Requirements 6.2, 6.4</b></p>
      */
     @Property(tries = 100)
-    @Tag("Property 18: Required parameter handling with defaults")
+    @Tag("property-18-required-parameter-handling-with-defaults")
     void missingRequiredParam_withDefault_usesDefault(
             @ForAll("validParamNames") String paramName,
             @ForAll("nonEmptyStrings") String defaultVal
@@ -151,7 +151,7 @@ class ParameterValidationServicePropertyTest {
      * <p><b>Validates: Requirements 6.2</b></p>
      */
     @Property(tries = 100)
-    @Tag("Property 18: Required parameter handling with defaults")
+    @Tag("property-18-required-parameter-handling-with-defaults")
     void missingRequiredParam_withoutDefault_throwsError(
             @ForAll("validParamNames") String paramName
     ) {
@@ -175,7 +175,7 @@ class ParameterValidationServicePropertyTest {
      * <p><b>Validates: Requirements 6.3</b></p>
      */
     @Property(tries = 100)
-    @Tag("Property 19: Type validation")
+    @Tag("property-19-type-validation")
     void typeMismatch_throwsValidationError(
             @ForAll("typeMismatchPairs") TypeMismatchCase tc
     ) {
@@ -200,7 +200,7 @@ class ParameterValidationServicePropertyTest {
      * <p><b>Validates: Requirements 6.5</b></p>
      */
     @Property(tries = 100)
-    @Tag("Property 20: Extra parameters are ignored")
+    @Tag("property-20-extra-parameters-are-ignored")
     void extraParams_notInContext(
             @ForAll @IntRange(min = 1, max = 5) int numExtra
     ) {
@@ -232,7 +232,7 @@ class ParameterValidationServicePropertyTest {
      * <p><b>Validates: Requirements 6.10-6.18</b></p>
      */
     @Property(tries = 100)
-    @Tag("Property 21: Validation rules enforcement")
+    @Tag("property-21-validation-rules-enforcement")
     void validationRuleViolation_throwsError(
             @ForAll("ruleViolationCases") RuleViolationCase tc
     ) {
@@ -253,7 +253,7 @@ class ParameterValidationServicePropertyTest {
      * <p><b>Validates: Requirements 6.18</b></p>
      */
     @Property(tries = 100)
-    @Tag("Property 21: Validation rules enforcement")
+    @Tag("property-21-validation-rules-enforcement")
     void customMessage_usedInError(
             @ForAll("safeCustomMessages") String customMsg
     ) {
@@ -278,7 +278,7 @@ class ParameterValidationServicePropertyTest {
      * <p><b>Validates: Requirements 6.19</b></p>
      */
     @Property(tries = 100)
-    @Tag("Property 22: Multiple validation errors collected")
+    @Tag("property-22-multiple-validation-errors-collected")
     void multipleErrors_allCollected(
             @ForAll @IntRange(min = 2, max = 6) int numParams
     ) {
@@ -311,7 +311,7 @@ class ParameterValidationServicePropertyTest {
      * <p><b>Validates: Requirements 6.20, 6.22</b></p>
      */
     @Property(tries = 100)
-    @Tag("Property 23: Recursive nested validation")
+    @Tag("property-23-recursive-nested-validation")
     void objectNestedValidation_fullPathInErrors(
             @ForAll("validParamNames") String parentName,
             @ForAll("validParamNames") String childName
@@ -340,7 +340,7 @@ class ParameterValidationServicePropertyTest {
      * <p><b>Validates: Requirements 6.21, 6.22, 6.23</b></p>
      */
     @Property(tries = 100)
-    @Tag("Property 23: Recursive nested validation")
+    @Tag("property-23-recursive-nested-validation")
     void arrayNestedValidation_fullPathWithIndex(
             @ForAll @IntRange(min = 1, max = 4) int numElements
     ) {

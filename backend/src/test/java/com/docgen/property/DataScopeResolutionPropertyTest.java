@@ -23,7 +23,7 @@ import static org.mockito.Mockito.mock;
  * <p>Property 3: DataScope resolution mapping correctness — for any globalData and
  * dataScope mapping, resolved data contains exactly the mapped keys with correct values.</p>
  */
-@Tag("Feature: remove-segment-library, Property 3: dataScopeResolutionMappingCorrectness")
+@Tag("feature-remove-segment-library-property-3-datascoperesolutionmappingcorrectness")
 class DataScopeResolutionPropertyTest {
 
     private AssemblyEngineService createService() {

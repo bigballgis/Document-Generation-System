@@ -27,7 +27,7 @@ import static org.mockito.Mockito.*;
  *
  * <p><b>Validates: Requirements 10.1, 10.2, 10.5, 10.6</b></p>
  */
-@Tag("Feature: low-code-document-generation-system, Property 7: 模板版本单调递增与回滚正确性")
+@Tag("feature-low-code-document-generation-system-property-7")
 class TemplateVersionPropertyTest {
 
     private static final String[] OUTPUT_FORMATS = {"WORD", "PDF", "BOTH"};

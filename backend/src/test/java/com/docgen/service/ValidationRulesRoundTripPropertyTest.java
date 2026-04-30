@@ -17,7 +17,7 @@ import static org.mockito.Mockito.*;
  *
  * <p><b>Validates: Requirements 1.7</b></p>
  */
-@Tag("Feature: template-parameter-redesign")
+@Tag("feature-template-parameter-redesign")
 class ValidationRulesRoundTripPropertyTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -27,7 +27,7 @@ class ValidationRulesRoundTripPropertyTest {
      * and deserializing back produces an equivalent Map structure.
      */
     @Property(tries = 200)
-    @Tag("Property 5: validation_rules round-trip")
+    @Tag("property-5-validation_rules-round-trip")
     void validationRulesRoundTripPreservesEquality(
             @ForAll("validValidationRules") Map<String, Object> originalRules
     ) throws Exception {
@@ -67,7 +67,7 @@ class ValidationRulesRoundTripPropertyTest {
      * (via ParameterDefinition entity) preserves the validation rules.
      */
     @Property(tries = 200)
-    @Tag("Property 5: validation_rules round-trip")
+    @Tag("property-5-validation_rules-round-trip")
     void validationRulesRoundTripThroughEntity(
             @ForAll("validValidationRules") Map<String, Object> originalRules
     ) throws Exception {

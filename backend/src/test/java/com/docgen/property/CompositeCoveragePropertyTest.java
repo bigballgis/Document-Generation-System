@@ -23,7 +23,7 @@ import static org.mockito.Mockito.*;
  * The CompositeCoverageService now uses TemplateRepository, AssemblyConfigService,
  * MinioClient, and RestTemplate instead of SegmentVariableService and DependencyGraphService.</p>
  */
-@Tag("Feature: template-segmentation, Property 10: compositeCoverageCalculation")
+@Tag("feature-template-segmentation-property-10-compositecoveragecalculation")
 class CompositeCoveragePropertyTest {
 
     /**

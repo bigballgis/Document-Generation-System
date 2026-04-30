@@ -18,7 +18,7 @@ import static org.mockito.Mockito.*;
  *
  * <p><b>Validates: Requirements 1.11, 2.4</b></p>
  */
-@Tag("Feature: template-parameter-redesign")
+@Tag("feature-template-parameter-redesign")
 class CascadeDeletePropertyTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -29,7 +29,7 @@ class CascadeDeletePropertyTest {
      * as parent_id shall exist.
      */
     @Property(tries = 100)
-    @Tag("Property 9: Cascade deletion preserves tree integrity")
+    @Tag("property-9-cascade-deletion-preserves-tree-integrity")
     void deletingParentRemovesAllDescendants(
             @ForAll("treesWithSubtree") TreeWithTarget treeData
     ) {
@@ -84,7 +84,7 @@ class CascadeDeletePropertyTest {
      * Property 9: Deleting a leaf node does not affect siblings or parent.
      */
     @Property(tries = 100)
-    @Tag("Property 9: Cascade deletion preserves tree integrity")
+    @Tag("property-9-cascade-deletion-preserves-tree-integrity")
     void deletingLeafDoesNotAffectSiblingsOrParent(
             @ForAll("treesWithLeaf") TreeWithTarget treeData
     ) {
@@ -138,7 +138,7 @@ class CascadeDeletePropertyTest {
      * of the parent_id relationship.
      */
     @Property(tries = 100)
-    @Tag("Property 9: Cascade deletion preserves tree integrity")
+    @Tag("property-9-cascade-deletion-preserves-tree-integrity")
     void cascadeSetIsTransitiveClosure(
             @ForAll("treesWithSubtree") TreeWithTarget treeData
     ) {

@@ -23,7 +23,7 @@ import static org.mockito.Mockito.*;
  *
  * <p><b>Validates: Requirements 1.2, 1.3, 1.4, 1.7, 1.8, 1.9, 1.10, 1.15, 1.16, 1.17, 2.5, 2.6, 2.9, 2.12, 5.6</b></p>
  */
-@Tag("Feature: template-parameter-redesign")
+@Tag("feature-template-parameter-redesign")
 class ParameterServicePropertyTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -35,7 +35,7 @@ class ParameterServicePropertyTest {
      * Creating a DERIVED parameter without expression should be rejected.
      */
     @Property(tries = 100)
-    @Tag("Property 1: Parameter type determines expression presence")
+    @Tag("property-1-parameter-type-determines-expression-presence")
     void derivedParameterRequiresExpression(
             @ForAll("emptyOrNullExpressions") String expressionText
     ) {
@@ -56,7 +56,7 @@ class ParameterServicePropertyTest {
      * Creating a REQUEST parameter with expression should be rejected.
      */
     @Property(tries = 100)
-    @Tag("Property 1: Parameter type determines expression presence")
+    @Tag("property-1-parameter-type-determines-expression-presence")
     void requestParameterRejectsExpression(
             @ForAll("nonEmptyExpressions") String expressionText
     ) {
@@ -79,7 +79,7 @@ class ParameterServicePropertyTest {
      * (templateId + parentId) should throw PARAMETER_DUPLICATE_NAME.
      */
     @Property(tries = 100)
-    @Tag("Property 2: Duplicate name rejection within scope")
+    @Tag("property-2-duplicate-name-rejection-within-scope")
     void duplicateNameWithinScopeIsRejected(
             @ForAll("validParamNames") String name,
             @ForAll("optionalParentIds") Long parentId
@@ -116,7 +116,7 @@ class ParameterServicePropertyTest {
      * Property 3: When min > max for any range pair, validation should reject.
      */
     @Property(tries = 100)
-    @Tag("Property 3: Range constraint consistency")
+    @Tag("property-3-range-constraint-consistency")
     void rangeConstraintRejectsMinGreaterThanMax(
             @ForAll("invalidRangePairs") RangePair pair
     ) {
@@ -135,7 +135,7 @@ class ParameterServicePropertyTest {
      * Property 3: When min <= max for any range pair, validation should accept.
      */
     @Property(tries = 100)
-    @Tag("Property 3: Range constraint consistency")
+    @Tag("property-3-range-constraint-consistency")
     void rangeConstraintAcceptsMinLessOrEqualMax(
             @ForAll("validRangePairs") RangePair pair
     ) {
@@ -154,7 +154,7 @@ class ParameterServicePropertyTest {
      * Property 4: Incompatible (dataType, ruleType) pairs should be rejected.
      */
     @Property(tries = 100)
-    @Tag("Property 4: Validation rules compatibility with data_type")
+    @Tag("property-4-validation-rules-compatibility-with-data_type")
     void incompatibleRuleTypeIsRejected(
             @ForAll("incompatibleDataTypeRulePairs") DataTypeRulePair pair
     ) {
@@ -172,7 +172,7 @@ class ParameterServicePropertyTest {
      * Property 4: Compatible (dataType, ruleType) pairs should be accepted.
      */
     @Property(tries = 100)
-    @Tag("Property 4: Validation rules compatibility with data_type")
+    @Tag("property-4-validation-rules-compatibility-with-data_type")
     void compatibleRuleTypeIsAccepted(
             @ForAll("compatibleDataTypeRulePairs") DataTypeRulePair pair
     ) {
@@ -191,7 +191,7 @@ class ParameterServicePropertyTest {
      * names from root to the parameter.
      */
     @Property(tries = 100)
-    @Tag("Property 6: Parameter path computation")
+    @Tag("property-6-parameter-path-computation")
     void parameterPathIsDotJoinedFromRootToLeaf(
             @ForAll("parameterTrees") List<ParameterDefinition> tree
     ) {
@@ -231,7 +231,7 @@ class ParameterServicePropertyTest {
      * Property 7: Attempting to create a parameter at depth > 5 should be rejected.
      */
     @Property(tries = 50)
-    @Tag("Property 7: Maximum depth enforcement")
+    @Tag("property-7-maximum-depth-enforcement")
     void depthExceedingFiveLevelsIsRejected(
             @ForAll("depthsExceedingMax") int targetDepth
     ) {
@@ -267,7 +267,7 @@ class ParameterServicePropertyTest {
      * Property 8: Adding children to non-OBJECT/ARRAY parents should be rejected.
      */
     @Property(tries = 100)
-    @Tag("Property 8: Parent type constraint")
+    @Tag("property-8-parent-type-constraint")
     void nonContainerParentRejectsChildren(
             @ForAll("leafDataTypes") String parentDataType
     ) {
@@ -284,7 +284,7 @@ class ParameterServicePropertyTest {
      * Property 8: Adding children to OBJECT or ARRAY parents should be accepted.
      */
     @Property(tries = 100)
-    @Tag("Property 8: Parent type constraint")
+    @Tag("property-8-parent-type-constraint")
     void containerParentAcceptsChildren(
             @ForAll("containerDataTypes") String parentDataType
     ) {
@@ -301,7 +301,7 @@ class ParameterServicePropertyTest {
      * Property 11: Valid names matching ^[a-zA-Z_][a-zA-Z0-9_-]*$ should be accepted.
      */
     @Property(tries = 100)
-    @Tag("Property 11: Parameter name pattern validation")
+    @Tag("property-11-parameter-name-pattern-validation")
     void validNamesAreAccepted(
             @ForAll("validParamNames") String name
     ) {
@@ -313,7 +313,7 @@ class ParameterServicePropertyTest {
      * Property 11: Invalid names not matching the pattern should be rejected.
      */
     @Property(tries = 100)
-    @Tag("Property 11: Parameter name pattern validation")
+    @Tag("property-11-parameter-name-pattern-validation")
     void invalidNamesAreRejected(
             @ForAll("invalidParamNames") String name
     ) {
@@ -330,7 +330,7 @@ class ParameterServicePropertyTest {
      * Property 17: A dependency graph with cycles should be detected.
      */
     @Property(tries = 50)
-    @Tag("Property 17: Circular dependency detection")
+    @Tag("property-17-circular-dependency-detection")
     void circularDependencyIsDetected(
             @ForAll("circularDependencyGraphs") CircularGraph graph
     ) {

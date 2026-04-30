@@ -26,7 +26,7 @@ import static org.mockito.Mockito.mock;
  * <p>Verifies that when a DataScope is configured, the resolved data contains only
  * the mapped subset of the global data context, and no unmapped global variables leak through.</p>
  */
-@Tag("Feature: template-segmentation, Property 4: dataScopeIsolation")
+@Tag("feature-template-segmentation-property-4-datascopeisolation")
 class DataScopeIsolationPropertyTest {
 
     private final AssemblyEngineService service;

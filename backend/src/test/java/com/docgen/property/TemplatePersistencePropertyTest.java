@@ -31,7 +31,7 @@ import static org.mockito.Mockito.*;
  *
  * <p><b>Validates: Requirements 1.1, 1.2</b></p>
  */
-@Tag("Feature: low-code-document-generation-system, Property 1: 模板持久化往返一致性")
+@Tag("feature-low-code-document-generation-system-property-1")
 class TemplatePersistencePropertyTest {
 
     private static final String[] OUTPUT_FORMATS = {"WORD", "PDF", "BOTH"};

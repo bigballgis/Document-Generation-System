@@ -22,7 +22,7 @@ import static org.mockito.Mockito.*;
  *
  * <p><b>Validates: Requirements 3.1, 3.2, 3.3, 3.6, 3.7, 3.8, 4.16</b></p>
  */
-@Tag("Feature: template-parameter-redesign")
+@Tag("feature-template-parameter-redesign")
 class TemplateScanServicePropertyTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -33,7 +33,7 @@ class TemplateScanServicePropertyTest {
      * Property 12: Simple placeholders like {varName} are all found by parsePlaceholders.
      */
     @Property(tries = 100)
-    @Tag("Property 12: Placeholder parsing round-trip")
+    @Tag("property-12-placeholder-parsing-round-trip")
     void simpleVariablesAreAllParsed(
             @ForAll("simpleVariableSets") List<String> varNames
     ) {
@@ -62,7 +62,7 @@ class TemplateScanServicePropertyTest {
      * Property 12: Dot-notation placeholders like {obj.path.leaf} are parsed as OBJECT_PATH.
      */
     @Property(tries = 100)
-    @Tag("Property 12: Placeholder parsing round-trip")
+    @Tag("property-12-placeholder-parsing-round-trip")
     void dotNotationPlaceholdersAreParsedAsObjectPath(
             @ForAll("dotNotationPaths") String dotPath
     ) {
@@ -84,7 +84,7 @@ class TemplateScanServicePropertyTest {
      * Property 12: Loop constructs {#loop}...{/loop} are parsed as LOOP with children.
      */
     @Property(tries = 100)
-    @Tag("Property 12: Placeholder parsing round-trip")
+    @Tag("property-12-placeholder-parsing-round-trip")
     void loopConstructsAreParsedWithChildren(
             @ForAll("loopWithChildren") LoopSpec loopSpec
     ) {
@@ -123,7 +123,7 @@ class TemplateScanServicePropertyTest {
      * Property 12: Nested loops are parsed with correct parent-child hierarchy.
      */
     @Property(tries = 100)
-    @Tag("Property 12: Placeholder parsing round-trip")
+    @Tag("property-12-placeholder-parsing-round-trip")
     void nestedLoopsAreParsedCorrectly(
             @ForAll("nestedLoopSpecs") NestedLoopSpec spec
     ) {
@@ -162,7 +162,7 @@ class TemplateScanServicePropertyTest {
      * We test the partitioning logic by mocking TemplateScanService and ParameterRepository.
      */
     @Property(tries = 100)
-    @Tag("Property 13: Scan comparison set partitioning")
+    @Tag("property-13-scan-comparison-set-partitioning")
     void scanComparisonProducesDisjointPartition(
             @ForAll("scanComparisonInputs") ScanComparisonInput input
     ) {
@@ -267,7 +267,7 @@ class TemplateScanServicePropertyTest {
      * and correct leaf types.
      */
     @Property(tries = 100)
-    @Tag("Property 14: Auto-create tree construction from paths")
+    @Tag("property-14-auto-create-tree-construction-from-paths")
     void autoCreateProducesObjectIntermediatesAndCorrectLeafTypes(
             @ForAll("dotNotationPaths") String dotPath
     ) {
@@ -302,7 +302,7 @@ class TemplateScanServicePropertyTest {
      * Property 14: Loop placeholders produce ARRAY type for the loop variable.
      */
     @Property(tries = 100)
-    @Tag("Property 14: Auto-create tree construction from paths")
+    @Tag("property-14-auto-create-tree-construction-from-paths")
     void loopPlaceholdersProduceArrayType(
             @ForAll("loopWithChildren") LoopSpec loopSpec
     ) {
@@ -331,7 +331,7 @@ class TemplateScanServicePropertyTest {
      * Property 15: Names with NUMBER keywords recommend NUMBER.
      */
     @Property(tries = 100)
-    @Tag("Property 15: Data type recommendation from placeholder name")
+    @Tag("property-15-data-type-recommendation-from-placeholder-name")
     void numberKeywordsRecommendNumber(
             @ForAll("numberKeywordNames") String name
     ) {
@@ -344,7 +344,7 @@ class TemplateScanServicePropertyTest {
      * Property 15: Names with DATE keywords recommend DATE.
      */
     @Property(tries = 100)
-    @Tag("Property 15: Data type recommendation from placeholder name")
+    @Tag("property-15-data-type-recommendation-from-placeholder-name")
     void dateKeywordsRecommendDate(
             @ForAll("dateKeywordNames") String name
     ) {
@@ -357,7 +357,7 @@ class TemplateScanServicePropertyTest {
      * Property 15: Names with BOOLEAN keywords recommend BOOLEAN.
      */
     @Property(tries = 100)
-    @Tag("Property 15: Data type recommendation from placeholder name")
+    @Tag("property-15-data-type-recommendation-from-placeholder-name")
     void booleanKeywordsRecommendBoolean(
             @ForAll("booleanKeywordNames") String name
     ) {
@@ -370,7 +370,7 @@ class TemplateScanServicePropertyTest {
      * Property 15: Names without any keyword default to STRING.
      */
     @Property(tries = 100)
-    @Tag("Property 15: Data type recommendation from placeholder name")
+    @Tag("property-15-data-type-recommendation-from-placeholder-name")
     void noKeywordDefaultsToString(
             @ForAll("noKeywordNames") String name
     ) {
@@ -383,7 +383,7 @@ class TemplateScanServicePropertyTest {
      * Property 15: null name defaults to STRING.
      */
     @Property(tries = 100)
-    @Tag("Property 15: Data type recommendation from placeholder name")
+    @Tag("property-15-data-type-recommendation-from-placeholder-name")
     void nullNameDefaultsToString() {
         ParameterService service = createParameterServiceWithMocks();
         assertEquals("STRING", service.recommendDataType(null));

@@ -33,7 +33,7 @@ import static org.mockito.Mockito.*;
  * in the merged document, and segments with conditions evaluated to true do appear.
  * Uses inline segment entries with filePath/name (no segmentId).</p>
  */
-@Tag("Feature: remove-segment-library, Property 4: assemblyEngineSegmentOrderAndConditionFiltering")
+@Tag("feature-remove-segment-library-property-4-assemblyenginesegmentorderandconditionfiltering")
 class ConditionalRenderingPropertyTest {
 
     /**

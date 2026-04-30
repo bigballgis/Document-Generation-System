@@ -26,7 +26,7 @@ import static org.mockito.Mockito.*;
  *
  * <p><b>Validates: Requirements 36.1, 36.3, 36.4</b></p>
  */
-@Tag("Feature: low-code-document-generation-system, Property 11: API 限流执行正确性")
+@Tag("feature-low-code-document-generation-system-property-11-api")
 class RateLimitPropertyTest {
 
     /**

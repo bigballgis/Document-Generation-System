@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p><b>Validates: Requirements 52.1, 52.2, 52.3</b></p>
  */
-@Tag("Feature: low-code-document-generation-system, Property 15: 模板状态机转换合法性")
+@Tag("feature-low-code-document-generation-system-property-15")
 class TemplateStateMachinePropertyTest {
 
     /**

@@ -38,7 +38,7 @@ import static org.mockito.Mockito.*;
  * with error code TEMPLATE_EXPORT_NOT_ACTIVE and HTTP 400.
  * For ACTIVE or DRAFT state, exportAsZip must not throw that exception (with mocked assembly/coverage).
  */
-@Tag("Feature: template-workflow-stages, Property 3: 导出约束后端强制")
+@Tag("feature-template-workflow-stages-property-3")
 class ExportConstraintPropertyTest {
 
     private CompositeImportExportService buildService(TemplateRepository templateRepository,

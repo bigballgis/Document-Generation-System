@@ -30,7 +30,7 @@ import static org.mockito.Mockito.*;
  *
  * <p><b>Validates: Requirements 7.2, 7.3, 7.4, 7.5, 7.6</b></p>
  */
-@Tag("Feature: workspace-test-publish, Property 3 & 4: AutoActivationService")
+@Tag("feature-workspace-test-publish-property-3-4-autoactivationservice")
 class AutoActivationPropertyTest {
 
 

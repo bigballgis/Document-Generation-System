@@ -23,7 +23,7 @@ import static org.mockito.Mockito.*;
  *
  * <p><b>Validates: Requirements 7.1, 7.2, 7.4, 7.5, 7.6, 7.7</b></p>
  */
-@Tag("Feature: template-parameter-redesign")
+@Tag("feature-template-parameter-redesign")
 class ParameterSchemaPropertyTest {
 
     private static final Long TEMPLATE_ID = 1L;
@@ -78,7 +78,7 @@ class ParameterSchemaPropertyTest {
      * <p><b>Validates: Requirements 7.1, 7.5, 7.6, 7.7</b></p>
      */
     @Property(tries = 100)
-    @Tag("Property 24: Parameter schema structure")
+    @Tag("property-24-parameter-schema-structure")
     void objectParams_haveProperties_arrayParams_haveItems(
             @ForAll @IntRange(min = 1, max = 3) int numObjectChildren,
             @ForAll @IntRange(min = 1, max = 3) int numArrayChildren
@@ -127,7 +127,7 @@ class ParameterSchemaPropertyTest {
      * <p><b>Validates: Requirements 7.4</b></p>
      */
     @Property(tries = 100)
-    @Tag("Property 25: Parameter schema metadata accuracy")
+    @Tag("property-25-parameter-schema-metadata-accuracy")
     void schemaMetadata_countsAreAccurate(
             @ForAll @IntRange(min = 1, max = 8) int totalParams,
             @ForAll @IntRange(min = 0, max = 8) int requiredCount
@@ -158,7 +158,7 @@ class ParameterSchemaPropertyTest {
      * <p><b>Validates: Requirements 7.2</b></p>
      */
     @Property(tries = 100)
-    @Tag("Property 26: Sample request body generation")
+    @Tag("property-26-sample-request-body-generation")
     void sampleRequestBody_containsAllParams_withCorrectTypes(
             @ForAll @IntRange(min = 1, max = 5) int numParams
     ) {
@@ -187,7 +187,7 @@ class ParameterSchemaPropertyTest {
      * Property 26: Nested OBJECT/ARRAY structures in sample body.
      */
     @Property(tries = 100)
-    @Tag("Property 26: Sample request body generation")
+    @Tag("property-26-sample-request-body-generation")
     void sampleRequestBody_nestedStructures(
             @ForAll @IntRange(min = 1, max = 3) int numChildren
     ) {
@@ -213,7 +213,7 @@ class ParameterSchemaPropertyTest {
      * Property 26: Default values used in sample body.
      */
     @Property(tries = 100)
-    @Tag("Property 26: Sample request body generation")
+    @Tag("property-26-sample-request-body-generation")
     void sampleRequestBody_usesDefaultValues(
             @ForAll("validParamNames") String paramName,
             @ForAll("nonEmptyStrings") String defaultVal

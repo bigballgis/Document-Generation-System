@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * <p>For any .docx file and expected content type (body/header/footer),
  * the validator passes iff non-expected areas contain no text content.</p>
  */
-@Tag("Feature: design-stage-layout, Property 9: Content isolation validation completeness")
+@Tag("feature-design-stage-layout-property-9-content-isolation-validation-completeness")
 class ContentIsolationValidatorPropertyTest {
 
     private final ContentIsolationValidator validator = new ContentIsolationValidator();

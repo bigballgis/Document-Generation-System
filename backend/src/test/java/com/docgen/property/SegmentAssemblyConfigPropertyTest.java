@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * conditionExpression, dataScope), serializing to JSON then deserializing back
  * SHALL produce an equivalent object with all fields preserved.</p>
  */
-@Tag("Feature: remove-segment-library, Property 1: AssemblyConfig serialization round-trip consistency")
+@Tag("feature-remove-segment-library-property-1-assemblyconfig-serialization-round-trip-consistency")
 class SegmentAssemblyConfigPropertyTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();

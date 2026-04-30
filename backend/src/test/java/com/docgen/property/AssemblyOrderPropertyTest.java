@@ -30,7 +30,7 @@ import static org.mockito.Mockito.*;
  * <p>Verifies that after assembly, the content order in the merged document matches
  * the position order defined in the Assembly_Config with inline segment entries.</p>
  */
-@Tag("Feature: remove-segment-library, Property 4: assemblyEngineSegmentOrderAndConditionFiltering")
+@Tag("feature-remove-segment-library-property-4-assemblyenginesegmentorderandconditionfiltering")
 class AssemblyOrderPropertyTest {
 
     /**

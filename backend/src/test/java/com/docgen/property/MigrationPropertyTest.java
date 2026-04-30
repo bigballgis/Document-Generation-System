@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * segmentId references, the entry SHALL be marked with enabled=false and name prefixed
  * with "INVALID_SEGMENT_".</p>
  */
-@Tag("Feature: remove-segment-library, Property 5: dataMigrationSegmentIdToInlineConversion")
+@Tag("feature-remove-segment-library-property-5-datamigrationsegmentidtoinlineconversion")
 class MigrationPropertyTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();

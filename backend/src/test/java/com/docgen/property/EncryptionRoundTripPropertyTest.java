@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p><b>Validates: Requirements 2.10, 50.1, 50.2</b></p>
  */
-@Tag("Feature: low-code-document-generation-system, Property 3: 敏感信息加密往返一致性")
+@Tag("feature-low-code-document-generation-system-property-3")
 class EncryptionRoundTripPropertyTest {
 
     private final EncryptionServiceImpl encryptionService;

@@ -24,7 +24,7 @@ import static org.mockito.Mockito.*;
  *
  * <p><b>Validates: Requirements 8.2, 8.3, 8.4, 8.5, 8.7, 8.9</b></p>
  */
-@Tag("Feature: template-parameter-redesign")
+@Tag("feature-template-parameter-redesign")
 class CoverageCheckServicePropertyTest {
 
     private static final Long TEMPLATE_ID = 1L;
@@ -97,7 +97,7 @@ class CoverageCheckServicePropertyTest {
      * <p><b>Validates: Requirements 8.2</b></p>
      */
     @Property(tries = 100)
-    @Tag("Property 27: Branch coverage computation")
+    @Tag("property-27-branch-coverage-computation")
     void branchCoverage_formulaIsCorrect(
             @ForAll @IntRange(min = 1, max = 5) int numConditions,
             @ForAll @IntRange(min = 0, max = 2) int coverageLevel // 0=none, 1=true-only, 2=both
@@ -147,7 +147,7 @@ class CoverageCheckServicePropertyTest {
      * <p><b>Validates: Requirements 8.3</b></p>
      */
     @Property(tries = 100)
-    @Tag("Property 28: Loop coverage computation")
+    @Tag("property-28-loop-coverage-computation")
     void loopCoverage_formulaIsCorrect(
             @ForAll @IntRange(min = 1, max = 5) int numLoops,
             @ForAll @IntRange(min = 0, max = 2) int coverageLevel // 0=none, 1=non-empty-only, 2=both
@@ -194,7 +194,7 @@ class CoverageCheckServicePropertyTest {
      * <p><b>Validates: Requirements 8.4</b></p>
      */
     @Property(tries = 100)
-    @Tag("Property 29: Parameter coverage computation")
+    @Tag("property-29-parameter-coverage-computation")
     void parameterCoverage_formulaIsCorrect(
             @ForAll @IntRange(min = 1, max = 6) int totalParams,
             @ForAll @IntRange(min = 0, max = 6) int coveredCount
@@ -230,7 +230,7 @@ class CoverageCheckServicePropertyTest {
      * <p><b>Validates: Requirements 8.5, 8.7</b></p>
      */
     @Property(tries = 100)
-    @Tag("Property 30: Overall coverage weighted average")
+    @Tag("property-30-overall-coverage-weighted-average")
     void overallCoverage_weightedAverage_excludesZeroItemDimensions(
             @ForAll @IntRange(min = 0, max = 3) int numConditions,
             @ForAll @IntRange(min = 0, max = 3) int numLoops,
@@ -296,7 +296,7 @@ class CoverageCheckServicePropertyTest {
      * <p><b>Validates: Requirements 8.9</b></p>
      */
     @Property(tries = 100)
-    @Tag("Property 31: Coverage threshold")
+    @Tag("property-31-coverage-threshold")
     void belowThreshold_correctLogic(
             @ForAll @IntRange(min = 0, max = 5) int numParams,
             @ForAll @IntRange(min = 0, max = 5) int coveredCount,
