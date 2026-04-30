@@ -618,7 +618,8 @@
     "imageSourceHint": "不支援遠端 HTTP(S) 圖片網址；請使用 Base64 或「選擇圖片檔」產生 data: URI。",
     "validationTextRequired": "請輸入浮水印文字，或關閉文字浮水印。",
     "validationImageRequired": "請貼上圖片資料或選擇檔案，或關閉圖片浮水印。",
-    "validationNoRemoteImageUrl": "不允許使用遠端圖片 URL。"
+    "validationNoRemoteImageUrl": "不允許使用遠端圖片 URL。",
+    "singleTemplateEditingDisabled": "單一範本不允許變更或儲存浮水印；請在組合範本中設定。仍可使用「清除浮水印設定」移除本範本已儲存的浮水印資料。"
   },
   "security": {
     "title": "安全設定",

@@ -93,6 +93,7 @@ public class TemplateController {
 
     /**
      * Replace stored post-merge render configuration (same schema as composite ZIP {@code render-config.json}).
+     * Returns {@code 400} when the template is not composite; {@code DELETE} remains available to clear stale data.
      */
     @PutMapping(value = "/{id}/render-config", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<TemplateDTO> updateRenderConfig(

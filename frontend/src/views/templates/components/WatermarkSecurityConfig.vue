@@ -7,13 +7,14 @@
       show-icon
       class="mb-16"
       :title="t('watermark.compositeOnlyNotice')"
+      :description="t('watermark.singleTemplateEditingDisabled')"
     />
 
     <el-row :gutter="24">
       <el-col :span="12">
         <el-card shadow="never">
           <template #header>{{ t('watermark.title') }}</template>
-          <el-form :model="watermarkForm" label-width="150px" size="default">
+          <el-form :model="watermarkForm" label-width="150px" size="default" :disabled="!watermarkEditable">
             <el-form-item :label="t('watermark.textWatermark')">
               <el-switch v-model="watermarkForm.textEnabled" />
             </el-form-item>
@@ -60,6 +61,7 @@
                       type="file"
                       accept="image/png,image/jpeg,image/webp,image/gif"
                       class="hidden-file-input"
+                      :disabled="!watermarkEditable"
                       @change="onImageFileSelected"
                     />
                     <el-button size="small" @click="triggerImagePick">{{ t('watermark.chooseFile') }}</el-button>
@@ -86,14 +88,13 @@
                 />
               </el-form-item>
             </template>
-
-            <div class="watermark-actions">
-              <el-button type="primary" :loading="saving" @click="handleSaveWatermark">
-                {{ t('common.save') }}
-              </el-button>
-              <el-button :loading="saving" @click="handleClearWatermark">{{ t('watermark.clearWatermarkConfig') }}</el-button>
-            </div>
           </el-form>
+          <div class="watermark-actions">
+            <el-button type="primary" :disabled="!watermarkEditable" :loading="saving" @click="handleSaveWatermark">
+              {{ t('common.save') }}
+            </el-button>
+            <el-button :loading="saving" @click="handleClearWatermark">{{ t('watermark.clearWatermarkConfig') }}</el-button>
+          </div>
         </el-card>
       </el-col>
 
@@ -124,7 +125,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import {
@@ -141,6 +142,9 @@ const loading = ref(false)
 const saving = ref(false)
 const templateType = ref<'SINGLE' | 'COMPOSITE'>('SINGLE')
 const imageFileRef = ref<HTMLInputElement | null>(null)
+
+/** Watermark in render_config is applied for composite generation only. */
+const watermarkEditable = computed(() => templateType.value === 'COMPOSITE')
 
 const watermarkForm = reactive({
   textEnabled: false,
@@ -214,6 +218,7 @@ watch(
 )
 
 function triggerImagePick() {
+  if (!watermarkEditable.value) return
   imageFileRef.value?.click()
 }
 
@@ -270,7 +275,7 @@ function buildPayload(): RenderConfigDocument | null {
 }
 
 async function handleSaveWatermark() {
-  if (!props.templateId) return
+  if (!props.templateId || !watermarkEditable.value) return
   const doc = buildPayload()
   if (doc === null) return
   const hasText = !!doc.textWatermark

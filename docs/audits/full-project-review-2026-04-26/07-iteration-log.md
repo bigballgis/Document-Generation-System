@@ -951,6 +951,44 @@ Remaining risks: Barcode rendering not implemented; **`cloneTemplate`** behaviou
 Related tracking items: REQ-R7-001  
 Next step: Optional API/UI to edit **`render_config`** beyond ZIP import.
 
+## 2026-04-28 — Integrations watermark UI: single-template read-only
+
+Workstream: WS-03 / frontend  
+Summary: **`WatermarkSecurityConfig`** wires **`render_config`** to **`PUT/DELETE .../render-config`**; i18n keys added for watermark and security hints. **Single (`SINGLE`) templates** now show an extended info alert and use **`el-form` `disabled`** so watermark controls and save/clear cannot mutate **`render_config`** (composite-only semantics). Handlers guard against **`watermarkEditable === false`**.  
+Files changed: `frontend/src/views/templates/components/WatermarkSecurityConfig.vue`, `frontend/src/i18n/en-US.json`, `frontend/src/i18n/zh-CN.json`, `frontend/src/i18n/zh-TW.json`, `07-iteration-log.md`.  
+Validation commands: `npm run type-check` (from `frontend/`).  
+Validation result: `npm run type-check` OK (exit 0).  
+Remaining risks: Operators migrating a row from composite to single retain stored **`render_config`** until cleared elsewhere; UI no longer edits it from Integrations for single type.  
+Related tracking items: REQ-R7 / Integrations UX  
+Next step: Backend `PUT` guard for single templates — see following entry.
+
+## 2026-04-28 — `PUT /render-config` composite-only (API alignment)
+
+Workstream: WS-03 / backend  
+Summary: **`TemplateService.updateRenderConfig`** rejects templates whose **`templateType`** is null, blank, or **`SINGLE`** with **`400`** and message **`render-config updates apply to composite templates only`**. **`clearRenderConfig`** (DELETE) unchanged so stale **`render_config`** on single templates can still be cleared. **`TemplateServiceTest`**: composite success path; new **`updateRenderConfig_singleTemplate_throws`**. **`render-config-json-schema.md`** REST table updated. Frontend: **`WatermarkSecurityConfig`** moves action buttons outside disabled **`el-form`** so **Clear** works on single templates; **Save** stays disabled; i18n description mentions clear.  
+Files changed: `TemplateService.java`, `TemplateServiceTest.java`, `TemplateController.java` (javadoc), `docs/development/render-config-json-schema.md`, `WatermarkSecurityConfig.vue`, `frontend/src/i18n/en-US.json`, `frontend/src/i18n/zh-CN.json`, `frontend/src/i18n/zh-TW.json`, `07-iteration-log.md`.  
+Validation commands: `mvn -q "-Dtest=TemplateServiceTest" test` (from `backend/`); `npm run type-check` (from `frontend/`).  
+Validation result: TemplateServiceTest OK (exit 0); type-check OK (exit 0).  
+Related tracking items: REQ-R7 / Integrations UX  
+
+## 2026-04-28 — Integration tests: `PUT /render-config` composite rule
+
+Workstream: WS-03 / backend tests  
+Summary: **`TemplateCrudIntegrationTest`** adds **`putRenderConfig_singleTemplate_returnsBadRequest`** (expects **`400`** and **`error.message`** mentioning composite) and **`putRenderConfig_compositeTemplate_returnsOk`** (template with **`templateType` = `COMPOSITE`**, **`200`**, **`renderConfig`** contains watermark text). **`createTestTemplate`** overload accepts **`templateType`**.  
+Files changed: `TemplateCrudIntegrationTest.java`, `07-iteration-log.md`.  
+Validation commands: `mvn -q "-Dtest=TemplateCrudIntegrationTest#putRenderConfig_singleTemplate_returnsBadRequest,TemplateCrudIntegrationTest#putRenderConfig_compositeTemplate_returnsOk" test` (requires Docker for Testcontainers).  
+Validation result: Skipped locally when Docker/Testcontainers is unavailable; **`TemplateServiceTest`** remains the primary CI signal without containers.  
+Related tracking items: REQ-R7  
+
+## 2026-04-28 — REQ-R7 tests: DELETE clear + frontend render-config API
+
+Workstream: WS-03 / tests  
+Summary: **`TemplateCrudIntegrationTest`** adds **`deleteRenderConfig_singleTemplate_withStoredConfig_returnsOk`** (Order 10): **SINGLE** template with persisted **`render_config`**, **`DELETE /api/templates/{id}/render-config`**, **`200`**, DB **`render_config`** null. **`templates-extensions.test.ts`**: **`mockPut`** / **`mockDelete`** on **`request`** mock; **`updateTemplateRenderConfig`** and **`clearTemplateRenderConfig`** contract tests.  
+Files changed: `TemplateCrudIntegrationTest.java`, `frontend/src/__tests__/api/templates-extensions.test.ts`, `07-iteration-log.md`.  
+Validation commands: `npx vitest run src/__tests__/api/templates-extensions.test.ts` (from `frontend/`); integration method same Testcontainers constraints as prior entry.  
+Validation result: Vitest file OK (16 tests, exit 0).  
+Related tracking items: REQ-R7  
+
 ## Entry Template
 
 ```text

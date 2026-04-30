@@ -624,7 +624,8 @@
     "imageSourceHint": "不支持远程 HTTP(S) 图片地址，请使用 Base64 或通过「选择图片文件」生成 data: URI。",
     "validationTextRequired": "请输入水印文本，或关闭文字水印。",
     "validationImageRequired": "请粘贴图片数据或选择文件，或关闭图片水印。",
-    "validationNoRemoteImageUrl": "不允许使用远程图片 URL。"
+    "validationNoRemoteImageUrl": "不允许使用远程图片 URL。",
+    "singleTemplateEditingDisabled": "单模板不允许修改或保存水印；请在组合模板中配置。仍可使用「清除水印配置」删除本模板已保存的水印数据。"
   },
   "security": {
     "title": "安全设置",

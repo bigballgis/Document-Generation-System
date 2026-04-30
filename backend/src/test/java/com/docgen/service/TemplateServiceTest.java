@@ -33,6 +33,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -436,6 +437,7 @@ class TemplateServiceTest {
     @Test
     void updateRenderConfig_valid_persistsJson() {
         Template template = createTestTemplate();
+        template.setTemplateType("COMPOSITE");
         when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
         when(templateRepository.save(any(Template.class))).thenAnswer(inv -> inv.getArgument(0));
         when(templateVersionRepository.findMaxVersionNumber(anyLong())).thenReturn(Optional.of(1));
@@ -448,6 +450,23 @@ class TemplateServiceTest {
         verify(renderConfigValidator).validateForImport(doc);
         assertNotNull(dto.getRenderConfig());
         assertTrue(dto.getRenderConfig().contains("WM"));
+    }
+
+    @Test
+    void updateRenderConfig_singleTemplate_throws() {
+        Template template = createTestTemplate();
+        template.setTemplateType("SINGLE");
+        when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
+
+        RenderConfigDocument doc = new RenderConfigDocument();
+        doc.setTextWatermark(new TextWatermarkConfig("WM"));
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> templateService.updateRenderConfig(1L, doc));
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getHttpStatus());
+        assertTrue(ex.getMessage().contains("composite"));
+        verify(templateRepository, never()).save(any());
+        verify(renderConfigValidator, never()).validateForImport(any());
     }
 
     @Test

@@ -625,7 +625,8 @@
     "imageSourceHint": "Remote HTTP(S) URLs are not supported. Use inline Base64 or a data: URI from “Choose image file”.",
     "validationTextRequired": "Enter watermark text or turn off text watermark.",
     "validationImageRequired": "Paste image data or choose a file, or turn off image watermark.",
-    "validationNoRemoteImageUrl": "Remote image URLs are not allowed."
+    "validationNoRemoteImageUrl": "Remote image URLs are not allowed.",
+    "singleTemplateEditingDisabled": "Saving and changing watermark settings are disabled for single templates. Use a composite template to configure watermarks. You can still use Clear to remove stored watermark data from this template."
   },
   "security": {
     "title": "Security Settings",

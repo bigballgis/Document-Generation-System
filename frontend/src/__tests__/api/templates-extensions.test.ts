@@ -2,13 +2,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mockGet = vi.fn()
 const mockPost = vi.fn()
+const mockPut = vi.fn()
+const mockDelete = vi.fn()
 
 vi.mock('@/api/request', () => ({
   default: {
     get: (...args: any[]) => mockGet(...args),
     post: (...args: any[]) => mockPost(...args),
-    put: vi.fn(),
-    delete: vi.fn(),
+    put: (...args: any[]) => mockPut(...args),
+    delete: (...args: any[]) => mockDelete(...args),
   },
 }))
 
@@ -19,14 +21,21 @@ import {
   getAvailableTransitions,
   scanVariables,
   exportCoverageReport,
+  updateTemplateRenderConfig,
+  clearTemplateRenderConfig,
+  type RenderConfigDocument,
 } from '@/api/templates'
 
 describe('templates.ts extension functions', () => {
   beforeEach(() => {
     mockGet.mockReset()
     mockPost.mockReset()
+    mockPut.mockReset()
+    mockDelete.mockReset()
     mockGet.mockResolvedValue({})
     mockPost.mockResolvedValue({})
+    mockPut.mockResolvedValue({})
+    mockDelete.mockResolvedValue({})
   })
 
   describe('submitTemplateToTest', () => {
@@ -128,6 +137,36 @@ describe('templates.ts extension functions', () => {
 
       const result = await exportCoverageReport(42)
       expect(result).toBe(blob)
+    })
+  })
+
+  describe('updateTemplateRenderConfig', () => {
+    it('sends PUT to /templates/{id}/render-config with body', async () => {
+      const body: RenderConfigDocument = {
+        schemaVersion: 1,
+        textWatermark: {
+          text: 'WM',
+          fontSize: 36,
+          color: '#cccccc',
+          opacity: 0.3,
+          rotation: -45,
+        },
+      }
+      await updateTemplateRenderConfig(5, body)
+
+      expect(mockPut).toHaveBeenCalledWith('/templates/5/render-config', body)
+      expect(mockGet).not.toHaveBeenCalled()
+      expect(mockPost).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('clearTemplateRenderConfig', () => {
+    it('sends DELETE to /templates/{id}/render-config', async () => {
+      await clearTemplateRenderConfig(12)
+
+      expect(mockDelete).toHaveBeenCalledWith('/templates/12/render-config')
+      expect(mockGet).not.toHaveBeenCalled()
+      expect(mockPost).not.toHaveBeenCalled()
     })
   })
 })

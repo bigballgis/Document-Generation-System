@@ -260,6 +260,7 @@ public class TemplateService {
     public TemplateDTO updateRenderConfig(Long templateId, RenderConfigDocument doc) {
         Template template = findTemplateOrThrow(templateId);
         assertSameTenant(template);
+        assertCompositeTemplateForRenderConfigUpdate(template);
         if (doc == null) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
                     "render-config body is required", HttpStatus.BAD_REQUEST);
@@ -300,6 +301,17 @@ public class TemplateService {
         if (tenantId != null && template.getTenantId() != null && !template.getTenantId().equals(tenantId)) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
                     "Template not accessible in current tenant context", HttpStatus.FORBIDDEN);
+        }
+    }
+
+    /**
+     * Post-merge {@code render_config} is consumed by composite generation only; reject REST writes for single templates.
+     */
+    private void assertCompositeTemplateForRenderConfigUpdate(Template template) {
+        String type = template.getTemplateType();
+        if (type == null || type.isBlank() || "SINGLE".equalsIgnoreCase(type)) {
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                    "render-config updates apply to composite templates only", HttpStatus.BAD_REQUEST);
         }
     }
 

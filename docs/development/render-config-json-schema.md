@@ -38,7 +38,7 @@ Validated JSON is stored in PostgreSQL column **`templates.render_config`** (JSO
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `PUT` | `/api/templates/{id}/render-config` | Body: `RenderConfigDocument` JSON. Validates like ZIP import; creates a template version snapshot. |
-| `DELETE` | `/api/templates/{id}/render-config` | Clears `render_config`; creates a version snapshot. |
+| `PUT` | `/api/templates/{id}/render-config` | Body: `RenderConfigDocument` JSON. Validates like ZIP import; creates a template version snapshot. **Allowed only for composite templates** (`templateType` = `COMPOSITE`); otherwise `400`. |
+| `DELETE` | `/api/templates/{id}/render-config` | Clears `render_config`; creates a version snapshot. Allowed for any template type (cleanup of unused stored config on single templates). |
 
 `GET /api/templates/{id}` returns `renderConfig` as a JSON string when present (same shape as stored in DB).
