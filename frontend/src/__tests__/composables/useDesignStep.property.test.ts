@@ -18,7 +18,7 @@ interface ParamNode { id: number; name: string; dataType: string; children: Para
 interface BreadcrumbItem { id: number | null; name: string; tableType: 'main' | 'sub' | 'related' }
 
 function buildBreadcrumbPath(root: ParamNode[], navigationPath: number[]): BreadcrumbItem[] {
-  const breadcrumb: BreadcrumbItem[] = [{ id: null, name: '主表', tableType: 'main' }]
+  const breadcrumb: BreadcrumbItem[] = [{ id: null, name: 'Main Table', tableType: 'main' }]
   let currentLevel = root
   for (const targetId of navigationPath) {
     const found = currentLevel.find(n => n.id === targetId)

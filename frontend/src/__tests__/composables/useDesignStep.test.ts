@@ -58,7 +58,7 @@ describe('useDesignStep', () => {
     it('stepStates preserves breadcrumb path across step switches', () => {
       const { stepStates, goToStep } = useDesignStep()
       stepStates['parameter-table'].breadcrumbPath = [
-        { id: null, name: '主表', tableType: 'main' as const },
+        { id: null, name: 'Main Table', tableType: 'main' as const },
         { id: 1, name: 'items', tableType: 'sub' as const },
       ]
       goToStep('segment-canvas')
