@@ -86,7 +86,7 @@ class WatermarkServiceTest {
         BusinessException ex = assertThrows(BusinessException.class,
                 () -> service.applyTextWatermark(SAMPLE_DOC, config));
         assertEquals("WATERMARK_INVALID_CONFIG", ex.getErrorCode());
-        assertTrue(ex.getMessage().contains("水印文本"));
+        assertTrue(ex.getMessage().contains("Watermark text"));
     }
 
     @Test
@@ -96,7 +96,7 @@ class WatermarkServiceTest {
         BusinessException ex = assertThrows(BusinessException.class,
                 () -> service.applyTextWatermark(SAMPLE_DOC, config));
         assertEquals("WATERMARK_INVALID_CONFIG", ex.getErrorCode());
-        assertTrue(ex.getMessage().contains("字体大小"));
+        assertTrue(ex.getMessage().contains("Font size"));
     }
 
     @Test
@@ -106,7 +106,7 @@ class WatermarkServiceTest {
         BusinessException ex = assertThrows(BusinessException.class,
                 () -> service.applyTextWatermark(SAMPLE_DOC, config));
         assertEquals("WATERMARK_INVALID_CONFIG", ex.getErrorCode());
-        assertTrue(ex.getMessage().contains("透明度"));
+        assertTrue(ex.getMessage().contains("Opacity"));
     }
 
     @Test
@@ -147,7 +147,7 @@ class WatermarkServiceTest {
         BusinessException ex = assertThrows(BusinessException.class,
                 () -> service.applyTextWatermark(SAMPLE_DOC, config));
         assertEquals("WATERMARK_FAILED", ex.getErrorCode());
-        assertTrue(ex.getMessage().contains("水印服务调用失败"));
+        assertTrue(ex.getMessage().contains("Watermark service call failed"));
     }
 
 
@@ -231,7 +231,7 @@ class WatermarkServiceTest {
         BusinessException ex = assertThrows(BusinessException.class,
                 () -> service.applyImageWatermark(SAMPLE_DOC, config));
         assertEquals("WATERMARK_INVALID_CONFIG", ex.getErrorCode());
-        assertTrue(ex.getMessage().contains("水印图片来源"));
+        assertTrue(ex.getMessage().contains("Watermark image source"));
     }
 
     @Test
@@ -250,7 +250,7 @@ class WatermarkServiceTest {
         BusinessException ex = assertThrows(BusinessException.class,
                 () -> service.applyImageWatermark(SAMPLE_DOC, config));
         assertEquals("WATERMARK_INVALID_CONFIG", ex.getErrorCode());
-        assertTrue(ex.getMessage().contains("无效的水印位置"));
+        assertTrue(ex.getMessage().contains("Invalid watermark position"));
     }
 
     @Test

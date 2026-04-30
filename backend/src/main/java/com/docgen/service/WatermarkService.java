@@ -129,15 +129,15 @@ public class WatermarkService {
     void validateTextConfig(TextWatermarkConfig config) {
         if (config == null) {
             throw new BusinessException(ErrorCode.WATERMARK_INVALID_CONFIG,
-                    "文字水印配置不能为空", HttpStatus.BAD_REQUEST);
+                    "Text watermark configuration is required", HttpStatus.BAD_REQUEST);
         }
         if (config.getText() == null || config.getText().isBlank()) {
             throw new BusinessException(ErrorCode.WATERMARK_INVALID_CONFIG,
-                    "水印文本不能为空", HttpStatus.BAD_REQUEST);
+                    "Watermark text cannot be empty", HttpStatus.BAD_REQUEST);
         }
         if (config.getFontSize() <= 0) {
             throw new BusinessException(ErrorCode.WATERMARK_INVALID_CONFIG,
-                    "字体大小必须大于 0", HttpStatus.BAD_REQUEST);
+                    "Font size must be greater than 0", HttpStatus.BAD_REQUEST);
         }
         validateOpacity(config.getOpacity());
     }
@@ -145,11 +145,11 @@ public class WatermarkService {
     void validateImageConfig(ImageWatermarkConfig config) {
         if (config == null) {
             throw new BusinessException(ErrorCode.WATERMARK_INVALID_CONFIG,
-                    "图片水印配置不能为空", HttpStatus.BAD_REQUEST);
+                    "Image watermark configuration is required", HttpStatus.BAD_REQUEST);
         }
         if (config.getImageSource() == null || config.getImageSource().isBlank()) {
             throw new BusinessException(ErrorCode.WATERMARK_INVALID_CONFIG,
-                    "水印图片来源不能为空", HttpStatus.BAD_REQUEST);
+                    "Watermark image source cannot be empty", HttpStatus.BAD_REQUEST);
         }
         String src = config.getImageSource().trim();
         String lower = src.toLowerCase(Locale.ROOT);
@@ -160,8 +160,8 @@ public class WatermarkService {
         }
         if (!VALID_POSITIONS.contains(config.getPosition())) {
             throw new BusinessException(ErrorCode.WATERMARK_INVALID_CONFIG,
-                    "无效的水印位置: " + config.getPosition()
-                            + "，支持的位置: " + VALID_POSITIONS, HttpStatus.BAD_REQUEST);
+                    "Invalid watermark position: " + config.getPosition()
+                            + ". Allowed positions: " + VALID_POSITIONS, HttpStatus.BAD_REQUEST);
         }
         validateOpacity(config.getOpacity());
     }
@@ -169,14 +169,14 @@ public class WatermarkService {
     private void validateDocument(byte[] document) {
         if (document == null || document.length == 0) {
             throw new BusinessException(ErrorCode.WATERMARK_FAILED,
-                    "文档内容不能为空", HttpStatus.BAD_REQUEST);
+                    "Document content cannot be empty", HttpStatus.BAD_REQUEST);
         }
     }
 
     private void validateOpacity(double opacity) {
         if (opacity < 0.0 || opacity > 1.0) {
             throw new BusinessException(ErrorCode.WATERMARK_INVALID_CONFIG,
-                    "透明度必须在 0.0 到 1.0 之间", HttpStatus.BAD_REQUEST);
+                    "Opacity must be between 0.0 and 1.0", HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -214,7 +214,7 @@ public class WatermarkService {
 
             if (response.getBody() == null || response.getBody().length == 0) {
                 throw new BusinessException(ErrorCode.WATERMARK_FAILED,
-                        "水印服务返回空结果", HttpStatus.INTERNAL_SERVER_ERROR);
+                        "Watermark service returned an empty result", HttpStatus.INTERNAL_SERVER_ERROR);
             }
             return response.getBody();
         } catch (BusinessException e) {
@@ -222,11 +222,11 @@ public class WatermarkService {
         } catch (RestClientException e) {
             log.error("Watermark service call failed: {}", e.getMessage());
             throw new BusinessException(ErrorCode.WATERMARK_FAILED,
-                    "水印服务调用失败: " + e.getMessage(), HttpStatus.SERVICE_UNAVAILABLE, e);
+                    "Watermark service call failed: " + e.getMessage(), HttpStatus.SERVICE_UNAVAILABLE, e);
         } catch (Exception e) {
             log.error("Watermark application failed: {}", e.getMessage());
             throw new BusinessException(ErrorCode.WATERMARK_FAILED,
-                    "水印应用失败: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Watermark application failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 }

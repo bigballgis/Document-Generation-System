@@ -212,7 +212,7 @@ class ParameterServiceBatchTest {
                     () -> parameterService.batchUpdate(TEMPLATE_ID, items));
 
             assertEquals("PARAMETER_BATCH_VALIDATION_FAILED", ex.getErrorCode());
-            assertTrue(ex.getMessage().contains("无效的数据类型"));
+            assertTrue(ex.getMessage().contains("invalid data type"));
             // No saves should have occurred since validation failed before apply phase
             verify(parameterRepository, never()).save(any(ParameterDefinition.class));
         }

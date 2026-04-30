@@ -211,7 +211,7 @@ class ParameterServiceJsonImportTest {
                     () -> parameterService.jsonImport(TEMPLATE_ID, "{}", null));
 
             assertEquals("PARAMETER_JSON_IMPORT_FAILED", ex.getErrorCode());
-            assertTrue(ex.getMessage().contains("JSON 数据为空"));
+            assertTrue(ex.getMessage().contains("JSON data is empty"));
         }
 
         @Test
@@ -220,7 +220,7 @@ class ParameterServiceJsonImportTest {
                     () -> parameterService.jsonImport(TEMPLATE_ID, "[]", null));
 
             assertEquals("PARAMETER_JSON_IMPORT_FAILED", ex.getErrorCode());
-            assertTrue(ex.getMessage().contains("JSON 数据为空"));
+            assertTrue(ex.getMessage().contains("JSON data is empty"));
         }
     }
 
@@ -234,7 +234,7 @@ class ParameterServiceJsonImportTest {
                     () -> parameterService.jsonImport(TEMPLATE_ID, "{invalid json}", null));
 
             assertEquals("PARAMETER_JSON_IMPORT_FAILED", ex.getErrorCode());
-            assertTrue(ex.getMessage().contains("JSON 解析失败"));
+            assertTrue(ex.getMessage().contains("JSON parse failed"));
         }
 
         @Test
@@ -266,7 +266,7 @@ class ParameterServiceJsonImportTest {
             ParameterDTO f = result.stream().filter(p -> "f".equals(p.getName())).findFirst().orElseThrow();
             assertEquals("STRING", f.getDataType());
             assertNotNull(f.getDescription());
-            assertTrue(f.getDescription().contains("扁平化"));
+            assertTrue(f.getDescription().contains("flattened"));
         }
 
         @Test

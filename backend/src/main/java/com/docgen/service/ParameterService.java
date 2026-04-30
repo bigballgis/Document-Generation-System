@@ -115,21 +115,21 @@ public class ParameterService {
 
         if (!VALID_PARAMETER_TYPES.contains(parameterType)) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "无效的参数类型: " + parameterType, HttpStatus.BAD_REQUEST);
+                    "Invalid parameter type: " + parameterType, HttpStatus.BAD_REQUEST);
         }
         if (!VALID_DATA_TYPES.contains(dataType)) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "无效的数据类型: " + dataType, HttpStatus.BAD_REQUEST);
+                    "Invalid data type: " + dataType, HttpStatus.BAD_REQUEST);
         }
 
         // Validate parent constraints
         if (req.parentId() != null) {
             ParameterDefinition parent = parameterRepository.findById(req.parentId())
                     .orElseThrow(() -> new BusinessException(ErrorCode.PARAMETER_INVALID_PARENT,
-                            "父参数不存在: " + req.parentId(), HttpStatus.BAD_REQUEST));
+                            "Parent parameter not found: " + req.parentId(), HttpStatus.BAD_REQUEST));
             if (!parent.getTemplateId().equals(templateId)) {
                 throw new BusinessException(ErrorCode.PARAMETER_INVALID_PARENT,
-                        "父参数不属于当前模板", HttpStatus.BAD_REQUEST);
+                        "Parent parameter does not belong to this template", HttpStatus.BAD_REQUEST);
             }
             validateParentType(parent);
             validateDepth(req.parentId());
@@ -218,7 +218,7 @@ public class ParameterService {
         try {
             entity = parameterRepository.findById(id)
                     .orElseThrow(() -> new ResourceNotFoundException(
-                            ErrorCode.PARAMETER_NOT_FOUND, "参数不存在: " + id));
+                            ErrorCode.PARAMETER_NOT_FOUND, "Parameter not found: " + id));
 
             // Apply updates
             if (req.name() != null) {
@@ -236,14 +236,14 @@ public class ParameterService {
             if (req.parameterType() != null) {
                 if (!VALID_PARAMETER_TYPES.contains(req.parameterType())) {
                     throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                            "无效的参数类型: " + req.parameterType(), HttpStatus.BAD_REQUEST);
+                            "Invalid parameter type: " + req.parameterType(), HttpStatus.BAD_REQUEST);
                 }
                 entity.setParameterType(req.parameterType());
             }
             if (req.dataType() != null) {
                 if (!VALID_DATA_TYPES.contains(req.dataType())) {
                     throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                            "无效的数据类型: " + req.dataType(), HttpStatus.BAD_REQUEST);
+                            "Invalid data type: " + req.dataType(), HttpStatus.BAD_REQUEST);
                 }
                 entity.setDataType(req.dataType());
             }
@@ -302,10 +302,10 @@ public class ParameterService {
 
         } catch (jakarta.persistence.OptimisticLockException e) {
             throw new BusinessException(ErrorCode.PARAMETER_CONCURRENT_MODIFICATION,
-                    "参数已被其他用户修改，请刷新后重试", HttpStatus.CONFLICT, e);
+                    "This parameter was modified by another user. Please refresh and try again.", HttpStatus.CONFLICT, e);
         } catch (org.springframework.orm.ObjectOptimisticLockingFailureException e) {
             throw new BusinessException(ErrorCode.PARAMETER_CONCURRENT_MODIFICATION,
-                    "参数已被其他用户修改，请刷新后重试", HttpStatus.CONFLICT, e);
+                    "This parameter was modified by another user. Please refresh and try again.", HttpStatus.CONFLICT, e);
         }
     }
 
@@ -316,7 +316,7 @@ public class ParameterService {
     public void deleteParameter(Long id) {
         ParameterDefinition entity = parameterRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.PARAMETER_NOT_FOUND, "参数不存在: " + id));
+                        ErrorCode.PARAMETER_NOT_FOUND, "Parameter not found: " + id));
         parameterRepository.delete(entity);
         log.info("Parameter deleted: id={}, name={}", id, entity.getName());
     }
@@ -340,7 +340,7 @@ public class ParameterService {
                 .toList();
         if (!invalidIds.isEmpty()) {
             throw new BusinessException(ErrorCode.PARAMETER_BATCH_INVALID_IDS,
-                    "以下参数ID不存在: " + invalidIds, HttpStatus.BAD_REQUEST);
+                    "The following parameter IDs do not exist: " + invalidIds, HttpStatus.BAD_REQUEST);
         }
 
         List<Long> wrongTemplateIds = params.stream()
@@ -349,7 +349,7 @@ public class ParameterService {
                 .toList();
         if (!wrongTemplateIds.isEmpty()) {
             throw new BusinessException(ErrorCode.PARAMETER_BATCH_INVALID_IDS,
-                    "以下参数ID不属于当前模板: " + wrongTemplateIds, HttpStatus.BAD_REQUEST);
+                    "The following parameter IDs do not belong to this template: " + wrongTemplateIds, HttpStatus.BAD_REQUEST);
         }
 
         // Filter to top-level IDs: if both parent and child are in the list, only keep parent
@@ -412,11 +412,11 @@ public class ParameterService {
         for (BatchUpdateParameterRequest.BatchUpdateItem item : items) {
             ParameterDefinition entity = paramMap.get(item.id());
             if (entity == null) {
-                errors.add("参数ID不存在: " + item.id());
+                errors.add("Parameter ID does not exist: " + item.id());
                 continue;
             }
             if (!entity.getTemplateId().equals(templateId)) {
-                errors.add("参数ID " + item.id() + " 不属于当前模板");
+                errors.add("Parameter ID " + item.id() + " does not belong to this template");
             }
         }
         if (!errors.isEmpty()) {
@@ -435,8 +435,8 @@ public class ParameterService {
             // Version mismatch check
             if (!Integer.valueOf(entity.getVersion()).equals(item.version())) {
                 throw new BusinessException(ErrorCode.PARAMETER_CONCURRENT_MODIFICATION,
-                        "参数 " + item.id() + " 已被其他用户修改，请刷新后重试 (当前版本: "
-                                + entity.getVersion() + ", 请求版本: " + item.version() + ")",
+                        "Parameter " + item.id() + " was modified by another user; please refresh and try again (current version: "
+                                + entity.getVersion() + ", request version: " + item.version() + ")",
                         HttpStatus.CONFLICT);
             }
 
@@ -445,7 +445,7 @@ public class ParameterService {
                 try {
                     validateName(item.name());
                 } catch (BusinessException e) {
-                    errors.add("参数 " + item.id() + ": " + e.getMessage());
+                    errors.add("Parameter " + item.id() + ": " + e.getMessage());
                 }
 
                 // Check duplicate name within scope (considering other items in the batch)
@@ -465,7 +465,7 @@ public class ParameterService {
                                 .collect(Collectors.toCollection(HashSet::new));
                     });
                     if (namesInScope.contains(item.name())) {
-                        errors.add("参数 " + item.id() + ": 同一层级下参数名称已存在: " + item.name());
+                        errors.add("Parameter " + item.id() + ": a parameter with this name already exists at the same level: " + item.name());
                     } else {
                         namesInScope.add(item.name());
                     }
@@ -477,10 +477,10 @@ public class ParameterService {
             String dataType = item.dataType() != null ? item.dataType() : entity.getDataType();
 
             if (item.parameterType() != null && !VALID_PARAMETER_TYPES.contains(item.parameterType())) {
-                errors.add("参数 " + item.id() + ": 无效的参数类型: " + item.parameterType());
+                errors.add("Parameter " + item.id() + ": invalid parameter type: " + item.parameterType());
             }
             if (item.dataType() != null && !VALID_DATA_TYPES.contains(item.dataType())) {
-                errors.add("参数 " + item.id() + ": 无效的数据类型: " + item.dataType());
+                errors.add("Parameter " + item.id() + ": invalid data type: " + item.dataType());
             }
 
             // Derived expression validation
@@ -489,7 +489,7 @@ public class ParameterService {
             try {
                 validateDerivedExpression(parameterType, expressionText, expressionType);
             } catch (BusinessException e) {
-                errors.add("参数 " + item.id() + ": " + e.getMessage());
+                errors.add("Parameter " + item.id() + ": " + e.getMessage());
             }
 
             // Validation rules compatibility
@@ -497,7 +497,7 @@ public class ParameterService {
                 try {
                     validateValidationRules(dataType, item.validationRules());
                 } catch (BusinessException e) {
-                    errors.add("参数 " + item.id() + ": " + e.getMessage());
+                    errors.add("Parameter " + item.id() + ": " + e.getMessage());
                 }
             }
         }
@@ -550,10 +550,10 @@ public class ParameterService {
             }
         } catch (jakarta.persistence.OptimisticLockException e) {
             throw new BusinessException(ErrorCode.PARAMETER_CONCURRENT_MODIFICATION,
-                    "参数已被其他用户修改，请刷新后重试", HttpStatus.CONFLICT, e);
+                    "This parameter was modified by another user. Please refresh and try again.", HttpStatus.CONFLICT, e);
         } catch (org.springframework.orm.ObjectOptimisticLockingFailureException e) {
             throw new BusinessException(ErrorCode.PARAMETER_CONCURRENT_MODIFICATION,
-                    "参数已被其他用户修改，请刷新后重试", HttpStatus.CONFLICT, e);
+                    "This parameter was modified by another user. Please refresh and try again.", HttpStatus.CONFLICT, e);
         }
 
         log.info("Batch updated {} parameters for templateId={}", items.size(), templateId);
@@ -582,18 +582,18 @@ public class ParameterService {
             parsed = objectMapper.readValue(jsonData, Object.class);
         } catch (JsonProcessingException e) {
             throw new BusinessException(ErrorCode.PARAMETER_JSON_IMPORT_FAILED,
-                    "JSON 解析失败: 位置 " + e.getLocation().getCharOffset() + ", 原因: " + e.getOriginalMessage(),
+                    "JSON parse failed at offset " + e.getLocation().getCharOffset() + ", reason: " + e.getOriginalMessage(),
                     HttpStatus.BAD_REQUEST, e);
         }
 
         // Check for empty JSON
         if (parsed instanceof Map<?, ?> map && map.isEmpty()) {
             throw new BusinessException(ErrorCode.PARAMETER_JSON_IMPORT_FAILED,
-                    "JSON 数据为空，无法生成参数", HttpStatus.BAD_REQUEST);
+                    "JSON data is empty; cannot generate parameters", HttpStatus.BAD_REQUEST);
         }
         if (parsed instanceof List<?> list && list.isEmpty()) {
             throw new BusinessException(ErrorCode.PARAMETER_JSON_IMPORT_FAILED,
-                    "JSON 数据为空，无法生成参数", HttpStatus.BAD_REQUEST);
+                    "JSON data is empty; cannot generate parameters", HttpStatus.BAD_REQUEST);
         }
 
         // Determine starting depth
@@ -643,7 +643,7 @@ public class ParameterService {
                     currentDepth, MAX_DEPTH, name);
             ParameterDefinition entity = createJsonImportParameter(
                     templateId, name, parentId, "STRING", true, sortOrder,
-                    "超过最大嵌套深度，已扁平化为 STRING: " + truncateValue(value));
+                    "Maximum nesting depth exceeded; flattened to STRING: " + truncateValue(value));
             created.add(entity);
             return;
         }
@@ -717,7 +717,7 @@ public class ParameterService {
         } else {
             // Array with only primitive elements → ARRAY with no children
             String elementType = inferPrimitiveArrayElementType(list);
-            String description = "数组元素类型: " + elementType;
+            String description = "Array element types: " + elementType;
             ParameterDefinition entity = createJsonImportParameter(
                     templateId, name, parentId, "ARRAY", true, sortOrder, description);
             created.add(entity);
@@ -818,12 +818,12 @@ public class ParameterService {
     public ScanResultDTO scanPlaceholders(Long templateId) {
         Template template = templateRepository.findById(templateId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.TEMPLATE_NOT_FOUND, "模板不存在: " + templateId));
+                        ErrorCode.TEMPLATE_NOT_FOUND, "Template not found: " + templateId));
 
         String filePath = template.getTemplateFilePath();
         if (filePath == null || filePath.isBlank()) {
             throw new BusinessException(ErrorCode.PARAMETER_SCAN_FAILED,
-                    "模板尚未上传文件，无法扫描占位符", HttpStatus.BAD_REQUEST);
+                    "Template has no uploaded file; cannot scan placeholders", HttpStatus.BAD_REQUEST);
         }
 
         // Scan placeholders from the .docx file
@@ -1252,7 +1252,8 @@ public class ParameterService {
     void validateName(String name) {
         if (name == null || !NAME_PATTERN.matcher(name).matches()) {
             throw new BusinessException(ErrorCode.PARAMETER_INVALID_NAME,
-                    "参数名称格式无效，必须以字母或下划线开头，只能包含字母、数字、下划线和连字符: " + name,
+                    "Invalid parameter name; must start with a letter or underscore and contain only letters, digits, underscores, and hyphens: "
+                            + name,
                     HttpStatus.BAD_REQUEST);
         }
     }
@@ -1263,7 +1264,7 @@ public class ParameterService {
     void validateParentType(ParameterDefinition parent) {
         if (!CONTAINER_DATA_TYPES.contains(parent.getDataType())) {
             throw new BusinessException(ErrorCode.PARAMETER_PARENT_TYPE_INVALID,
-                    "只有 OBJECT 或 ARRAY 类型的参数才能包含子参数，当前父参数类型: " + parent.getDataType(),
+                    "Only OBJECT or ARRAY parameters may have children; parent data type is: " + parent.getDataType(),
                     HttpStatus.BAD_REQUEST);
         }
     }
@@ -1276,7 +1277,7 @@ public class ParameterService {
         int depth = computeDepth(parentId);
         if (depth + 1 > MAX_DEPTH) {
             throw new BusinessException(ErrorCode.PARAMETER_MAX_DEPTH_EXCEEDED,
-                    "参数嵌套深度不能超过 " + MAX_DEPTH + " 层",
+                    "Parameter nesting depth cannot exceed " + MAX_DEPTH + " levels",
                     HttpStatus.BAD_REQUEST);
         }
     }
@@ -1305,11 +1306,11 @@ public class ParameterService {
         if ("DERIVED".equals(parameterType)) {
             if (expressionText == null || expressionText.isBlank()) {
                 throw new BusinessException(ErrorCode.PARAMETER_EXPRESSION_REQUIRED,
-                        "衍生参数必须提供表达式", HttpStatus.BAD_REQUEST);
+                        "DERIVED parameters must provide an expression", HttpStatus.BAD_REQUEST);
             }
             if (expressionType == null || !VALID_EXPRESSION_TYPES.contains(expressionType)) {
                 throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                        "衍生参数必须指定有效的表达式类型 (JAVASCRIPT 或 EXCEL_FORMULA)",
+                        "DERIVED parameters must specify a valid expression type (JAVASCRIPT or EXCEL_FORMULA)",
                         HttpStatus.BAD_REQUEST);
             }
             // Skip validation for simple placeholder expressions (literals, basic arithmetic)
@@ -1322,12 +1323,12 @@ public class ParameterService {
             ExpressionValidationResult result = expressionEngine.validateExpression(expressionText, exprType);
             if (!result.isValid()) {
                 throw new BusinessException(ErrorCode.EXPRESSION_SYNTAX_ERROR,
-                        "表达式语法错误: " + result.getErrorMessage(), HttpStatus.BAD_REQUEST);
+                        "Expression syntax error: " + result.getErrorMessage(), HttpStatus.BAD_REQUEST);
             }
         } else if ("REQUEST".equals(parameterType)) {
             if (expressionText != null && !expressionText.isBlank()) {
                 throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                        "请求参数不能包含表达式", HttpStatus.BAD_REQUEST);
+                        "REQUEST parameters cannot contain an expression", HttpStatus.BAD_REQUEST);
             }
         }
     }
@@ -1344,7 +1345,7 @@ public class ParameterService {
         }
         if (exists) {
             throw new BusinessException(ErrorCode.PARAMETER_DUPLICATE_NAME,
-                    "同一层级下参数名称已存在: " + name, HttpStatus.CONFLICT);
+                    "A parameter with this name already exists at the same level: " + name, HttpStatus.CONFLICT);
         }
     }
 
@@ -1368,14 +1369,14 @@ public class ParameterService {
             // Check recognized key
             if (!RECOGNIZED_RULE_KEYS.contains(ruleKey)) {
                 throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                        "不支持的校验规则: " + ruleKey, HttpStatus.BAD_REQUEST);
+                        "Unsupported validation rule: " + ruleKey, HttpStatus.BAD_REQUEST);
             }
 
             // Check compatibility with data type
             Set<String> compatibleTypes = RULE_COMPATIBILITY.get(ruleKey);
             if (compatibleTypes != null && !compatibleTypes.contains(dataType)) {
                 throw new BusinessException(ErrorCode.PARAMETER_VALIDATION_RULE_INCOMPATIBLE,
-                        "校验规则 '" + ruleKey + "' 与数据类型 '" + dataType + "' 不兼容",
+                        "Validation rule '" + ruleKey + "' is incompatible with data type '" + dataType + "'",
                         HttpStatus.BAD_REQUEST);
             }
         }
@@ -1392,7 +1393,7 @@ public class ParameterService {
             if (afterVal instanceof String afterStr && beforeVal instanceof String beforeStr) {
                 if (afterStr.compareTo(beforeStr) >= 0) {
                     throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                            "date_after 必须早于 date_before", HttpStatus.BAD_REQUEST);
+                            "date_after must be before date_before", HttpStatus.BAD_REQUEST);
                 }
             }
         }
@@ -1405,7 +1406,7 @@ public class ParameterService {
                     Pattern.compile(patternStr);
                 } catch (PatternSyntaxException e) {
                     throw new BusinessException(ErrorCode.PARAMETER_INVALID_PATTERN,
-                            "正则表达式语法错误: " + e.getDescription(), HttpStatus.BAD_REQUEST);
+                            "Regular expression syntax error: " + e.getDescription(), HttpStatus.BAD_REQUEST);
                 }
             }
         }
@@ -1420,7 +1421,7 @@ public class ParameterService {
             double maxVal = toDouble(rules.get(maxKey));
             if (minVal > maxVal) {
                 throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                        "校验规则范围无效: " + minKey + " (" + minVal + ") 不能大于 " + maxKey + " (" + maxVal + ")",
+                        "Invalid validation rule range: " + minKey + " (" + minVal + ") cannot be greater than " + maxKey + " (" + maxVal + ")",
                         HttpStatus.BAD_REQUEST);
             }
         }
@@ -1522,7 +1523,7 @@ public class ParameterService {
                     .sorted()
                     .toList();
             throw new BusinessException(ErrorCode.PARAMETER_CIRCULAR_DEPENDENCY,
-                    "衍生参数存在循环依赖: " + String.join(" → ", cycleParticipants),
+                    "Circular dependency among derived parameters: " + String.join(" -> ", cycleParticipants),
                     HttpStatus.BAD_REQUEST);
         }
     }
@@ -1616,7 +1617,7 @@ public class ParameterService {
                     .sorted()
                     .toList();
             throw new BusinessException(ErrorCode.PARAMETER_CIRCULAR_DEPENDENCY,
-                    "衍生参数存在循环依赖: " + String.join(" → ", cycleParticipants),
+                    "Circular dependency among derived parameters: " + String.join(" -> ", cycleParticipants),
                     HttpStatus.BAD_REQUEST);
         }
     }
@@ -1667,7 +1668,7 @@ public class ParameterService {
 
         if (!invalidRefs.isEmpty()) {
             throw new BusinessException(ErrorCode.PARAMETER_EXPRESSION_INVALID_SCOPE,
-                    "表达式引用了作用域外的参数: " + invalidRefs + ", 仅可引用同级字段: " + new TreeSet<>(siblingNames),
+                    "Expression references parameters outside the allowed scope: " + invalidRefs + ". Only sibling fields may be referenced: " + new TreeSet<>(siblingNames),
                     HttpStatus.BAD_REQUEST);
         }
     }
@@ -1724,7 +1725,7 @@ public class ParameterService {
     public ParameterSchemaDTO getParameterSchema(Long templateId) {
         Template template = templateRepository.findById(templateId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.TEMPLATE_NOT_FOUND, "模板不存在: " + templateId));
+                        ErrorCode.TEMPLATE_NOT_FOUND, "Template not found: " + templateId));
 
         List<ParameterDefinition> allParams = parameterRepository.findByTemplateIdOrderBySortOrderAsc(templateId);
 
@@ -1873,7 +1874,7 @@ public class ParameterService {
             return objectMapper.writeValueAsString(rules);
         } catch (JsonProcessingException e) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "校验规则序列化失败", HttpStatus.BAD_REQUEST);
+                    "Failed to serialize validation rules", HttpStatus.BAD_REQUEST);
         }
     }
 
