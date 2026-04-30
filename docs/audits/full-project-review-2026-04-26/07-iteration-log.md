@@ -998,6 +998,26 @@ Validation commands: `npx vitest run src/__tests__/views/templates/WatermarkSecu
 Validation result: 6 tests, exit 0.  
 Related tracking items: REQ-R7  
 
+## 2026-04-28 — REQ-R7-001 traceability matrix refresh
+
+Workstream: WS-03 / governance  
+Summary: Updated **`05-traceability-matrix.md`** row **`REQ-R7-001`** to include **`TemplateService`** / **`TemplateController`** REST **`render-config`**, Integrations **`WatermarkSecurityConfig`**, frontend **`templates.ts`**, and test evidence (**`TemplateServiceTest`**, **`TemplateCrudIntegrationTest`**, Vitest **`WatermarkSecurityConfig.test.ts`**, **`templates-extensions.test.ts`**). Status remains **`Verified`**.  
+Files changed: `05-traceability-matrix.md`, `07-iteration-log.md`.  
+Validation commands: documentation review only.  
+Validation result: N/A.  
+Related tracking items: REQ-R7-001  
+
+## 2026-04-28 — WS-06-T05: DesignStage debug logging (verification)
+
+Workstream: WS-06  
+Task ID: WS-06-T05  
+Summary: **`DesignStage.vue`** contains **no** `console.log` / `console.debug` / `console.info` / `debugger` statements; no code change required. Ran full frontend test suite per task card.  
+Files changed: `07-iteration-log.md` only.  
+Validation commands: `npm test` (from `frontend/`, Vitest `--run`).  
+Validation result: **71** test files, **359** tests, exit **0**.  
+Removed logs: none (already absent).  
+Related tracking items: WS-06-T05  
+
 ## Entry Template
 
 ```text
