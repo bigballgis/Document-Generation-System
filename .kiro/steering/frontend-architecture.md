@@ -1,37 +1,37 @@
 ---
 inclusion: auto
 name: frontend-architecture
-description: Vue 3 前端架构规范，包括路由设计、状态管理、组件设计、TypeScript 类型和 Axios 封装
+description: Vue 3 frontend architecture — routing, Pinia, API layer, TypeScript, components
 ---
 
-# 前端架构规范
+# Frontend architecture
 
-## 路由
+## Routing
 
-- 公开: `{ path: '/login', meta: { requiresAuth: false } }`
-- 受保护: 嵌套在 MainLayout 下，`meta: { requiresAuth: true, roles?: UserRole[] }`
-- 懒加载: `component: () => import('@/views/module/Index.vue')`
-- 参考: #[[file:frontend/src/router/index.ts]]
+- Public: `{ path: '/login', meta: { requiresAuth: false } }`
+- Protected: nested under MainLayout, `meta: { requiresAuth: true, roles?: UserRole[] }`
+- Lazy: `component: () => import('@/views/module/Index.vue')`
+- Reference: #[[file:frontend/src/router/index.ts]]
 
-## Pinia Store
+## Pinia
 
-- Composition API: `defineStore('name', () => { ... })` + `ref()` + `computed()` + async
-- 现有: `useUserStore` (认证/JWT/角色), `useTemplateWorkspaceStore` (模板工作区)
-- 参考: #[[file:frontend/src/stores/user.ts]]
+- Composition API: `defineStore('name', () => { ... })` with `ref()` / `computed()` / async actions
+- Existing: `useUserStore` (auth/JWT/roles), `useTemplateWorkspaceStore` (workspace)
+- Reference: #[[file:frontend/src/stores/user.ts]]
 
-## API 层
+## API layer
 
-- 基础: #[[file:frontend/src/api/request.ts]] — baseURL `/api`, timeout 15s, 401 自动刷新
-- 每模块一个文件: `src/api/{module}.ts`
+- Base client: #[[file:frontend/src/api/request.ts]] — baseURL `/api`, timeout 15s, 401 refresh
+- One module file: `src/api/{module}.ts`
 
-## TypeScript 类型
+## TypeScript
 
-- 通用: #[[file:frontend/src/types/index.ts]] (ApiResponse, PageResult, TemplateStatus, UserRole)
-- 模块: `types/parameter.ts`, `types/workspace.ts`, `types/segment.ts`, `types/document.ts`
-- 接口用 `interface`，联合类型用 `type`，与后端 DTO 字段名一致 (camelCase)
+- Shared: #[[file:frontend/src/types/index.ts]] (`ApiResponse`, `PageResult`, `TemplateStatus`, `UserRole`)
+- Domain: `types/parameter.ts`, `types/workspace.ts`, `types/segment.ts`, `types/document.ts`
+- Prefer `interface` for objects, `type` for unions; field names match backend DTOs (camelCase)
 
-## 组件
+## Components
 
 - `<script setup lang="ts">` + `defineProps<{}>()` + `defineEmits<{}>()`
-- 通用组件: `components/` — 现有: OnlyOfficeEditor, TemplateTagToolbar, KeyValueEditor, MonacoEditor
-- 模块页面: `views/{module}/`
+- Shared: `components/` — e.g. OnlyOfficeEditor, TemplateTagToolbar, KeyValueEditor, MonacoEditor
+- Features: `views/{module}/`

@@ -1,73 +1,73 @@
 ---
 inclusion: auto
 name: writing-steering
-description: Steering 文件编写规范。在创建或修改 .kiro/steering/ 下的 steering 文件时使用。
+description: How to author steering files under .kiro/steering/
 ---
 
-# Steering 编写规范
+# Writing steering docs
 
-## Front Matter
+## Front matter
 
-必须是文件第一行，无前置空行。
+Must start on line 1 with no leading blank lines.
 
-| 模式 | 场景 | 必填字段 |
-|------|------|----------|
-| `auto` | 领域特定（首选） | `name` + `description` |
-| `fileMatch` | 文件类型触发 | `fileMatchPattern` |
-| `always` | 仅全局标准（≤3 个） | 无 |
-| `manual` | 偶尔使用 | 无 |
+| Mode | When | Required fields |
+|------|------|-----------------|
+| `auto` | Domain-specific (preferred) | `name` + `description` |
+| `fileMatch` | File-type triggers | `fileMatchPattern` |
+| `always` | Global-only docs (≤3 files) | none |
+| `manual` | Rare / on-demand | none |
 
-优先 `auto`，减少上下文噪音。`description` 用中文一句话说明触发时机。
+Prefer `auto` to limit noise. `description` = one English sentence on when to apply the doc.
 
-## 防幻觉
+## Anti-hallucination
 
-1. 写入前验证 — 用 readCode/grepSearch 确认代码库中存在该模式
-2. 引用锚定 — 用 `#[[file:path]]` 引用真实文件，不凭记忆描述
-3. 可审计 — 每条声明能在代码库中找到证据，找不到就删
-4. 允许不知道 — 不确定的标注 `<!-- TODO: 待验证 -->`，不编造
-5. 冲突时提问 — 代码与规则矛盾时明确指出，不静默忽略
+1. Verify before writing — confirm patterns exist via codebase search
+2. Anchor with `#[[file:path]]` — never rely on memory alone
+3. Auditable claims — every statement must be provable in-repo or removed
+4. Unknowns — mark `<!-- TODO: verify -->` instead of guessing
+5. Conflicts — call out contradictions with code; do not hide them
 
-## Token 效率
+## Token budget
 
-每行问："删掉它会导致 AI 犯错吗？" 不会就删。
+Ask per line: "Would removing this make an AI fail?" If not, delete.
 
-- 删 AI 已知的 — 标准惯例不写，只写项目特有约定
-- 表格 > 段落，要点 > 完整句
-- `#[[file:]]` 引用 > 内联代码块
-- 一个示例 > 十条规则
+- Omit universal best practices; keep project-only rules
+- Tables beat prose; bullets beat paragraphs
+- Prefer `#[[file:]]` over long inline snippets
+- One concrete example beats ten abstract rules
 
-| 指标 | 上限 |
-|------|------|
-| 单文件 | ≤ 100 行 |
-| `always` 文件数 | ≤ 3 |
-| `always` 合计 | ≤ 300 行 |
+| Metric | Limit |
+|--------|-------|
+| Single file | ≤ 100 lines |
+| `always` file count | ≤ 3 |
+| `always` total lines | ≤ 300 |
 
-## 结构模板
+## Template
 
 ```markdown
 ---
 inclusion: auto
 name: {kebab-case}
-description: {一句话，中文}
+description: {One English sentence}
 ---
-# {领域}
-## 规则
-- 要点式，可执行可验证
-## 示例（可选）
-- 用 #[[file:]] 引用真实代码
+# {Topic}
+## Rules
+- Actionable bullets
+## Examples (optional)
+- #[[file:relative/path]]
 ```
 
-单一职责，一个文件一个领域。命名 kebab-case。
+One file = one domain. File names are kebab-case.
 
-## 引用
+## References
 
-- 文件引用: `#[[file:relative/path]]`
-- fileMatch: `fileMatchPattern: ["**/*.ts"]` (数组) 或 `"**/*.test.*"` (单一)
+- Files: `#[[file:relative/path]]`
+- fileMatch: `fileMatchPattern: ["**/*.ts"]` (array) or `"**/*.test.*"` (string)
 
-## 检查清单
+## Checklist
 
-1. front matter 正确，inclusion 合理
-2. 单一职责，不重叠
-3. 所有事实已验证，无编造
-4. 文件引用路径存在
-5. ≤ 100 行
+1. Front matter valid; inclusion mode justified
+2. Single responsibility; no overlap with other steering docs
+3. Facts verified; no fabricated APIs
+4. Every `#[[file:]]` path exists
+5. ≤ 100 lines

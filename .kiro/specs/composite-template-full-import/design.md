@@ -1,11 +1,11 @@
-# 设计: 组合模板完整部署包导入导出
+# Design: Composite template full deployment package import/export
 
-## ZIP 包结构
+## ZIP layout
 
 ```
 composite-template.zip
-├── config.json              # 模板元数据 + assembly_config (含 header/footer 路径映射)
-├── parameters.json          # 参数定义树 (完整元数据)
+├── config.json              # Template metadata + assembly_config (header/footer path mapping)
+├── parameters.json          # Parameter tree (full metadata)
 ├── segments/
 │   ├── Cover_Page.docx
 │   ├── Part_A_Definitions.docx
@@ -16,13 +16,13 @@ composite-template.zip
 ├── footers/
 │   ├── standard-footer.docx
 │   └── ...
-├── test-data.json           # 测试用例
-└── render-config.json       # 渲染配置 (watermark/barcode, 可选)
+├── test-data.json           # Test cases
+└── render-config.json       # Render config (watermark/barcode, optional)
 ```
 
-## 数据格式
+## Data formats
 
-### config.json (扩展后)
+### `config.json` (extended)
 
 ```json
 {
@@ -51,7 +51,7 @@ composite-template.zip
 }
 ```
 
-### parameters.json
+### `parameters.json`
 
 ```json
 [
@@ -61,7 +61,7 @@ composite-template.zip
     "dataType": "OBJECT",
     "required": true,
     "defaultValue": null,
-    "description": "银行信息",
+    "description": "Bank details",
     "sortOrder": 0,
     "expressionText": null,
     "expressionType": null,
@@ -72,7 +72,7 @@ composite-template.zip
         "parameterType": "REQUEST",
         "dataType": "STRING",
         "required": true,
-        ...
+        "...": "...",
         "children": []
       }
     ]
@@ -80,21 +80,21 @@ composite-template.zip
 ]
 ```
 
-## 后端修改
+## Backend changes
 
-### 1. CompositeExportConfig 扩展
+### 1. Extend `CompositeExportConfig`
 
-文件: `CompositeImportExportService.java` 内部类 `CompositeExportConfig`
+File: inner types on `CompositeImportExportService.java` — `CompositeExportConfig`
 
-新增字段:
+New fields:
 - `outputFormat`, `storageStrategy`, `async`, `reviewRequired`, `sourceStatus`
 
-`SegmentExportEntry` 新增字段:
+`SegmentExportEntry` adds:
 - `headerFileName`, `footerFileName`, `pageNumberFormat`, `pageNumberStart`
 
-### 2. 参数导出 DTO
+### 2. Parameter export DTO
 
-新增内部类 `ParameterExportEntry`:
+New inner class `ParameterExportEntry`:
 ```java
 static class ParameterExportEntry {
     String name;
@@ -111,47 +111,47 @@ static class ParameterExportEntry {
 }
 ```
 
-### 3. exportAsZip() 修改
+### 3. `exportAsZip()` changes
 
-在 `CompositeImportExportService.exportAsZip()` 中:
+In `CompositeImportExportService.exportAsZip()`:
 
-1. 移除 ACTIVE 状态限制，改为 DRAFT 或 ACTIVE 都可导出
-2. 导出 `parameters.json`: 调用 `ParameterService.getParameterTree()` 获取参数树，转换为 `ParameterExportEntry` 列表
-3. 导出 header/footer .docx: 扫描 assembly_config 中所有 segment 的 headerFilePath/footerFilePath，去重后下载并打包
-4. 在 config.json 中记录 header/footer 的文件名映射 (headerFileName/footerFileName)
-5. 在 SegmentExportEntry 中增加 pageNumberFormat/pageNumberStart
+1. Allow DRAFT or ACTIVE (remove ACTIVE-only restriction).
+2. Write `parameters.json`: `ParameterService.getParameterTree()` → map to `ParameterExportEntry` list.
+3. Export header/footer `.docx`: scan `assembly_config` paths, dedupe, download from MinIO, pack.
+4. Record header/footer file names in `config.json` (`headerFileName` / `footerFileName`).
+5. Include `pageNumberFormat` / `pageNumberStart` on `SegmentExportEntry`.
 
-### 4. importFromZip() 修改
+### 4. `importFromZip()` changes
 
-在 `CompositeImportExportService.importFromZip()` 中:
+In `CompositeImportExportService.importFromZip()`:
 
-1. 解析 `parameters.json` → 递归创建参数定义
-2. 解析 `headers/*.docx` 和 `footers/*.docx` → 上传到 MinIO
-3. 重建 assembly_config 时，将 headerFileName/footerFileName 映射回 MinIO 路径
-4. 恢复 outputFormat、storageStrategy 等模板属性
-5. 解析 `render-config.json` (可选) → 存储为模板描述的一部分或单独字段
+1. Parse `parameters.json` → recursively create definitions.
+2. Parse `headers/*.docx` and `footers/*.docx` → upload to MinIO.
+3. When rebuilding `assembly_config`, map header/footer file names back to MinIO paths.
+4. Restore outputFormat, storageStrategy, and related template fields.
+5. Parse optional `render-config.json` → persist validated render config (see R7 / `templates.render_config`).
 
-### 5. 参数树导入方法
+### 5. Parameter tree import helper
 
-在 `ParameterService` 中新增:
+Add to `ParameterService`:
 ```java
 @Transactional
 public void importParameterTree(Long templateId, List<ParameterExportEntry> entries, Long parentId)
 ```
 
-递归创建参数，保留所有元数据 (parameterType, expressionText, validationRules 等)。
+Recursively create rows preserving metadata (parameterType, expressionText, validationRules, etc.).
 
-### 6. 依赖注入
+### 6. Dependency injection
 
-`CompositeImportExportService` 需要注入 `ParameterService` (新增依赖)。
+`CompositeImportExportService` injects `ParameterService` (new dependency).
 
-## 前端修改
+## Frontend changes
 
-### 1. 模板列表页增加 ZIP 导入按钮
+### 1. Template list — ZIP import
 
-文件: `frontend/src/views/templates/Index.vue`
+File: `frontend/src/views/templates/Index.vue`
 
-在现有导入按钮旁增加:
+Next to existing import actions:
 ```html
 <el-button @click="importZipInput?.click()">
   {{ $t('template.importCompositePackage') }}
@@ -160,7 +160,7 @@ public void importParameterTree(Long templateId, List<ParameterExportEntry> entr
        @change="handleImportZip" />
 ```
 
-### 2. 导入处理函数
+### 2. Handler
 
 ```typescript
 async function handleImportZip(event: Event) {
@@ -172,13 +172,12 @@ async function handleImportZip(event: Event) {
 }
 ```
 
-### 3. i18n 新增
+### 3. i18n
 
-三语言文件中增加 `template.importCompositePackage` 键。
+Add `template.importCompositePackage` in all locale files.
 
-## 不修改的部分
+## Intentionally unchanged (original baseline)
 
-- 数据库 schema: 无需新增表或字段
-- Flyway 迁移: 无需
-- SecurityConfig: 现有 `/api/composite-templates/**` 已有权限配置
-- Docker/docker-compose: 无需修改
+- **Note:** R7 adds `templates.render_config` (Flyway V41); see Task 6 in `tasks.md`.
+- SecurityConfig: existing `/api/composite-templates/**` rules apply.
+- Docker / docker-compose: no change required for this feature.

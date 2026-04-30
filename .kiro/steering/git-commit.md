@@ -1,12 +1,12 @@
 ---
 inclusion: manual
 name: git-commit
-description: Git 提交规范，包括 Conventional Commits 格式和提交粒度
+description: Git commit conventions — Conventional Commits format and commit granularity
 ---
 
-# Git 提交规范
+# Git commit conventions
 
-## 格式
+## Format
 
 ```
 <type>(<scope>): <subject>
@@ -15,11 +15,11 @@ description: Git 提交规范，包括 Conventional Commits 格式和提交粒�
 ```
 
 - type: `feat|fix|refactor|docs|style|test|chore|perf`
-- scope (可选): `frontend|backend|docxtemplater|i18n|spec`
-- subject: 英文、首字母小写、祈使语气、≤50 字符、无句号
+- scope (optional): `frontend|backend|docxtemplater|i18n|spec`
+- subject: English, sentence case / imperative, ≤50 chars, no trailing period
 
-## 提交前
+## Before commit
 
-1. `git add -A` → `git status --short` 确认
-2. 确认无 `node_modules`、`.env` 等不应提交的文件
-3. 一个 spec 完成后统一提交，紧急修复可单独提交
+1. `git add -A` → `git status --short` to verify
+2. Ensure `node_modules`, `.env`, and other non-repo files are not staged
+3. Prefer one commit when a spec batch is done; hotfixes may commit alone

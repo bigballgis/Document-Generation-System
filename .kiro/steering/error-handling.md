@@ -1,35 +1,35 @@
 ---
 inclusion: auto
 name: error-handling
-description: 错误处理规范。在编写异常处理、Controller 或 ErrorCode 时使用。
+description: Error handling — use when writing exceptions, Controllers, or ErrorCode entries
 ---
 
-# 错误处理规范
+# Error handling
 
 ## ErrorCode
 
-- 格式: `{MODULE}_{ERROR_TYPE}`
-- 定义在: #[[file:backend/src/main/java/com/docgen/exception/ErrorCode.java]]
-- 现有前缀: AUTH_, TENANT_, TEMPLATE_, EXPRESSION_, GENERATE_, TASK_, DOCUMENT_, VALIDATION_, RATE_LIMIT_, REVIEW_, ENCRYPTION_, PIPELINE_, COVERAGE_, IMPORT_/EXPORT_, ONLYOFFICE_, WEBHOOK_, SCHEDULED_TASK_, AUDIT_, API_KEY_, WATERMARK_, MERGE_, TEST_CASE_, MARKET_, COMPOSITE_, PARAMETER_, MIGRATION_, INTERNAL_
+- Pattern: `{MODULE}_{ERROR_TYPE}`
+- Defined in: #[[file:backend/src/main/java/com/docgen/exception/ErrorCode.java]]
+- Prefixes include: AUTH_, TENANT_, TEMPLATE_, EXPRESSION_, GENERATE_, TASK_, DOCUMENT_, VALIDATION_, RATE_LIMIT_, REVIEW_, ENCRYPTION_, PIPELINE_, COVERAGE_, IMPORT_/EXPORT_, ONLYOFFICE_, WEBHOOK_, SCHEDULED_TASK_, AUDIT_, API_KEY_, WATERMARK_, MERGE_, TEST_CASE_, MARKET_, COMPOSITE_, PARAMETER_, MIGRATION_, INTERNAL_
 
-## 异常类 → HTTP 映射
+## Exception → HTTP
 
-| 异常 | HTTP | 场景 |
-|------|------|------|
-| `ResourceNotFoundException` | 404 | 资源不存在 |
-| `BusinessException` | 可指定 | 业务逻辑错误 |
-| `ValidationException` | 400 | 参数校验失败 |
-| `AccessDeniedException` | 403 | 权限不足 |
-| `RateLimitExceededException` | 429 | 限流 |
+| Exception | HTTP | When |
+|-----------|------|------|
+| `ResourceNotFoundException` | 404 | Missing resource |
+| `BusinessException` | configurable | Business rule violations |
+| `ValidationException` | 400 | Validation failures |
+| `AccessDeniedException` | 403 | Insufficient permissions |
+| `RateLimitExceededException` | 429 | Throttled |
 
-- 参考: #[[file:backend/src/main/java/com/docgen/exception/GlobalExceptionHandler.java]]
+- Reference: #[[file:backend/src/main/java/com/docgen/exception/GlobalExceptionHandler.java]]
 
-## 错误响应
+## Error response
 
 ```json
-{ "code": "TEMPLATE_NOT_FOUND", "message": "模板不存在", "timestamp": "2025-01-01T00:00:00Z" }
+{ "code": "TEMPLATE_NOT_FOUND", "message": "Template not found", "timestamp": "2025-01-01T00:00:00Z" }
 ```
 
-## 日志级别
+## Log levels
 
-ERROR=系统异常/外部不可用, WARN=业务异常/降级, INFO=关键操作, DEBUG=详细过程(仅开发)
+ERROR — system / dependency failures; WARN — business degradation; INFO — important actions; DEBUG — detail (dev only)

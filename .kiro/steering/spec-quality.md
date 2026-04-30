@@ -1,37 +1,37 @@
 ---
 inclusion: manual
 name: spec-quality
-description: Spec 文档质量标准，包括前后端一致性检查、EARS 需求模式和正确性属性
+description: Spec quality — FE/BE alignment checks, EARS patterns, correctness properties
 ---
 
-# Spec 质量标准
+# Spec quality
 
-## 前端任务拆分模式
+## Frontend task template
 
 ```
-- [ ] N. 前端 — {模块名}
-  - [ ] N.1 创建 API 调用层 (frontend/src/api/xxx.ts)
-  - [ ] N.2 创建组件 (FormDialog/List/Validator)
-  - [ ] N.3 集成到页面
-  - [ ] N.4 扩展 i18n (三语言文件)
+- [ ] N. Frontend — {module}
+  - [ ] N.1 API module (frontend/src/api/xxx.ts)
+  - [ ] N.2 Components (FormDialog/List/Validator)
+  - [ ] N.3 Wire into views
+  - [ ] N.4 i18n (all locale files)
 ```
 
-## 检查点
+## Checklist
 
-1. API 覆盖率: 每个 Controller 端点在 `frontend/src/api/` 有对应函数
-2. 路由完整性: 每个页面在 `router/index.ts` 注册
-3. i18n 完整性: 所有文本有 key，三语言文件同步
-4. Controller → API 映射: `XxxController.java` → `frontend/src/api/xxx.ts`
+1. API coverage: each Controller endpoint has a function in `frontend/src/api/`
+2. Routes: each screen registered in `router/index.ts`
+3. i18n: keys for all copy; locales stay in sync
+4. Controller → client: `XxxController.java` maps to `frontend/src/api/xxx.ts`
 
-## EARS 需求模式
+## EARS patterns
 
-| 类型 | 模板 |
-|------|------|
+| Kind | Template |
+|------|------------|
 | Ubiquitous | THE [system] SHALL [action] |
 | Event-driven | WHEN [trigger], THE [system] SHALL [action] |
 | State-driven | WHILE [state], THE [system] SHALL [action] |
 | Unwanted | IF [condition], THEN THE [system] SHALL [action] |
 
-## 正确性属性
+## Correctness properties
 
-每个 spec 定义可执行属性，后端 jqwik + 前端 fast-check，引用对应需求编号。
+Each spec should cite executable properties: jqwik on backend, fast-check on frontend, traced to requirement IDs.

@@ -1,32 +1,32 @@
 ---
 inclusion: auto
 name: api-design
-description: RESTful API 设计规范。在创建或修改 Controller、API 调用层时使用。
+description: RESTful API design — use when adding or changing Controllers or frontend API modules
 ---
 
-# API 设计规范
+# API design
 
-## URL
+## URLs
 
-- 小写 + 连字符 + 复数: `/api/composite-templates/{id}/segments`
-- 嵌套最多两层，操作用动词子路径: `/api/templates/{id}/activate`
+- Lowercase, hyphens, plural resources: `/api/composite-templates/{id}/segments`
+- At most two nesting levels; actions as verb sub-paths: `/api/templates/{id}/activate`
 
-## HTTP 方法 → 响应码
+## HTTP methods → success codes
 
-| 方法 | 用途 | 幂等 | 成功码 |
-|------|------|------|--------|
-| GET | 查询 | 是 | 200 |
-| POST | 创建 | 否 | 201 |
-| PUT | 全量更新 | 是 | 200 |
-| PATCH | 部分更新 | 否 | 200 |
-| DELETE | 删除 | 是 | 204 |
+| Method | Use | Idempotent | Success |
+|--------|-----|------------|---------|
+| GET | Read | Yes | 200 |
+| POST | Create | No | 201 |
+| PUT | Full replace | Yes | 200 |
+| PATCH | Partial update | No | 200 |
+| DELETE | Delete | Yes | 204 |
 
-## 响应格式
+## Response shapes
 
-- 分页: `{ content, totalElements, totalPages, number, size }` (Spring Page 默认)
-- 错误: `{ code, message, timestamp }` — code 来自 #[[file:backend/src/main/java/com/docgen/exception/ErrorCode.java]]
+- Pagination: `{ content, totalElements, totalPages, number, size }` (Spring `Page`)
+- Errors: `{ code, message, timestamp }` — `code` from #[[file:backend/src/main/java/com/docgen/exception/ErrorCode.java]]
 
-## 前端 API 层
+## Frontend API layer
 
-- 每模块一个文件: `frontend/src/api/{module}.ts`
-- 参考: #[[file:frontend/src/api/parameters.ts]]
+- One file per domain: `frontend/src/api/{module}.ts`
+- Reference: #[[file:frontend/src/api/parameters.ts]]

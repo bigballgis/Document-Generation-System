@@ -1,65 +1,65 @@
-# 需求: 组合模板完整部署包导入导出
+# Requirements: Composite template full deployment package import/export
 
-## 背景
+## Background
 
-当前系统的组合模板 (COMPOSITE) 导入导出存在以下缺陷:
+Composite template (COMPOSITE) import/export currently has these gaps:
 
-1. **导出 ZIP 缺少参数定义**: `CompositeImportExportService.exportAsZip()` 导出的 ZIP 包含 `config.json`、`segments/*.docx`、`test-data.json`、`coverage-report.json`，但**不包含参数定义树** (`parameters.json`)
-2. **导入 ZIP 不恢复参数**: `importFromZip()` 只恢复模板元数据、assembly_config 和测试数据，**不恢复参数定义**
-3. **导出 config.json 缺少关键字段**: 不包含 `outputFormat`、`storageStrategy`、`async`、`reviewRequired` 等模板属性
-4. **前端模板列表页缺少 ZIP 导入入口**: 只有 `.docx` 导入和 `.json` 配置导入按钮，没有组合模板 ZIP 包导入按钮
-5. **导出限制过严**: 当前要求模板必须是 ACTIVE 状态才能导出 ZIP，但开发/测试阶段 DRAFT 状态也需要导出
-6. **缺少 header/footer .docx 文件导出**: assembly_config 中的 `headerFilePath` 和 `footerFilePath` 引用的文件未包含在 ZIP 中
+1. **Exported ZIP lacks parameter definitions**: `CompositeImportExportService.exportAsZip()` produces `config.json`, `segments/*.docx`, `test-data.json`, `coverage-report.json`, but **not** the parameter tree (`parameters.json`).
+2. **ZIP import does not restore parameters**: `importFromZip()` restores template metadata, `assembly_config`, and test data only — **not** parameter definitions.
+3. **`config.json` misses key fields**: Omits `outputFormat`, `storageStrategy`, `async`, `reviewRequired`, etc.
+4. **No ZIP import entry on template list**: Only `.docx` and `.json` config import — no composite ZIP flow.
+5. **Export rule too strict**: ZIP export required ACTIVE; DRAFT should be allowed for dev/test.
+6. **Header/footer `.docx` not exported**: Files referenced by `headerFilePath` / `footerFilePath` in `assembly_config` are omitted from the ZIP.
 
-## 需求列表
+## Requirements
 
-### R1: 导出 ZIP 包含完整参数定义树
-- 导出 ZIP 中新增 `parameters.json` 文件
-- 包含完整的参数树结构 (嵌套 children)
-- 每个参数包含: name, parameterType, dataType, required, defaultValue, description, sortOrder, expressionText, expressionType, validationRules, children
-- 不包含 id、templateId、parentId、version、createdAt、updatedAt 等运行时字段
+### R1: Export ZIP includes full parameter tree
+- Add `parameters.json` to the export ZIP
+- Full nested tree (`children`)
+- Each node: name, parameterType, dataType, required, defaultValue, description, sortOrder, expressionText, expressionType, validationRules, children
+- Exclude runtime-only fields: id, templateId, parentId, version, createdAt, updatedAt
 
-### R2: 导入 ZIP 恢复参数定义树
-- 导入时读取 `parameters.json`，递归创建参数定义
-- 保持树结构 (parent-child 关系)
-- 保留 parameterType (REQUEST/DERIVED)、expressionText、expressionType、validationRules
-- 如果 `parameters.json` 不存在则跳过 (向后兼容)
+### R2: Import ZIP restores parameter tree
+- Read `parameters.json`; create definitions recursively
+- Preserve parent/child relationships
+- Preserve parameterType (REQUEST/DERIVED), expressionText, expressionType, validationRules
+- If `parameters.json` is missing, skip (backward compatible)
 
-### R3: 导出 config.json 包含完整模板属性
-- config.json 中增加: outputFormat, storageStrategy, async, reviewRequired, templateType
-- 导入时恢复这些属性
+### R3: Export `config.json` includes full template fields
+- Add: outputFormat, storageStrategy, async, reviewRequired, templateType
+- Import restores these fields
 
-### R4: 导出包含 header/footer .docx 文件
-- 扫描 assembly_config 中所有 segment 的 headerFilePath 和 footerFilePath
-- 将引用的 .docx 文件从 MinIO 下载并打包到 ZIP 的 `headers/` 和 `footers/` 目录
-- 导入时上传这些文件到 MinIO 并更新 assembly_config 中的路径引用
+### R4: Export includes header/footer `.docx`
+- Scan all segment headerFilePath/footerFilePath in `assembly_config`
+- Download from MinIO into ZIP `headers/` and `footers/`
+- On import, upload to MinIO and rewrite paths in `assembly_config`
 
-### R5: 放宽导出状态限制
-- DRAFT 和 ACTIVE 状态的组合模板都可以导出 ZIP
-- 导出时记录源模板的状态，但导入后始终为 DRAFT 状态
+### R5: Relax export status rule
+- DRAFT and ACTIVE composite templates may export ZIP
+- Record source status on export; imported template is always DRAFT
 
-### R6: 前端模板列表页增加 ZIP 导入按钮
-- 在模板列表页的导入按钮区域增加"导入组合模板包"按钮
-- 接受 `.zip` 文件
-- 调用 `POST /api/composite-templates/import` 接口
-- 导入成功后刷新列表并显示成功提示
+### R6: Template list — ZIP import button
+- Add “Import composite package” next to existing import actions
+- Accept `.zip`
+- Call `POST /api/composite-templates/import`
+- On success, refresh list and show success message
 
-### R7: 导出 ZIP 包含渲染配置 (watermark/barcode)
-- 如果模板有关联的渲染配置 (watermark、barcodes)，导出到 `render-config.json`
-- 导入时作为模板的附加元数据存储 (可选，不存在则跳过)
+### R7: Export ZIP includes render config (watermark/barcode)
+- If template has render config (watermark, barcodes), export `render-config.json`
+- On import, store as supplementary template metadata (optional — skip if missing)
 
 ---
 
-### R7 implementation status — English
+### R7 implementation status
 
 **Status:** **Implemented** (2026-04-28). Composite ZIP export/import supports optional `render-config.json`; validated payload is stored in `templates.render_config` (Flyway V41). Schema and security rules: `docs/development/render-config-json-schema.md`.
 
 Historical deferral rationale (superseded): `docs/audits/full-project-review-2026-04-26/17-composite-r7-render-config-scope.md`.
 
-## 验收标准
+## Acceptance criteria
 
-1. 从系统导出一个包含参数、segment、测试数据的 COMPOSITE 模板 ZIP
-2. 在另一个租户/环境中导入该 ZIP
-3. 导入后的模板具有完整的参数树、assembly_config、测试数据
-4. 导入后的模板可以正常渲染文档
-5. 前端可以通过按钮直接导入 ZIP 包
+1. Export a COMPOSITE ZIP from the system including parameters, segments, and test data.
+2. Import that ZIP in another tenant/environment.
+3. Imported template has full parameter tree, `assembly_config`, and test data.
+4. Imported template can render documents successfully.
+5. Frontend can import the ZIP via the new button.

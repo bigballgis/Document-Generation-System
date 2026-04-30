@@ -1,22 +1,22 @@
 ---
 inclusion: auto
 name: frontend-patterns
-description: Vue 3 前端开发模式，包括页面组件模式、表格列表模式、表单对话框模式、Composable 模式和 OnlyOffice 集成模式
+description: Vue 3 UI patterns — list pages, dialogs, composables, Element Plus layout
 ---
 
-# 前端开发模式
+# Frontend patterns
 
-## 页面结构
+## Page layout
 
 ```
-views/{module}/Index.vue    — 列表页
-views/{module}/Detail.vue   — 详情页
-views/{module}/components/  — 子组件
+views/{module}/Index.vue    — list
+views/{module}/Detail.vue   — detail
+views/{module}/components/  — child components
 ```
 
-页面布局: 头部(标题+操作) → 筛选区(el-form inline) → 表格(el-table+v-loading) → 分页(el-pagination) → 对话框(子组件)
+Typical list page: header (title + actions) → filters (`el-form` inline) → table (`el-table` + `v-loading`) → pagination (`el-pagination`) → dialog (child component)
 
-## 表格列表状态
+## List + table state
 
 ```typescript
 const loading = ref(false)
@@ -36,22 +36,22 @@ function handleSearch() { query.page = 1; fetchData() }
 onMounted(() => fetchData())
 ```
 
-## 表单对话框
+## Form dialog
 
 - `<FormDialog v-model:visible="dialogVisible" :data="editingItem" @saved="onSaved" />`
-- `data: null` = 创建，非 null = 编辑
-- 提交后 `emit('saved')` + `emit('update:visible', false)`
+- `data === null` → create; non-null → edit
+- On success: `emit('saved')` + `emit('update:visible', false)`
 
-## 危险操作
+## Destructive actions
 
-`ElMessageBox.confirm` → 执行 → `ElMessage.success` → `fetchData()`
+`ElMessageBox.confirm` → action → `ElMessage.success` → `fetchData()`
 
-## Composable
+## Composables
 
-- 文件: `composables/use{Feature}.ts`
-- 现有: useAssemblyConfig, useParameterUtils, useSegmentDrag, useTaskPolling, useWorkflowSteps
+- Files: `composables/use{Feature}.ts`
+- Examples: useAssemblyConfig, useParameterUtils, useSegmentDrag, useTaskPolling, useWorkflowSteps
 
 ## CSS
 
-- `<style scoped>` + Element Plus CSS 变量
-- 类名: `.module-page`, `.page-header`, `.filter-card`, `.pagination-wrapper`
+- `<style scoped>` + Element Plus CSS variables
+- Classes: `.module-page`, `.page-header`, `.filter-card`, `.pagination-wrapper`

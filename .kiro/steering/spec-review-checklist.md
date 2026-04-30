@@ -1,35 +1,35 @@
 ---
 inclusion: manual
 name: spec-review-checklist
-description: Spec 文档多轮深度审查方法论，包括修复-再审查循环、交叉验证和逐层深入策略
+description: Spec review methodology — fix-then-reread loops and five review passes
 ---
 
-# Spec 审查方法论
+# Spec review methodology
 
-## 修复-再审查循环 (Fix-Then-Reread)
+## Fix-then-reread loop
 
-1. 每轮重新读取完整文档 (不依赖记忆)
-2. 按当轮维度逐项检查
-3. 逐个修复 (不批量延后)
-4. 修复后重新读取确认无回归
-5. 确认后进入下一轮
+1. Reread the full document each pass (no memory-only review)
+2. Check every item for the current dimension
+3. Fix issues one by one (no batch deferral)
+4. Reread after fixes to catch regressions
+5. Proceed to the next pass only after sign-off
 
-禁止: 批量修复、跳过重读、混合多维度。
+Forbidden: batching fixes across unrelated issues, skipping rereads, mixing dimensions in one pass.
 
-## 五轮审查维度
+## Five passes
 
-| 轮次 | 维度 | 关注点 |
-|------|------|--------|
-| 1 | 结构完整性 | 章节齐全、编号连续、无可选标记 |
-| 2 | 跨文档一致性 | AC↔设计↔任务引用、路径/名称一致 |
-| 3 | 代码级验证 | 方法签名、ErrorCode、DTO 字段、TS 类型 |
-| 4 | 边界条件 | 空数据/API 失败/并发/null/大数据量 |
-| 5 | 实现可行性 | 竞态、生命周期、向后兼容、N+1 |
+| Pass | Dimension | Focus |
+|------|-----------|-------|
+| 1 | Structure | Sections complete, numbering contiguous, no stray optionals |
+| 2 | Cross-doc | AC ↔ design ↔ tasks references; paths/names aligned |
+| 3 | Code truth | Signatures, `ErrorCode`, DTO fields, TS types |
+| 4 | Edge cases | Empty data, API failures, concurrency, null, large payloads |
+| 5 | Feasibility | Races, lifecycles, compatibility, N+1 |
 
-## 优先级
+## Severity
 
-P0=阻塞实现, P1=功能缺陷, P2=体验问题, P3=代码质量
+P0 blocks implementation; P1 functional gaps; P2 UX; P3 cleanliness
 
-## 停止条件
+## Stop criteria
 
-连续两轮无问题，或最后一轮仅 P2/P3，或已完成全部 5 维度。
+Two consecutive clean passes, or final pass only has P2/P3, or all five dimensions done.
