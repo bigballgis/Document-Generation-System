@@ -2,61 +2,61 @@
 set -e
 
 echo "========================================="
-echo "  DocGen 本地 Docker 部署脚本"
+echo "  DocGen local Docker deployment script"
 echo "========================================="
 
-# 1. 检查 Docker
+# 1. Check Docker
 if ! command -v docker &> /dev/null; then
-    echo "错误: Docker 未安装"
-    echo "请访问 https://docs.docker.com/get-docker/ 安装 Docker"
+    echo "Error: Docker is not installed"
+    echo "See https://docs.docker.com/get-docker/"
     exit 1
 fi
 
 if ! docker compose version &> /dev/null; then
-    echo "错误: Docker Compose 未安装"
-    echo "请访问 https://docs.docker.com/compose/install/ 安装 Docker Compose"
+    echo "Error: Docker Compose is not installed"
+    echo "See https://docs.docker.com/compose/install/"
     exit 1
 fi
 
-echo "✓ Docker 和 Docker Compose 已安装"
+echo "✓ Docker and Docker Compose are installed"
 
-# 2. 检查 .env 文件
+# 2. Check .env file
 if [ ! -f .env ]; then
-    echo "未找到 .env 文件，从 .env.example 复制..."
+    echo ".env not found; copying from .env.example..."
     cp .env.example .env
-    echo "⚠ 请编辑 .env 文件，修改敏感配置（密码、密钥等），然后重新运行此脚本"
+    echo "⚠ Edit .env for secrets (passwords, keys), then run this script again"
     exit 0
 fi
 
-echo "✓ .env 文件已存在"
+echo "✓ .env file exists"
 
-# 3. 构建镜像
+# 3. Build images
 echo ""
-echo "正在构建 Docker 镜像..."
+echo "Building Docker images..."
 docker compose build || {
-    echo "错误: 镜像构建失败"
+    echo "Error: image build failed"
     exit 1
 }
-echo "✓ 镜像构建完成"
+echo "✓ Image build complete"
 
-# 4. 启动服务
+# 4. Start services
 echo ""
-echo "正在启动服务..."
+echo "Starting services..."
 docker compose up -d || {
-    echo "错误: 服务启动失败"
+    echo "Error: failed to start services"
     docker compose logs
     exit 1
 }
 
-# 5. 等待健康检查
+# 5. Wait for health checks
 echo ""
-echo "等待服务启动..."
+echo "Waiting for services..."
 SERVICES="postgres redis minio docxtemplater app"
 MAX_WAIT=180
 ELAPSED=0
 
 for svc in $SERVICES; do
-    echo -n "  等待 $svc..."
+    echo -n "  Waiting for $svc..."
     while [ $ELAPSED -lt $MAX_WAIT ]; do
         STATUS=$(docker compose ps --format json "$svc" 2>/dev/null | grep -o '"Health":"[^"]*"' | head -1 || echo "")
         if echo "$STATUS" | grep -q "healthy"; then
@@ -68,21 +68,21 @@ for svc in $SERVICES; do
         echo -n "."
     done
     if [ $ELAPSED -ge $MAX_WAIT ]; then
-        echo " ✗ 超时"
-        echo "服务 $svc 日志:"
+        echo " ✗ timed out"
+        echo "Logs for $svc:"
         docker compose logs "$svc" --tail 30
         exit 1
     fi
 done
 
-# 6. 输出访问地址
+# 6. Print URLs
 echo ""
 echo "========================================="
-echo "  DocGen 部署成功!"
+echo "  DocGen deployment succeeded"
 echo "========================================="
-echo "  前端:     http://localhost"
-echo "  后端 API: http://localhost:8080"
-echo "  Swagger:  http://localhost/swagger-ui.html"
-echo "  MinIO:    http://localhost:9001"
-echo "  OnlyOffice: https://localhost:8443"
+echo "  Frontend:   http://localhost"
+echo "  Backend API: http://localhost:8080"
+echo "  Swagger:     http://localhost/swagger-ui.html"
+echo "  MinIO:       http://localhost:9001"
+echo "  OnlyOffice:  https://localhost:8443"
 echo "========================================="
