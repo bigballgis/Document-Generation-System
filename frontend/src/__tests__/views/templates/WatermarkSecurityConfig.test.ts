@@ -18,8 +18,9 @@ vi.mock('element-plus', async (importOriginal) => {
   }
 })
 
+import { ElSwitch } from 'element-plus'
 import WatermarkSecurityConfig from '@/views/templates/components/WatermarkSecurityConfig.vue'
-import { getTemplate, clearTemplateRenderConfig } from '@/api/templates'
+import { getTemplate, clearTemplateRenderConfig, updateTemplateRenderConfig } from '@/api/templates'
 
 function minimalTemplateDto(
   id: number,
@@ -48,8 +49,10 @@ describe('WatermarkSecurityConfig', () => {
   beforeEach(() => {
     vi.mocked(getTemplate).mockReset()
     vi.mocked(clearTemplateRenderConfig).mockReset()
+    vi.mocked(updateTemplateRenderConfig).mockReset()
     vi.mocked(getTemplate).mockResolvedValue(minimalTemplateDto(1, 'SINGLE', null) as any)
     vi.mocked(clearTemplateRenderConfig).mockResolvedValue(minimalTemplateDto(1, 'SINGLE', null) as any)
+    vi.mocked(updateTemplateRenderConfig).mockResolvedValue(minimalTemplateDto(1, 'COMPOSITE', '{}') as any)
   })
 
   it('disables Save for SINGLE template after load', async () => {
@@ -84,5 +87,50 @@ describe('WatermarkSecurityConfig', () => {
     await flushPromises()
 
     expect(clearTemplateRenderConfig).toHaveBeenCalledWith(9)
+  })
+
+  it('calls updateTemplateRenderConfig when COMPOSITE saves text watermark', async () => {
+    vi.mocked(getTemplate).mockResolvedValue(minimalTemplateDto(11, 'COMPOSITE', null) as any)
+
+    const wrapper = mount(WatermarkSecurityConfig, { props: { templateId: 11 } })
+    await flushPromises()
+
+    const switches = wrapper.findAllComponents(ElSwitch)
+    expect(switches.length).toBeGreaterThanOrEqual(1)
+    await switches[0].vm.$emit('update:modelValue', true)
+    await flushPromises()
+
+    const ta = wrapper.find('textarea')
+    expect(ta.exists()).toBe(true)
+    await ta.setValue('SECRET')
+
+    const actionButtons = wrapper.find('.watermark-actions').findAll('button')
+    await actionButtons[0].trigger('click')
+    await flushPromises()
+
+    expect(updateTemplateRenderConfig).toHaveBeenCalledWith(
+      11,
+      expect.objectContaining({
+        schemaVersion: 1,
+        textWatermark: expect.objectContaining({
+          text: 'SECRET',
+          fontSize: 36,
+        }),
+      }),
+    )
+  })
+
+  it('does not call updateTemplateRenderConfig when SINGLE Save is triggered while disabled', async () => {
+    vi.mocked(getTemplate).mockResolvedValueOnce(minimalTemplateDto(14, 'SINGLE', null) as any)
+
+    const wrapper = mount(WatermarkSecurityConfig, { props: { templateId: 14 } })
+    await flushPromises()
+
+    const actionButtons = wrapper.find('.watermark-actions').findAll('button')
+    await actionButtons[0].trigger('click')
+    await flushPromises()
+
+    expect(updateTemplateRenderConfig).not.toHaveBeenCalled()
+    expect(clearTemplateRenderConfig).not.toHaveBeenCalled()
   })
 })
