@@ -68,7 +68,7 @@ class TenantServiceTest {
 
         BusinessException ex = assertThrows(BusinessException.class,
                 () -> tenantService.createTenant(request));
-        assertEquals("租户名称已存在", ex.getMessage());
+        assertEquals("Tenant name already exists", ex.getMessage());
     }
 
 

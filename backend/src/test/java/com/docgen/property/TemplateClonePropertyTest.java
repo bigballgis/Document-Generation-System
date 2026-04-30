@@ -30,7 +30,7 @@ import static org.mockito.Mockito.*;
  *
  * <p><b>Validates: Requirements 1.7, 1.8</b></p>
  */
-@Tag("Feature: low-code-document-generation-system, Property 2: 模板克隆独立性")
+@Tag("template-clone-independence")
 class TemplateClonePropertyTest {
 
     private static final String[] OUTPUT_FORMATS = {"WORD", "PDF", "BOTH"};
@@ -41,7 +41,7 @@ class TemplateClonePropertyTest {
      * Property 2: Template clone independence.
      *
      * For any existing template, cloning should produce an independent copy whose name
-     * is the original name + " - 副本", status is DRAFT, and configuration matches the
+     * is the original name + " - Copy", status is DRAFT, and configuration matches the
      * original. Modifying the clone must not affect the original template.
      */
     @Property(tries = 100)
@@ -113,9 +113,9 @@ class TemplateClonePropertyTest {
             // Act: clone the template
             TemplateDTO cloneDTO = templateService.cloneTemplate(source.getId());
 
-            // Assert: clone name = original name + " - 副本"
-            assertEquals(originalName + " - 副本", cloneDTO.getName(),
-                    "Clone name should be original name + ' - 副本'");
+            // Assert: clone name = original name + " - Copy"
+            assertEquals(originalName + " - Copy", cloneDTO.getName(),
+                    "Clone name should be original name + ' - Copy'");
 
             // Assert: clone status = DRAFT
             assertEquals("DRAFT", cloneDTO.getStatus(),

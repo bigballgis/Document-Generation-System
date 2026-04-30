@@ -406,7 +406,7 @@ class TemplateServiceTest {
 
         TemplateDTO result = templateService.cloneTemplate(1L);
 
-        assertEquals("Test Template - 副本", result.getName());
+        assertEquals("Test Template - Copy", result.getName());
         assertEquals("DRAFT", result.getStatus());
         assertEquals(source.getDescription(), result.getDescription());
         assertEquals(source.getOutputFormat(), result.getOutputFormat());
