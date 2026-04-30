@@ -255,7 +255,7 @@ public class TemplateService {
     }
 
     /**
-     * Clone a template: creates a full copy with "- 副本" suffix and DRAFT status.
+     * Clone a template: creates a full copy with " - Copy" suffix and DRAFT status.
      * Copies the template file in MinIO and duplicates all metadata.
      */
     @Transactional
@@ -267,7 +267,7 @@ public class TemplateService {
 
         Template clone = new Template();
         clone.setTenantId(source.getTenantId());
-        clone.setName(source.getName() + " - 副本");
+        clone.setName(source.getName() + " - Copy");
         clone.setDescription(source.getDescription());
         clone.setTemplateFilePath(clonedFilePath);
         clone.setOutputFormat(source.getOutputFormat());
@@ -311,7 +311,7 @@ public class TemplateService {
 
         TemplateVersion targetVersion = templateVersionRepository.findByIdAndTemplateId(versionId, templateId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.TEMPLATE_VERSION_NOT_FOUND, "模板版本不存在"));
+                        ErrorCode.TEMPLATE_VERSION_NOT_FOUND, "Template version not found"));
 
         // Restore template fields from the target version's config
         template.setTemplateFilePath(targetVersion.getTemplateFilePath());
@@ -338,7 +338,7 @@ public class TemplateService {
         Template template = findTemplateOrThrow(templateId);
         if (!"ACTIVE".equals(template.getStatus())) {
             throw new BusinessException(ErrorCode.TEMPLATE_INVALID_STATE_TRANSITION,
-                    "只有 ACTIVE 状态的模板才能创建草稿版本", HttpStatus.BAD_REQUEST);
+                    "Only ACTIVE templates can create a draft version", HttpStatus.BAD_REQUEST);
         }
         createVersionSnapshot(template);
         template.setStatus("DRAFT");
@@ -351,7 +351,7 @@ public class TemplateService {
     private Template findTemplateOrThrow(Long id) {
         return templateRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.TEMPLATE_NOT_FOUND, "模板不存在"));
+                        ErrorCode.TEMPLATE_NOT_FOUND, "Template not found"));
     }
 
     private void assertTeamBelongsToTenant(Long teamId, Long tenantId) {
@@ -399,7 +399,7 @@ public class TemplateService {
         } catch (Exception e) {
             log.error("Failed to upload template file to MinIO: {}", e.getMessage(), e);
             throw new BusinessException(ErrorCode.INTERNAL_ERROR,
-                    "模板文件上传失败", HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Template file upload failed", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
 
         return objectName;
@@ -427,7 +427,7 @@ public class TemplateService {
         } catch (Exception e) {
             log.error("Failed to create empty docx template: {}", e.getMessage(), e);
             throw new BusinessException(ErrorCode.INTERNAL_ERROR,
-                    "创建空模板文件失败", HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Failed to create blank template file", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
         return objectName;
     }
@@ -486,7 +486,7 @@ public class TemplateService {
         } catch (Exception e) {
             log.error("Failed to copy template file in MinIO: {}", e.getMessage(), e);
             throw new BusinessException(ErrorCode.INTERNAL_ERROR,
-                    "模板文件复制失败", HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Template file copy failed", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
 
         return destObjectName;

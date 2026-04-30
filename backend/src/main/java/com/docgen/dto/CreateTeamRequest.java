@@ -7,10 +7,10 @@ import jakarta.validation.constraints.Size;
 
 public class CreateTeamRequest {
 
-    @NotNull(message = "租户ID不能为空")
+    @NotNull(message = "tenantId is required")
     private Long tenantId;
 
-    @NotBlank(message = "团队名称不能为空")
+    @NotBlank(message = "Team name is required")
     private String name;
 
     private String description;

@@ -6,7 +6,7 @@ import java.util.List;
 
 public class SubmitReviewRequest {
 
-    @NotEmpty(message = "审查人列表不能为空")
+    @NotEmpty(message = "reviewerIds must not be empty")
     private List<Long> reviewerIds;
 
     private int reviewLevel = 1;
