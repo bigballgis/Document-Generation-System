@@ -5,7 +5,7 @@ import java.util.List;
 
 public class MergeDocumentsRequest {
 
-    @NotEmpty(message = "文档 ID 列表不能为空")
+    @NotEmpty(message = "Document ID list must not be empty")
     private List<Long> documentIds;
 
     private boolean insertPageBreaks = true;

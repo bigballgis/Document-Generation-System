@@ -185,7 +185,7 @@ class ParameterValidationServicePropertyTest {
         BusinessException ex = assertThrows(BusinessException.class,
                 () -> svc.validateAndBuildContext(TEMPLATE_ID, Map.of("field", tc.value)));
 
-        assertTrue(ex.getMessage().contains("类型不匹配") || ex.getMessage().contains("type_mismatch")
+        assertTrue(ex.getMessage().contains("type mismatch") || ex.getMessage().contains("type_mismatch")
                         || ex.getMessage().contains(tc.dataType),
                 "Error should indicate type mismatch");
     }

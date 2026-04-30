@@ -10,7 +10,7 @@ import java.util.Map;
  */
 public class SelectivePreviewRequest {
 
-    @NotEmpty(message = "至少选择一个段落进行预览")
+    @NotEmpty(message = "Select at least one segment position to preview")
     private List<Integer> positions;
 
     private Map<String, Object> testData;

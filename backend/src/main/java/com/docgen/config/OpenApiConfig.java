@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * OpenAPI 3.0 configuration for automatic API documentation generation.
- * Provides Swagger UI at /swagger-ui.html and API docs at /api-docs.
+ * Exposes Swagger UI at {@code /swagger-ui.html} and API docs at {@code /api-docs}.
  */
 @Configuration
 public class OpenApiConfig {
@@ -22,7 +22,7 @@ public class OpenApiConfig {
     public OpenAPI docgenOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("低代码文档生成系统 API")
+                        .title("Document Generation System API")
                         .description("Low-Code Document Generation System RESTful API. "
                                 + "Supports template management, document generation, "
                                 + "async/batch processing, and more.")
@@ -33,7 +33,7 @@ public class OpenApiConfig {
                         .license(new License()
                                 .name("Apache 2.0")
                                 .url("https://www.apache.org/licenses/LICENSE-2.0")))
-                .addTagsItem(new Tag().name("Parameter").description("参数表管理"))
+                .addTagsItem(new Tag().name("Parameter").description("Parameter definitions"))
                 .addSecurityItem(new SecurityRequirement()
                         .addList("Bearer Authentication")
                         .addList("API Key"))

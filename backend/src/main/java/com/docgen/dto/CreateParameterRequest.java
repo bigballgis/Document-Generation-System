@@ -6,8 +6,8 @@ import jakarta.validation.constraints.Size;
 import java.util.Map;
 
 public record CreateParameterRequest(
-        @NotBlank(message = "参数名称不能为空")
-        @Size(max = 100, message = "参数名称不能超过100个字符")
+        @NotBlank(message = "Parameter name must not be blank")
+        @Size(max = 100, message = "Parameter name must not exceed 100 characters")
         String name,
 
         String parameterType,

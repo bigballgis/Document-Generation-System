@@ -12,6 +12,12 @@ export interface UseJsonImportReturn {
 
 const MAX_DEPTH = 5
 
+/** English warnings for client-side import preview; same text as i18n en-US jsonImport keys. */
+const WARNING_EMPTY_JSON =
+  'JSON data is empty, cannot generate parameters'
+const WARNING_MAX_DEPTH_FLATTENED =
+  'JSON nesting exceeds 5 levels, deep data has been flattened to STRING'
+
 export function useJsonImport(): UseJsonImportReturn {
   return { parseAndInfer, validateJson }
 }
@@ -38,7 +44,7 @@ export function parseAndInfer(jsonStr: string): JsonImportResult {
     (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) && Object.keys(parsed).length === 0) ||
     (Array.isArray(parsed) && parsed.length === 0)
   ) {
-    warnings.push('JSON 数据为空，无法生成参数')
+    warnings.push(WARNING_EMPTY_JSON)
     return { parameters: [], warnings }
   }
 
@@ -89,8 +95,8 @@ function inferValue(
 
   // At max depth, flatten complex types to STRING
   if (depth >= MAX_DEPTH && (typeof value === 'object' || Array.isArray(value))) {
-    if (!warnings.includes('JSON 嵌套超过 5 层，深层数据已扁平化为 STRING')) {
-      warnings.push('JSON 嵌套超过 5 层，深层数据已扁平化为 STRING')
+    if (!warnings.includes(WARNING_MAX_DEPTH_FLATTENED)) {
+      warnings.push(WARNING_MAX_DEPTH_FLATTENED)
     }
     return {
       name,

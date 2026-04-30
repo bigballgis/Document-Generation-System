@@ -214,7 +214,7 @@ public class CompositeTemplateController {
         } catch (Exception e) {
             log.error("Failed to create blank segment for template {}: {}", id, objectPath, e);
             throw new BusinessException(ErrorCode.INTERNAL_ERROR,
-                    "创建空白片段失败", HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Failed to create blank segment", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
 
         AssemblySegmentEntry entry = new AssemblySegmentEntry();
@@ -260,7 +260,7 @@ public class CompositeTemplateController {
         } catch (Exception e) {
             log.error("Failed to create blank {} for template {}: {}", type, id, objectPath, e);
             throw new BusinessException(ErrorCode.INTERNAL_ERROR,
-                    "创建空白" + ("header".equals(type) ? "页眉" : "页脚") + "失败",
+                    "Failed to create blank " + ("header".equals(type) ? "header" : "footer"),
                     HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
 
@@ -280,13 +280,13 @@ public class CompositeTemplateController {
 
         if (segments == null || segmentIndex < 0 || segmentIndex >= segments.size()) {
             throw new BusinessException(ErrorCode.SEGMENT_FILE_NOT_FOUND,
-                    "片段索引无效: " + segmentIndex, HttpStatus.NOT_FOUND);
+                    "Invalid segment index: " + segmentIndex, HttpStatus.NOT_FOUND);
         }
 
         String filePath = segments.get(segmentIndex).getFilePath();
         if (filePath == null || filePath.isBlank()) {
             throw new BusinessException(ErrorCode.SEGMENT_FILE_NOT_FOUND,
-                    "片段文件路径为空", HttpStatus.NOT_FOUND);
+                    "Segment file path is empty", HttpStatus.NOT_FOUND);
         }
 
         try {
@@ -302,7 +302,7 @@ public class CompositeTemplateController {
             log.error("Failed to generate presigned URL for segment {}/{}: {}",
                     id, segmentIndex, e.getMessage(), e);
             throw new BusinessException(ErrorCode.ONLYOFFICE_URL_FAILED,
-                    "生成片段访问链接失败", HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Failed to generate segment access URL", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 
@@ -409,7 +409,7 @@ public class CompositeTemplateController {
             log.error("Failed to save OnlyOffice edited segment for template {}, segment {}: {}",
                     id, segmentIndex, e.getMessage(), e);
             throw new BusinessException(ErrorCode.ONLYOFFICE_CALLBACK_FAILED,
-                    "保存编辑片段失败", HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Failed to save edited segment", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
 
         return ResponseEntity.ok(Map.of("error", 0));

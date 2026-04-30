@@ -8,7 +8,7 @@ public class ConditionalApproveRequest {
 
     private String comment;
 
-    @NotEmpty(message = "建议修改项列表不能为空")
+    @NotEmpty(message = "Suggestions list must not be empty")
     private List<String> suggestions;
 
     public ConditionalApproveRequest() {}

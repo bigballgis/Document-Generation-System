@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 public record BatchUpdateParameterRequest(
-        @NotEmpty(message = "更新列表不能为空")
+        @NotEmpty(message = "Update list must not be empty")
         List<@Valid BatchUpdateItem> items
 ) {
 
@@ -16,10 +16,10 @@ public record BatchUpdateParameterRequest(
      * Individual parameter update item within a batch update request.
      */
     public record BatchUpdateItem(
-            @NotNull(message = "参数ID不能为空")
+            @NotNull(message = "Parameter ID must not be null")
             Long id,
 
-            @NotNull(message = "版本号不能为空")
+            @NotNull(message = "Version must not be null")
             Integer version,
 
             String name,

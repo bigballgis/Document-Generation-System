@@ -12,7 +12,7 @@ public class GrantPermissionRequest {
 
     private Long teamId;
 
-    @NotNull(message = "权限类型不能为空")
+    @NotNull(message = "Permission type must not be null")
     private PermissionType permissionType;
 
     public GrantPermissionRequest() {}

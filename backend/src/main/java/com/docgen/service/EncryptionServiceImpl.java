@@ -46,7 +46,7 @@ public class EncryptionServiceImpl implements EncryptionService {
     public String encrypt(String plainText) {
         if (plainText == null) {
             throw new BusinessException(ErrorCode.ENCRYPTION_FAILED,
-                    "待加密内容不能为空", HttpStatus.BAD_REQUEST);
+                    "Plaintext cannot be empty", HttpStatus.BAD_REQUEST);
         }
         try {
             byte[] iv = new byte[GCM_IV_LENGTH];
@@ -66,7 +66,7 @@ public class EncryptionServiceImpl implements EncryptionService {
         } catch (Exception e) {
             log.error("Encryption failed: {}", e.getMessage());
             throw new BusinessException(ErrorCode.ENCRYPTION_FAILED,
-                    "加密失败", HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Encryption failed", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 
@@ -74,7 +74,7 @@ public class EncryptionServiceImpl implements EncryptionService {
     public String decrypt(String cipherText) {
         if (cipherText == null) {
             throw new BusinessException(ErrorCode.DECRYPTION_FAILED,
-                    "待解密内容不能为空", HttpStatus.BAD_REQUEST);
+                    "Ciphertext cannot be empty", HttpStatus.BAD_REQUEST);
         }
         return decryptWithKey(cipherText, secretKey);
     }
@@ -114,12 +114,12 @@ public class EncryptionServiceImpl implements EncryptionService {
             byte[] keyBytes = Base64.getDecoder().decode(base64Key);
             if (keyBytes.length != 32) {
                 throw new BusinessException(ErrorCode.ENCRYPTION_KEY_INVALID,
-                        "加密密钥必须为256位（32字节）", HttpStatus.INTERNAL_SERVER_ERROR);
+                        "Encryption key must be 256 bits (32 bytes)", HttpStatus.INTERNAL_SERVER_ERROR);
             }
             return new SecretKeySpec(keyBytes, ALGORITHM);
         } catch (IllegalArgumentException e) {
             throw new BusinessException(ErrorCode.ENCRYPTION_KEY_INVALID,
-                    "加密密钥Base64格式无效", HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Encryption key Base64 is invalid", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 
@@ -128,7 +128,7 @@ public class EncryptionServiceImpl implements EncryptionService {
             byte[] combined = Base64.getDecoder().decode(cipherText);
             if (combined.length < GCM_IV_LENGTH) {
                 throw new BusinessException(ErrorCode.DECRYPTION_FAILED,
-                        "密文格式无效", HttpStatus.BAD_REQUEST);
+                        "Ciphertext format is invalid", HttpStatus.BAD_REQUEST);
             }
 
             byte[] iv = new byte[GCM_IV_LENGTH];
@@ -147,7 +147,7 @@ public class EncryptionServiceImpl implements EncryptionService {
         } catch (Exception e) {
             log.error("Decryption failed: {}", e.getMessage());
             throw new BusinessException(ErrorCode.DECRYPTION_FAILED,
-                    "解密失败", HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Decryption failed", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 
@@ -169,7 +169,7 @@ public class EncryptionServiceImpl implements EncryptionService {
         } catch (Exception e) {
             log.error("Encryption with provided key failed: {}", e.getMessage());
             throw new BusinessException(ErrorCode.ENCRYPTION_FAILED,
-                    "加密失败", HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Encryption failed", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 }

@@ -69,14 +69,14 @@ public class CoverageCheckService {
         String filePath = template.getTemplateFilePath();
         if (filePath == null || filePath.isBlank()) {
             placeholders = List.of();
-            warnings.add("模板尚未上传文件，跳过占位符扫描");
+            warnings.add("Template has no uploaded file; placeholder scan skipped");
         } else {
             try {
                 placeholders = templateScanService.scanPlaceholders(filePath);
             } catch (Exception e) {
                 log.warn("Failed to scan template {} placeholders: {}", templateId, e.getMessage());
                 placeholders = List.of();
-                warnings.add("模板扫描失败，覆盖率可能不准确: " + e.getMessage());
+                warnings.add("Template scan failed; coverage may be inaccurate: " + e.getMessage());
             }
         }
 
@@ -159,7 +159,7 @@ public class CoverageCheckService {
                     result.add(data);
                 }
             } catch (Exception e) {
-                warnings.add("测试用例 '" + tc.getName() + "' 数据解析失败: " + e.getMessage());
+                warnings.add("Test case '" + tc.getName() + "' data parse failed: " + e.getMessage());
             }
         }
         return result;
@@ -172,7 +172,7 @@ public class CoverageCheckService {
     private Template findTemplateOrThrow(Long templateId) {
         return templateRepository.findById(templateId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.TEMPLATE_NOT_FOUND, "模板不存在"));
+                        ErrorCode.TEMPLATE_NOT_FOUND, "Template not found"));
     }
 
     /**

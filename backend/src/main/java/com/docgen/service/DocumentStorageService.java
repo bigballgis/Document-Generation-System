@@ -138,7 +138,7 @@ public class DocumentStorageService {
         } catch (Exception e) {
             log.error("Failed to store document to MinIO: {}", e.getMessage());
             throw new BusinessException(ErrorCode.GENERATE_STORAGE_FAILED,
-                    "文档存储失败: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Document storage failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
 
         // Save metadata to DB
@@ -171,11 +171,11 @@ public class DocumentStorageService {
     public byte[] downloadDocument(Long documentId) {
         GeneratedDocument doc = documentRepository.findById(documentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.DOCUMENT_NOT_FOUND,
-                        "文档不存在: " + documentId, HttpStatus.NOT_FOUND));
+                        "Document not found: " + documentId, HttpStatus.NOT_FOUND));
 
         if (doc.getExpiresAt() != null && doc.getExpiresAt().isBefore(Instant.now())) {
             throw new BusinessException(ErrorCode.DOCUMENT_EXPIRED,
-                    "文档已过期: " + documentId, HttpStatus.GONE);
+                    "Document expired: " + documentId, HttpStatus.GONE);
         }
 
         try (InputStream stream = minioClient.getObject(GetObjectArgs.builder()
@@ -186,7 +186,7 @@ public class DocumentStorageService {
         } catch (Exception e) {
             log.error("Failed to download document from MinIO: {}", e.getMessage());
             throw new BusinessException(ErrorCode.DOCUMENT_DOWNLOAD_FAILED,
-                    "文档下载失败: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Document download failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 
@@ -196,7 +196,7 @@ public class DocumentStorageService {
     public GeneratedDocumentDTO getDocument(Long documentId) {
         GeneratedDocument doc = documentRepository.findById(documentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.DOCUMENT_NOT_FOUND,
-                        "文档不存在: " + documentId, HttpStatus.NOT_FOUND));
+                        "Document not found: " + documentId, HttpStatus.NOT_FOUND));
         return toDTO(doc);
     }
 
@@ -247,7 +247,7 @@ public class DocumentStorageService {
     public String getContentType(Long documentId) {
         GeneratedDocument doc = documentRepository.findById(documentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.DOCUMENT_NOT_FOUND,
-                        "文档不存在: " + documentId, HttpStatus.NOT_FOUND));
+                        "Document not found: " + documentId, HttpStatus.NOT_FOUND));
         return resolveContentType(doc.getFormat());
     }
 

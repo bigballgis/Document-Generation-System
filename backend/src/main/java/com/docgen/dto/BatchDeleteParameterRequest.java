@@ -6,6 +6,6 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public record BatchDeleteParameterRequest(
-        @NotEmpty(message = "参数ID列表不能为空")
+        @NotEmpty(message = "Parameter ID list must not be empty")
         List<@NotNull Long> ids
 ) {}

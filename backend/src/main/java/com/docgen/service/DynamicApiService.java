@@ -54,7 +54,7 @@ public class DynamicApiService {
                                                     GenerateDocumentRequest request) {
         Template template = templateRepository.findById(templateId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TEMPLATE_NOT_FOUND,
-                        "模板不存在: " + templateId, HttpStatus.NOT_FOUND));
+                        "Template not found: " + templateId, HttpStatus.NOT_FOUND));
 
         templateGenerationEligibilityService.requireActiveForDocumentGeneration(template, templateId);
 
@@ -65,7 +65,7 @@ public class DynamicApiService {
 
             if (!template.isAllowHistoryVersions() && !isLatest) {
                 throw new BusinessException(ErrorCode.GENERATE_VERSION_NOT_ALLOWED,
-                        "该模板不允许调用历史版本，请使用最新版本", HttpStatus.BAD_REQUEST);
+                        "Historical versions are not allowed for this template; use the latest version", HttpStatus.BAD_REQUEST);
             }
 
             // Verify the requested version exists
@@ -74,7 +74,7 @@ public class DynamicApiService {
                     .filter(v -> v.getVersionNumber().equals(version))
                     .findFirst()
                     .orElseThrow(() -> new BusinessException(ErrorCode.TEMPLATE_VERSION_NOT_FOUND,
-                            "模板版本不存在: " + version, HttpStatus.NOT_FOUND));
+                            "Template version not found: " + version, HttpStatus.NOT_FOUND));
 
             log.info("Generating document via API for template {} version {}", templateId, version);
         } else {

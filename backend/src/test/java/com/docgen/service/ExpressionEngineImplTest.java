@@ -272,7 +272,7 @@ class ExpressionEngineImplTest {
         ExpressionValidationResult result = engine.validateExpression("1+1", ExpressionType.JAVASCRIPT);
 
         assertFalse(result.isValid());
-        assertTrue(result.getErrorMessage().contains("表达式服务不可用"));
+        assertTrue(result.getErrorMessage().contains("Expression service unavailable"));
     }
 
     @Test
@@ -287,7 +287,7 @@ class ExpressionEngineImplTest {
         ExpressionValidationResult result = engine.validateExpression("1+1", ExpressionType.JAVASCRIPT);
 
         assertFalse(result.isValid());
-        assertTrue(result.getErrorMessage().contains("验证服务返回空结果"));
+        assertTrue(result.getErrorMessage().contains("Validation service returned an empty result"));
     }
 }
 

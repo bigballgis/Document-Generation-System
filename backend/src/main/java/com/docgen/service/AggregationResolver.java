@@ -253,9 +253,9 @@ public class AggregationResolver {
         List<AggregationPropertyDTO> props = new ArrayList<>();
 
         // Unconditional properties
-        props.add(new AggregationPropertyDTO("$count", arrayPath + ".$count", "NUMBER", "数组元素数量"));
-        props.add(new AggregationPropertyDTO("$first", arrayPath + ".$first", "OBJECT", "第一个元素"));
-        props.add(new AggregationPropertyDTO("$last", arrayPath + ".$last", "OBJECT", "最后一个元素"));
+        props.add(new AggregationPropertyDTO("$count", arrayPath + ".$count", "NUMBER", "Number of elements in the array"));
+        props.add(new AggregationPropertyDTO("$first", arrayPath + ".$first", "OBJECT", "First element"));
+        props.add(new AggregationPropertyDTO("$last", arrayPath + ".$last", "OBJECT", "Last element"));
 
         // Per-child aggregation properties
         for (ParameterDefinition child : children) {
@@ -268,26 +268,26 @@ public class AggregationResolver {
 
             if ("NUMBER".equals(dataType)) {
                 props.add(new AggregationPropertyDTO("$sum_" + fieldName,
-                        arrayPath + ".$sum_" + fieldName, "NUMBER", fieldName + " 求和"));
+                        arrayPath + ".$sum_" + fieldName, "NUMBER", "Sum of " + fieldName));
                 props.add(new AggregationPropertyDTO("$avg_" + fieldName,
-                        arrayPath + ".$avg_" + fieldName, "NUMBER", fieldName + " 平均值"));
+                        arrayPath + ".$avg_" + fieldName, "NUMBER", "Average of " + fieldName));
                 props.add(new AggregationPropertyDTO("$min_" + fieldName,
-                        arrayPath + ".$min_" + fieldName, "NUMBER", fieldName + " 最小值"));
+                        arrayPath + ".$min_" + fieldName, "NUMBER", "Minimum of " + fieldName));
                 props.add(new AggregationPropertyDTO("$max_" + fieldName,
-                        arrayPath + ".$max_" + fieldName, "NUMBER", fieldName + " 最大值"));
+                        arrayPath + ".$max_" + fieldName, "NUMBER", "Maximum of " + fieldName));
             } else if ("STRING".equals(dataType)) {
                 props.add(new AggregationPropertyDTO("$join_" + fieldName,
-                        arrayPath + ".$join_" + fieldName, "STRING", fieldName + " 拼接 (逗号)"));
+                        arrayPath + ".$join_" + fieldName, "STRING", "Join " + fieldName + " (comma)"));
                 props.add(new AggregationPropertyDTO("$join(;)_" + fieldName,
-                        arrayPath + ".$join(;)_" + fieldName, "STRING", fieldName + " 拼接 (分号)"));
+                        arrayPath + ".$join(;)_" + fieldName, "STRING", "Join " + fieldName + " (semicolon)"));
                 props.add(new AggregationPropertyDTO("$join(、)_" + fieldName,
-                        arrayPath + ".$join(、)_" + fieldName, "STRING", fieldName + " 拼接 (顿号)"));
+                        arrayPath + ".$join(、)_" + fieldName, "STRING", "Join " + fieldName + " (ideographic comma)"));
                 props.add(new AggregationPropertyDTO("$join(|)_" + fieldName,
-                        arrayPath + ".$join(|)_" + fieldName, "STRING", fieldName + " 拼接 (竖线)"));
+                        arrayPath + ".$join(|)_" + fieldName, "STRING", "Join " + fieldName + " (pipe)"));
                 props.add(new AggregationPropertyDTO("$join(/)_" + fieldName,
-                        arrayPath + ".$join(/)_" + fieldName, "STRING", fieldName + " 拼接 (斜线)"));
+                        arrayPath + ".$join(/)_" + fieldName, "STRING", "Join " + fieldName + " (slash)"));
                 props.add(new AggregationPropertyDTO("$join(\\n)_" + fieldName,
-                        arrayPath + ".$join(\\n)_" + fieldName, "STRING", fieldName + " 拼接 (换行)"));
+                        arrayPath + ".$join(\\n)_" + fieldName, "STRING", "Join " + fieldName + " (newline)"));
             }
         }
 

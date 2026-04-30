@@ -3,7 +3,7 @@ package com.docgen.dto;
 import jakarta.validation.constraints.NotBlank;
 
 public record JsonImportRequest(
-        @NotBlank(message = "JSON 数据不能为空")
+        @NotBlank(message = "JSON data must not be blank")
         String jsonData,
 
         Long parentId

@@ -66,7 +66,7 @@ public final class ParameterResolver {
         if (!missingParams.isEmpty()) {
             throw new ValidationException(
                     ErrorCode.VALIDATION_REQUIRED_FIELD,
-                    "缺少必填参数: " + String.join(", ", missingParams),
+                    "Missing required parameters: " + String.join(", ", missingParams),
                     Map.of("missingParameters", missingParams)
             );
         }

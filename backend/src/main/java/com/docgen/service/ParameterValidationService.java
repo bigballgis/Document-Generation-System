@@ -135,7 +135,7 @@ public class ParameterValidationService {
                 } else {
                     // Requirement 6.2: missing required
                     errors.add(new ValidationError(path,
-                            "必填参数缺失: " + path, "required"));
+                            "Required parameter missing: " + path, "required"));
                     return;
                 }
             }
@@ -203,7 +203,7 @@ public class ParameterValidationService {
 
         if (!typeMatch) {
             errors.add(new ValidationError(path,
-                    "参数类型不匹配: " + path + ", 期望 " + dataType + ", 实际 " + value.getClass().getSimpleName(),
+                    "Parameter type mismatch: " + path + ", expected " + dataType + ", actual " + value.getClass().getSimpleName(),
                     "type_mismatch"));
         }
     }
@@ -226,7 +226,7 @@ public class ParameterValidationService {
         // not_null
         if (Boolean.TRUE.equals(rules.get("not_null")) && value == null) {
             errors.add(new ValidationError(path,
-                    customMessage != null ? customMessage : "参数不能为 null: " + path,
+                    customMessage != null ? customMessage : "Parameter cannot be null: " + path,
                     "not_null"));
             return; // no further checks if null
         }
@@ -239,7 +239,7 @@ public class ParameterValidationService {
         if (Boolean.TRUE.equals(rules.get("not_blank")) && value instanceof String s) {
             if (s.isBlank()) {
                 errors.add(new ValidationError(path,
-                        customMessage != null ? customMessage : "参数不能为空白: " + path,
+                        customMessage != null ? customMessage : "Parameter cannot be blank: " + path,
                         "not_blank"));
             }
         }
@@ -251,7 +251,7 @@ public class ParameterValidationService {
                 if (s.length() < minLength) {
                     errors.add(new ValidationError(path,
                             customMessage != null ? customMessage
-                                    : "字符串长度不能小于 " + minLength + ", 实际长度 " + s.length() + ": " + path,
+                                    : "String length cannot be less than " + minLength + ", actual length " + s.length() + ": " + path,
                             "min_length"));
                 }
             }
@@ -260,7 +260,7 @@ public class ParameterValidationService {
                 if (s.length() > maxLength) {
                     errors.add(new ValidationError(path,
                             customMessage != null ? customMessage
-                                    : "字符串长度不能大于 " + maxLength + ", 实际长度 " + s.length() + ": " + path,
+                                    : "String length cannot be greater than " + maxLength + ", actual length " + s.length() + ": " + path,
                             "max_length"));
                 }
             }
@@ -274,7 +274,7 @@ public class ParameterValidationService {
                 if (actual.compareTo(min) < 0) {
                     errors.add(new ValidationError(path,
                             customMessage != null ? customMessage
-                                    : "数值不能小于 " + min + ", 实际值 " + actual + ": " + path,
+                                    : "Number cannot be less than " + min + ", actual value " + actual + ": " + path,
                             "min"));
                 }
             }
@@ -283,7 +283,7 @@ public class ParameterValidationService {
                 if (actual.compareTo(max) > 0) {
                     errors.add(new ValidationError(path,
                             customMessage != null ? customMessage
-                                    : "数值不能大于 " + max + ", 实际值 " + actual + ": " + path,
+                                    : "Number cannot be greater than " + max + ", actual value " + actual + ": " + path,
                             "max"));
                 }
             }
@@ -295,7 +295,7 @@ public class ParameterValidationService {
             if (!s.matches(pattern)) {
                 errors.add(new ValidationError(path,
                         customMessage != null ? customMessage
-                                : "参数不匹配正则表达式 " + pattern + ": " + path,
+                                : "Parameter does not match pattern " + pattern + ": " + path,
                         "pattern"));
             }
         }
@@ -308,7 +308,7 @@ public class ParameterValidationService {
             if (!enumValues.contains(strValue)) {
                 errors.add(new ValidationError(path,
                         customMessage != null ? customMessage
-                                : "参数值不在允许列表中 " + enumValues + ": " + path,
+                                : "Parameter value is not in allowed list " + enumValues + ": " + path,
                         "enum_values"));
             }
         }
@@ -320,7 +320,7 @@ public class ParameterValidationService {
                 if (list.size() < minItems) {
                     errors.add(new ValidationError(path,
                             customMessage != null ? customMessage
-                                    : "数组元素数量不能少于 " + minItems + ", 实际数量 " + list.size() + ": " + path,
+                                    : "Array item count cannot be less than " + minItems + ", actual count " + list.size() + ": " + path,
                             "min_items"));
                 }
             }
@@ -329,7 +329,7 @@ public class ParameterValidationService {
                 if (list.size() > maxItems) {
                     errors.add(new ValidationError(path,
                             customMessage != null ? customMessage
-                                    : "数组元素数量不能多于 " + maxItems + ", 实际数量 " + list.size() + ": " + path,
+                                    : "Array item count cannot be greater than " + maxItems + ", actual count " + list.size() + ": " + path,
                             "max_items"));
                 }
             }
@@ -362,7 +362,7 @@ public class ParameterValidationService {
                         continue;
                     } else {
                         errors.add(new ValidationError(childPath,
-                                "必填参数缺失: " + childPath, "required"));
+                                "Required parameter missing: " + childPath, "required"));
                         continue;
                     }
                 }
@@ -541,7 +541,7 @@ public class ParameterValidationService {
                             derived.getName(), arrayPath, rowIndex, result);
                 } catch (Exception e) {
                     throw new BusinessException(ErrorCode.PARAMETER_EXPRESSION_EVALUATION_FAILED,
-                            "行级衍生参数计算失败: " + arrayPath + "[" + rowIndex + "]." + derived.getName()
+                            "Row-level derived parameter evaluation failed: " + arrayPath + "[" + rowIndex + "]." + derived.getName()
                                     + " — " + e.getMessage(),
                             HttpStatus.BAD_REQUEST, e);
                 }
@@ -603,7 +603,7 @@ public class ParameterValidationService {
                         derived.getName(), objectPath, result);
             } catch (Exception e) {
                 throw new BusinessException(ErrorCode.PARAMETER_EXPRESSION_EVALUATION_FAILED,
-                        "嵌套衍生参数计算失败: " + objectPath + "." + derived.getName()
+                        "Nested derived parameter evaluation failed: " + objectPath + "." + derived.getName()
                                 + " — " + e.getMessage(),
                         HttpStatus.BAD_REQUEST, e);
             }
@@ -633,11 +633,11 @@ public class ParameterValidationService {
                 log.debug("Evaluated DERIVED param '{}' = {}", derived.getName(), result);
             } catch (IllegalArgumentException e) {
                 throw new BusinessException(ErrorCode.PARAMETER_EXPRESSION_EVALUATION_FAILED,
-                        "衍生参数表达式类型无效: " + derived.getName() + ", type=" + derived.getExpressionType(),
+                        "Invalid derived parameter expression type: " + derived.getName() + ", type=" + derived.getExpressionType(),
                         HttpStatus.BAD_REQUEST, e);
             } catch (Exception e) {
                 throw new BusinessException(ErrorCode.PARAMETER_EXPRESSION_EVALUATION_FAILED,
-                        "衍生参数计算失败: " + derived.getName() + " — " + e.getMessage(),
+                        "Derived parameter evaluation failed: " + derived.getName() + " — " + e.getMessage(),
                         HttpStatus.BAD_REQUEST, e);
             }
         }
@@ -686,7 +686,7 @@ public class ParameterValidationService {
      * Build a combined error message from all collected validation errors.
      */
     private String buildErrorMessage(List<ValidationError> errors) {
-        return "参数验证失败: " + errors.stream()
+        return "Parameter validation failed: " + errors.stream()
                 .map(ValidationError::message)
                 .collect(Collectors.joining("; "));
     }

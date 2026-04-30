@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 
 public class CreateBlankSegmentRequest {
 
-    @NotBlank(message = "片段名称不能为空")
+    @NotBlank(message = "Segment name must not be blank")
     private String name;
 
     private String segmentType;

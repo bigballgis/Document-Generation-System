@@ -6,7 +6,7 @@ import java.util.List;
 
 public class UpdateAssemblyConfigRequest {
 
-    @NotNull(message = "段落列表不能为空")
+    @NotNull(message = "Segment list must not be null")
     private List<AssemblySegmentEntry> segments;
 
     public UpdateAssemblyConfigRequest() {}

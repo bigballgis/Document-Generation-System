@@ -156,7 +156,7 @@ public class CompositeCoverageService {
     private Template findCompositeTemplateOrThrow(Long compositeTemplateId) {
         Template template = templateRepository.findById(compositeTemplateId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.TEMPLATE_NOT_FOUND, "模板不存在: " + compositeTemplateId));
+                        ErrorCode.TEMPLATE_NOT_FOUND, "Template not found: " + compositeTemplateId));
         if (!"COMPOSITE".equals(template.getTemplateType())) {
             throw new BusinessException(ErrorCode.TEMPLATE_NOT_FOUND,
                     "Template is not a composite template: " + compositeTemplateId,

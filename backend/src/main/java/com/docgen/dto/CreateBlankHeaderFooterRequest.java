@@ -5,8 +5,8 @@ import jakarta.validation.constraints.Pattern;
 
 public class CreateBlankHeaderFooterRequest {
 
-    @NotBlank(message = "类型不能为空")
-    @Pattern(regexp = "header|footer", message = "类型必须为 header 或 footer")
+    @NotBlank(message = "Type must not be blank")
+    @Pattern(regexp = "header|footer", message = "Type must be header or footer")
     private String type;
 
     public CreateBlankHeaderFooterRequest() {}

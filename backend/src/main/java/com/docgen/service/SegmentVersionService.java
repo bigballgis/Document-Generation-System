@@ -188,13 +188,13 @@ public class SegmentVersionService {
                 .findByTemplateIdAndSegmentNameAndVersionNumber(templateId, segmentName, versionA)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorCode.TEMPLATE_VERSION_NOT_FOUND,
-                        "片段版本 v" + versionA + " 不存在"));
+                        "Segment version v" + versionA + " not found"));
 
         SegmentVersion verB = segmentVersionRepository
                 .findByTemplateIdAndSegmentNameAndVersionNumber(templateId, segmentName, versionB)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorCode.TEMPLATE_VERSION_NOT_FOUND,
-                        "片段版本 v" + versionB + " 不存在"));
+                        "Segment version v" + versionB + " not found"));
 
         // Short-circuit: same version comparison
         if (versionA == versionB) {
@@ -269,7 +269,7 @@ public class SegmentVersionService {
                 .findByTemplateIdAndSegmentNameAndVersionNumber(templateId, segmentName, targetVersion)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorCode.TEMPLATE_VERSION_NOT_FOUND,
-                        "片段版本 v" + targetVersion + " 不存在"));
+                        "Segment version v" + targetVersion + " not found"));
 
         // Update the assembly config to point to the versioned file
         AssemblyConfigDTO config = assemblyConfigService.deserialize(template.getAssemblyConfig());
@@ -288,23 +288,23 @@ public class SegmentVersionService {
     private Template findCompositeTemplateOrThrow(Long templateId) {
         Template template = templateRepository.findById(templateId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.TEMPLATE_NOT_FOUND, "模板不存在"));
+                        ErrorCode.TEMPLATE_NOT_FOUND, "Template not found"));
         if (!"COMPOSITE".equals(template.getTemplateType())) {
             throw new BusinessException(ErrorCode.ASSEMBLY_CONFIG_INVALID,
-                    "仅组合模板支持片段版本管理", HttpStatus.BAD_REQUEST);
+                    "Segment version management is only supported for composite templates", HttpStatus.BAD_REQUEST);
         }
         return template;
     }
 
     private AssemblySegmentEntry findSegmentByName(AssemblyConfigDTO config, String segmentName) {
         if (config.getSegments() == null) {
-            throw new ResourceNotFoundException(ErrorCode.SEGMENT_FILE_NOT_FOUND, "片段不存在: " + segmentName);
+            throw new ResourceNotFoundException(ErrorCode.SEGMENT_FILE_NOT_FOUND, "Segment not found: " + segmentName);
         }
         return config.getSegments().stream()
                 .filter(s -> segmentName.equals(s.getName()))
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.SEGMENT_FILE_NOT_FOUND, "片段不存在: " + segmentName));
+                        ErrorCode.SEGMENT_FILE_NOT_FOUND, "Segment not found: " + segmentName));
     }
 
     private String copySegmentFile(String sourcePath, Long templateId, String segmentName, int version) {
@@ -327,7 +327,7 @@ public class SegmentVersionService {
         } catch (Exception e) {
             log.error("Failed to copy file in MinIO: {} -> {}", source, dest, e);
             throw new BusinessException(ErrorCode.INTERNAL_ERROR,
-                    "片段文件复制失败", HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Failed to copy segment file", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 

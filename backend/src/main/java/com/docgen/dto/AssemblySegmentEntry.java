@@ -18,7 +18,7 @@ public class AssemblySegmentEntry {
     private String conditionExpression;
     private Map<String, String> dataScope;
 
-    // 控制节点扩展字段
+    // Layout / control-node extension fields
     private String headerFilePath;
     private String footerFilePath;
     private String pageNumberFormat;

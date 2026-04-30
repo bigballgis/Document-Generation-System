@@ -84,7 +84,7 @@ class DocumentMergeServiceTest {
         req.setDocumentIds(List.of(1L));
         BusinessException ex = assertThrows(BusinessException.class,
                 () -> service.validateRequest(req));
-        assertTrue(ex.getMessage().contains("至少需要 2 个文档"));
+        assertTrue(ex.getMessage().contains("At least two documents"));
     }
 
     @Test
@@ -94,7 +94,7 @@ class DocumentMergeServiceTest {
         req.setOutputFormat("HTML");
         BusinessException ex = assertThrows(BusinessException.class,
                 () -> service.validateRequest(req));
-        assertTrue(ex.getMessage().contains("不支持的输出格式"));
+        assertTrue(ex.getMessage().contains("Unsupported output format"));
     }
 
     @Test

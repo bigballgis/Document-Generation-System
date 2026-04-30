@@ -9,7 +9,7 @@ import java.util.Map;
  * All fields are optional except version (required for optimistic locking).
  */
 public record UpdateParameterRequest(
-        @Size(max = 100, message = "参数名称不能超过100个字符")
+        @Size(max = 100, message = "Parameter name must not exceed 100 characters")
         String name,
 
         String parameterType,
@@ -30,6 +30,6 @@ public record UpdateParameterRequest(
 
         Map<String, Object> validationRules,
 
-        @NotNull(message = "版本号不能为空")
+        @NotNull(message = "Version must not be null")
         Integer version
 ) {}

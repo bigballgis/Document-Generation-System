@@ -70,7 +70,7 @@ public class TemplateScanService {
             throw e;
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.PARAMETER_SCAN_FAILED,
-                    "扫描模板占位符失败: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Failed to scan template placeholders: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 

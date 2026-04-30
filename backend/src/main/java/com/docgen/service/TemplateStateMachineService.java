@@ -107,7 +107,7 @@ public class TemplateStateMachineService {
         if (!allowed.contains(to)) {
             throw new BusinessException(
                     ErrorCode.TEMPLATE_INVALID_STATE_TRANSITION,
-                    String.format("非法状态转换: %s → %s", from.name(), to.name()),
+                    String.format("Illegal state transition: %s -> %s", from.name(), to.name()),
                     HttpStatus.BAD_REQUEST);
         }
 
@@ -115,7 +115,7 @@ public class TemplateStateMachineService {
         if (from == TemplateState.DRAFT && to == TemplateState.ACTIVE && reviewRequired) {
             throw new BusinessException(
                     ErrorCode.TEMPLATE_REVIEW_REQUIRED,
-                    String.format("模板需要审查，不允许从 %s 直接转换到 %s", from.name(), to.name()),
+                    String.format("Review is required for this template; cannot transition from %s to %s directly", from.name(), to.name()),
                     HttpStatus.BAD_REQUEST);
         }
     }
@@ -123,6 +123,6 @@ public class TemplateStateMachineService {
     private Template findTemplateOrThrow(Long id) {
         return templateRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.TEMPLATE_NOT_FOUND, "模板不存在"));
+                        ErrorCode.TEMPLATE_NOT_FOUND, "Template not found"));
     }
 }

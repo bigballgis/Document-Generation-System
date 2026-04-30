@@ -47,7 +47,7 @@ public class ContentIsolationValidator {
                             name, expectedContentType);
                     throw new BusinessException(
                             ErrorCode.ONLYOFFICE_CONTENT_ISOLATION_VIOLATION,
-                            "内容隔离校验失败: 检测到越界内容",
+                            "Content isolation validation failed: out-of-scope content detected",
                             HttpStatus.UNPROCESSABLE_ENTITY);
                 }
             }
@@ -57,7 +57,7 @@ public class ContentIsolationValidator {
             log.error("Failed to validate content isolation", e);
             throw new BusinessException(
                     ErrorCode.ONLYOFFICE_CONTENT_ISOLATION_VIOLATION,
-                    "内容隔离校验失败: " + e.getMessage(),
+                    "Content isolation validation failed: " + e.getMessage(),
                     HttpStatus.UNPROCESSABLE_ENTITY, e);
         }
     }

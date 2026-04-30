@@ -93,7 +93,7 @@ public class TemplateImportExportService {
         } catch (Exception e) {
             log.error("Failed to export template docx: templateId={}, error={}", templateId, e.getMessage(), e);
             throw new BusinessException(ErrorCode.EXPORT_FAILED,
-                    "模板文件导出失败", HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Template file export failed", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 
@@ -121,7 +121,7 @@ public class TemplateImportExportService {
         } catch (Exception e) {
             log.error("Failed to serialize template config: templateId={}", templateId, e);
             throw new BusinessException(ErrorCode.EXPORT_FAILED,
-                    "模板配置导出失败", HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Template configuration export failed", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 
@@ -163,13 +163,13 @@ public class TemplateImportExportService {
     void validateDocxFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new BusinessException(ErrorCode.IMPORT_INVALID_FILE,
-                    "上传文件不能为空", HttpStatus.BAD_REQUEST);
+                    "Uploaded file cannot be empty", HttpStatus.BAD_REQUEST);
         }
 
         String filename = file.getOriginalFilename();
         if (filename == null || !filename.toLowerCase().endsWith(".docx")) {
             throw new BusinessException(ErrorCode.IMPORT_INVALID_FILE,
-                    "仅支持 .docx 格式文件", HttpStatus.BAD_REQUEST);
+                    "Only .docx files are supported", HttpStatus.BAD_REQUEST);
         }
 
         // Check DOCX magic bytes (ZIP PK header)
@@ -179,14 +179,14 @@ public class TemplateImportExportService {
                 int read = is.read(header);
                 if (read < 4 || !matchesMagicBytes(header)) {
                     throw new BusinessException(ErrorCode.IMPORT_INVALID_FILE,
-                            "文件格式无效，不是有效的 .docx 文件", HttpStatus.BAD_REQUEST);
+                            "Invalid file format; not a valid .docx file", HttpStatus.BAD_REQUEST);
                 }
             }
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.IMPORT_INVALID_FILE,
-                    "文件读取失败", HttpStatus.BAD_REQUEST, e);
+                    "Failed to read file", HttpStatus.BAD_REQUEST, e);
         }
     }
 
@@ -196,7 +196,7 @@ public class TemplateImportExportService {
     TemplateConfigExport parseAndValidateConfig(MultipartFile configFile) {
         if (configFile == null || configFile.isEmpty()) {
             throw new BusinessException(ErrorCode.IMPORT_INVALID_CONFIG,
-                    "配置文件不能为空", HttpStatus.BAD_REQUEST);
+                    "Configuration file cannot be empty", HttpStatus.BAD_REQUEST);
         }
 
         TemplateConfigExport config;
@@ -204,23 +204,23 @@ public class TemplateImportExportService {
             config = objectMapper.readValue(configFile.getInputStream(), TemplateConfigExport.class);
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.IMPORT_INVALID_CONFIG,
-                    "配置文件 JSON 格式无效: " + e.getMessage(), HttpStatus.BAD_REQUEST, e);
+                    "Invalid configuration JSON: " + e.getMessage(), HttpStatus.BAD_REQUEST, e);
         }
 
         // Validate required structure
         List<String> errors = new ArrayList<>();
 
         if (config.getTemplate() == null) {
-            errors.add("缺少 'template' 字段");
+            errors.add("Missing required 'template' field");
         } else {
             if (config.getTemplate().getName() == null || config.getTemplate().getName().isBlank()) {
-                errors.add("template.name 不能为空");
+                errors.add("template.name cannot be blank");
             }
         }
 
         if (!errors.isEmpty()) {
             throw new BusinessException(ErrorCode.IMPORT_INVALID_CONFIG,
-                    "配置文件验证失败: " + String.join("; ", errors), HttpStatus.BAD_REQUEST);
+                    "Configuration validation failed: " + String.join("; ", errors), HttpStatus.BAD_REQUEST);
         }
 
         return config;
@@ -254,7 +254,7 @@ public class TemplateImportExportService {
         } catch (Exception e) {
             log.error("Failed to upload imported template to MinIO: {}", e.getMessage(), e);
             throw new BusinessException(ErrorCode.INTERNAL_ERROR,
-                    "模板文件上传失败", HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Template file upload failed", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
 
         return objectName;
@@ -263,7 +263,7 @@ public class TemplateImportExportService {
     private Template findTemplateOrThrow(Long id) {
         return templateRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.TEMPLATE_NOT_FOUND, "模板不存在"));
+                        ErrorCode.TEMPLATE_NOT_FOUND, "Template not found"));
     }
 
     private TemplateDTO toDTO(Template template) {

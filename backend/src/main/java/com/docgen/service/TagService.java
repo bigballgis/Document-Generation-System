@@ -103,7 +103,7 @@ public class TagService {
         // Verify template exists
         templateRepository.findById(templateId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.TEMPLATE_NOT_FOUND, "模板不存在"));
+                        ErrorCode.TEMPLATE_NOT_FOUND, "Template not found"));
         // Verify tag exists
         findTagOrThrow(tagId);
 
@@ -135,7 +135,7 @@ public class TagService {
     private TemplateTag findTagOrThrow(Long id) {
         return tagRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.VALIDATION_FAILED, "标签不存在"));
+                        ErrorCode.VALIDATION_FAILED, "Tag not found"));
     }
 
     private TagDTO toDTO(TemplateTag tag) {

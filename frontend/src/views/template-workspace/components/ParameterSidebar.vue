@@ -420,7 +420,7 @@ const arrayFilters = [
 ]
 const dateFilters = [
   { label: 'dateFormat', syntax: "| dateFormat:'YYYY-MM-DD'", example: "{date | dateFormat:'YYYY-MM-DD'} → \"2025-01-15\"" },
-  { label: 'dateFormat (CN)', syntax: "| dateFormat:'YYYY年MM月DD日'", example: "{date | dateFormat:'YYYY年MM月DD日'}" },
+  { label: 'dateFormat (Chinese-style)', syntax: "| dateFormat:'YYYY年MM月DD日'", example: "{date | dateFormat:'YYYY年MM月DD日'}" },
 ]
 
 function copyFilter(syntax: string) {

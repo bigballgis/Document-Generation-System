@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 
 public class CreateTemplateRequest {
 
-    @NotBlank(message = "模板名称不能为空")
+    @NotBlank(message = "Template name must not be blank")
     private String name;
 
     private String description;

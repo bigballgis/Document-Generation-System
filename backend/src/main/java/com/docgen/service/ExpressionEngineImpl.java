@@ -57,14 +57,14 @@ public class ExpressionEngineImpl implements ExpressionEngine {
             Map<?, ?> body = response.getBody();
             if (body == null) {
                 throw new BusinessException(ErrorCode.EXPRESSION_EVALUATION_FAILED,
-                        "表达式执行返回空结果", HttpStatus.INTERNAL_SERVER_ERROR);
+                        "Expression evaluation returned an empty result", HttpStatus.INTERNAL_SERVER_ERROR);
             }
 
             Boolean success = (Boolean) body.get("success");
             if (Boolean.FALSE.equals(success)) {
                 String error = stringifyEvaluateError(body.get("error"));
                 throw new BusinessException(ErrorCode.EXPRESSION_EVALUATION_FAILED,
-                        "表达式执行失败: " + error, HttpStatus.BAD_REQUEST);
+                        "Expression evaluation failed: " + error, HttpStatus.BAD_REQUEST);
             }
 
             return body.get("result");
@@ -73,7 +73,7 @@ public class ExpressionEngineImpl implements ExpressionEngine {
         } catch (RestClientException e) {
             log.error("Failed to call expression evaluation service: {}", e.getMessage());
             throw new BusinessException(ErrorCode.EXPRESSION_EVALUATION_FAILED,
-                    "表达式服务调用失败: " + e.getMessage(), HttpStatus.SERVICE_UNAVAILABLE, e);
+                    "Expression service call failed: " + e.getMessage(), HttpStatus.SERVICE_UNAVAILABLE, e);
         }
     }
 
@@ -118,7 +118,7 @@ public class ExpressionEngineImpl implements ExpressionEngine {
 
             Map<?, ?> body = response.getBody();
             if (body == null) {
-                return ExpressionValidationResult.failure("验证服务返回空结果", null);
+                return ExpressionValidationResult.failure("Validation service returned an empty result", null);
             }
 
             Boolean success = (Boolean) body.get("success");
@@ -133,7 +133,7 @@ public class ExpressionEngineImpl implements ExpressionEngine {
             return ExpressionValidationResult.failure(error, position);
         } catch (RestClientException e) {
             log.error("Failed to call expression validation service: {}", e.getMessage());
-            return ExpressionValidationResult.failure("表达式服务不可用: " + e.getMessage(), null);
+            return ExpressionValidationResult.failure("Expression service unavailable: " + e.getMessage(), null);
         }
     }
 

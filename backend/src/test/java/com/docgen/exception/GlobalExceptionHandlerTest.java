@@ -50,7 +50,7 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void handleAccessDeniedException_returns403() {
-        AccessDeniedException ex = new AccessDeniedException("无权操作此模板");
+        AccessDeniedException ex = new AccessDeniedException("Cannot modify this template");
 
         ResponseEntity<ErrorResponse> response = handler.handleBusiness(ex);
 
@@ -72,7 +72,7 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void handleRateLimitExceeded_returns429WithHeaders() {
-        RateLimitExceededException ex = new RateLimitExceededException("请求过于频繁", 30);
+        RateLimitExceededException ex = new RateLimitExceededException("Too many requests", 30);
 
         ResponseEntity<ErrorResponse> response = handler.handleRateLimit(ex);
 
@@ -84,15 +84,15 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void handleValidationException_returns400WithDetails() {
-        Map<String, Object> details = Map.of("name", "名称不能为空");
-        ValidationException ex = new ValidationException("参数验证失败", details);
+        Map<String, Object> details = Map.of("name", "Name must not be blank");
+        ValidationException ex = new ValidationException("Parameter validation failed", details);
 
         ResponseEntity<ErrorResponse> response = handler.handleValidation(ex);
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertEquals(ErrorCode.VALIDATION_FAILED, response.getBody().getError().code());
         assertNotNull(response.getBody().getError().details());
-        assertEquals("名称不能为空", response.getBody().getError().details().get("name"));
+        assertEquals("Name must not be blank", response.getBody().getError().details().get("name"));
     }
 
     @Test
