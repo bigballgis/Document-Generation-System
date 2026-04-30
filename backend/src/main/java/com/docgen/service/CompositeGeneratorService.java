@@ -73,7 +73,7 @@ public class CompositeGeneratorService {
     public GenerateDocumentResponse generateCompositeDocument(Long templateId, GenerateDocumentRequest request) {
         Template template = templateRepository.findById(templateId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TEMPLATE_NOT_FOUND,
-                        "模板不存在: " + templateId, HttpStatus.NOT_FOUND));
+                        "Template not found: " + templateId, HttpStatus.NOT_FOUND));
 
         Map<String, Object> params = request.getParameters() != null
                 ? request.getParameters() : Collections.emptyMap();
@@ -126,7 +126,7 @@ public class CompositeGeneratorService {
     public TemplateTestRenderOutcome renderCompositeDocxInMemory(Long templateId, Map<String, Object> parameters) {
         Template template = templateRepository.findById(templateId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TEMPLATE_NOT_FOUND,
-                        "模板不存在: " + templateId, HttpStatus.NOT_FOUND));
+                        "Template not found: " + templateId, HttpStatus.NOT_FOUND));
 
         Map<String, Object> params = parameters != null ? parameters : Collections.emptyMap();
         Map<String, Object> data = executePipeline(template, params);
@@ -147,7 +147,7 @@ public class CompositeGeneratorService {
         } catch (Exception e) {
             log.error("Parameter validation pipeline failed for composite template {}: {}", template.getId(), e.getMessage());
             throw new BusinessException(ErrorCode.GENERATE_FAILED,
-                    "参数验证管道执行失败: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Parameter validation pipeline failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 
@@ -155,7 +155,7 @@ public class CompositeGeneratorService {
         String json = template.getAssemblyConfig();
         if (json == null || json.isBlank()) {
             throw new BusinessException(ErrorCode.COMPOSITE_TEMPLATE_EMPTY,
-                    "组合模板的 Assembly_Config 为空", HttpStatus.UNPROCESSABLE_ENTITY);
+                    "Composite template Assembly_Config is empty", HttpStatus.UNPROCESSABLE_ENTITY);
         }
         return assemblyConfigService.deserialize(json);
     }

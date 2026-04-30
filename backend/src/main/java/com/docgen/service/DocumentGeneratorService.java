@@ -83,7 +83,7 @@ public class DocumentGeneratorService {
                                                      Integer syncValidatedTemplateVersion) {
         Template template = templateRepository.findById(templateId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TEMPLATE_NOT_FOUND,
-                        "模板不存在: " + templateId, HttpStatus.NOT_FOUND));
+                        "Template not found: " + templateId, HttpStatus.NOT_FOUND));
 
         templateGenerationEligibilityService.requireActiveForDocumentGeneration(template, templateId);
 
@@ -129,7 +129,7 @@ public class DocumentGeneratorService {
     public TemplateTestRenderOutcome renderForTemplateTest(long templateId, Map<String, Object> parameters) {
         Template template = templateRepository.findById(templateId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TEMPLATE_NOT_FOUND,
-                        "模板不存在: " + templateId, HttpStatus.NOT_FOUND));
+                        "Template not found: " + templateId, HttpStatus.NOT_FOUND));
         // Intentionally no ACTIVE check: template tests must run against DRAFT / non-ACTIVE templates.
         Map<String, Object> params = parameters != null ? parameters : Collections.emptyMap();
         if ("COMPOSITE".equals(template.getTemplateType())) {
@@ -152,7 +152,7 @@ public class DocumentGeneratorService {
         } catch (Exception e) {
             log.error("Parameter validation pipeline failed for template {}: {}", template.getId(), e.getMessage());
             throw new BusinessException(ErrorCode.GENERATE_FAILED,
-                    "参数验证管道执行失败: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Parameter validation pipeline failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 
@@ -173,7 +173,7 @@ public class DocumentGeneratorService {
 
                 if (response.getBody() == null || response.getBody().length == 0) {
                     throw new BusinessException(ErrorCode.GENERATE_RENDER_FAILED,
-                            "文档渲染返回空结果", HttpStatus.INTERNAL_SERVER_ERROR);
+                            "Document rendering returned empty content", HttpStatus.INTERNAL_SERVER_ERROR);
                 }
                 return response.getBody();
             });
@@ -182,11 +182,11 @@ public class DocumentGeneratorService {
         } catch (RestClientException e) {
             log.error("Docxtemplater render call failed: {}", e.getMessage());
             throw new BusinessException(ErrorCode.GENERATE_RENDER_FAILED,
-                    "文档渲染服务调用失败: " + e.getMessage(), HttpStatus.SERVICE_UNAVAILABLE, e);
+                    "Document rendering service failed: " + e.getMessage(), HttpStatus.SERVICE_UNAVAILABLE, e);
         } catch (Exception e) {
             log.error("Document rendering failed: {}", e.getMessage());
             throw new BusinessException(ErrorCode.GENERATE_RENDER_FAILED,
-                    "文档渲染失败: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Document rendering failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 
@@ -206,7 +206,7 @@ public class DocumentGeneratorService {
 
                 if (response.getBody() == null || response.getBody().length == 0) {
                     throw new BusinessException(ErrorCode.GENERATE_PDF_CONVERSION_FAILED,
-                            "PDF 转换返回空结果", HttpStatus.INTERNAL_SERVER_ERROR);
+                            "PDF conversion returned empty content", HttpStatus.INTERNAL_SERVER_ERROR);
                 }
                 return response.getBody();
             });
@@ -215,7 +215,7 @@ public class DocumentGeneratorService {
         } catch (Exception e) {
             log.error("PDF conversion failed: {}", e.getMessage());
             throw new BusinessException(ErrorCode.GENERATE_PDF_CONVERSION_FAILED,
-                    "PDF 转换失败: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "PDF conversion failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 
