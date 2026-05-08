@@ -174,7 +174,9 @@ async function createEditor() {
     const { token } = await signOnlyOfficeConfig(config)
     config.token = token
   } catch (err: any) {
-    console.warn('Failed to sign OnlyOffice config, proceeding without token:', err.message)
+    if (import.meta.env.DEV) {
+      console.warn('Failed to sign OnlyOffice config, proceeding without token:', err?.message)
+    }
   }
 
   editorInstanceRef.value = new (window as any).DocsAPI.DocEditor(editorContainerId, config)

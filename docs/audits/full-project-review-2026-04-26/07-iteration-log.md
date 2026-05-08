@@ -1056,6 +1056,15 @@ Validation commands: Task card `rg "\\p{Han}" docs/audits/full-project-review-20
 Validation result: Document updated; Git matches classification rows for modified paths.  
 Related tracking items: WS-07-T01  
 
+## 2026-05-08 — OnlyOfficeEditor: dev-only warning when config signing fails
+
+Workstream: WS-06 / frontend hygiene  
+Summary: Wrapped **`console.warn`** after **`signOnlyOfficeConfig`** failure in **`import.meta.env.DEV`** so production bundles do not emit signing warnings to the browser console.  
+Files changed: `frontend/src/components/OnlyOfficeEditor.vue`, `07-iteration-log.md`.  
+Validation commands: `npm run type-check`; `npx vitest run src/__tests__/components/OnlyOfficeEditor.test.ts` (from `frontend/`).  
+Validation result: OK (exit 0).  
+Related tracking items: —  
+
 ## Entry Template
 
 ```text
