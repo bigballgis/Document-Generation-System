@@ -39,7 +39,7 @@ async function fetchCoverage() {
   loading.value = true
   try {
     report.value = await getCompositeCoverage(props.templateId)
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     loading.value = false
   }
 }

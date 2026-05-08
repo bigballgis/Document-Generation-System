@@ -1,26 +1,54 @@
 package com.docgen.property;
 
-import com.docgen.service.SegmentDataScopeService;
+import com.docgen.service.AssemblyEngineService;
+import com.docgen.service.ExpressionEngine;
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import io.minio.MinioClient;
 import net.jqwik.api.*;
+import org.springframework.web.client.RestTemplate;
 
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
 
 /**
- * Property-based tests for SegmentDataScopeService — Property 4: Data Scope Isolation.
+ * Property-based tests for DataScope isolation (inlined in AssemblyEngineService).
  *
  * <p><b>Validates: Requirements 5.3, 5.4</b></p>
  *
  * <p>Verifies that when a DataScope is configured, the resolved data contains only
  * the mapped subset of the global data context, and no unmapped global variables leak through.</p>
  */
-@Tag("Feature: template-segmentation, Property 4: dataScopeIsolation")
+@Tag("feature-template-segmentation-property-4-datascopeisolation")
 class DataScopeIsolationPropertyTest {
 
-    private final SegmentDataScopeService service = new SegmentDataScopeService();
+    private final AssemblyEngineService service;
+
+    DataScopeIsolationPropertyTest() {
+        ExpressionEngine expressionEngine = mock(ExpressionEngine.class);
+        RestTemplate restTemplate = mock(RestTemplate.class);
+        CircuitBreaker cb = CircuitBreakerRegistry.of(CircuitBreakerConfig.ofDefaults())
+                .circuitBreaker("test-dsi-cb-" + UUID.randomUUID());
+        MinioClient minioClient = mock(MinioClient.class);
+        service = new AssemblyEngineService(expressionEngine, restTemplate, cb, minioClient);
+    }
+
+    private Map<String, Object> invokeResolveDataScope(
+            Map<String, Object> globalData, Map<String, String> dataScope) throws Exception {
+        Method method = AssemblyEngineService.class.getDeclaredMethod(
+                "resolveDataScope", Map.class, Map.class);
+        method.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> result = (Map<String, Object>) method.invoke(service, globalData, dataScope);
+        return result;
+    }
 
     /**
      * Property 4: dataScopeIsolation — resolved data contains only mapped keys.
@@ -34,10 +62,10 @@ class DataScopeIsolationPropertyTest {
     void resolvedDataContainsOnlyMappedSubset(
             @ForAll("globalDataMaps") Map<String, Object> globalData,
             @ForAll("dataScopeMappings") Map<String, String> dataScope
-    ) {
+    ) throws Exception {
         Assume.that(!dataScope.isEmpty());
 
-        Map<String, Object> result = service.resolveDataScope(globalData, dataScope);
+        Map<String, Object> result = invokeResolveDataScope(globalData, dataScope);
 
         // Result must contain exactly the local keys from dataScope
         assertEquals(dataScope.size(), result.size(),
@@ -81,8 +109,8 @@ class DataScopeIsolationPropertyTest {
     void nullOrEmptyDataScopeReturnsFullGlobalData(
             @ForAll("globalDataMaps") Map<String, Object> globalData,
             @ForAll("nullOrEmptyDataScope") Map<String, String> dataScope
-    ) {
-        Map<String, Object> result = service.resolveDataScope(globalData, dataScope);
+    ) throws Exception {
+        Map<String, Object> result = invokeResolveDataScope(globalData, dataScope);
 
         assertSame(globalData, result,
                 "When DataScope is null or empty, the original global data reference must be returned");
@@ -97,8 +125,8 @@ class DataScopeIsolationPropertyTest {
     @Property(tries = 100)
     void missingGlobalKeysProduceNullValues(
             @ForAll("disjointDataAndScope") DisjointDataAndScope input
-    ) {
-        Map<String, Object> result = service.resolveDataScope(input.globalData, input.dataScope);
+    ) throws Exception {
+        Map<String, Object> result = invokeResolveDataScope(input.globalData, input.dataScope);
 
         // All local keys should be present but with null values
         assertEquals(input.dataScope.size(), result.size());
@@ -110,7 +138,6 @@ class DataScopeIsolationPropertyTest {
         }
     }
 
-    // ── Helper types ──
 
     static class DisjointDataAndScope {
         final Map<String, Object> globalData;
@@ -127,7 +154,6 @@ class DataScopeIsolationPropertyTest {
         }
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<Map<String, Object>> globalDataMaps() {
@@ -173,3 +199,4 @@ class DataScopeIsolationPropertyTest {
         return Combinators.combine(globalData, dataScope).as(DisjointDataAndScope::new);
     }
 }
+

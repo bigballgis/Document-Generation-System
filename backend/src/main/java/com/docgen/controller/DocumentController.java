@@ -16,9 +16,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
 
-/**
- * REST controller for querying and downloading generated documents.
- */
 @RestController
 @RequestMapping("/api/documents")
 public class DocumentController {

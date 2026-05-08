@@ -16,8 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Instant;
 
 /**
- * REST controller for querying and exporting audit logs.
- * Audit logs are read-only — no create/update/delete endpoints are exposed.
+ * Audit logs are read-only; no create/update/delete endpoints are exposed.
  */
 @RestController
 @RequestMapping("/api/audit-logs")

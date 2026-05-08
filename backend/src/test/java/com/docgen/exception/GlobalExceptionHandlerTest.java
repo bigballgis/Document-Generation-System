@@ -25,14 +25,14 @@ class GlobalExceptionHandlerTest {
     @Test
     void handleBusinessException_returnsCorrectStatusAndBody() {
         BusinessException ex = new BusinessException(
-                ErrorCode.TEMPLATE_NOT_FOUND, "模板不存在", HttpStatus.NOT_FOUND);
+                ErrorCode.TEMPLATE_NOT_FOUND, "Template not found", HttpStatus.NOT_FOUND);
 
         ResponseEntity<ErrorResponse> response = handler.handleBusiness(ex);
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(ErrorCode.TEMPLATE_NOT_FOUND, response.getBody().getError().code());
-        assertEquals("模板不存在", response.getBody().getError().message());
+        assertEquals("Template not found", response.getBody().getError().message());
         assertNotNull(response.getBody().getError().traceId());
         assertNotNull(response.getBody().getError().timestamp());
     }
@@ -40,17 +40,17 @@ class GlobalExceptionHandlerTest {
     @Test
     void handleResourceNotFoundException_returns404() {
         ResourceNotFoundException ex = new ResourceNotFoundException(
-                ErrorCode.DATASOURCE_NOT_FOUND, "数据源不存在");
+                ErrorCode.TEMPLATE_NOT_FOUND, "Template not found");
 
         ResponseEntity<ErrorResponse> response = handler.handleBusiness(ex);
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        assertEquals(ErrorCode.DATASOURCE_NOT_FOUND, response.getBody().getError().code());
+        assertEquals(ErrorCode.TEMPLATE_NOT_FOUND, response.getBody().getError().code());
     }
 
     @Test
     void handleAccessDeniedException_returns403() {
-        AccessDeniedException ex = new AccessDeniedException("无权操作此模板");
+        AccessDeniedException ex = new AccessDeniedException("Cannot modify this template");
 
         ResponseEntity<ErrorResponse> response = handler.handleBusiness(ex);
 
@@ -67,12 +67,12 @@ class GlobalExceptionHandlerTest {
 
         assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
         assertEquals(ErrorCode.AUTH_ACCESS_DENIED, response.getBody().getError().code());
-        assertEquals("无权访问", response.getBody().getError().message());
+        assertEquals("Access denied", response.getBody().getError().message());
     }
 
     @Test
     void handleRateLimitExceeded_returns429WithHeaders() {
-        RateLimitExceededException ex = new RateLimitExceededException("请求过于频繁", 30);
+        RateLimitExceededException ex = new RateLimitExceededException("Too many requests", 30);
 
         ResponseEntity<ErrorResponse> response = handler.handleRateLimit(ex);
 
@@ -84,22 +84,22 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void handleValidationException_returns400WithDetails() {
-        Map<String, Object> details = Map.of("name", "名称不能为空");
-        ValidationException ex = new ValidationException("参数验证失败", details);
+        Map<String, Object> details = Map.of("name", "Name must not be blank");
+        ValidationException ex = new ValidationException("Parameter validation failed", details);
 
         ResponseEntity<ErrorResponse> response = handler.handleValidation(ex);
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertEquals(ErrorCode.VALIDATION_FAILED, response.getBody().getError().code());
         assertNotNull(response.getBody().getError().details());
-        assertEquals("名称不能为空", response.getBody().getError().details().get("name"));
+        assertEquals("Name must not be blank", response.getBody().getError().details().get("name"));
     }
 
     @Test
     void handleMethodArgumentNotValid_returns400WithFieldErrors() {
         BeanPropertyBindingResult bindingResult =
                 new BeanPropertyBindingResult(new Object(), "request");
-        bindingResult.addError(new FieldError("request", "email", "邮箱格式不正确"));
+        bindingResult.addError(new FieldError("request", "email", "Invalid email format"));
 
         MethodArgumentNotValidException ex =
                 new MethodArgumentNotValidException(null, bindingResult);
@@ -108,7 +108,8 @@ class GlobalExceptionHandlerTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertEquals(ErrorCode.VALIDATION_FAILED, response.getBody().getError().code());
-        assertEquals("邮箱格式不正确", response.getBody().getError().details().get("email"));
+        assertEquals("Request validation failed", response.getBody().getError().message());
+        assertEquals("Invalid email format", response.getBody().getError().details().get("email"));
     }
 
     @Test
@@ -119,13 +120,13 @@ class GlobalExceptionHandlerTest {
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertEquals(ErrorCode.INTERNAL_ERROR, response.getBody().getError().code());
-        assertEquals("系统内部错误", response.getBody().getError().message());
+        assertEquals("Internal server error", response.getBody().getError().message());
     }
 
     @Test
     void traceId_isUniquePerCall() {
         BusinessException ex = new BusinessException(
-                ErrorCode.GENERATE_FAILED, "生成失败", HttpStatus.INTERNAL_SERVER_ERROR);
+                ErrorCode.GENERATE_FAILED, "Generation failed", HttpStatus.INTERNAL_SERVER_ERROR);
 
         String traceId1 = handler.handleBusiness(ex).getBody().getError().traceId();
         String traceId2 = handler.handleBusiness(ex).getBody().getError().traceId();

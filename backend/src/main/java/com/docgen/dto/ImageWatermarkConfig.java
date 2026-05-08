@@ -5,7 +5,10 @@ package com.docgen.dto;
  */
 public class ImageWatermarkConfig {
 
-    /** Base64-encoded image data or a URL pointing to the watermark image. */
+    /**
+     * Inline PNG/JPEG data: raw base64 or {@code data:image/...;base64,...}.
+     * Remote HTTP(S) URLs are not supported.
+     */
     private String imageSource;
 
     /**

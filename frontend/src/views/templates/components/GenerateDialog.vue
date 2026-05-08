@@ -7,7 +7,6 @@
     @closed="resetForm"
   >
     <el-form label-width="140px" label-position="top">
-      <!-- Generation Mode -->
       <el-form-item :label="$t('document.generateMode')">
         <el-radio-group v-model="form.mode">
           <el-radio value="sync">{{ $t('document.modeSync') }}</el-radio>
@@ -16,7 +15,14 @@
         </el-radio-group>
       </el-form-item>
 
-      <!-- Parameters (sync & async) -->
+      <el-alert
+        type="info"
+        show-icon
+        :closable="false"
+        style="margin-bottom: 12px"
+        :title="$t('document.generateBothFormatsHint')"
+      />
+
       <el-form-item v-if="form.mode !== 'batch'" :label="$t('document.parameters')">
         <el-input
           v-model="form.parameters"
@@ -26,16 +32,6 @@
         />
       </el-form-item>
 
-      <!-- Output Format -->
-      <el-form-item :label="$t('document.outputFormat')">
-        <el-select v-model="form.outputFormat" style="width: 100%">
-          <el-option label="Word (.docx)" value="WORD" />
-          <el-option label="PDF" value="PDF" />
-          <el-option :label="$t('document.formatBoth')" value="BOTH" />
-        </el-select>
-      </el-form-item>
-
-      <!-- Storage Strategy -->
       <el-form-item :label="$t('document.storageMode')">
         <el-select v-model="form.storageStrategy" style="width: 100%">
           <el-option :label="$t('document.storageTemporary')" value="TEMP" />
@@ -43,8 +39,13 @@
         </el-select>
       </el-form-item>
 
-      <!-- Batch Mode Fields -->
       <template v-if="form.mode === 'batch'">
+        <el-form-item :label="$t('document.outputFormat')">
+          <el-select v-model="form.outputFormat" style="width: 100%">
+            <el-option label="Word (.docx)" value="WORD" />
+            <el-option label="PDF" value="PDF" />
+          </el-select>
+        </el-form-item>
         <el-form-item :label="$t('document.dataSets')">
           <el-input
             v-model="form.dataSets"
@@ -70,16 +71,22 @@
       </template>
     </el-form>
 
-    <!-- Sync result -->
-    <div v-if="syncResult" style="margin-top: 12px">
+    <div v-if="syncWord || syncPdf" style="margin-top: 12px">
       <el-alert :title="$t('document.generateSuccess')" type="success" show-icon :closable="false">
-        <a :href="syncResult.downloadUrl" target="_blank">{{ $t('common.download') }}</a>
+        <div v-if="syncWord?.downloadUrl">
+          <a :href="syncWord.downloadUrl" target="_blank">{{ $t('document.downloadWord') }}</a>
+        </div>
+        <div v-if="syncPdf?.downloadUrl" style="margin-top: 8px">
+          <a :href="syncPdf.downloadUrl" target="_blank">{{ $t('document.downloadPdf') }}</a>
+        </div>
       </el-alert>
     </div>
 
-    <!-- Async result -->
-    <div v-if="asyncTaskId" style="margin-top: 12px">
-      <el-alert :title="`Task ID: ${asyncTaskId}`" type="info" show-icon :closable="false">
+    <div v-if="asyncTaskWord || asyncTaskPdf" style="margin-top: 12px">
+      <el-alert type="info" show-icon :closable="false">
+        <div>{{ $t('document.asyncTasksWordPdf') }}</div>
+        <div v-if="asyncTaskWord">Word: {{ asyncTaskWord }}</div>
+        <div v-if="asyncTaskPdf">PDF: {{ asyncTaskPdf }}</div>
         <router-link to="/tasks">{{ $t('task.title') }}</router-link>
       </el-alert>
     </div>
@@ -98,7 +105,13 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
-import { generateDocument, generateDocumentAsync, generateDocumentBatch } from '@/api/generate'
+import {
+  generateDocumentWord,
+  generateDocumentPdf,
+  generateDocumentAsyncWord,
+  generateDocumentAsyncPdf,
+  generateDocumentBatch,
+} from '@/api/generate'
 import type { GenerateDocumentResponse } from '@/types/document'
 
 const props = defineProps<{
@@ -115,13 +128,15 @@ const router = useRouter()
 const { t } = useI18n()
 
 const submitting = ref(false)
-const syncResult = ref<GenerateDocumentResponse | null>(null)
-const asyncTaskId = ref<string | null>(null)
+const syncWord = ref<GenerateDocumentResponse | null>(null)
+const syncPdf = ref<GenerateDocumentResponse | null>(null)
+const asyncTaskWord = ref<string | null>(null)
+const asyncTaskPdf = ref<string | null>(null)
 
 const form = reactive({
   mode: 'sync' as 'sync' | 'async' | 'batch',
   parameters: '',
-  outputFormat: 'WORD',
+  outputFormat: 'WORD' as 'WORD' | 'PDF',
   storageStrategy: 'TEMP',
   dataSets: '',
   failureStrategy: 'CONTINUE',
@@ -147,10 +162,19 @@ function parseDataSets(text: string): Array<Record<string, unknown>> | null {
   }
 }
 
+function buildCommonPayload(parameters: Record<string, unknown>) {
+  return {
+    parameters,
+    storageStrategy: form.storageStrategy,
+  }
+}
+
 async function handleSubmit() {
   submitting.value = true
-  syncResult.value = null
-  asyncTaskId.value = null
+  syncWord.value = null
+  syncPdf.value = null
+  asyncTaskWord.value = null
+  asyncTaskPdf.value = null
 
   try {
     if (form.mode === 'sync') {
@@ -159,12 +183,13 @@ async function handleSubmit() {
         ElMessage.error(t('document.parametersHint'))
         return
       }
-      const res = await generateDocument(props.templateId, {
-        parameters: params,
-        outputFormat: form.outputFormat,
-        storageStrategy: form.storageStrategy,
-      })
-      syncResult.value = res
+      const base = buildCommonPayload(params)
+      const [w, p] = await Promise.all([
+        generateDocumentWord(props.templateId, base),
+        generateDocumentPdf(props.templateId, base),
+      ])
+      syncWord.value = w
+      syncPdf.value = p
       emit('generated')
     } else if (form.mode === 'async') {
       const params = parseJson(form.parameters)
@@ -172,12 +197,13 @@ async function handleSubmit() {
         ElMessage.error(t('document.parametersHint'))
         return
       }
-      const res = await generateDocumentAsync(props.templateId, {
-        parameters: params,
-        outputFormat: form.outputFormat,
-        storageStrategy: form.storageStrategy,
-      })
-      asyncTaskId.value = res.taskId
+      const base = buildCommonPayload(params)
+      const [tw, tp] = await Promise.all([
+        generateDocumentAsyncWord(props.templateId, base),
+        generateDocumentAsyncPdf(props.templateId, base),
+      ])
+      asyncTaskWord.value = tw.taskId
+      asyncTaskPdf.value = tp.taskId
       emit('generated')
     } else {
       const dataSets = parseDataSets(form.dataSets)
@@ -211,7 +237,9 @@ function resetForm() {
   form.dataSets = ''
   form.failureStrategy = 'CONTINUE'
   form.failureThreshold = 10
-  syncResult.value = null
-  asyncTaskId.value = null
+  syncWord.value = null
+  syncPdf.value = null
+  asyncTaskWord.value = null
+  asyncTaskPdf.value = null
 }
 </script>

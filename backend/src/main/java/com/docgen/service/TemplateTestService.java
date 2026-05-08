@@ -6,16 +6,24 @@ import com.docgen.exception.BusinessException;
 import com.docgen.exception.ErrorCode;
 import com.docgen.exception.ResourceNotFoundException;
 import com.docgen.repository.TestCaseRepository;
+import com.docgen.repository.TemplateRepository;
 import com.docgen.repository.TestResultRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
+import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
@@ -23,26 +31,43 @@ import java.util.*;
 
 /**
  * Service for managing template test cases and executing tests.
- * Supports three comparison strategies: variable-value, text-content, and file-snapshot.
+ * Execution runs the real generation pipeline and Docxtemplater render, then applies the selected comparison strategy.
  */
 @Service
 public class TemplateTestService {
 
     private static final Logger log = LoggerFactory.getLogger(TemplateTestService.class);
+    private static final int MAX_ACTUAL_JSON_CHARS = 50_000;
+    private static final int MAX_DOCX_EXTRACT_BYTES = 512_000;
+    /** Maximum page size for listing test cases (abuse prevention). */
+    private static final int MAX_TEST_CASE_PAGE_SIZE = 500;
+    /** Maximum page size for listing trial (test) results per scenario. */
+    private static final int MAX_TEST_RESULT_PAGE_SIZE = 100;
 
     private final TestCaseRepository testCaseRepository;
     private final TestResultRepository testResultRepository;
     private final ObjectMapper objectMapper;
+    private final DocumentGeneratorService documentGeneratorService;
+    private final DocxTextExtractor docxTextExtractor;
+    private final TemplateRepository templateRepository;
+    private final DocumentStorageService documentStorageService;
 
     public TemplateTestService(TestCaseRepository testCaseRepository,
                                TestResultRepository testResultRepository,
-                               ObjectMapper objectMapper) {
+                               ObjectMapper objectMapper,
+                               DocumentGeneratorService documentGeneratorService,
+                               DocxTextExtractor docxTextExtractor,
+                               TemplateRepository templateRepository,
+                               DocumentStorageService documentStorageService) {
         this.testCaseRepository = testCaseRepository;
         this.testResultRepository = testResultRepository;
         this.objectMapper = objectMapper;
+        this.documentGeneratorService = documentGeneratorService;
+        this.docxTextExtractor = docxTextExtractor;
+        this.templateRepository = templateRepository;
+        this.documentStorageService = documentStorageService;
     }
 
-    // ── CRUD operations ──
 
     @Transactional
     public TestCaseDTO createTestCase(Long templateId, CreateTestCaseRequest request) {
@@ -54,15 +79,53 @@ public class TemplateTestService {
         testCase.setComparisonType(
                 request.getComparisonType() != null ? request.getComparisonType() : ComparisonType.VARIABLE_VALUE);
         testCase = testCaseRepository.save(testCase);
-        return toTestCaseDTO(testCase);
+        return toTestCaseDTO(testCase, null);
     }
 
     @Transactional(readOnly = true)
-    public List<TestCaseDTO> listTestCases(Long templateId) {
-        return testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(templateId)
-                .stream()
-                .map(this::toTestCaseDTO)
+    public Page<TestCaseDTO> listTestCases(Long templateId, String nameQuery, Pageable pageable) {
+        Pageable safePageable = capPageable(pageable);
+        Page<TestCase> page = StringUtils.hasText(nameQuery)
+                ? testCaseRepository.findByTemplateIdAndNameContainingIgnoreCaseOrderByCreatedAtDesc(
+                        templateId, nameQuery.trim(), safePageable)
+                : testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(templateId, safePageable);
+        List<Long> ids = page.getContent().stream().map(TestCase::getId).toList();
+        Map<Long, TestResult> latestByCaseId = loadLatestResultsMap(ids);
+        List<TestCaseDTO> content = page.getContent().stream()
+                .map(tc -> {
+                    TestResult row = latestByCaseId.get(tc.getId());
+                    TestResultDTO last = row != null ? toTestResultDTO(row, tc.getName()) : null;
+                    return toTestCaseDTO(tc, last);
+                })
                 .toList();
+        return new PageImpl<>(content, safePageable, page.getTotalElements());
+    }
+
+    /** Visible for unit tests in the same package. */
+    static Pageable capPageable(Pageable pageable) {
+        int page = Math.max(0, pageable.getPageNumber());
+        int size = pageable.getPageSize();
+        if (size < 1) {
+            size = 20;
+        } else if (size > MAX_TEST_CASE_PAGE_SIZE) {
+            size = MAX_TEST_CASE_PAGE_SIZE;
+        }
+        if (page == pageable.getPageNumber() && size == pageable.getPageSize()) {
+            return pageable;
+        }
+        return PageRequest.of(page, size, pageable.getSort());
+    }
+
+    private Map<Long, TestResult> loadLatestResultsMap(List<Long> testCaseIds) {
+        if (testCaseIds == null || testCaseIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<TestResult> rows = testResultRepository.findLatestResultsForTestCaseIds(testCaseIds);
+        Map<Long, TestResult> map = new HashMap<>(rows.size());
+        for (TestResult r : rows) {
+            map.put(r.getTestCaseId(), r);
+        }
+        return map;
     }
 
     @Transactional
@@ -81,7 +144,7 @@ public class TemplateTestService {
             testCase.setComparisonType(request.getComparisonType());
         }
         testCase = testCaseRepository.save(testCase);
-        return toTestCaseDTO(testCase);
+        return toTestCaseDTO(testCase, null);
     }
 
     @Transactional
@@ -90,37 +153,163 @@ public class TemplateTestService {
         testCaseRepository.delete(testCase);
     }
 
-    // ── Test execution ──
+    /**
+     * Paged trial run history for a test case, newest first ({@code executedAt DESC, id DESC}).
+     */
+    @Transactional(readOnly = true)
+    public Page<TestResultDTO> listTestResults(Long testCaseId, Pageable pageable) {
+        TestCase testCase = findTestCaseOrThrow(testCaseId);
+        Pageable safe = capTestResultPageable(pageable);
+        Page<TestResult> page = testResultRepository.pageByTestCaseId(testCaseId, safe);
+        return page.map(r -> toTestResultDTO(r, testCase.getName()));
+    }
+
+    /** Visible for unit tests. */
+    static Pageable capTestResultPageable(Pageable pageable) {
+        int page = Math.max(0, pageable.getPageNumber());
+        int size = pageable.getPageSize();
+        if (size < 1) {
+            size = 20;
+        } else if (size > MAX_TEST_RESULT_PAGE_SIZE) {
+            size = MAX_TEST_RESULT_PAGE_SIZE;
+        }
+        Sort sort = Sort.by(Sort.Order.desc("executedAt"), Sort.Order.desc("id"));
+        return PageRequest.of(page, size, sort);
+    }
+
 
     @Transactional
     public TestResultDTO runTestCase(Long testCaseId) {
         TestCase testCase = findTestCaseOrThrow(testCaseId);
         try {
-            Map<String, Object> testData = parseJson(testCase.getTestDataJson());
+            Map<String, Object> parameters = parseJson(testCase.getTestDataJson());
             Map<String, Object> expectedResult = testCase.getExpectedResultJson() != null
                     ? parseJson(testCase.getExpectedResultJson()) : Collections.emptyMap();
 
-            // Simulate document generation with test data and compare results
-            ComparisonResult comparison = compare(testCase.getComparisonType(), testData, expectedResult);
+            TemplateTestRenderOutcome render = documentGeneratorService.renderForTemplateTest(
+                    testCase.getTemplateId(), parameters);
+
+            ComparisonResult comparison = runComparison(testCase.getComparisonType(), render, expectedResult);
+
+            Template template = templateRepository.findById(testCase.getTemplateId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            ErrorCode.TEMPLATE_NOT_FOUND,
+                            "Template not found: " + testCase.getTemplateId()));
+
+            byte[] docx = render.docxBytes();
+            boolean hasRenderableOutput = docx != null && docx.length > 0;
+            Long sampleDocumentId = null;
+            Long samplePdfDocumentId = null;
+            if (hasRenderableOutput) {
+                try {
+                    GenerateDocumentResponse stored =
+                            documentStorageService.store(template, docx, "DOCX", "TEMP");
+                    if (stored.getDocumentId() != null) {
+                        sampleDocumentId = stored.getDocumentId();
+                    }
+                    byte[] pdfBytes = documentGeneratorService.convertToPdf(docx);
+                    GenerateDocumentResponse pdfStored =
+                            documentStorageService.store(template, pdfBytes, "PDF", "TEMP");
+                    if (pdfStored.getDocumentId() != null) {
+                        samplePdfDocumentId = pdfStored.getDocumentId();
+                    }
+                } catch (Exception e) {
+                    log.warn("Trial sample document storage failed testCaseId={}: {}", testCaseId, e.getMessage());
+                }
+            }
+
+            String diff = comparison.diffDetails();
+            TestStatus finalStatus;
+            boolean storageRequired = hasRenderableOutput;
+            boolean storageOk = sampleDocumentId != null && samplePdfDocumentId != null;
+            if (storageRequired && !storageOk) {
+                finalStatus = TestStatus.FAILED;
+                String storageMsg = "Sample document could not be registered for download.";
+                diff = (diff != null && !diff.isBlank()) ? (diff + "\n\n" + storageMsg) : storageMsg;
+            } else {
+                finalStatus = comparison.passed() ? TestStatus.PASSED : TestStatus.FAILED;
+            }
 
             TestResult result = new TestResult();
             result.setTestCaseId(testCaseId);
-            result.setStatus(comparison.passed() ? TestStatus.PASSED : TestStatus.FAILED);
-            result.setActualResultJson(objectMapper.writeValueAsString(testData));
-            result.setDiffDetails(comparison.diffDetails());
+            result.setStatus(finalStatus);
+            result.setActualResultJson(buildActualResultJson(testCase.getComparisonType(), render));
+            result.setDiffDetails(diff);
             result.setExecutedAt(Instant.now());
+            result.setGeneratedDocumentId(sampleDocumentId);
+            result.setGeneratedPdfDocumentId(samplePdfDocumentId);
             result = testResultRepository.save(result);
-            return toTestResultDTO(result);
+            return toTestResultDTO(result, testCase.getName());
+        } catch (BusinessException e) {
+            log.warn("Test case execution failed (business) testCaseId={}: {}", testCaseId, e.getMessage());
+            return persistFailure(testCaseId, testCase.getName(), "Execution failed: " + e.getMessage());
         } catch (Exception e) {
             log.error("Test case execution failed for testCaseId={}: {}", testCaseId, e.getMessage());
-            TestResult result = new TestResult();
-            result.setTestCaseId(testCaseId);
-            result.setStatus(TestStatus.FAILED);
-            result.setDiffDetails("Execution error: " + e.getMessage());
-            result.setExecutedAt(Instant.now());
-            result = testResultRepository.save(result);
-            return toTestResultDTO(result);
+            return persistFailure(testCaseId, testCase.getName(), "Execution error: " + e.getMessage());
         }
+    }
+
+    private TestResultDTO persistFailure(Long testCaseId, String testCaseName, String diffDetails) {
+        TestResult result = new TestResult();
+        result.setTestCaseId(testCaseId);
+        result.setStatus(TestStatus.FAILED);
+        result.setDiffDetails(diffDetails);
+        result.setExecutedAt(Instant.now());
+        result = testResultRepository.save(result);
+        return toTestResultDTO(result, testCaseName);
+    }
+
+    private ComparisonResult runComparison(ComparisonType type,
+                                           TemplateTestRenderOutcome render,
+                                           Map<String, Object> expected) {
+        return switch (type) {
+            case VARIABLE_VALUE -> compareVariableValues(render.dataContext(), expected);
+            case TEXT_CONTENT -> {
+                byte[] bytes = render.docxBytes() != null ? render.docxBytes() : new byte[0];
+                ExtractedText extracted = docxTextExtractor.extractText(new ByteArrayInputStream(bytes),
+                        MAX_DOCX_EXTRACT_BYTES);
+                yield compareTextContent(extracted.text(), expected);
+            }
+            case FILE_SNAPSHOT -> compareFileSnapshot(render.docxBytes(), expected);
+        };
+    }
+
+    private String buildActualResultJson(ComparisonType type,
+                                         TemplateTestRenderOutcome render) throws JsonProcessingException {
+        return switch (type) {
+            case VARIABLE_VALUE -> truncateJson(objectMapper.writeValueAsString(render.dataContext()));
+            case TEXT_CONTENT -> {
+                byte[] bytes = render.docxBytes() != null ? render.docxBytes() : new byte[0];
+                ExtractedText extracted = docxTextExtractor.extractText(new ByteArrayInputStream(bytes),
+                        MAX_DOCX_EXTRACT_BYTES);
+                Map<String, Object> summary = new LinkedHashMap<>();
+                summary.put("extractedTextLength", extracted.text() != null ? extracted.text().length() : 0);
+                summary.put("truncated", extracted.truncated());
+                summary.put("docxBytesLength", bytes.length);
+                yield objectMapper.writeValueAsString(summary);
+            }
+            case FILE_SNAPSHOT -> {
+                byte[] bytes = render.docxBytes() != null ? render.docxBytes() : new byte[0];
+                Map<String, Object> summary = new LinkedHashMap<>();
+                summary.put("docxBytesLength", bytes.length);
+                summary.put("docxSha256", bytes.length == 0 ? "" : computeHashBytes(bytes));
+                yield objectMapper.writeValueAsString(summary);
+            }
+        };
+    }
+
+    private String truncateJson(String json) throws JsonProcessingException {
+        if (json == null) {
+            return "{}";
+        }
+        if (json.length() <= MAX_ACTUAL_JSON_CHARS) {
+            return json;
+        }
+        Map<String, Object> truncated = new LinkedHashMap<>();
+        truncated.put("_truncated", true);
+        truncated.put("_jsonPrefix", json.substring(0, MAX_ACTUAL_JSON_CHARS));
+        truncated.put("_originalLength", json.length());
+        return objectMapper.writeValueAsString(truncated);
     }
 
     @Transactional
@@ -150,12 +339,11 @@ public class TemplateTestService {
         return report;
     }
 
-    // ── Import / Export ──
 
     @Transactional(readOnly = true)
     public String exportTestCases(Long templateId) {
         List<TestCase> testCases = testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(templateId);
-        List<TestCaseDTO> dtos = testCases.stream().map(this::toTestCaseDTO).toList();
+        List<TestCaseDTO> dtos = testCases.stream().map(tc -> toTestCaseDTO(tc, null)).toList();
         try {
             return objectMapper.writeValueAsString(dtos);
         } catch (JsonProcessingException e) {
@@ -180,14 +368,15 @@ public class TemplateTestService {
         }
     }
 
-    // ── Comparison logic ──
 
+    /**
+     * Package-visible for unit tests; only VARIABLE_VALUE is supported through this entry point.
+     */
     ComparisonResult compare(ComparisonType type, Map<String, Object> actual, Map<String, Object> expected) {
-        return switch (type) {
-            case VARIABLE_VALUE -> compareVariableValues(actual, expected);
-            case TEXT_CONTENT -> compareTextContent(actual, expected);
-            case FILE_SNAPSHOT -> compareFileSnapshot(actual, expected);
-        };
+        if (type != ComparisonType.VARIABLE_VALUE) {
+            throw new IllegalArgumentException("compare() supports VARIABLE_VALUE only");
+        }
+        return compareVariableValues(actual, expected);
     }
 
     private ComparisonResult compareVariableValues(Map<String, Object> actual, Map<String, Object> expected) {
@@ -208,20 +397,28 @@ public class TemplateTestService {
         return new ComparisonResult(false, String.join("; ", diffs));
     }
 
-    private ComparisonResult compareTextContent(Map<String, Object> actual, Map<String, Object> expected) {
-        String actualText = actual.getOrDefault("_textContent", "").toString();
+    private ComparisonResult compareTextContent(String extractedText, Map<String, Object> expected) {
         String expectedText = expected.getOrDefault("_textContent", "").toString();
-        if (actualText.equals(expectedText)) {
+        String a = normalizeNewlines(extractedText != null ? extractedText : "");
+        String e = normalizeNewlines(expectedText);
+        if (a.equals(e)) {
             return new ComparisonResult(true, null);
         }
-        return new ComparisonResult(false, "Text content mismatch: expected length=" + expectedText.length()
-                + ", actual length=" + actualText.length());
+        return new ComparisonResult(false, "Text content mismatch: expected length=" + e.length()
+                + ", actual length=" + a.length());
     }
 
-    private ComparisonResult compareFileSnapshot(Map<String, Object> actual, Map<String, Object> expected) {
-        String actualHash = computeHash(actual.getOrDefault("_fileContent", "").toString());
+    private static String normalizeNewlines(String s) {
+        return s.replace("\r\n", "\n").trim();
+    }
+
+    private ComparisonResult compareFileSnapshot(byte[] docxBytes, Map<String, Object> expected) {
+        if (docxBytes == null || docxBytes.length == 0) {
+            return new ComparisonResult(false, "Empty document output");
+        }
+        String actualHash = computeHashBytes(docxBytes);
         String expectedHash = expected.getOrDefault("_snapshotHash", "").toString();
-        if (actualHash.equals(expectedHash)) {
+        if (actualHash.equalsIgnoreCase(expectedHash)) {
             return new ComparisonResult(true, null);
         }
         return new ComparisonResult(false, "File snapshot mismatch: expected hash=" + expectedHash
@@ -238,7 +435,16 @@ public class TemplateTestService {
         }
     }
 
-    // ── Private helpers ──
+    public String computeHashBytes(byte[] content) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(content);
+            return HexFormat.of().formatHex(hash);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to compute hash", e);
+        }
+    }
+
 
     private TestCase findTestCaseOrThrow(Long testCaseId) {
         return testCaseRepository.findById(testCaseId)
@@ -252,7 +458,7 @@ public class TemplateTestService {
         return objectMapper.readValue(json, Map.class);
     }
 
-    private TestCaseDTO toTestCaseDTO(TestCase entity) {
+    private TestCaseDTO toTestCaseDTO(TestCase entity, TestResultDTO lastRun) {
         TestCaseDTO dto = new TestCaseDTO();
         dto.setId(entity.getId());
         dto.setTemplateId(entity.getTemplateId());
@@ -262,19 +468,32 @@ public class TemplateTestService {
         dto.setComparisonType(entity.getComparisonType());
         dto.setCreatedAt(entity.getCreatedAt());
         dto.setUpdatedAt(entity.getUpdatedAt());
+        dto.setLastRun(lastRun);
         return dto;
     }
 
-    private TestResultDTO toTestResultDTO(TestResult entity) {
+    private TestResultDTO toTestResultDTO(TestResult entity, String testCaseName) {
         TestResultDTO dto = new TestResultDTO();
         dto.setId(entity.getId());
         dto.setTestCaseId(entity.getTestCaseId());
+        dto.setTestCaseName(testCaseName);
         dto.setStatus(entity.getStatus());
         dto.setActualResultJson(entity.getActualResultJson());
         dto.setDiffDetails(entity.getDiffDetails());
         dto.setExecutedAt(entity.getExecutedAt());
+        if (entity.getGeneratedDocumentId() != null) {
+            dto.setSampleDocumentId(entity.getGeneratedDocumentId());
+            dto.setSampleDocumentDownloadUrl(
+                    String.format("/api/documents/%d/download", entity.getGeneratedDocumentId()));
+        }
+        if (entity.getGeneratedPdfDocumentId() != null) {
+            dto.setSamplePdfDocumentId(entity.getGeneratedPdfDocumentId());
+            dto.setSamplePdfDocumentDownloadUrl(
+                    String.format("/api/documents/%d/download", entity.getGeneratedPdfDocumentId()));
+        }
         return dto;
     }
 
     record ComparisonResult(boolean passed, String diffDetails) {}
 }
+

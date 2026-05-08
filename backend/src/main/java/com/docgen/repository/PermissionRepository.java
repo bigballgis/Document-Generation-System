@@ -27,7 +27,6 @@ public interface PermissionRepository extends JpaRepository<Permission, Long> {
 
     void deleteByTemplateId(Long templateId);
 
-    // ── Resource-based queries (for Segment permissions) ──
 
     List<Permission> findByResourceTypeAndResourceId(String resourceType, Long resourceId);
 
@@ -37,3 +36,4 @@ public interface PermissionRepository extends JpaRepository<Permission, Long> {
     boolean existsByResourceTypeAndResourceIdAndTeamIdAndPermissionType(
             String resourceType, Long resourceId, Long teamId, PermissionType permissionType);
 }
+

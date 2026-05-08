@@ -1,20 +1,14 @@
 <template>
   <div class="onlyoffice-editor-wrapper">
-    <TemplateTagToolbar
-      v-if="!viewOnly"
-      @insert-variable="insertVariable"
-      @insert-loop="insertLoop"
-      @insert-condition="insertCondition"
-    />
     <div :id="editorContainerId" class="editor-container" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useUserStore } from '@/stores/user'
-import { useLocale } from '@/composables/useLocale'
-import TemplateTagToolbar from './TemplateTagToolbar.vue'
+import { signOnlyOfficeConfig } from '@/api/composite-templates'
 
 export interface OnlyOfficeEditorProps {
   /** URL of the document to edit (from MinIO / backend) */
@@ -29,13 +23,15 @@ export interface OnlyOfficeEditorProps {
   viewOnly?: boolean
   /** Document type: word, cell, slide */
   documentType?: string
+  /** JWT token for OnlyOffice Document Server authentication */
+  token?: string
 }
 
 const props = withDefaults(defineProps<OnlyOfficeEditorProps>(), {
-  documentTitle: 'Template.docx',
   callbackUrl: '',
   viewOnly: false,
   documentType: 'word',
+  token: '',
 })
 
 const emit = defineEmits<{
@@ -46,10 +42,10 @@ const emit = defineEmits<{
 }>()
 
 const userStore = useUserStore()
-const { locale } = useLocale()
+const { locale, t } = useI18n()
 
 const editorContainerId = `onlyoffice-editor-${Date.now()}`
-let editorInstance: any = null
+const editorInstanceRef = ref<any>(null)
 const scriptLoaded = ref(false)
 
 const onlyofficeUrl = computed(() => {
@@ -77,7 +73,7 @@ function loadScript(): Promise<void> {
         resolve()
       } else {
         existing.addEventListener('load', () => resolve())
-        existing.addEventListener('error', () => reject(new Error('Failed to load OnlyOffice API')))
+        existing.addEventListener('error', () => reject(new Error(t('workspace.editor.loadScriptFailed'))))
       }
       return
     }
@@ -86,7 +82,7 @@ function loadScript(): Promise<void> {
     script.src = scriptUrl
     script.async = true
     script.onload = () => resolve()
-    script.onerror = () => reject(new Error('Failed to load OnlyOffice API script'))
+    script.onerror = () => reject(new Error(t('workspace.editor.loadScriptFailed')))
     document.head.appendChild(script)
   })
 }
@@ -98,17 +94,18 @@ function buildConfig() {
     document: {
       fileType: 'docx',
       key: props.documentKey,
-      title: props.documentTitle,
+      title: props.documentTitle ?? t('workspace.editor.defaultDocumentTitle'),
       url: props.documentUrl,
       permissions: {
         edit: !props.viewOnly,
         download: true,
         print: true,
-        // Disable review/comment — template editing doesn't need these
         review: false,
         comment: false,
-        // Allow copy/paste for template tag insertion
         copy: true,
+        // Enable connector for programmatic text insertion
+        modifyContentControl: true,
+        modifyFilter: true,
       },
     },
     documentType: props.documentType,
@@ -118,23 +115,27 @@ function buildConfig() {
       callbackUrl: props.callbackUrl || undefined,
       user: {
         id: String(userStore.userInfo?.id || 'anonymous'),
-        name: userStore.userInfo?.username || 'Anonymous',
+        name: userStore.userInfo?.username || t('workspace.editor.guestUserName'),
       },
       customization: {
         autosave: true,
         forcesave: true,
-        // Keep full toolbar with buttons visible (compactToolbar hides them)
         compactToolbar: false,
         compactHeader: false,
-        // Hide right panel on initial load for more editing space
         hideRightMenu: true,
-        // Hide rulers for cleaner look
         hideRulers: true,
-        // Disable comments — not needed for template editing
         comments: false,
         help: false,
         chat: false,
         feedback: false,
+        macros: true,
+        plugins: true,
+      },
+      plugins: {
+        autostart: ['asc.{A8705DEE-7544-4C33-B3D5-168406D92F72}'],
+        pluginsData: [
+          onlyofficeUrl.value + '/sdkjs-plugins/insert-text/config.json',
+        ],
       },
     },
     events: {
@@ -148,53 +149,87 @@ function buildConfig() {
         emit('close')
       },
       onError: (event: any) => {
-        emit('error', event?.data?.message || 'Unknown editor error')
+        emit('error', event?.data?.message || t('workspace.editor.unknownEditorError'))
       },
     },
   }
 
+  // Add JWT token for OnlyOffice Document Server authentication
+  // Token is set dynamically in createEditor() after signing
   return config
 }
 
-function createEditor() {
+async function createEditor() {
   if (!(window as any).DocsAPI) {
-    emit('error', 'OnlyOffice API not loaded')
+    emit('error', t('workspace.editor.apiNotLoaded'))
     return
   }
 
   destroyEditor()
 
   const config = buildConfig()
-  editorInstance = new (window as any).DocsAPI.DocEditor(editorContainerId, config)
+
+  // Sign the full config with the backend JWT secret
+  try {
+    const { token } = await signOnlyOfficeConfig(config)
+    config.token = token
+  } catch (err: any) {
+    if (import.meta.env.DEV) {
+      console.warn('Failed to sign OnlyOffice config, proceeding without token:', err?.message)
+    }
+  }
+
+  editorInstanceRef.value = new (window as any).DocsAPI.DocEditor(editorContainerId, config)
 }
 
 function destroyEditor() {
-  if (editorInstance) {
+  if (editorInstanceRef.value) {
     try {
-      editorInstance.destroyEditor()
+      editorInstanceRef.value.destroyEditor()
     } catch {
       // ignore cleanup errors
     }
-    editorInstance = null
+    editorInstanceRef.value = null
   }
 }
 
-/** Insert text at cursor position via the OnlyOffice command API */
+/** Insert text at cursor position */
 function insertTextAtCursor(text: string) {
-  if (!editorInstance) return
-  // Use the connector to execute commands in the editor
-  const connector = editorInstance.createConnector?.()
-  if (connector) {
-    connector.executeMethod('PasteText', [text])
-  }
+  const instance = editorInstanceRef.value
+  if (!instance) return
+
+  // Method 1: Connector API (if Euro-Office unlocks it in future)
+  try {
+    const connector = instance.createConnector?.()
+    if (connector) {
+      connector.executeMethod('PasteText', [text])
+      return
+    }
+  } catch { /* not available */ }
+
+  // Method 2: Clipboard + auto-focus (current best approach for Euro-Office CE)
+  const iframe = document.querySelector('iframe[name="frameEditor"]') as HTMLIFrameElement | null
+    ?? document.getElementById(editorContainerId)?.querySelector('iframe') as HTMLIFrameElement | null
+
+  navigator.clipboard.writeText(text).then(() => {
+    if (iframe) {
+      iframe.focus()
+      iframe.contentWindow?.focus()
+    }
+    import('element-plus').then(({ ElMessage }) => {
+      ElMessage.success({ message: t('workspace.editor.insertTextCopied', { text }), duration: 2000 })
+    })
+  }).catch(() => {
+    window.prompt(t('workspace.editor.insertTextPrompt'), text)
+  })
 }
 
 function insertVariable(name: string) {
   insertTextAtCursor(`{${name}}`)
 }
 
-function insertLoop(arrayName: string) {
-  insertTextAtCursor(`{#${arrayName}}\n\n{/${arrayName}}`)
+function insertLoop(loopText: string) {
+  insertTextAtCursor(loopText)
 }
 
 function insertCondition(conditionExpr: string) {
@@ -208,13 +243,23 @@ watch(locale, () => {
   }
 })
 
+// Reload editor when the document identity changes (createEditor destroys any previous instance first)
+watch(
+  () => [props.documentUrl, props.documentKey] as const,
+  () => {
+    if (scriptLoaded.value) {
+      createEditor()
+    }
+  },
+)
+
 onMounted(async () => {
   try {
     await loadScript()
     scriptLoaded.value = true
-    createEditor()
+    await createEditor()
   } catch (err: any) {
-    emit('error', err.message || 'Failed to initialize OnlyOffice editor')
+    emit('error', err.message || t('workspace.editor.initFailed'))
   }
 })
 
@@ -235,11 +280,17 @@ defineExpose({
   flex-direction: column;
   height: 100%;
   width: 100%;
+  overflow: hidden;
 }
 
 .editor-container {
   flex: 1;
-  min-height: 600px;
+  min-height: 0;
   width: 100%;
+  height: 100%;
+}
+
+.onlyoffice-editor-wrapper :deep(iframe) {
+  height: 100% !important;
 }
 </style>

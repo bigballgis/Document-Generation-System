@@ -21,8 +21,12 @@ COPY package*.json ./
 RUN npm ci --production
 COPY . .
 
-# Make the UNO conversion script executable
-RUN chmod +x scripts/convert_with_fields.py
+# Make the UNO conversion script executable; run as non-root (node user from base image)
+RUN chmod +x scripts/convert_with_fields.py \
+    && chown -R node:node /app
+
+USER node
+ENV HOME=/app
 
 EXPOSE 3000
 CMD ["node", "server.js"]

@@ -12,9 +12,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * REST controller for template permission management.
- */
 @RestController
 @RequestMapping("/api/templates/{templateId}/permissions")
 public class PermissionController {

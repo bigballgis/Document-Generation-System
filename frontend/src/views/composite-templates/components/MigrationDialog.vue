@@ -34,7 +34,7 @@ async function handleMigrate() {
     ElMessage.success(t('migration.success'))
     emit('update:visible', false)
     emit('migrated')
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     migrating.value = false
   }
 }

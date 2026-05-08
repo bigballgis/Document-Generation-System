@@ -1,19 +1,28 @@
 package com.docgen.service;
 
 import com.docgen.dto.CreateTemplateRequest;
+import com.docgen.dto.RenderConfigDocument;
+import com.docgen.dto.ReviewerCandidateDTO;
 import com.docgen.dto.TemplateDTO;
 import com.docgen.dto.TemplateQueryRequest;
 import com.docgen.dto.TemplateVersionDTO;
 import com.docgen.dto.UpdateTemplateRequest;
+import com.docgen.entity.Team;
+import com.docgen.entity.TeamApprovalMode;
 import com.docgen.entity.Template;
 import com.docgen.entity.TemplateVersion;
+import com.docgen.entity.User;
 import com.docgen.exception.BusinessException;
 import com.docgen.exception.ErrorCode;
 import com.docgen.exception.ResourceNotFoundException;
+import com.docgen.repository.TeamRepository;
 import com.docgen.repository.TemplateRepository;
 import com.docgen.repository.TemplateTagMappingRepository;
 import com.docgen.repository.TemplateVersionRepository;
+import com.docgen.repository.UserRepository;
 import com.docgen.util.TenantContext;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.CopyObjectArgs;
@@ -32,6 +41,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -47,7 +57,11 @@ public class TemplateService {
     private final TemplateRepository templateRepository;
     private final TemplateVersionRepository templateVersionRepository;
     private final TemplateTagMappingRepository tagMappingRepository;
+    private final UserRepository userRepository;
+    private final TeamRepository teamRepository;
     private final MinioClient minioClient;
+    private final ObjectMapper objectMapper;
+    private final RenderConfigValidator renderConfigValidator;
 
     @Value("${minio.bucket-name:docgen}")
     private String bucketName;
@@ -55,11 +69,19 @@ public class TemplateService {
     public TemplateService(TemplateRepository templateRepository,
                            TemplateVersionRepository templateVersionRepository,
                            TemplateTagMappingRepository tagMappingRepository,
-                           MinioClient minioClient) {
+                           UserRepository userRepository,
+                           TeamRepository teamRepository,
+                           MinioClient minioClient,
+                           ObjectMapper objectMapper,
+                           RenderConfigValidator renderConfigValidator) {
         this.templateRepository = templateRepository;
         this.templateVersionRepository = templateVersionRepository;
         this.tagMappingRepository = tagMappingRepository;
+        this.userRepository = userRepository;
+        this.teamRepository = teamRepository;
         this.minioClient = minioClient;
+        this.objectMapper = objectMapper;
+        this.renderConfigValidator = renderConfigValidator;
     }
 
     /**
@@ -90,9 +112,11 @@ public class TemplateService {
             template.setStorageStrategy(request.getStorageStrategy());
         }
         template.setAsync(request.isAsync());
-        template.setTeamId(request.getTeamId());
         template.setCategoryId(request.getCategoryId());
         template.setReviewRequired(request.isReviewRequired());
+
+        Long effectiveTeamId = resolveTeamIdForCreate(request.getTeamId(), userId, tenantId);
+        template.setTeamId(effectiveTeamId);
 
         Template saved = templateRepository.save(template);
         log.info("Template created: name={}, id={}, tenantId={}", saved.getName(), saved.getId(), tenantId);
@@ -140,6 +164,48 @@ public class TemplateService {
     }
 
     /**
+     * Users in the same tenant and team as the template who may be selected as reviewers (excludes the template author).
+     * For maker-checker teams, filters by {@code reviewLevel}: level 1 → makers, level 2+ → checkers.
+     */
+    @Transactional(readOnly = true)
+    public List<ReviewerCandidateDTO> listReviewerCandidates(Long templateId, Integer reviewLevel) {
+        Template template = findTemplateOrThrow(templateId);
+        Long tenantId = TenantContext.getCurrentTenantId();
+        if (!template.getTenantId().equals(tenantId)) {
+            throw new BusinessException(
+                    ErrorCode.VALIDATION_FAILED, "Template not accessible in current tenant context", HttpStatus.FORBIDDEN);
+        }
+        if (template.getTeamId() == null) {
+            throw new BusinessException(
+                    ErrorCode.VALIDATION_FAILED,
+                    "Template must be assigned to a team before listing reviewer candidates",
+                    HttpStatus.BAD_REQUEST);
+        }
+        Team team = teamRepository.findById(template.getTeamId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.VALIDATION_FAILED,
+                        "Template team not found", HttpStatus.BAD_REQUEST));
+        List<User> users = userRepository.findByTenantIdAndTeamIdOrderByUsernameAsc(tenantId, template.getTeamId());
+        Long createdBy = template.getCreatedBy();
+        int level = reviewLevel != null ? reviewLevel : 1;
+        return users.stream()
+                .filter(u -> u.getId() != null && (createdBy == null || !u.getId().equals(createdBy)))
+                .filter(u -> includeUserForReviewCandidate(team, level, u))
+                .map(u -> new ReviewerCandidateDTO(
+                        u.getId(), u.getUsername(), u.getEmail(), u.getTeamId(), u.getRole(), u.getTeamReviewLane()))
+                .toList();
+    }
+
+    private static boolean includeUserForReviewCandidate(Team team, int reviewLevel, User user) {
+        if (team.getApprovalMode() != TeamApprovalMode.MAKER_CHECKER) {
+            return true;
+        }
+        if (reviewLevel <= 1) {
+            return "MAKER".equals(user.getTeamReviewLane());
+        }
+        return "CHECKER".equals(user.getTeamReviewLane());
+    }
+
+    /**
      * Update an existing template. Automatically creates a new version snapshot.
      */
     @Transactional
@@ -162,6 +228,7 @@ public class TemplateService {
             template.setAsync(request.getAsync());
         }
         if (request.getTeamId() != null) {
+            assertTeamBelongsToTenant(request.getTeamId(), template.getTenantId());
             template.setTeamId(request.getTeamId());
         }
         if (request.getCategoryId() != null) {
@@ -187,6 +254,68 @@ public class TemplateService {
     }
 
     /**
+     * Replace post-merge render configuration (watermark). Validates with the same rules as composite ZIP import.
+     */
+    @Transactional
+    public TemplateDTO updateRenderConfig(Long templateId, RenderConfigDocument doc) {
+        Template template = findTemplateOrThrow(templateId);
+        assertSameTenant(template);
+        assertCompositeTemplateForRenderConfigUpdate(template);
+        if (doc == null) {
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                    "render-config body is required", HttpStatus.BAD_REQUEST);
+        }
+        renderConfigValidator.validateForImport(doc);
+        try {
+            if (doc.isEffectivelyEmpty()) {
+                template.setRenderConfig(null);
+            } else {
+                template.setRenderConfig(objectMapper.writeValueAsString(doc));
+            }
+        } catch (JsonProcessingException e) {
+            throw new BusinessException(ErrorCode.INTERNAL_ERROR,
+                    "Failed to serialize render config", HttpStatus.INTERNAL_SERVER_ERROR, e);
+        }
+        Template saved = templateRepository.save(template);
+        createVersionSnapshot(saved);
+        log.info("Template render-config updated: id={}", saved.getId());
+        return toDTO(saved);
+    }
+
+    /**
+     * Clears stored render configuration (no watermarks from render_config at generation).
+     */
+    @Transactional
+    public TemplateDTO clearRenderConfig(Long templateId) {
+        Template template = findTemplateOrThrow(templateId);
+        assertSameTenant(template);
+        template.setRenderConfig(null);
+        Template saved = templateRepository.save(template);
+        createVersionSnapshot(saved);
+        log.info("Template render-config cleared: id={}", saved.getId());
+        return toDTO(saved);
+    }
+
+    private void assertSameTenant(Template template) {
+        Long tenantId = TenantContext.getCurrentTenantId();
+        if (tenantId != null && template.getTenantId() != null && !template.getTenantId().equals(tenantId)) {
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                    "Template not accessible in current tenant context", HttpStatus.FORBIDDEN);
+        }
+    }
+
+    /**
+     * Post-merge {@code render_config} is consumed by composite generation only; reject REST writes for single templates.
+     */
+    private void assertCompositeTemplateForRenderConfigUpdate(Template template) {
+        String type = template.getTemplateType();
+        if (type == null || type.isBlank() || "SINGLE".equalsIgnoreCase(type)) {
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                    "render-config updates apply to composite templates only", HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    /**
      * Delete a template by ID.
      */
     @Transactional
@@ -197,7 +326,7 @@ public class TemplateService {
     }
 
     /**
-     * Clone a template: creates a full copy with "- 副本" suffix and DRAFT status.
+     * Clone a template: creates a full copy with " - Copy" suffix and DRAFT status.
      * Copies the template file in MinIO and duplicates all metadata.
      */
     @Transactional
@@ -209,7 +338,7 @@ public class TemplateService {
 
         Template clone = new Template();
         clone.setTenantId(source.getTenantId());
-        clone.setName(source.getName() + " - 副本");
+        clone.setName(source.getName() + " - Copy");
         clone.setDescription(source.getDescription());
         clone.setTemplateFilePath(clonedFilePath);
         clone.setOutputFormat(source.getOutputFormat());
@@ -220,6 +349,9 @@ public class TemplateService {
         clone.setCategoryId(source.getCategoryId());
         clone.setReviewRequired(source.isReviewRequired());
         clone.setStatus("DRAFT");
+        clone.setTemplateType(source.getTemplateType());
+        clone.setAssemblyConfig(source.getAssemblyConfig());
+        clone.setRenderConfig(source.getRenderConfig());
 
         Template saved = templateRepository.save(clone);
         log.info("Template cloned: sourceId={}, cloneId={}, cloneName={}",
@@ -227,7 +359,6 @@ public class TemplateService {
         return toDTO(saved);
     }
 
-    // ── Version management ──
 
     /**
      * Get all versions for a template, ordered by version number descending.
@@ -251,7 +382,7 @@ public class TemplateService {
 
         TemplateVersion targetVersion = templateVersionRepository.findByIdAndTemplateId(versionId, templateId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.TEMPLATE_VERSION_NOT_FOUND, "模板版本不存在"));
+                        ErrorCode.TEMPLATE_VERSION_NOT_FOUND, "Template version not found"));
 
         // Restore template fields from the target version's config
         template.setTemplateFilePath(targetVersion.getTemplateFilePath());
@@ -268,12 +399,57 @@ public class TemplateService {
         return toDTO(saved);
     }
 
-    // ── Private helpers ──
+    /**
+     * Create a new draft version from an ACTIVE template.
+     * This is a special operation that bypasses the state machine,
+     * allowing ACTIVE → DRAFT transition for editing purposes.
+     */
+    @Transactional
+    public TemplateDTO createDraftVersion(Long templateId, Long userId) {
+        Template template = findTemplateOrThrow(templateId);
+        if (!"ACTIVE".equals(template.getStatus())) {
+            throw new BusinessException(ErrorCode.TEMPLATE_INVALID_STATE_TRANSITION,
+                    "Only ACTIVE templates can create a draft version", HttpStatus.BAD_REQUEST);
+        }
+        createVersionSnapshot(template);
+        template.setStatus("DRAFT");
+        templateRepository.save(template);
+        log.info("Draft version created for template: id={}, by userId={}", templateId, userId);
+        return toDTO(template);
+    }
+
 
     private Template findTemplateOrThrow(Long id) {
         return templateRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.TEMPLATE_NOT_FOUND, "模板不存在"));
+                        ErrorCode.TEMPLATE_NOT_FOUND, "Template not found"));
+    }
+
+    private void assertTeamBelongsToTenant(Long teamId, Long tenantId) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new BusinessException(
+                        ErrorCode.VALIDATION_FAILED, "Team not found", HttpStatus.BAD_REQUEST));
+        if (!team.getTenantId().equals(tenantId)) {
+            throw new BusinessException(
+                    ErrorCode.VALIDATION_FAILED, "Team does not belong to the current tenant", HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    /**
+     * If request does not set a team, inherit the creator's team when present; otherwise null (draft may stay unassigned).
+     */
+    private Long resolveTeamIdForCreate(Long requestTeamId, Long userId, Long tenantId) {
+        if (requestTeamId != null) {
+            assertTeamBelongsToTenant(requestTeamId, tenantId);
+            return requestTeamId;
+        }
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty() || userOpt.get().getTeamId() == null) {
+            return null;
+        }
+        Long fromUser = userOpt.get().getTeamId();
+        assertTeamBelongsToTenant(fromUser, tenantId);
+        return fromUser;
     }
 
     private String uploadTemplateFile(MultipartFile file, Long tenantId) {
@@ -294,7 +470,7 @@ public class TemplateService {
         } catch (Exception e) {
             log.error("Failed to upload template file to MinIO: {}", e.getMessage(), e);
             throw new BusinessException(ErrorCode.INTERNAL_ERROR,
-                    "模板文件上传失败", HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Template file upload failed", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
 
         return objectName;
@@ -322,7 +498,7 @@ public class TemplateService {
         } catch (Exception e) {
             log.error("Failed to create empty docx template: {}", e.getMessage(), e);
             throw new BusinessException(ErrorCode.INTERNAL_ERROR,
-                    "创建空模板文件失败", HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Failed to create blank template file", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
         return objectName;
     }
@@ -381,7 +557,7 @@ public class TemplateService {
         } catch (Exception e) {
             log.error("Failed to copy template file in MinIO: {}", e.getMessage(), e);
             throw new BusinessException(ErrorCode.INTERNAL_ERROR,
-                    "模板文件复制失败", HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Template file copy failed", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
 
         return destObjectName;
@@ -403,7 +579,7 @@ public class TemplateService {
     }
 
     private TemplateDTO toDTO(Template template) {
-        return new TemplateDTO(
+        TemplateDTO dto = new TemplateDTO(
                 template.getId(),
                 template.getTenantId(),
                 template.getName(),
@@ -420,6 +596,10 @@ public class TemplateService {
                 template.getCreatedAt(),
                 template.getUpdatedAt()
         );
+        dto.setTemplateType(template.getTemplateType());
+        dto.setRenderConfig(template.getRenderConfig());
+        dto.setVersion(templateVersionRepository.findMaxVersionNumber(template.getId()).orElse(0));
+        return dto;
     }
 
     private TemplateVersionDTO toVersionDTO(TemplateVersion version) {
@@ -528,3 +708,4 @@ public class TemplateService {
         return value.replace("\\\"", "\"").replace("\\\\", "\\");
     }
 }
+

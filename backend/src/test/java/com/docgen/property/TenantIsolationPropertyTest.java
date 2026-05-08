@@ -24,7 +24,7 @@ import static org.mockito.Mockito.*;
  *
  * <p><b>Validates: Requirements 19.1, 19.3, 49.4</b></p>
  */
-@Tag("Feature: low-code-document-generation-system, Property 17: 租户数据隔离")
+@Tag("feature-low-code-document-generation-system-property-17")
 class TenantIsolationPropertyTest {
 
     /**

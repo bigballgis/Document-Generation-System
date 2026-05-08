@@ -2,12 +2,10 @@ package com.docgen.service;
 
 import com.docgen.dto.GenerateDocumentRequest;
 import com.docgen.dto.GenerateDocumentResponse;
-import com.docgen.entity.Expression;
-import com.docgen.entity.ExpressionType;
+import com.docgen.dto.TemplateTestRenderOutcome;
 import com.docgen.entity.Template;
 import com.docgen.exception.BusinessException;
 import com.docgen.exception.ErrorCode;
-import com.docgen.repository.ExpressionRepository;
 import com.docgen.repository.TemplateRepository;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import org.slf4j.Logger;
@@ -22,9 +20,10 @@ import java.util.*;
 
 /**
  * Core service that orchestrates the complete document generation flow:
- * receive request → execute data pipeline → render via Docxtemplater → optional PDF conversion → store.
+ * receive request → validate parameters → evaluate DERIVED parameters → render via Docxtemplater → optional PDF conversion → store.
  * <p>
- * Circuit breakers protect calls to the Docxtemplater service and external data sources.
+ * Three-step pipeline: validate parameters → evaluate DERIVED parameters → render template.
+ * Circuit breakers protect calls to the Docxtemplater service.
  */
 @Service
 public class DocumentGeneratorService {
@@ -32,13 +31,11 @@ public class DocumentGeneratorService {
     private static final Logger log = LoggerFactory.getLogger(DocumentGeneratorService.class);
 
     private final TemplateRepository templateRepository;
-    private final ExpressionRepository expressionRepository;
-    private final DataAggregationService dataAggregationService;
-    private final ExpressionEngine expressionEngine;
+    private final TemplateGenerationEligibilityService templateGenerationEligibilityService;
+    private final ParameterValidationService parameterValidationService;
     private final RestTemplate restTemplate;
     private final DocumentStorageService documentStorageService;
     private final CircuitBreaker docxtemplaterCb;
-    private final CircuitBreaker dataSourceCb;
     private final CompositeGeneratorService compositeGeneratorService;
 
     @Value("${docxtemplater.service-url:http://localhost:3000}")
@@ -46,22 +43,18 @@ public class DocumentGeneratorService {
 
     public DocumentGeneratorService(
             TemplateRepository templateRepository,
-            ExpressionRepository expressionRepository,
-            DataAggregationService dataAggregationService,
-            ExpressionEngine expressionEngine,
+            TemplateGenerationEligibilityService templateGenerationEligibilityService,
+            ParameterValidationService parameterValidationService,
             RestTemplate restTemplate,
             DocumentStorageService documentStorageService,
             CircuitBreaker docxtemplaterCircuitBreaker,
-            CircuitBreaker dataSourceCircuitBreaker,
             CompositeGeneratorService compositeGeneratorService) {
         this.templateRepository = templateRepository;
-        this.expressionRepository = expressionRepository;
-        this.dataAggregationService = dataAggregationService;
-        this.expressionEngine = expressionEngine;
+        this.templateGenerationEligibilityService = templateGenerationEligibilityService;
+        this.parameterValidationService = parameterValidationService;
         this.restTemplate = restTemplate;
         this.documentStorageService = documentStorageService;
         this.docxtemplaterCb = docxtemplaterCircuitBreaker;
-        this.dataSourceCb = dataSourceCircuitBreaker;
         this.compositeGeneratorService = compositeGeneratorService;
     }
 
@@ -69,11 +62,36 @@ public class DocumentGeneratorService {
      * Synchronously generate a document for the given template.
      * Routes to CompositeGeneratorService for COMPOSITE templates,
      * or follows the existing single-file flow for SINGLE templates.
+     * <p>
+     * Async and batch callers use this overload; no sync API template version is passed.
      */
     public GenerateDocumentResponse generateDocument(Long templateId, GenerateDocumentRequest request) {
+        return generateDocument(templateId, request, null);
+    }
+
+    /**
+     * Same as {@link #generateDocument(Long, GenerateDocumentRequest)} with optional context from the
+     * synchronous generate API.
+     *
+     * @param syncValidatedTemplateVersion when non-null, {@link DynamicApiService} has validated this value against
+     *                                       {@code template_versions} and policy. Per {@code docs/versioned-template-generation-contract.md}
+     *                                       (WS-05-T04), the render source remains the current {@link Template} row
+     *                                       ({@code templateFilePath} / composite assembly), not the snapshot path
+     *                                       stored on the version row.
+     */
+    public GenerateDocumentResponse generateDocument(Long templateId, GenerateDocumentRequest request,
+                                                     Integer syncValidatedTemplateVersion) {
         Template template = templateRepository.findById(templateId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TEMPLATE_NOT_FOUND,
-                        "模板不存在: " + templateId, HttpStatus.NOT_FOUND));
+                        "Template not found: " + templateId, HttpStatus.NOT_FOUND));
+
+        templateGenerationEligibilityService.requireActiveForDocumentGeneration(template, templateId);
+
+        if (syncValidatedTemplateVersion != null) {
+            log.info("Document generation for templateId={} with sync-validated template version {} "
+                            + "(render source remains current template row per versioned-generation contract)",
+                    templateId, syncValidatedTemplateVersion);
+        }
 
         // Route based on template_type
         if ("COMPOSITE".equals(template.getTemplateType())) {
@@ -85,7 +103,8 @@ public class DocumentGeneratorService {
         Map<String, Object> params = request.getParameters() != null
                 ? request.getParameters() : Collections.emptyMap();
 
-        String outputFormat = resolveOutputFormat(request.getOutputFormat(), template.getOutputFormat());
+        String outputFormat = resolveSingleDocumentOutputFormat(
+                request.getOutputFormat(), template.getOutputFormat(), template.getId());
         String storageStrategy = request.getStorageStrategy() != null
                 ? request.getStorageStrategy() : template.getStorageStrategy();
 
@@ -95,52 +114,46 @@ public class DocumentGeneratorService {
         // Step 2: Render DOCX via Docxtemplater service
         byte[] docxBytes = renderDocument(template.getTemplateFilePath(), data);
 
-        // Step 3: Handle output format
-        if ("BOTH".equalsIgnoreCase(outputFormat)) {
-            return handleBothFormats(template, docxBytes, storageStrategy);
-        } else if ("PDF".equalsIgnoreCase(outputFormat)) {
+        // Step 3: Single format only (WORD or PDF). Legacy template BOTH defaults to WORD in resolver.
+        if ("PDF".equalsIgnoreCase(outputFormat)) {
             byte[] pdfBytes = convertToPdf(docxBytes);
             return documentStorageService.store(template, pdfBytes, "PDF", storageStrategy);
-        } else {
-            return documentStorageService.store(template, docxBytes, "WORD", storageStrategy);
         }
+        return documentStorageService.store(template, docxBytes, "WORD", storageStrategy);
     }
 
+    /**
+     * Validates parameters, runs the pipeline, and renders DOCX in memory for template test execution.
+     * {@link TemplateTestService} may persist a TEMP sample via {@link DocumentStorageService} after a successful render.
+     */
+    public TemplateTestRenderOutcome renderForTemplateTest(long templateId, Map<String, Object> parameters) {
+        Template template = templateRepository.findById(templateId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.TEMPLATE_NOT_FOUND,
+                        "Template not found: " + templateId, HttpStatus.NOT_FOUND));
+        // Intentionally no ACTIVE check: template tests must run against DRAFT / non-ACTIVE templates.
+        Map<String, Object> params = parameters != null ? parameters : Collections.emptyMap();
+        if ("COMPOSITE".equals(template.getTemplateType())) {
+            return compositeGeneratorService.renderCompositeDocxInMemory(templateId, params);
+        }
+        Map<String, Object> data = parameterValidationService.validateAndBuildContext(templateId, params);
+        byte[] docxBytes = renderDocument(template.getTemplateFilePath(), data);
+        return new TemplateTestRenderOutcome(data, docxBytes);
+    }
+
+    /**
+     * Three-step pipeline: validate parameters → evaluate DERIVED parameters → return data context.
+     * Uses ParameterValidationService to handle validation, defaults, and DERIVED evaluation.
+     */
     private Map<String, Object> executePipeline(Template template, Map<String, Object> params) {
         try {
-            Map<String, Object> data = dataSourceCb.executeSupplier(
-                    () -> dataAggregationService.aggregateData(template.getId(), params));
-
-            Map<String, Object> context = new HashMap<>(data);
-            context.putAll(params);
-
-            Map<String, Object> expressionResults = evaluateExpressions(template.getId(), context);
-            context.putAll(expressionResults);
-
-            return context;
+            return parameterValidationService.validateAndBuildContext(template.getId(), params);
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Data pipeline execution failed for template {}: {}", template.getId(), e.getMessage());
+            log.error("Parameter validation pipeline failed for template {}: {}", template.getId(), e.getMessage());
             throw new BusinessException(ErrorCode.GENERATE_FAILED,
-                    "数据管道执行失败: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Parameter validation pipeline failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
-    }
-
-    private Map<String, Object> evaluateExpressions(Long templateId, Map<String, Object> context) {
-        List<Expression> exprEntities = expressionRepository.findByTemplateIdOrderByExecutionOrderAsc(templateId);
-        if (exprEntities.isEmpty()) {
-            return Collections.emptyMap();
-        }
-
-        List<ExpressionEngine.ExpressionConfig> configs = exprEntities.stream()
-                .map(e -> new ExpressionEngine.ExpressionConfig(
-                        e.getName(),
-                        e.getExpressionText(),
-                        ExpressionType.valueOf(e.getExpressionType())))
-                .toList();
-
-        return expressionEngine.evaluateAll(configs, context);
     }
 
     private byte[] renderDocument(String templateFilePath, Map<String, Object> data) {
@@ -160,7 +173,7 @@ public class DocumentGeneratorService {
 
                 if (response.getBody() == null || response.getBody().length == 0) {
                     throw new BusinessException(ErrorCode.GENERATE_RENDER_FAILED,
-                            "文档渲染返回空结果", HttpStatus.INTERNAL_SERVER_ERROR);
+                            "Document rendering returned empty content", HttpStatus.INTERNAL_SERVER_ERROR);
                 }
                 return response.getBody();
             });
@@ -169,15 +182,15 @@ public class DocumentGeneratorService {
         } catch (RestClientException e) {
             log.error("Docxtemplater render call failed: {}", e.getMessage());
             throw new BusinessException(ErrorCode.GENERATE_RENDER_FAILED,
-                    "文档渲染服务调用失败: " + e.getMessage(), HttpStatus.SERVICE_UNAVAILABLE, e);
+                    "Document rendering service failed: " + e.getMessage(), HttpStatus.SERVICE_UNAVAILABLE, e);
         } catch (Exception e) {
             log.error("Document rendering failed: {}", e.getMessage());
             throw new BusinessException(ErrorCode.GENERATE_RENDER_FAILED,
-                    "文档渲染失败: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Document rendering failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 
-    byte[] convertToPdf(byte[] docxBytes) {
+    public byte[] convertToPdf(byte[] docxBytes) {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("inputBuffer", Base64.getEncoder().encodeToString(docxBytes));
 
@@ -193,7 +206,7 @@ public class DocumentGeneratorService {
 
                 if (response.getBody() == null || response.getBody().length == 0) {
                     throw new BusinessException(ErrorCode.GENERATE_PDF_CONVERSION_FAILED,
-                            "PDF 转换返回空结果", HttpStatus.INTERNAL_SERVER_ERROR);
+                            "PDF conversion returned empty content", HttpStatus.INTERNAL_SERVER_ERROR);
                 }
                 return response.getBody();
             });
@@ -202,22 +215,45 @@ public class DocumentGeneratorService {
         } catch (Exception e) {
             log.error("PDF conversion failed: {}", e.getMessage());
             throw new BusinessException(ErrorCode.GENERATE_PDF_CONVERSION_FAILED,
-                    "PDF 转换失败: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "PDF conversion failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 
-    private GenerateDocumentResponse handleBothFormats(Template template, byte[] docxBytes, String storageStrategy) {
-        byte[] pdfBytes = convertToPdf(docxBytes);
-        GenerateDocumentResponse wordResponse = documentStorageService.store(template, docxBytes, "WORD", storageStrategy);
-        GenerateDocumentResponse pdfResponse = documentStorageService.store(template, pdfBytes, "PDF", storageStrategy);
-        wordResponse.setSecondaryDocument(pdfResponse);
-        return wordResponse;
-    }
-
-    private String resolveOutputFormat(String requestFormat, String templateFormat) {
+    /**
+     * Resolves WORD/PDF for one generation call.
+     * <ul>
+     *   <li>If the client sets {@code outputFormat} on the request: BOTH is rejected; WORD/PDF honored.</li>
+     *   <li>If omitted: template default is used; legacy stored BOTH degrades to WORD with a warning.</li>
+     * </ul>
+     */
+    public static String resolveSingleDocumentOutputFormat(String requestFormat, String templateFormat, Long templateId) {
+        Logger resolutionLog = LoggerFactory.getLogger(DocumentGeneratorService.class);
         if (requestFormat != null && !requestFormat.isBlank()) {
-            return requestFormat.toUpperCase();
+            String r = requestFormat.trim().toUpperCase(Locale.ROOT);
+            rejectExplicitBothOutputFormat(r);
+            return r;
         }
-        return templateFormat != null ? templateFormat.toUpperCase() : "WORD";
+        String t = templateFormat != null && !templateFormat.isBlank()
+                ? templateFormat.trim().toUpperCase(Locale.ROOT)
+                : "WORD";
+        if ("BOTH".equalsIgnoreCase(t)) {
+            resolutionLog.warn(
+                    "Template id={}: legacy output_format=BOTH in DB; single-request generation defaults to WORD "
+                            + "(call /word and /pdf separately for PDF).",
+                    templateId);
+            return "WORD";
+        }
+        return t;
+    }
+
+    /** Request body must not ask for BOTH on single-shot APIs. */
+    public static void rejectExplicitBothOutputFormat(String outputFormat) {
+        if (outputFormat != null && "BOTH".equalsIgnoreCase(outputFormat.trim())) {
+            throw new BusinessException(ErrorCode.GENERATE_BOTH_NOT_SUPPORTED,
+                    "Output format BOTH is not supported. Call POST /api/generate/{templateId}/word and "
+                            + "/api/generate/{templateId}/pdf (or /async/word and /async/pdf) separately for each format.",
+                    HttpStatus.BAD_REQUEST);
+        }
     }
 }
+

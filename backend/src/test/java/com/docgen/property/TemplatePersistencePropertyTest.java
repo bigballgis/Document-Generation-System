@@ -2,10 +2,13 @@ package com.docgen.property;
 
 import com.docgen.dto.CreateTemplateRequest;
 import com.docgen.dto.TemplateDTO;
+import com.docgen.entity.Team;
 import com.docgen.entity.Template;
+import com.docgen.repository.TeamRepository;
 import com.docgen.repository.TemplateRepository;
 import com.docgen.repository.TemplateTagMappingRepository;
 import com.docgen.repository.TemplateVersionRepository;
+import com.docgen.repository.UserRepository;
 import com.docgen.service.TemplateService;
 import com.docgen.util.TenantContext;
 import io.minio.MinioClient;
@@ -20,6 +23,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 /**
@@ -27,7 +31,7 @@ import static org.mockito.Mockito.*;
  *
  * <p><b>Validates: Requirements 1.1, 1.2</b></p>
  */
-@Tag("Feature: low-code-document-generation-system, Property 1: 模板持久化往返一致性")
+@Tag("feature-low-code-document-generation-system-property-1")
 class TemplatePersistencePropertyTest {
 
     private static final String[] OUTPUT_FORMATS = {"WORD", "PDF", "BOTH"};
@@ -45,18 +49,32 @@ class TemplatePersistencePropertyTest {
             @ForAll("validCreateTemplateRequests") CreateTemplateRequest request
     ) throws Exception {
         // Setup mocks
+        final Long tenantId = 1L;
+        final Long userId = 42L;
         TemplateRepository templateRepository = mock(TemplateRepository.class);
         MinioClient minioClient = mock(MinioClient.class);
 
         TemplateVersionRepository templateVersionRepository = mock(TemplateVersionRepository.class);
         TemplateTagMappingRepository tagMappingRepository = mock(TemplateTagMappingRepository.class);
-        TemplateService templateService = new TemplateService(templateRepository, templateVersionRepository, tagMappingRepository, minioClient);
+        UserRepository userRepository = mock(UserRepository.class);
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+        TeamRepository teamRepository = mock(TeamRepository.class);
+        when(teamRepository.findById(anyLong())).thenAnswer(inv -> {
+            Team team = new Team();
+            team.setId(inv.getArgument(0));
+            team.setTenantId(tenantId);
+            return Optional.of(team);
+        });
+        com.docgen.service.RenderConfigValidator renderConfigValidator =
+                mock(com.docgen.service.RenderConfigValidator.class);
+        org.mockito.Mockito.lenient().doNothing().when(renderConfigValidator)
+                .validateForImport(org.mockito.ArgumentMatchers.any());
+        TemplateService templateService = new TemplateService(templateRepository, templateVersionRepository, tagMappingRepository,
+                userRepository, teamRepository, minioClient,
+                new com.fasterxml.jackson.databind.ObjectMapper(), renderConfigValidator);
         Field bucketField = TemplateService.class.getDeclaredField("bucketName");
         bucketField.setAccessible(true);
         bucketField.set(templateService, "docgen-test");
-
-        Long tenantId = 1L;
-        Long userId = 42L;
         TenantContext.setCurrentTenantId(tenantId);
 
         try {
@@ -137,7 +155,6 @@ class TemplatePersistencePropertyTest {
         }
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<CreateTemplateRequest> validCreateTemplateRequests() {
@@ -191,3 +208,4 @@ class TemplatePersistencePropertyTest {
                 });
     }
 }
+

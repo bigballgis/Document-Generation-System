@@ -3,8 +3,7 @@ package com.docgen.dto;
 import java.util.List;
 
 /**
- * DTO representing the assembly configuration of a Composite_Template.
- * Contains the ordered list of segment entries that define the document structure.
+ * Ordered segment entries that define the composite document structure.
  */
 public class AssemblyConfigDTO {
 

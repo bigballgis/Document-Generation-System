@@ -1,8 +1,6 @@
 package com.docgen.repository;
 
 import com.docgen.entity.SegmentVersion;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,32 +13,15 @@ import java.util.Optional;
  */
 public interface SegmentVersionRepository extends JpaRepository<SegmentVersion, Long> {
 
-    /**
-     * Find all versions for a segment, ordered by version number descending (newest first).
-     */
-    List<SegmentVersion> findBySegmentIdOrderByVersionNumberDesc(Long segmentId);
+    List<SegmentVersion> findByTemplateIdAndSegmentNameOrderByVersionNumberDesc(
+            Long templateId, String segmentName);
 
-    /**
-     * Find versions for a segment with pagination, ordered by version number descending.
-     */
-    Page<SegmentVersion> findBySegmentIdOrderByVersionNumberDesc(Long segmentId, Pageable pageable);
+    @Query("SELECT MAX(v.versionNumber) FROM SegmentVersion v " +
+           "WHERE v.templateId = :templateId AND v.segmentName = :segmentName")
+    Optional<Integer> findMaxVersionNumber(
+            @Param("templateId") Long templateId,
+            @Param("segmentName") String segmentName);
 
-    /**
-     * Find the maximum version number for a given segment.
-     * Returns empty if no versions exist yet.
-     */
-    @Query("SELECT MAX(v.versionNumber) FROM SegmentVersion v WHERE v.segmentId = :segmentId")
-    Optional<Integer> findMaxVersionNumberBySegmentId(@Param("segmentId") Long segmentId);
-
-    /**
-     * Find a specific version by segment ID and version ID.
-     */
-    Optional<SegmentVersion> findByIdAndSegmentId(Long id, Long segmentId);
-
-    /**
-     * Find a specific version by segment ID and version number.
-     */
-    Optional<SegmentVersion> findBySegmentIdAndVersionNumber(Long segmentId, Integer versionNumber);
-
-    void deleteBySegmentId(Long segmentId);
+    Optional<SegmentVersion> findByTemplateIdAndSegmentNameAndVersionNumber(
+            Long templateId, String segmentName, Integer versionNumber);
 }

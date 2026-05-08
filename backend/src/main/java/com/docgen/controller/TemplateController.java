@@ -22,9 +22,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-/**
- * REST controller for template CRUD and clone endpoints.
- */
 @RestController
 @RequestMapping("/api/templates")
 public class TemplateController {
@@ -82,6 +79,47 @@ public class TemplateController {
     @GetMapping("/{id}")
     public ResponseEntity<TemplateDTO> getTemplate(@PathVariable Long id) {
         return ResponseEntity.ok(templateService.getTemplate(id));
+    }
+
+    /**
+     * Reviewer candidates: same tenant and same team as the template; template author is excluded.
+     */
+    @GetMapping("/{id}/reviewers/candidates")
+    public ResponseEntity<List<ReviewerCandidateDTO>> listReviewerCandidates(
+            @PathVariable Long id,
+            @RequestParam(required = false) Integer reviewLevel) {
+        return ResponseEntity.ok(templateService.listReviewerCandidates(id, reviewLevel));
+    }
+
+    /**
+     * Replace stored post-merge render configuration (same schema as composite ZIP {@code render-config.json}).
+     * Returns {@code 400} when the template is not composite; {@code DELETE} remains available to clear stale data.
+     */
+    @PutMapping(value = "/{id}/render-config", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<TemplateDTO> updateRenderConfig(
+            @PathVariable Long id,
+            @RequestBody RenderConfigDocument body) {
+        TemplateDTO updated = templateService.updateRenderConfig(id, body);
+        try {
+            coverageCheckService.checkCoverage(id);
+        } catch (Exception e) {
+            log.warn("Coverage check failed after render-config save for template {}: {}", id, e.getMessage());
+        }
+        return ResponseEntity.ok(updated);
+    }
+
+    /**
+     * Remove stored render configuration.
+     */
+    @DeleteMapping("/{id}/render-config")
+    public ResponseEntity<TemplateDTO> clearRenderConfig(@PathVariable Long id) {
+        TemplateDTO updated = templateService.clearRenderConfig(id);
+        try {
+            coverageCheckService.checkCoverage(id);
+        } catch (Exception e) {
+            log.warn("Coverage check failed after render-config clear for template {}: {}", id, e.getMessage());
+        }
+        return ResponseEntity.ok(updated);
     }
 
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -142,12 +180,6 @@ public class TemplateController {
         return ResponseEntity.ok(versionDiffService.compareVersions(id, versionA, versionB));
     }
 
-    // ── Preview endpoint ──
-
-    /**
-     * Preview a template using test data or real data sources.
-     * Supports OnlyOffice in-browser preview and direct download.
-     */
     @PostMapping("/{id}/preview")
     public ResponseEntity<PreviewResult> previewTemplate(
             @PathVariable Long id,
@@ -158,11 +190,8 @@ public class TemplateController {
         return ResponseEntity.ok(templatePreviewService.preview(id, request));
     }
 
-    // ── State machine endpoints ──
-
     @PostMapping("/{id}/activate")
     public ResponseEntity<TemplateDTO> activateTemplate(@PathVariable Long id) {
-        // Warn if coverage is below threshold (requirement 47.5)
         if (coverageCheckService.isBelowThreshold(id, 100.0)) {
             log.warn("Template {} has coverage below 100% threshold during activation", id);
         }
@@ -176,8 +205,31 @@ public class TemplateController {
         return ResponseEntity.ok(templateService.getTemplate(template.getId()));
     }
 
+    /**
+     * DRAFT → IN_TEST. Run after design is ready; then use {@code POST /api/templates/{id}/reviews} to request review.
+     */
+    @PostMapping("/{id}/submit-test")
+    public ResponseEntity<TemplateDTO> submitToTest(@PathVariable Long id) {
+        var template = stateMachineService.transition(id, TemplateState.IN_TEST);
+        return ResponseEntity.ok(templateService.getTemplate(template.getId()));
+    }
+
+    /**
+     * IN_TEST → DRAFT. Return to design for editing.
+     */
+    @PostMapping("/{id}/return-design")
+    public ResponseEntity<TemplateDTO> returnToDesign(@PathVariable Long id) {
+        var template = stateMachineService.transition(id, TemplateState.DRAFT);
+        return ResponseEntity.ok(templateService.getTemplate(template.getId()));
+    }
+
+    /**
+     * @deprecated Use {@code submit-test} then create reviews via {@code TemplateReviewController}.
+     * Direct DRAFT → PENDING_REVIEW is no longer allowed; transition will fail unless current state is IN_TEST.
+     */
     @PostMapping("/{id}/submit-review")
-    public ResponseEntity<TemplateDTO> submitForReview(@PathVariable Long id) {
+    @Deprecated
+    public ResponseEntity<TemplateDTO> submitForReviewStateOnly(@PathVariable Long id) {
         var template = stateMachineService.transition(id, TemplateState.PENDING_REVIEW);
         return ResponseEntity.ok(templateService.getTemplate(template.getId()));
     }
@@ -187,11 +239,14 @@ public class TemplateController {
         return ResponseEntity.ok(stateMachineService.getAvailableTransitions(id));
     }
 
-    // ── Migration endpoint ──
+    @PostMapping("/{id}/create-draft-version")
+    public ResponseEntity<TemplateDTO> createDraftVersion(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        TemplateDTO result = templateService.createDraftVersion(id, principal.getUserId());
+        return ResponseEntity.ok(result);
+    }
 
-    /**
-     * Migrate a traditional single-file template to a Composite_Template.
-     */
     @PostMapping("/{id}/migrate-to-composite")
     public ResponseEntity<MigrationResultDTO> migrateToComposite(
             @PathVariable Long id,

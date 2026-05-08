@@ -80,7 +80,7 @@ async function fetchLogs() {
     const res = await getWebhookLogs(props.webhookId, { page: query.page, size: query.size })
     logs.value = res.content
     total.value = res.totalElements
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     loading.value = false
   }
 }

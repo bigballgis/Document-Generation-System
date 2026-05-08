@@ -19,7 +19,6 @@ class ResponseTransformerServiceTest {
         service = new ResponseTransformerService();
     }
 
-    // ── JSONPath ──
 
     @Test
     void jsonPath_extractsSimpleField() {
@@ -70,7 +69,6 @@ class ResponseTransformerServiceTest {
         assertNotNull(error.get("_error"));
     }
 
-    // ── XPath ──
 
     @Test
     void xpath_extractsSingleElement() {
@@ -106,7 +104,6 @@ class ResponseTransformerServiceTest {
         assertNotNull(error.get("_error"));
     }
 
-    // ── Flatten ──
 
     @Test
     void flatten_flattensNestedMap() {
@@ -150,7 +147,6 @@ class ResponseTransformerServiceTest {
         assertEquals("flat", error.get("_ruleName"));
     }
 
-    // ── Group By ──
 
     @Test
     void groupBy_groupsByField() {
@@ -198,7 +194,6 @@ class ResponseTransformerServiceTest {
         assertEquals("grouped", error.get("_ruleName"));
     }
 
-    // ── Sort ──
 
     @Test
     void sort_ascendingByDefault() {
@@ -247,7 +242,6 @@ class ResponseTransformerServiceTest {
         assertEquals("sorted", error.get("_ruleName"));
     }
 
-    // ── General ──
 
     @Test
     void transform_nullRules_returnsEmptyMap() {
@@ -287,3 +281,4 @@ class ResponseTransformerServiceTest {
         assertFalse(((String) error.get("_error")).isEmpty());
     }
 }
+

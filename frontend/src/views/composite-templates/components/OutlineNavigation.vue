@@ -4,13 +4,13 @@
     <ul class="outline-list">
       <li
         v-for="(entry, index) in segments"
-        :key="entry.segmentId + '-' + index"
+        :key="entry.filePath + '-' + index"
         class="outline-item"
         :class="{ active: selectedIndex === index, disabled: !entry.enabled }"
         @click="$emit('select', index)"
       >
         <span class="outline-pos">{{ index + 1 }}.</span>
-        <span class="outline-name">{{ entry.segmentId }}</span>
+        <span class="outline-name">{{ entry.name }}</span>
       </li>
     </ul>
     <p v-if="segments.length === 0" class="outline-empty">{{ $t('common.noData') }}</p>

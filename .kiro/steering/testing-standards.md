@@ -1,60 +1,53 @@
 ---
-description: 测试标准，包括 PBT (jqwik/fast-check)、单元测试、集成测试和前端测试规范
 inclusion: auto
-fileMatchPattern: '**/*Test*.java,**/*test*.ts,**/*spec*.ts'
+name: testing-standards
+description: Testing — PBT (jqwik/fast-check), unit, integration, how to run
 ---
 
-# 测试标准
+# Testing
 
-## Property-Based Testing (PBT) 规范
+## When to use PBT
 
-### 何时使用 PBT
+Round-trips, invariants, idempotency, ordering/merge correctness, security properties, state-machine transitions.
 
-以下场景必须使用 PBT：
-- 数据转换的往返一致性 (round-trip)
-- 不变量验证 (invariants)
-- 幂等性验证
-- 排序/合并操作的正确性
-- 安全属性（加密、隔离、注入防护）
-- 状态机转换的合法性
+## jqwik (backend)
 
-### jqwik 编写规范
+- Class name: `XxxPropertyTest.java`
+- Package (typical): `backend/src/test/java/com/docgen/property/` (also `.../service/` for service-focused suites)
+- Example: #[[file:backend/src/test/java/com/docgen/property/TemplateStateMachinePropertyTest.java]]
 
 ```java
 @Property(tries = 100)
 void propertyName(@ForAll @From("providerName") Type input) {
-    // Arrange & Act
-    var result = service.method(input);
-    // Assert - 验证属性而非具体值
-    assertThat(result).satisfies(r -> ...);
+    assertThat(service.method(input)).satisfies(r -> ...);
 }
-
-@Provide
-Arbitrary<Type> providerName() {
-    return Arbitraries.of(...);
-}
+@Provide Arbitrary<Type> providerName() { return Arbitraries.of(...); }
 ```
 
-### 命名规范
+Use ASCII `@Tag` slugs (JUnit/jqwik tag rules).
 
-- 测试类: `XxxPropertyTest.java`
-- 属性方法: 描述被验证的属性，如 `segmentOrderPreservedAfterAssembly`
-- Provider 方法: 描述生成的数据，如 `validSegments`
+## fast-check (frontend)
 
-## 单元测试规范
+- Files: `*.property.test.ts`
+- Location: `frontend/src/__tests__/`
+- Example: #[[file:frontend/src/__tests__/parameterPath.property.test.ts]]
 
-- 使用 JUnit 5 + Mockito
-- 测试类路径与源码路径对应
-- 每个 Service 类至少覆盖：正常流程、异常流程、边界条件
+## Unit tests
 
-## 集成测试规范
+- Backend: JUnit 5 + Mockito; mirror package layout; cover happy path, errors, edges per service
+- Frontend: Vitest + `@vue/test-utils`; `frontend/src/__tests__/`
 
-- 使用 Testcontainers (PostgreSQL)
-- 测试文件路径: `backend/src/test/java/com/docgen/integration/`
-- 验证完整的请求-响应链路
+## Integration tests
 
-## 前端测试规范
+- Backend: Testcontainers (PostgreSQL) under `backend/src/test/java/com/docgen/integration/`
+- Frontend: `frontend/src/__tests__/integration/`
 
-- 使用 Vitest + @vue/test-utils
-- 测试文件路径: `frontend/src/__tests__/`
-- 组件测试覆盖：渲染、用户交互、API 调用 mock
+## Commands
+
+| Scope | Command | cwd |
+|-------|---------|-----|
+| Backend all | `./mvnw test` | `backend/` |
+| Backend one | `./mvnw test -Dtest=XxxTest` | `backend/` |
+| Frontend all | `npx vitest --run` | `frontend/` |
+| Frontend one | `npx vitest --run src/__tests__/Xxx.test.ts` | `frontend/` |
+| Node service | `npm test` | `docxtemplater-service/` |

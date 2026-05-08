@@ -20,11 +20,11 @@ public interface TemplateRepository extends JpaRepository<Template, Long> {
      * Native query avoids Hibernate inferring bytea for null keyword.
      */
     @Query(value = "SELECT * FROM templates t WHERE "
-            + "(:keyword IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', :keyword, '%')) "
-            + "OR LOWER(t.description) LIKE LOWER(CONCAT('%', :keyword, '%')))",
+            + "(CAST(:keyword AS TEXT) IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%')) "
+            + "OR LOWER(t.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%')))",
             countQuery = "SELECT COUNT(*) FROM templates t WHERE "
-            + "(:keyword IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', :keyword, '%')) "
-            + "OR LOWER(t.description) LIKE LOWER(CONCAT('%', :keyword, '%')))",
+            + "(CAST(:keyword AS TEXT) IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%')) "
+            + "OR LOWER(t.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%')))",
             nativeQuery = true)
     Page<Template> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
@@ -41,13 +41,13 @@ public interface TemplateRepository extends JpaRepository<Template, Long> {
      * Search templates with optional keyword and category filter.
      */
     @Query(value = "SELECT * FROM templates t WHERE "
-            + "(:keyword IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', :keyword, '%')) "
-            + "OR LOWER(t.description) LIKE LOWER(CONCAT('%', :keyword, '%'))) "
-            + "AND (:categoryId IS NULL OR t.category_id = :categoryId)",
+            + "(CAST(:keyword AS TEXT) IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%')) "
+            + "OR LOWER(t.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%'))) "
+            + "AND (CAST(:categoryId AS BIGINT) IS NULL OR t.category_id = :categoryId)",
             countQuery = "SELECT COUNT(*) FROM templates t WHERE "
-            + "(:keyword IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', :keyword, '%')) "
-            + "OR LOWER(t.description) LIKE LOWER(CONCAT('%', :keyword, '%'))) "
-            + "AND (:categoryId IS NULL OR t.category_id = :categoryId)",
+            + "(CAST(:keyword AS TEXT) IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%')) "
+            + "OR LOWER(t.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%'))) "
+            + "AND (CAST(:categoryId AS BIGINT) IS NULL OR t.category_id = :categoryId)",
             nativeQuery = true)
     Page<Template> searchByKeywordAndCategory(@Param("keyword") String keyword,
                                                @Param("categoryId") Long categoryId,
@@ -57,14 +57,14 @@ public interface TemplateRepository extends JpaRepository<Template, Long> {
      * Search templates by keyword, category, and restricted to specific IDs (for tag filtering).
      */
     @Query(value = "SELECT * FROM templates t WHERE "
-            + "(:keyword IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', :keyword, '%')) "
-            + "OR LOWER(t.description) LIKE LOWER(CONCAT('%', :keyword, '%'))) "
-            + "AND (:categoryId IS NULL OR t.category_id = :categoryId) "
+            + "(CAST(:keyword AS TEXT) IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%')) "
+            + "OR LOWER(t.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%'))) "
+            + "AND (CAST(:categoryId AS BIGINT) IS NULL OR t.category_id = :categoryId) "
             + "AND t.id IN (:templateIds)",
             countQuery = "SELECT COUNT(*) FROM templates t WHERE "
-            + "(:keyword IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', :keyword, '%')) "
-            + "OR LOWER(t.description) LIKE LOWER(CONCAT('%', :keyword, '%'))) "
-            + "AND (:categoryId IS NULL OR t.category_id = :categoryId) "
+            + "(CAST(:keyword AS TEXT) IS NULL OR LOWER(t.name) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%')) "
+            + "OR LOWER(t.description) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%'))) "
+            + "AND (CAST(:categoryId AS BIGINT) IS NULL OR t.category_id = :categoryId) "
             + "AND t.id IN (:templateIds)",
             nativeQuery = true)
     Page<Template> searchByKeywordAndCategoryAndIds(@Param("keyword") String keyword,

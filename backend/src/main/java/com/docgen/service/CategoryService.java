@@ -41,13 +41,13 @@ public class CategoryService {
 
         if (categoryRepository.existsByTenantIdAndName(tenantId, request.getName())) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "分类名称在该租户下已存在", HttpStatus.CONFLICT);
+                    "Category name already exists for this tenant", HttpStatus.CONFLICT);
         }
 
         if (request.getParentId() != null) {
             categoryRepository.findById(request.getParentId())
                     .orElseThrow(() -> new ResourceNotFoundException(
-                            ErrorCode.VALIDATION_FAILED, "父分类不存在"));
+                            ErrorCode.VALIDATION_FAILED, "Parent category not found"));
         }
 
         TemplateCategory category = new TemplateCategory();
@@ -69,14 +69,14 @@ public class CategoryService {
             Long tenantId = TenantContext.getCurrentTenantId();
             if (categoryRepository.existsByTenantIdAndName(tenantId, request.getName())) {
                 throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                        "分类名称在该租户下已存在", HttpStatus.CONFLICT);
+                        "Category name already exists for this tenant", HttpStatus.CONFLICT);
             }
             category.setName(request.getName());
         }
         if (request.getParentId() != null) {
             if (request.getParentId().equals(id)) {
                 throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                        "分类不能作为自身的子分类", HttpStatus.BAD_REQUEST);
+                        "A category cannot be its own child", HttpStatus.BAD_REQUEST);
             }
             category.setParentId(request.getParentId());
         }
@@ -129,12 +129,11 @@ public class CategoryService {
         return toDTO(findCategoryOrThrow(id));
     }
 
-    // ── Private helpers ──
 
     private TemplateCategory findCategoryOrThrow(Long id) {
         return categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.VALIDATION_FAILED, "分类不存在"));
+                        ErrorCode.VALIDATION_FAILED, "Category not found"));
     }
 
     /**

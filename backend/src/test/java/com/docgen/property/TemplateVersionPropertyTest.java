@@ -27,7 +27,7 @@ import static org.mockito.Mockito.*;
  *
  * <p><b>Validates: Requirements 10.1, 10.2, 10.5, 10.6</b></p>
  */
-@Tag("Feature: low-code-document-generation-system, Property 7: 模板版本单调递增与回滚正确性")
+@Tag("feature-low-code-document-generation-system-property-7")
 class TemplateVersionPropertyTest {
 
     private static final String[] OUTPUT_FORMATS = {"WORD", "PDF", "BOTH"};
@@ -54,7 +54,11 @@ class TemplateVersionPropertyTest {
         TemplateVersionRepository templateVersionRepository = mock(TemplateVersionRepository.class);
         MinioClient minioClient = mock(MinioClient.class);
 
-        TemplateService templateService = new TemplateService(templateRepository, templateVersionRepository, mock(TemplateTagMappingRepository.class), minioClient);
+        com.docgen.service.RenderConfigValidator rcv = mock(com.docgen.service.RenderConfigValidator.class);
+        org.mockito.Mockito.lenient().doNothing().when(rcv).validateForImport(org.mockito.ArgumentMatchers.any());
+        TemplateService templateService = new TemplateService(templateRepository, templateVersionRepository, mock(TemplateTagMappingRepository.class),
+                mock(com.docgen.repository.UserRepository.class), mock(com.docgen.repository.TeamRepository.class), minioClient,
+                new com.fasterxml.jackson.databind.ObjectMapper(), rcv);
         Field bucketField = TemplateService.class.getDeclaredField("bucketName");
         bucketField.setAccessible(true);
         bucketField.set(templateService, "docgen-test");
@@ -136,7 +140,6 @@ class TemplateVersionPropertyTest {
                         .map(TemplateVersionPropertyTest::copyVersion);
             });
 
-            // ── Phase 1: Apply N sequential updates and verify monotonic version numbers ──
             for (UpdateTemplateRequest update : updates) {
                 templateService.updateTemplate(templateId, update, null);
             }
@@ -159,7 +162,6 @@ class TemplateVersionPropertyTest {
                 assertEquals(templateId, v.getTemplateId(), "Version templateId should match");
             }
 
-            // ── Phase 2: Rollback to a target version and verify correctness ──
             // Pick a valid rollback target (1-indexed version, map to 0-indexed list)
             int targetIdx = Math.abs(rollbackTargetIndex) % n;
             TemplateVersion targetVersion = versionStore.get(targetIdx);
@@ -196,7 +198,6 @@ class TemplateVersionPropertyTest {
         }
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<List<UpdateTemplateRequest>> updateSequences() {
@@ -254,7 +255,6 @@ class TemplateVersionPropertyTest {
                 });
     }
 
-    // ── Helpers ──
 
     private static Template copyTemplate(Template src) {
         Template copy = new Template();
@@ -288,3 +288,4 @@ class TemplateVersionPropertyTest {
         return copy;
     }
 }
+

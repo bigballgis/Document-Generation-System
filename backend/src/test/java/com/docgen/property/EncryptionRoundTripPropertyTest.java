@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p><b>Validates: Requirements 2.10, 50.1, 50.2</b></p>
  */
-@Tag("Feature: low-code-document-generation-system, Property 3: 敏感信息加密往返一致性")
+@Tag("feature-low-code-document-generation-system-property-3")
 class EncryptionRoundTripPropertyTest {
 
     private final EncryptionServiceImpl encryptionService;
@@ -61,7 +61,6 @@ class EncryptionRoundTripPropertyTest {
         assertEquals(original, encryptionService.decrypt(encrypted2));
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<String> sensitiveStrings() {
@@ -86,11 +85,11 @@ class EncryptionRoundTripPropertyTest {
                         .ofMinLength(1).ofMaxLength(30),
                 // Unicode: emoji and mixed content (realistic sensitive values)
                 Arbitraries.of(
-                        "密码🔑パスワード",
+                        "password🔑パスワード",
                         "🎉🚀💻🔒",
                         "café résumé naïve",
                         "Ñoño año",
-                        "数据源密码: p@$$w0rd!",
+                        "Data source password: p@$$w0rd!",
                         "Bearer eyJhbGciOiJIUzI1NiJ9.test.sig",
                         "Basic dXNlcjpwYXNz",
                         "\u0000\u0001\u0002\u0003",
@@ -103,3 +102,4 @@ class EncryptionRoundTripPropertyTest {
         );
     }
 }
+

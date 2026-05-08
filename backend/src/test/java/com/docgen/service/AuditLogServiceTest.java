@@ -41,7 +41,6 @@ class AuditLogServiceTest {
         service = new AuditLogService(auditLogRepository, objectMapper, 365);
     }
 
-    // ── log ──
 
     @Test
     void log_savesAuditEntry() {
@@ -90,7 +89,6 @@ class AuditLogServiceTest {
         assertEquals("10.0.0.1", saved.getIpAddress());
     }
 
-    // ── queryLogs ──
 
     @Test
     void queryLogs_delegatesToRepository() {
@@ -130,7 +128,6 @@ class AuditLogServiceTest {
         assertEquals(0, result.getTotalElements());
     }
 
-    // ── exportLogs CSV ──
 
     @Test
     void exportLogs_csv_returnsValidCsv() {
@@ -164,7 +161,6 @@ class AuditLogServiceTest {
         assertTrue(csvStr.contains("\""));
     }
 
-    // ── exportLogs JSON ──
 
     @Test
     void exportLogs_json_returnsValidJson() {
@@ -193,7 +189,6 @@ class AuditLogServiceTest {
         assertEquals("[]", new String(json));
     }
 
-    // ── cleanupExpiredLogs ──
 
     @Test
     void cleanupExpiredLogs_deletesOldRecords() {
@@ -204,7 +199,6 @@ class AuditLogServiceTest {
         verify(auditLogRepository).deleteByCreatedAtBefore(any(Instant.class));
     }
 
-    // ── retentionDays ──
 
     @Test
     void getRetentionDays_returnsConfiguredValue() {
@@ -217,7 +211,6 @@ class AuditLogServiceTest {
         assertEquals(90, customService.getRetentionDays());
     }
 
-    // ── Helpers ──
 
     private AuditLog createSampleAuditLog(Long id, Long tenantId) {
         AuditLog entry = new AuditLog();
@@ -233,3 +226,4 @@ class AuditLogServiceTest {
         return entry;
     }
 }
+

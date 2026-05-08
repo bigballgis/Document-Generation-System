@@ -1,10 +1,8 @@
 package com.docgen.entity;
 
-/**
- * Enum representing the lifecycle states of a template.
- */
 public enum TemplateState {
     DRAFT,
+    IN_TEST,
     PENDING_REVIEW,
     REVIEWED,
     ACTIVE,

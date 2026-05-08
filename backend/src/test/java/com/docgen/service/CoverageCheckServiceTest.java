@@ -1,52 +1,55 @@
 package com.docgen.service;
 
 import com.docgen.dto.CoverageReport;
-import com.docgen.entity.DataSource;
-import com.docgen.entity.Expression;
+import com.docgen.dto.PlaceholderInfo;
+import com.docgen.entity.ParameterDefinition;
 import com.docgen.entity.Template;
-import com.docgen.entity.TemplateVariable;
+import com.docgen.entity.TestCase;
 import com.docgen.exception.ResourceNotFoundException;
-import com.docgen.repository.DataSourceRepository;
-import com.docgen.repository.ExpressionRepository;
+import com.docgen.repository.ParameterRepository;
 import com.docgen.repository.TemplateRepository;
-import com.docgen.repository.TemplateVariableRepository;
+import com.docgen.repository.TestCaseRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * Unit tests for the refactored {@link CoverageCheckService}.
+ * Tests three-dimensional coverage: Branch / Loop / Parameter.
+ *
+ * <p><b>Validates: Requirements 8.7, 8.8, 8.9</b></p>
+ */
 @ExtendWith(MockitoExtension.class)
 class CoverageCheckServiceTest {
 
     @Mock
-    private TemplateVariableRepository variableRepository;
-    @Mock
     private TemplateRepository templateRepository;
     @Mock
-    private DataSourceRepository dataSourceRepository;
+    private TemplateScanService templateScanService;
     @Mock
-    private ExpressionRepository expressionRepository;
+    private ParameterRepository parameterRepository;
     @Mock
-    private TemplateVariableService templateVariableService;
+    private TestCaseRepository testCaseRepository;
 
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private CoverageCheckService service;
     private Template template;
 
     @BeforeEach
     void setUp() {
         service = new CoverageCheckService(
-                variableRepository, templateRepository,
-                dataSourceRepository, expressionRepository,
-                templateVariableService);
+                templateRepository, templateScanService,
+                parameterRepository, testCaseRepository, objectMapper,
+                new TemplateCoverageAnalyzer());
 
         template = new Template();
         template.setId(1L);
@@ -55,105 +58,38 @@ class CoverageCheckServiceTest {
         template.setTemplateFilePath("templates/10/test.docx");
     }
 
-    // ── checkCoverage ──
-
     @Test
-    void checkCoverage_allBound_returns100Percent() {
+    void checkCoverage_zeroBranchesAndLoops_overallFromParametersOnly() {
         when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
-        when(templateVariableService.scanVariables(1L)).thenReturn(Collections.emptyList());
+        when(templateScanService.scanPlaceholders(anyString())).thenReturn(List.of());
 
-        TemplateVariable v1 = createVariable(10L, "name", true, "userApi", "user.name");
-        TemplateVariable v2 = createVariable(11L, "email", true, "userApi", "user.email");
-        when(variableRepository.findByTemplateIdOrderByNameAsc(1L)).thenReturn(List.of(v1, v2));
-        when(dataSourceRepository.findByTemplateIdOrderByPriorityDesc(1L)).thenReturn(Collections.emptyList());
-        when(expressionRepository.findByTemplateIdOrderByExecutionOrderAsc(1L)).thenReturn(Collections.emptyList());
+        ParameterDefinition p1 = makeParam(1L, "name");
+        ParameterDefinition p2 = makeParam(2L, "email");
+        when(parameterRepository.findByTemplateIdOrderBySortOrderAsc(1L)).thenReturn(List.of(p1, p2));
+
+        TestCase tc = makeTestCase("tc1", Map.of("name", "Alice", "email", "a@b.com"));
+        when(testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(1L)).thenReturn(List.of(tc));
 
         CoverageReport report = service.checkCoverage(1L);
 
-        assertEquals(100.0, report.getCoveragePercentage());
-        assertEquals(2, report.getTotalTags());
-        assertEquals(2, report.getBoundTags());
-        assertEquals(0, report.getUnboundTags());
-        assertTrue(report.getUnboundTagNames().isEmpty());
-        assertFalse(report.isBelowThreshold());
-        assertEquals("Test Template", report.getTemplateName());
-        assertNotNull(report.getCheckedAt());
-    }
-
-    @Test
-    void checkCoverage_noneBound_returns0Percent() {
-        when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
-        when(templateVariableService.scanVariables(1L)).thenReturn(Collections.emptyList());
-
-        TemplateVariable v1 = createVariable(10L, "name", false, null, null);
-        TemplateVariable v2 = createVariable(11L, "email", false, null, null);
-        when(variableRepository.findByTemplateIdOrderByNameAsc(1L)).thenReturn(List.of(v1, v2));
-        when(dataSourceRepository.findByTemplateIdOrderByPriorityDesc(1L)).thenReturn(Collections.emptyList());
-        when(expressionRepository.findByTemplateIdOrderByExecutionOrderAsc(1L)).thenReturn(Collections.emptyList());
-
-        CoverageReport report = service.checkCoverage(1L);
-
-        assertEquals(0.0, report.getCoveragePercentage());
-        assertEquals(2, report.getTotalTags());
-        assertEquals(0, report.getBoundTags());
-        assertEquals(2, report.getUnboundTags());
-        assertEquals(List.of("name", "email"), report.getUnboundTagNames());
-        assertTrue(report.isBelowThreshold());
-    }
-
-    @Test
-    void checkCoverage_partiallyBound_calculatesCorrectly() {
-        when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
-        when(templateVariableService.scanVariables(1L)).thenReturn(Collections.emptyList());
-
-        TemplateVariable v1 = createVariable(10L, "name", true, "userApi", "user.name");
-        TemplateVariable v2 = createVariable(11L, "email", false, null, null);
-        TemplateVariable v3 = createVariable(12L, "phone", true, "userApi", "user.phone");
-        when(variableRepository.findByTemplateIdOrderByNameAsc(1L)).thenReturn(List.of(v1, v2, v3));
-        when(dataSourceRepository.findByTemplateIdOrderByPriorityDesc(1L)).thenReturn(Collections.emptyList());
-        when(expressionRepository.findByTemplateIdOrderByExecutionOrderAsc(1L)).thenReturn(Collections.emptyList());
-
-        CoverageReport report = service.checkCoverage(1L);
-
-        assertEquals(66.67, report.getCoveragePercentage());
-        assertEquals(3, report.getTotalTags());
-        assertEquals(2, report.getBoundTags());
-        assertEquals(1, report.getUnboundTags());
-        assertEquals(List.of("email"), report.getUnboundTagNames());
-        assertTrue(report.isBelowThreshold()); // below default 100%
-    }
-
-    @Test
-    void checkCoverage_noVariables_returns100Percent() {
-        when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
-        when(templateVariableService.scanVariables(1L)).thenReturn(Collections.emptyList());
-        when(variableRepository.findByTemplateIdOrderByNameAsc(1L)).thenReturn(Collections.emptyList());
-        when(dataSourceRepository.findByTemplateIdOrderByPriorityDesc(1L)).thenReturn(Collections.emptyList());
-        when(expressionRepository.findByTemplateIdOrderByExecutionOrderAsc(1L)).thenReturn(Collections.emptyList());
-
-        CoverageReport report = service.checkCoverage(1L);
-
-        assertEquals(100.0, report.getCoveragePercentage());
-        assertEquals(0, report.getTotalTags());
+        assertEquals(100.0, report.getParameterCoverage());
+        assertEquals(0, report.getTotalBranches());
+        assertEquals(0, report.getTotalLoopScenarios());
+        assertEquals(100.0, report.getOverallCoverage());
         assertFalse(report.isBelowThreshold());
     }
 
     @Test
-    void checkCoverage_customThreshold_belowThreshold() {
+    void checkCoverage_noParametersNoBranchesNoLoops_returns100() {
         when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
-        when(templateVariableService.scanVariables(1L)).thenReturn(Collections.emptyList());
+        when(templateScanService.scanPlaceholders(anyString())).thenReturn(List.of());
+        when(parameterRepository.findByTemplateIdOrderBySortOrderAsc(1L)).thenReturn(List.of());
+        when(testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(1L)).thenReturn(List.of());
 
-        TemplateVariable v1 = createVariable(10L, "name", true, "userApi", "user.name");
-        TemplateVariable v2 = createVariable(11L, "email", true, "userApi", "user.email");
-        TemplateVariable v3 = createVariable(12L, "phone", false, null, null);
-        when(variableRepository.findByTemplateIdOrderByNameAsc(1L)).thenReturn(List.of(v1, v2, v3));
-        when(dataSourceRepository.findByTemplateIdOrderByPriorityDesc(1L)).thenReturn(Collections.emptyList());
-        when(expressionRepository.findByTemplateIdOrderByExecutionOrderAsc(1L)).thenReturn(Collections.emptyList());
+        CoverageReport report = service.checkCoverage(1L);
 
-        // 66.67% coverage, threshold 50% → not below
-        CoverageReport report = service.checkCoverage(1L, 50.0);
+        assertEquals(100.0, report.getOverallCoverage());
         assertFalse(report.isBelowThreshold());
-        assertEquals(50.0, report.getThreshold());
     }
 
     @Test
@@ -162,128 +98,92 @@ class CoverageCheckServiceTest {
         assertThrows(ResourceNotFoundException.class, () -> service.checkCoverage(999L));
     }
 
-    // ── Reverse coverage ──
+    @Test
+    void checkCoverage_thresholdGating_belowThreshold() {
+        when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
+        when(templateScanService.scanPlaceholders(anyString())).thenReturn(List.of());
+
+        ParameterDefinition p1 = makeParam(1L, "name");
+        ParameterDefinition p2 = makeParam(2L, "email");
+        when(parameterRepository.findByTemplateIdOrderBySortOrderAsc(1L)).thenReturn(List.of(p1, p2));
+
+        // Only cover 1 of 2 params → 50% parameter coverage
+        TestCase tc = makeTestCase("tc1", Map.of("name", "Alice"));
+        when(testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(1L)).thenReturn(List.of(tc));
+
+        CoverageReport report = service.checkCoverage(1L, 80.0);
+
+        assertEquals(50.0, report.getParameterCoverage());
+        assertTrue(report.isBelowThreshold());
+        assertEquals(80.0, report.getThreshold());
+    }
 
     @Test
-    void checkCoverage_detectsUnusedDataSources() {
+    void checkCoverage_scanFailure_warnsAndContinues() {
         when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
-        when(templateVariableService.scanVariables(1L)).thenReturn(Collections.emptyList());
-
-        TemplateVariable v1 = createVariable(10L, "name", true, "DATASOURCE", "userApi.name");
-        when(variableRepository.findByTemplateIdOrderByNameAsc(1L)).thenReturn(List.of(v1));
-
-        DataSource ds1 = createDataSource(100L, "userApi");
-        DataSource ds2 = createDataSource(101L, "orderApi"); // not used
-        when(dataSourceRepository.findByTemplateIdOrderByPriorityDesc(1L)).thenReturn(List.of(ds1, ds2));
-        when(expressionRepository.findByTemplateIdOrderByExecutionOrderAsc(1L)).thenReturn(Collections.emptyList());
+        when(templateScanService.scanPlaceholders(anyString()))
+                .thenThrow(new RuntimeException("MinIO down"));
+        when(parameterRepository.findByTemplateIdOrderBySortOrderAsc(1L)).thenReturn(List.of());
+        when(testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(1L)).thenReturn(List.of());
 
         CoverageReport report = service.checkCoverage(1L);
 
-        assertEquals(1, report.getUnusedDataSourceFields().size());
-        assertEquals("datasource:orderApi", report.getUnusedDataSourceFields().get(0));
+        assertNotNull(report.getWarnings());
+        assertFalse(report.getWarnings().isEmpty());
+        assertTrue(report.getWarnings().get(0).contains("MinIO down"));
     }
 
     @Test
-    void checkCoverage_detectsUnusedExpressions() {
+    void checkCoverage_expressionDependencyWarnings_invalidTestDataJson() {
         when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
-        when(templateVariableService.scanVariables(1L)).thenReturn(Collections.emptyList());
+        when(templateScanService.scanPlaceholders(anyString())).thenReturn(List.of());
+        when(parameterRepository.findByTemplateIdOrderBySortOrderAsc(1L)).thenReturn(List.of());
 
-        TemplateVariable v1 = createVariable(10L, "total", true, "EXPRESSION", "calcTotal");
-        when(variableRepository.findByTemplateIdOrderByNameAsc(1L)).thenReturn(List.of(v1));
-
-        when(dataSourceRepository.findByTemplateIdOrderByPriorityDesc(1L)).thenReturn(Collections.emptyList());
-
-        Expression expr1 = createExpression(200L, "calcTotal");
-        Expression expr2 = createExpression(201L, "calcTax"); // not used
-        when(expressionRepository.findByTemplateIdOrderByExecutionOrderAsc(1L)).thenReturn(List.of(expr1, expr2));
+        TestCase tc = new TestCase();
+        tc.setId(1L);
+        tc.setTemplateId(1L);
+        tc.setName("bad_tc");
+        tc.setTestDataJson("not valid json");
+        when(testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(1L)).thenReturn(List.of(tc));
 
         CoverageReport report = service.checkCoverage(1L);
 
-        assertEquals(1, report.getUnusedDataSourceFields().size());
-        assertEquals("expression:calcTax", report.getUnusedDataSourceFields().get(0));
+        assertNotNull(report.getWarnings());
+        assertTrue(report.getWarnings().stream().anyMatch(w -> w.contains("bad_tc")));
     }
 
     @Test
-    void checkCoverage_allDataSourcesAndExpressionsUsed_noUnused() {
+    void isBelowThreshold_delegatesToCheckCoverage() {
         when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
-        when(templateVariableService.scanVariables(1L)).thenReturn(Collections.emptyList());
-
-        TemplateVariable v1 = createVariable(10L, "name", true, "DATASOURCE", "userApi.name");
-        TemplateVariable v2 = createVariable(11L, "total", true, "EXPRESSION", "calcTotal");
-        when(variableRepository.findByTemplateIdOrderByNameAsc(1L)).thenReturn(List.of(v1, v2));
-
-        DataSource ds1 = createDataSource(100L, "userApi");
-        when(dataSourceRepository.findByTemplateIdOrderByPriorityDesc(1L)).thenReturn(List.of(ds1));
-
-        Expression expr1 = createExpression(200L, "calcTotal");
-        when(expressionRepository.findByTemplateIdOrderByExecutionOrderAsc(1L)).thenReturn(List.of(expr1));
-
-        CoverageReport report = service.checkCoverage(1L);
-
-        assertTrue(report.getUnusedDataSourceFields().isEmpty());
-    }
-
-    // ── isBelowThreshold ──
-
-    @Test
-    void isBelowThreshold_belowThreshold_returnsTrue() {
-        when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
-        TemplateVariable v1 = createVariable(10L, "name", false, null, null);
-        when(variableRepository.findByTemplateIdOrderByNameAsc(1L)).thenReturn(List.of(v1));
-
-        assertTrue(service.isBelowThreshold(1L, 100.0));
-    }
-
-    @Test
-    void isBelowThreshold_atThreshold_returnsFalse() {
-        when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
-        TemplateVariable v1 = createVariable(10L, "name", true, "DATASOURCE", "user.name");
-        when(variableRepository.findByTemplateIdOrderByNameAsc(1L)).thenReturn(List.of(v1));
+        when(templateScanService.scanPlaceholders(anyString())).thenReturn(List.of());
+        when(parameterRepository.findByTemplateIdOrderBySortOrderAsc(1L)).thenReturn(List.of());
+        when(testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(1L)).thenReturn(List.of());
 
         assertFalse(service.isBelowThreshold(1L, 100.0));
     }
 
-    @Test
-    void isBelowThreshold_noVariables_returnsFalse() {
-        when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
-        when(variableRepository.findByTemplateIdOrderByNameAsc(1L)).thenReturn(Collections.emptyList());
 
-        assertFalse(service.isBelowThreshold(1L, 100.0));
+    private ParameterDefinition makeParam(Long id, String name) {
+        ParameterDefinition p = new ParameterDefinition();
+        p.setId(id);
+        p.setTemplateId(1L);
+        p.setName(name);
+        p.setParameterType("REQUEST");
+        p.setDataType("STRING");
+        p.setSortOrder(id.intValue());
+        return p;
     }
 
-    // ── Helpers ──
-
-    private TemplateVariable createVariable(Long id, String name, boolean bound,
-                                            String bindingSource, String bindingField) {
-        TemplateVariable v = new TemplateVariable();
-        v.setId(id);
-        v.setTemplateId(1L);
-        v.setName(name);
-        v.setVariableType("STRING");
-        v.setBound(bound);
-        v.setBindingSource(bindingSource);
-        v.setBindingField(bindingField);
-        v.setCreatedAt(Instant.now());
-        return v;
-    }
-
-    private DataSource createDataSource(Long id, String name) {
-        DataSource ds = new DataSource();
-        ds.setId(id);
-        ds.setTemplateId(1L);
-        ds.setName(name);
-        ds.setType("HTTP_API");
-        ds.setConfigJson("{}");
-        return ds;
-    }
-
-    private Expression createExpression(Long id, String name) {
-        Expression expr = new Expression();
-        expr.setId(id);
-        expr.setTemplateId(1L);
-        expr.setName(name);
-        expr.setExpressionType("JAVASCRIPT");
-        expr.setExpressionText("1+1");
-        return expr;
+    private TestCase makeTestCase(String name, Map<String, Object> data) {
+        TestCase tc = new TestCase();
+        tc.setId((long) name.hashCode());
+        tc.setTemplateId(1L);
+        tc.setName(name);
+        try {
+            tc.setTestDataJson(objectMapper.writeValueAsString(data));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return tc;
     }
 }

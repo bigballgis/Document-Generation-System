@@ -35,6 +35,12 @@ public class User {
     @Column(name = "team_id")
     private Long teamId;
 
+    /**
+     * MAKER or CHECKER for maker-checker review teams; null for cross-review or users not in a lane.
+     */
+    @Column(name = "team_review_lane", length = 20)
+    private String teamReviewLane;
+
     @Column(name = "language_preference", length = 10)
     private String languagePreference = "en-US";
 
@@ -62,7 +68,6 @@ public class User {
         this.updatedAt = Instant.now();
     }
 
-    // ── Getters and Setters ──
 
     public Long getId() {
         return id;
@@ -120,6 +125,14 @@ public class User {
         this.teamId = teamId;
     }
 
+    public String getTeamReviewLane() {
+        return teamReviewLane;
+    }
+
+    public void setTeamReviewLane(String teamReviewLane) {
+        this.teamReviewLane = teamReviewLane;
+    }
+
     public String getLanguagePreference() {
         return languagePreference;
     }
@@ -160,3 +173,4 @@ public class User {
         this.updatedAt = updatedAt;
     }
 }
+

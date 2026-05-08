@@ -16,11 +16,11 @@
         <el-button @click="handleExportDocx">{{ $t('template.exportDocx') }}</el-button>
         <el-button @click="handleExportConfig">{{ $t('template.exportConfig') }}</el-button>
         <el-button
-          v-if="availableTransitions.includes('PENDING_REVIEW')"
+          v-if="availableTransitions.includes('IN_TEST')"
           type="warning"
-          @click="handleSubmitReview"
+          @click="handleSubmitToTest"
         >
-          {{ $t('template.submitReview') }}
+          {{ $t('template.submitToTest') }}
         </el-button>
         <el-button
           v-if="availableTransitions.includes('ACTIVE')"
@@ -47,7 +47,6 @@
     </div>
 
     <template v-if="template">
-      <!-- Basic Info Card -->
       <el-card shadow="never" style="margin-bottom: 16px">
         <el-descriptions :column="3" border>
           <el-descriptions-item :label="$t('template.status')">
@@ -55,14 +54,8 @@
               {{ $t(`template.status${statusLabel(template.status)}`) }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item :label="$t('template.category')">
-            {{ template.categoryName || '-' }}
-          </el-descriptions-item>
           <el-descriptions-item :label="$t('template.currentVersion')">
             v{{ template.version }}
-          </el-descriptions-item>
-          <el-descriptions-item :label="$t('template.outputFormat')">
-            {{ template.outputFormat || 'WORD' }}
           </el-descriptions-item>
           <el-descriptions-item :label="$t('common.createdAt')">
             {{ template.createdAt }}
@@ -86,7 +79,6 @@
         </el-descriptions>
       </el-card>
 
-      <!-- Tabs -->
       <el-tabs v-model="activeTab" type="border-card">
         <el-tab-pane :label="$t('template.versionHistory')" name="versions">
           <VersionHistory :template-id="template.id" />
@@ -122,7 +114,7 @@
               @change="handleImportTestCases"
             />
           </div>
-          <TestCaseManagement :template-id="template.id" />
+          <TestCaseManagement ref="testCaseMgmtRef" :template-id="template.id" />
         </el-tab-pane>
         <el-tab-pane :label="$t('schedule.title')" name="schedule">
           <ScheduledTaskManagement :template-id="template.id" />
@@ -130,17 +122,26 @@
         <el-tab-pane :label="$t('watermark.title') + ' & ' + $t('security.title')" name="watermark">
           <WatermarkSecurityConfig :template-id="template.id" />
         </el-tab-pane>
-        <el-tab-pane :label="$t('expression.title')" name="expressions">
-          <ExpressionPanel :template-id="template.id" />
-        </el-tab-pane>
         <el-tab-pane :label="$t('webhook.title')" name="webhooks">
           <WebhookPanel :template-id="template.id" />
         </el-tab-pane>
         <el-tab-pane :label="$t('review.title')" name="reviews">
-          <div style="margin-bottom: 12px; display: flex; gap: 8px;">
-            <el-button type="primary" @click="submitReviewDialogVisible = true">
-              {{ $t('review.submit') }}
-            </el-button>
+          <div style="margin-bottom: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+            <el-tooltip
+              :disabled="template.status === 'IN_TEST'"
+              placement="top"
+              :content="$t('review.submitRequiresInTest')"
+            >
+              <span style="display: inline-block">
+                <el-button
+                  type="primary"
+                  :disabled="template.status !== 'IN_TEST'"
+                  @click="submitReviewDialogVisible = true"
+                >
+                  {{ $t('review.submit') }}
+                </el-button>
+              </span>
+            </el-tooltip>
             <el-button @click="handleReviewInEditor">
               {{ $t('review.reviewInEditor') }}
             </el-button>
@@ -194,51 +195,26 @@
       </el-tabs>
     </template>
 
-    <!-- Edit Dialog -->
     <TemplateFormDialog
       v-model:visible="editDialogVisible"
       :template-data="template"
-      :categories="categoryTree"
       :tags="tagList"
       @saved="onEditSaved"
     />
 
-    <!-- Generate Dialog -->
     <GenerateDialog
       v-model:visible="generateDialogVisible"
       :template-id="templateId"
       @generated="fetchTemplate"
     />
 
-    <!-- Submit for Review Dialog -->
-    <el-dialog
-      v-model="submitReviewDialogVisible"
-      :title="$t('review.submit')"
-      width="480px"
-    >
-      <el-form label-width="140px">
-        <el-form-item :label="$t('review.selectReviewers')">
-          <el-input
-            v-model="reviewerIdsInput"
-            :placeholder="$t('review.selectReviewers')"
-          />
-        </el-form-item>
-        <el-form-item :label="$t('review.level')">
-          <el-select v-model="reviewLevel" style="width: 100%">
-            <el-option :label="$t('review.levelInitial')" :value="1" />
-            <el-option :label="$t('review.levelFinal')" :value="2" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="submitReviewDialogVisible = false">{{ $t('common.cancel') }}</el-button>
-        <el-button type="primary" :loading="submitReviewLoading" @click="handleSubmitForReview">
-          {{ $t('common.confirm') }}
-        </el-button>
-      </template>
-    </el-dialog>
+    <SubmitReviewDialog
+      v-model:visible="submitReviewDialogVisible"
+      :template-id="templateId"
+      :is-submitting="submitReviewLoading"
+      @submit="handleSubmitForReviewFromDialog"
+    />
 
-    <!-- Conditional Approve Dialog -->
     <el-dialog
       v-model="conditionalApproveDialogVisible"
       :title="$t('review.conditionalApproveDialog')"
@@ -250,7 +226,7 @@
         </el-form-item>
         <el-form-item :label="$t('review.suggestions')">
           <div style="width: 100%">
-            <div v-for="(s, idx) in conditionalApproveSuggestions" :key="idx" style="display: flex; gap: 8px; margin-bottom: 8px;">
+            <div v-for="(_s, idx) in conditionalApproveSuggestions" :key="idx" style="display: flex; gap: 8px; margin-bottom: 8px;">
               <el-input v-model="conditionalApproveSuggestions[idx]" />
               <el-button type="danger" link @click="conditionalApproveSuggestions.splice(idx, 1)">{{ $t('common.delete') }}</el-button>
             </div>
@@ -269,19 +245,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, type ComponentPublicInstance } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import {
   getTemplate, cloneTemplate, activateTemplate, archiveTemplate,
-  getCategories, getTags, submitReview, getAvailableTransitions,
+  getTags, submitTemplateToTest, getAvailableTransitions,
   scanVariables, exportCoverageReport,
-  type TemplateDTO, type CategoryDTO, type TagDTO,
+  type TemplateDTO, type TagDTO,
 } from '@/api/templates'
 import { exportDocx, exportConfig } from '@/api/import-export'
-import { exportTestCases, importTestCases } from '@/api/market'
+import { exportTestCases, importTestCases } from '@/api/templateTesting'
 import TemplateFormDialog from './components/TemplateFormDialog.vue'
 import VersionHistory from './components/VersionHistory.vue'
 import VersionDiff from './components/VersionDiff.vue'
@@ -291,8 +267,8 @@ import TestCaseManagement from './components/TestCaseManagement.vue'
 import ScheduledTaskManagement from './components/ScheduledTaskManagement.vue'
 import WatermarkSecurityConfig from './components/WatermarkSecurityConfig.vue'
 import GenerateDialog from './components/GenerateDialog.vue'
-import ExpressionPanel from './components/ExpressionPanel.vue'
 import WebhookPanel from './components/WebhookPanel.vue'
+import SubmitReviewDialog from '@/views/template-workspace/components/SubmitReviewDialog.vue'
 import {
   submitForReview, getTemplateReviews, conditionalApproveReview, getReviewEditorUrl,
   type ReviewDTO,
@@ -307,12 +283,10 @@ const template = ref<TemplateDTO | null>(null)
 const activeTab = ref('versions')
 const editDialogVisible = ref(false)
 const generateDialogVisible = ref(false)
-const categoryTree = ref<CategoryDTO[]>([])
 const tagList = ref<TagDTO[]>([])
 
 const templateId = Number(route.params.id)
 
-// Review state
 const reviews = ref<ReviewDTO[]>([])
 const reviewsLoading = ref(false)
 const reviewPage = ref(1)
@@ -320,33 +294,40 @@ const reviewSize = ref(10)
 const reviewTotal = ref(0)
 const submitReviewDialogVisible = ref(false)
 const submitReviewLoading = ref(false)
-const reviewerIdsInput = ref('')
-const reviewLevel = ref(1)
 const conditionalApproveDialogVisible = ref(false)
 const conditionalApproveLoading = ref(false)
 const conditionalApproveComment = ref('')
 const conditionalApproveSuggestions = ref<string[]>([])
 const currentReviewId = ref<number>(0)
 
-// State transitions
 const availableTransitions = ref<string[]>([])
 
-// Scan variables & test case import
 const scanLoading = ref(false)
 const testCaseFileInput = ref<HTMLInputElement | null>(null)
+const testCaseMgmtRef = ref<ComponentPublicInstance<{ refreshTestCases: () => Promise<void> }> | null>(null)
 
 type TagType = 'primary' | 'success' | 'info' | 'warning' | 'danger'
 
 function statusTagType(status: string): TagType {
   const map: Record<string, TagType> = {
-    DRAFT: 'info', PENDING_REVIEW: 'warning', REVIEWED: 'primary', ACTIVE: 'success', ARCHIVED: 'danger',
+    DRAFT: 'info',
+    IN_TEST: 'warning',
+    PENDING_REVIEW: 'warning',
+    REVIEWED: 'primary',
+    ACTIVE: 'success',
+    ARCHIVED: 'danger',
   }
   return map[status] || 'info'
 }
 
 function statusLabel(status: string) {
   const map: Record<string, string> = {
-    DRAFT: 'Draft', PENDING_REVIEW: 'PendingReview', REVIEWED: 'Reviewed', ACTIVE: 'Active', ARCHIVED: 'Archived',
+    DRAFT: 'Draft',
+    IN_TEST: 'InTest',
+    PENDING_REVIEW: 'PendingReview',
+    REVIEWED: 'Reviewed',
+    ACTIVE: 'Active',
+    ARCHIVED: 'Archived',
   }
   return map[status] || status
 }
@@ -356,17 +337,15 @@ async function fetchTemplate() {
   try {
     template.value = await getTemplate(templateId)
     fetchTransitions()
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     loading.value = false
   }
 }
 
 async function fetchFilters() {
   try {
-    const [cats, tags] = await Promise.all([getCategories(), getTags()])
-    categoryTree.value = cats
-    tagList.value = tags
-  } catch { /* ignore */ }
+    tagList.value = await getTags()
+  } catch {}
 }
 
 function openEditDialog() {
@@ -386,7 +365,7 @@ async function handleClone() {
   try {
     await cloneTemplate(templateId)
     ElMessage.success(t('template.cloneSuccess'))
-  } catch { /* handled */ }
+  } catch {}
 }
 
 async function handleActivate() {
@@ -395,7 +374,7 @@ async function handleActivate() {
     await activateTemplate(templateId)
     ElMessage.success(t('template.activateSuccess'))
     fetchTemplate()
-  } catch { /* cancelled */ }
+  } catch {}
 }
 
 async function handleArchive() {
@@ -404,10 +383,9 @@ async function handleArchive() {
     await archiveTemplate(templateId)
     ElMessage.success(t('template.archiveSuccess'))
     fetchTemplate()
-  } catch { /* cancelled */ }
+  } catch {}
 }
 
-// Review helpers
 type ReviewTagType = 'primary' | 'success' | 'info' | 'warning' | 'danger'
 
 function reviewStatusTagType(status: string): ReviewTagType {
@@ -430,26 +408,21 @@ async function fetchReviews() {
     const res = await getTemplateReviews(templateId, { page: reviewPage.value - 1, size: reviewSize.value })
     reviews.value = res.content
     reviewTotal.value = res.totalElements
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     reviewsLoading.value = false
   }
 }
 
-async function handleSubmitForReview() {
-  const ids = reviewerIdsInput.value.split(',').map(s => Number(s.trim())).filter(n => !isNaN(n) && n > 0)
-  if (!ids.length) {
-    ElMessage.warning(t('review.selectReviewers'))
-    return
-  }
+async function handleSubmitForReviewFromDialog(reviewerIds: number[], reviewLevel: number) {
   submitReviewLoading.value = true
   try {
-    await submitForReview(templateId, { reviewerIds: ids, reviewLevel: reviewLevel.value })
+    await submitForReview(templateId, { reviewerIds, reviewLevel })
     ElMessage.success(t('review.submitSuccess'))
     submitReviewDialogVisible.value = false
-    reviewerIdsInput.value = ''
-    fetchReviews()
+    await fetchReviews()
     fetchTemplate()
-  } catch { /* handled */ } finally {
+    fetchTransitions()
+  } catch {} finally {
     submitReviewLoading.value = false
   }
 }
@@ -471,7 +444,7 @@ async function handleConditionalApprove() {
     ElMessage.success(t('review.approveSuccess'))
     conditionalApproveDialogVisible.value = false
     fetchReviews()
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     conditionalApproveLoading.value = false
   }
 }
@@ -480,22 +453,22 @@ async function handleReviewInEditor() {
   try {
     const url = await getReviewEditorUrl(templateId)
     window.open(url, '_blank')
-  } catch { /* handled */ }
+  } catch {}
 }
 
 async function fetchTransitions() {
   try {
     availableTransitions.value = await getAvailableTransitions(templateId)
-  } catch { /* handled */ }
+  } catch {}
 }
 
-async function handleSubmitReview() {
+async function handleSubmitToTest() {
   try {
-    await submitReview(templateId)
-    ElMessage.success(t('review.submitSuccess'))
+    await submitTemplateToTest(templateId)
+    ElMessage.success(t('workspace.design.submitToTestSuccess'))
     fetchTemplate()
     fetchTransitions()
-  } catch { /* handled */ }
+  } catch {}
 }
 
 async function handleExportDocx() {
@@ -507,7 +480,7 @@ async function handleExportDocx() {
     a.download = `${template.value?.name || 'template'}.docx`
     a.click()
     URL.revokeObjectURL(url)
-  } catch { /* handled */ }
+  } catch {}
 }
 
 async function handleExportConfig() {
@@ -519,7 +492,7 @@ async function handleExportConfig() {
     a.download = `${template.value?.name || 'template'}-config.json`
     a.click()
     URL.revokeObjectURL(url)
-  } catch { /* handled */ }
+  } catch {}
 }
 
 async function handleScanVariables() {
@@ -527,21 +500,21 @@ async function handleScanVariables() {
   try {
     const vars = await scanVariables(templateId)
     ElMessage.success(t('template.scanVariablesSuccess', { count: vars.length }))
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     scanLoading.value = false
   }
 }
 
 async function handleExportCoverageReport() {
   try {
-    const blob = await exportCoverageReport(templateId)
+    const blob = await exportCoverageReport(templateId) as unknown as Blob
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
     a.download = `${template.value?.name || 'template'}-coverage.json`
     a.click()
     URL.revokeObjectURL(url)
-  } catch { /* handled */ }
+  } catch {}
 }
 
 async function handleExportTestCases() {
@@ -554,7 +527,7 @@ async function handleExportTestCases() {
     a.download = `${template.value?.name || 'template'}-test-cases.json`
     a.click()
     URL.revokeObjectURL(url)
-  } catch { /* handled */ }
+  } catch {}
 }
 
 async function handleImportTestCases(event: Event) {
@@ -565,7 +538,8 @@ async function handleImportTestCases(event: Event) {
     const text = await file.text()
     await importTestCases(templateId, text)
     ElMessage.success(t('message.importSuccess'))
-  } catch { /* handled */ } finally {
+    await testCaseMgmtRef.value?.refreshTestCases?.()
+  } catch {} finally {
     input.value = ''
   }
 }
@@ -600,3 +574,4 @@ onMounted(() => {
   gap: 8px;
 }
 </style>
+

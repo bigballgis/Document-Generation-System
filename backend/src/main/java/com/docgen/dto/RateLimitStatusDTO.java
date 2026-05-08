@@ -2,9 +2,6 @@ package com.docgen.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
-/**
- * DTO representing the current rate limit status for an API Key.
- */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class RateLimitStatusDTO {
 
@@ -17,7 +14,6 @@ public class RateLimitStatusDTO {
     private long remainingPerMinute;
     private long remainingPerHour;
 
-    // ── Getters and Setters ──
 
     public Long getApiKeyId() { return apiKeyId; }
     public void setApiKeyId(Long apiKeyId) { this.apiKeyId = apiKeyId; }
@@ -43,3 +39,4 @@ public class RateLimitStatusDTO {
     public long getRemainingPerHour() { return remainingPerHour; }
     public void setRemainingPerHour(long remainingPerHour) { this.remainingPerHour = remainingPerHour; }
 }
+

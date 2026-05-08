@@ -2,27 +2,27 @@
 
 ## Overview
 
-本设计文档描述前端补全第二期的技术方案。本期目标是为所有后端已存在但前端缺失的 API 端点补全前端 API 调用层、Vue 组件和 i18n 翻译。涉及模块包括：模板导入导出、Webhook 管理、速率限制与用量统计、模板审核补全、模板状态机补全、密码重置、测试用例导入导出、覆盖率导出、变量扫描。
+This design describes the technical approach for the second phase of frontend gap-fill work. The goal is to add the missing frontend API layer, Vue components, and i18n entries for backend endpoints that already exist but are not yet exposed in the UI. Scope includes: template import/export, webhook management, rate limiting and usage stats, template review flows, template state machine, password reset, test case import/export, coverage export, and variable scanning.
 
-所有新增代码均为纯前端变更，不涉及后端修改。设计遵循项目现有的 Vue 3 + TypeScript + Element Plus + vue-i18n 技术栈和编码模式。
+All changes are frontend-only; the backend is not modified in this phase. The design follows the existing Vue 3 + TypeScript + Element Plus + vue-i18n stack and coding patterns.
 
 ## Architecture
 
-### 整体架构
+### High-level architecture
 
-本期新增内容全部位于前端层，遵循现有的分层架构：
+New work stays in the frontend and follows the existing layered structure:
 
 ```
 ┌─────────────────────────────────────────────────────┐
 │                    Vue Views                         │
 │  Detail.vue  Index.vue  LoginView.vue  admin/Index  │
-│  (修改现有页面，集成新功能面板)                         │
+│  (modify existing pages; integrate new panels)      │
 ├─────────────────────────────────────────────────────┤
-│              Vue Components (新增)                    │
+│              Vue Components (new)                     │
 │  WebhookPanel  WebhookFormDialog  WebhookLogDialog  │
 │  RateLimitPanel  ResetPasswordDialog                │
 ├─────────────────────────────────────────────────────┤
-│                API Layer (新增 + 扩展)                │
+│                API Layer (new + extended)           │
 │  import-export.ts  webhooks.ts  rate-limits.ts      │
 │  templates.ts(+4)  admin.ts(+4)  market.ts(+2)     │
 │  auth.ts(+1)                                        │
@@ -31,38 +31,38 @@
 │                 request.ts                           │
 ├─────────────────────────────────────────────────────┤
 │                 Backend API                          │
-│  (已存在，本期不修改)                                  │
+│  (already exists; no changes this phase)             │
 └─────────────────────────────────────────────────────┘
 ```
 
-### 文件变更清单
+### File change list
 
-**新增文件：**
-- `frontend/src/api/import-export.ts` — 模板导入导出 API
-- `frontend/src/api/webhooks.ts` — Webhook CRUD + 日志 API
-- `frontend/src/api/rate-limits.ts` — 速率限制 + 用量统计 API
-- `frontend/src/views/templates/components/WebhookPanel.vue` — Webhook 管理面板
-- `frontend/src/views/templates/components/WebhookFormDialog.vue` — Webhook 表单对话框
-- `frontend/src/views/templates/components/WebhookLogDialog.vue` — Webhook 日志对话框
-- `frontend/src/views/admin/RateLimitPanel.vue` — 速率限制面板
-- `frontend/src/views/auth/ResetPasswordDialog.vue` — 密码重置对话框
+**New files:**
+- `frontend/src/api/import-export.ts` — template import/export API
+- `frontend/src/api/webhooks.ts` — webhook CRUD + logs API
+- `frontend/src/api/rate-limits.ts` — rate limits + usage stats API
+- `frontend/src/views/templates/components/WebhookPanel.vue` — webhook management panel
+- `frontend/src/views/templates/components/WebhookFormDialog.vue` — webhook form dialog
+- `frontend/src/views/templates/components/WebhookLogDialog.vue` — webhook log dialog
+- `frontend/src/views/admin/RateLimitPanel.vue` — rate limit panel
+- `frontend/src/views/auth/ResetPasswordDialog.vue` — password reset dialog
 
-**修改文件：**
-- `frontend/src/api/templates.ts` — 新增 `submitReview`, `getAvailableTransitions`, `scanVariables`, `exportCoverageReport`
-- `frontend/src/api/admin.ts` — 新增 `submitForReview`, `getTemplateReviews`, `conditionalApproveReview`, `getReviewEditorUrl`
-- `frontend/src/api/market.ts` — 新增 `exportTestCases`, `importTestCases`
-- `frontend/src/api/auth.ts` — 新增 `resetPassword`
-- `frontend/src/views/templates/Detail.vue` — 新增 Webhook 标签页、审核标签页、导入导出按钮、状态转换按钮、变量扫描按钮、覆盖率导出按钮
-- `frontend/src/views/templates/Index.vue` — 新增导入按钮（Import Template、Import Configuration）
-- `frontend/src/views/auth/LoginView.vue` — 新增 "Forgot Password?" 链接
-- `frontend/src/views/admin/Index.vue` — 新增 Rate Limits 标签页
-- `frontend/src/i18n/en-US.json` — 新增 webhook.*, admin.rateLimit.*, auth.forgotPassword 等 key
-- `frontend/src/i18n/zh-CN.json` — 对应中文翻译
-- `frontend/src/i18n/zh-TW.json` — 对应繁体翻译
+**Modified files:**
+- `frontend/src/api/templates.ts` — add `submitReview`, `getAvailableTransitions`, `scanVariables`, `exportCoverageReport`
+- `frontend/src/api/admin.ts` — add `submitForReview`, `getTemplateReviews`, `conditionalApproveReview`, `getReviewEditorUrl`
+- `frontend/src/api/market.ts` — add `exportTestCases`, `importTestCases`
+- `frontend/src/api/auth.ts` — add `resetPassword`
+- `frontend/src/views/templates/Detail.vue` — webhooks tab, reviews tab, import/export actions, transition buttons, scan variables, export coverage
+- `frontend/src/views/templates/Index.vue` — import buttons (Import Template, Import Configuration)
+- `frontend/src/views/auth/LoginView.vue` — "Forgot Password?" link
+- `frontend/src/views/admin/Index.vue` — Rate Limits tab
+- `frontend/src/i18n/en-US.json` — new keys: `webhook.*`, `admin.rateLimit.*`, `auth.forgotPassword`, etc.
+- `frontend/src/i18n/zh-CN.json` — Simplified Chinese translations
+- `frontend/src/i18n/zh-TW.json` — Traditional Chinese translations
 
 ## Components and Interfaces
 
-### 1. API Layer — New Files
+### 1. API layer — new files
 
 #### `api/import-export.ts`
 
@@ -192,9 +192,9 @@ export function getUsageStats() {
 }
 ```
 
-### 2. API Layer — Extensions to Existing Files
+### 2. API layer — extensions to existing files
 
-#### `api/templates.ts` — 新增函数
+#### `api/templates.ts` — new functions
 
 ```typescript
 /** Submit template for review via state machine (DRAFT → PENDING_REVIEW) */
@@ -218,7 +218,7 @@ export function exportCoverageReport(templateId: number) {
 }
 ```
 
-#### `api/admin.ts` — 新增函数
+#### `api/admin.ts` — new functions
 
 ```typescript
 /** Submit a template for review (create review records) */
@@ -242,7 +242,7 @@ export function getReviewEditorUrl(templateId: number) {
 }
 ```
 
-#### `api/market.ts` — 新增函数
+#### `api/market.ts` — new functions
 
 ```typescript
 /** Export test cases as JSON string */
@@ -258,7 +258,7 @@ export function importTestCases(templateId: number, json: string) {
 }
 ```
 
-#### `api/auth.ts` — 新增函数
+#### `api/auth.ts` — new functions
 
 ```typescript
 /** Request password reset email */
@@ -267,197 +267,197 @@ export function resetPassword(email: string) {
 }
 ```
 
-### 3. Vue Components — New
+### 3. Vue components — new
 
 #### `WebhookPanel.vue`
 
-作为模板详情页的标签页组件，负责展示 Webhook 列表和触发 CRUD 操作。
+Tab on the template detail page. Lists webhooks for the template and drives CRUD.
 
 Props: `templateId: number`
 
-功能：
-- 加载并展示当前模板的 Webhook 列表（el-table）
-- 列：URL、Status（el-switch 或 tag）、Payload Template（truncated）、Created At、Actions
-- Actions：Edit（打开 WebhookFormDialog）、Delete（确认后删除）、Logs（打开 WebhookLogDialog）
-- 顶部 "Create Webhook" 按钮打开 WebhookFormDialog（创建模式）
+Behavior:
+- Load and show webhooks in `el-table`
+- Columns: URL, Status (`el-switch` or tag), Payload Template (truncated), Created At, Actions
+- Actions: Edit (opens `WebhookFormDialog`), Delete (confirm then delete), Logs (opens `WebhookLogDialog`)
+- Top "Create Webhook" opens `WebhookFormDialog` in create mode
 
 #### `WebhookFormDialog.vue`
 
-Webhook 创建/编辑对话框，遵循项目 Form Dialog Pattern。
+Create/edit webhook dialog; follows the project form-dialog pattern.
 
 Props: `visible: boolean`, `data: WebhookConfigDTO | null`
 Emits: `update:visible`, `saved`
 
-表单字段：
-- URL（el-input, required, URL 校验）
-- Secret（el-input, required, type=password）
-- Payload Template（el-input type=textarea, optional）
-- Enabled（el-switch, 仅编辑模式显示, 默认 true）
+Form fields:
+- URL (`el-input`, required, URL validation)
+- Secret (`el-input`, required, `type=password`)
+- Payload Template (`el-input` textarea, optional)
+- Enabled (`el-switch`, edit mode only, default true)
 
 #### `WebhookLogDialog.vue`
 
-Webhook 日志查看对话框，展示分页日志表格。
+Webhook log viewer with a paginated table.
 
 Props: `visible: boolean`, `webhookId: number`
 Emits: `update:visible`
 
-表格列：Event Type、Payload（truncated, el-popover 展示完整内容）、Response Status（tag 颜色区分 2xx/4xx/5xx）、Response Body（truncated）、Sent At
+Columns: Event Type, Payload (truncated, full text in `el-popover`), Response Status (tag colors for 2xx/4xx/5xx), Response Body (truncated), Sent At
 
 #### `RateLimitPanel.vue`
 
-管理页面的速率限制面板组件。
+Admin rate-limit dashboard panel.
 
-功能：
-- 速率限制表格：展示所有 API Key 的限流状态（el-table）
-- 用量统计卡片：展示月度配额、当前用量、剩余配额、重置日期（el-descriptions 或 el-statistic）
-- Refresh 按钮重新加载数据
+Behavior:
+- Table of rate-limit status per API key
+- Usage card: monthly quota, current usage, remaining, reset date (`el-descriptions` or `el-statistic`)
+- Refresh reloads data
 
 #### `ResetPasswordDialog.vue`
 
-密码重置对话框。
+Password reset flow.
 
 Props: `visible: boolean`
 Emits: `update:visible`
 
-表单字段：
-- Email（el-input, required, email 校验）
-- Submit 按钮调用 `resetPassword` API
-- 成功后显示 `ElMessage.success` 提示并关闭对话框
+Form:
+- Email (`el-input`, required, email validation)
+- Submit calls `resetPassword` API
+- On success: `ElMessage.success` and close
 
-### 4. Existing View Modifications
+### 4. Existing view modifications
 
-#### `templates/Detail.vue` 变更
+#### `templates/Detail.vue`
 
-1. **Header Actions 区域**：
-   - 新增 "Export as .docx" 按钮（调用 `exportDocx`）
-   - 新增 "Export Configuration" 按钮（调用 `exportConfig`）
-   - 动态状态转换按钮：根据 `getAvailableTransitions` 返回值显示 "Submit for Review" / "Activate" / "Archive"
-   - 新增 "Review in Editor" 按钮（调用 `getReviewEditorUrl`，新标签页打开）
+1. **Header actions**
+   - "Export as .docx" (`exportDocx`)
+   - "Export Configuration" (`exportConfig`)
+   - Dynamic transition buttons from `getAvailableTransitions`: e.g. "Submit for Review" / "Activate" / "Archive"
+   - "Review in Editor" (`getReviewEditorUrl`, new tab)
 
-2. **Tabs 区域**：
-   - 新增 "Webhooks" 标签页 → `<WebhookPanel :template-id="template.id" />`
-   - 新增 "Reviews" 标签页 → 展示模板审核列表 + "Submit for Review" + "Conditional Approve" 功能
-   - 在 Variables 标签页中集成 "Scan Variables" 按钮（或在 VariableManagement 组件中添加）
-   - 在 Coverage 标签页中集成 "Export Coverage Report" 按钮（或在 CoveragePanel 组件中添加）
-   - 在 Tests 标签页中集成 "Export Test Cases" / "Import Test Cases" 按钮
+2. **Tabs**
+   - "Webhooks" → `<WebhookPanel :template-id="template.id" />`
+   - "Reviews" → review list + Submit for Review + Conditional Approve
+   - Variables tab: "Scan Variables" (or inside VariableManagement)
+   - Coverage tab: "Export Coverage Report" (or inside CoveragePanel)
+   - Tests tab: "Export Test Cases" / "Import Test Cases"
 
-#### `templates/Index.vue` 变更
+#### `templates/Index.vue`
 
-Header Actions 区域新增：
-- "Import Template" 按钮（上传 .docx，调用 `importDocx`）
-- "Import Configuration" 按钮（上传 .json，调用 `importConfig`）
+Header actions:
+- "Import Template" (upload .docx → `importDocx`)
+- "Import Configuration" (upload .json → `importConfig`)
 
-使用 `el-upload` 组件的 `before-upload` 或手动触发 `<input type="file">` 实现文件选择。
+Use `el-upload` `before-upload` or a hidden `<input type="file">`.
 
-#### `auth/LoginView.vue` 变更
+#### `auth/LoginView.vue`
 
-在 `form-footer` 区域新增 "Forgot Password?" 链接，点击打开 `ResetPasswordDialog`。
+Add "Forgot Password?" in `form-footer`; opens `ResetPasswordDialog`.
 
-#### `admin/Index.vue` 变更
+#### `admin/Index.vue`
 
-新增 "Rate Limits" 标签页 → `<RateLimitPanel />`
+Add "Rate Limits" tab → `<RateLimitPanel />`
 
 ## Data Models
 
-### TypeScript 接口定义（与后端 DTO 对应）
+### TypeScript interfaces (aligned with backend DTOs)
 
-以下接口定义在各自的 API 文件中，字段类型严格对应后端 Java DTO。
+Interfaces live in their API modules; field types map to Java DTOs.
 
-#### WebhookConfigDTO（后端 `WebhookConfigDTO.java`）
+#### `WebhookConfigDTO` (backend `WebhookConfigDTO.java`)
 
-| 字段 | TS 类型 | Java 类型 | 说明 |
-|------|---------|-----------|------|
-| id | `number` | `Long` | 主键 |
-| templateId | `number` | `Long` | 关联模板 ID |
+| Field | TS type | Java type | Description |
+|------|---------|-----------|-------------|
+| id | `number` | `Long` | Primary key |
+| templateId | `number` | `Long` | Template id |
 | url | `string` | `String` | Webhook URL |
-| payloadTemplate | `string` | `String` | 负载模板 |
-| enabled | `boolean` | `boolean` | 是否启用 |
-| createdAt | `string` | `Instant` | 创建时间（ISO 字符串） |
-| updatedAt | `string` | `Instant` | 更新时间（ISO 字符串） |
+| payloadTemplate | `string` | `String` | Payload template |
+| enabled | `boolean` | `boolean` | Enabled flag |
+| createdAt | `string` | `Instant` | Created (ISO string) |
+| updatedAt | `string` | `Instant` | Updated (ISO string) |
 
-#### CreateWebhookRequest（后端 `CreateWebhookRequest.java`）
+#### `CreateWebhookRequest` (backend `CreateWebhookRequest.java`)
 
-| 字段 | TS 类型 | Java 类型 | 校验 |
-|------|---------|-----------|------|
+| Field | TS type | Java type | Validation |
+|------|---------|-----------|------------|
 | url | `string` | `String` | `@NotBlank` |
 | secret | `string` | `String` | `@NotBlank` |
-| payloadTemplate | `string?` | `String` | 可选 |
+| payloadTemplate | `string?` | `String` | Optional |
 
-#### UpdateWebhookRequest（后端 `UpdateWebhookRequest.java`）
+#### `UpdateWebhookRequest` (backend `UpdateWebhookRequest.java`)
 
-| 字段 | TS 类型 | Java 类型 | 说明 |
-|------|---------|-----------|------|
-| url | `string?` | `String` | 可选 |
-| secret | `string?` | `String` | 可选 |
-| payloadTemplate | `string?` | `String` | 可选 |
-| enabled | `boolean?` | `Boolean` | 可选 |
+| Field | TS type | Java type | Description |
+|------|---------|-----------|-------------|
+| url | `string?` | `String` | Optional |
+| secret | `string?` | `String` | Optional |
+| payloadTemplate | `string?` | `String` | Optional |
+| enabled | `boolean?` | `Boolean` | Optional |
 
-#### WebhookLogDTO（后端 `WebhookLogDTO.java`）
+#### `WebhookLogDTO` (backend `WebhookLogDTO.java`)
 
-| 字段 | TS 类型 | Java 类型 | 说明 |
-|------|---------|-----------|------|
-| id | `number` | `Long` | 主键 |
-| webhookConfigId | `number` | `Long` | 关联 Webhook ID |
-| eventType | `string` | `String` | 事件类型 |
-| payload | `string` | `String` | 请求负载 |
-| responseStatus | `number` | `Integer` | HTTP 响应码 |
-| responseBody | `string` | `String` | 响应体 |
-| sentAt | `string` | `Instant` | 发送时间 |
+| Field | TS type | Java type | Description |
+|------|---------|-----------|-------------|
+| id | `number` | `Long` | Primary key |
+| webhookConfigId | `number` | `Long` | Webhook id |
+| eventType | `string` | `String` | Event type |
+| payload | `string` | `String` | Request payload |
+| responseStatus | `number` | `Integer` | HTTP status |
+| responseBody | `string` | `String` | Response body |
+| sentAt | `string` | `Instant` | Sent at |
 
-#### RateLimitStatusDTO（后端 `RateLimitStatusDTO.java`）
+#### `RateLimitStatusDTO` (backend `RateLimitStatusDTO.java`)
 
-| 字段 | TS 类型 | Java 类型 | 说明 |
-|------|---------|-----------|------|
-| apiKeyId | `number` | `Long` | API Key ID |
-| apiKeyName | `string` | `String` | API Key 名称 |
-| limitPerSecond | `number` | `int` | 每秒限制 |
-| limitPerMinute | `number` | `int` | 每分钟限制 |
-| limitPerHour | `number` | `int` | 每小时限制 |
-| remainingPerSecond | `number` | `long` | 每秒剩余 |
-| remainingPerMinute | `number` | `long` | 每分钟剩余 |
-| remainingPerHour | `number` | `long` | 每小时剩余 |
+| Field | TS type | Java type | Description |
+|------|---------|-----------|-------------|
+| apiKeyId | `number` | `Long` | API key id |
+| apiKeyName | `string` | `String` | API key name |
+| limitPerSecond | `number` | `int` | Per-second limit |
+| limitPerMinute | `number` | `int` | Per-minute limit |
+| limitPerHour | `number` | `int` | Per-hour limit |
+| remainingPerSecond | `number` | `long` | Remaining per second |
+| remainingPerMinute | `number` | `long` | Remaining per minute |
+| remainingPerHour | `number` | `long` | Remaining per hour |
 
-#### UsageStatsDTO（后端 `UsageStatsDTO.java`）
+#### `UsageStatsDTO` (backend `UsageStatsDTO.java`)
 
-| 字段 | TS 类型 | Java 类型 | 说明 |
-|------|---------|-----------|------|
-| tenantId | `number` | `Long` | 租户 ID |
-| monthlyQuota | `number` | `long` | 月度配额 |
-| currentMonthUsage | `number` | `long` | 当月已用 |
-| remainingQuota | `number` | `long` | 剩余配额 |
-| resetAt | `string` | `String` | 重置时间 |
+| Field | TS type | Java type | Description |
+|------|---------|-----------|-------------|
+| tenantId | `number` | `Long` | Tenant id |
+| monthlyQuota | `number` | `long` | Monthly quota |
+| currentMonthUsage | `number` | `long` | Usage this month |
+| remainingQuota | `number` | `long` | Remaining quota |
+| resetAt | `string` | `String` | Reset time |
 
-#### TemplateReviewDTO（后端 `TemplateReviewDTO.java`，admin.ts 中已有 ReviewDTO 需扩展）
+#### `TemplateReviewDTO` (backend `TemplateReviewDTO.java`; extend existing `ReviewDTO` in `admin.ts`)
 
-现有 `ReviewDTO` 需补充字段以匹配后端 `TemplateReviewDTO`：
+Extend `ReviewDTO` to match `TemplateReviewDTO`:
 
-| 字段 | TS 类型 | Java 类型 | 说明 |
-|------|---------|-----------|------|
-| id | `number` | `Long` | 主键 |
-| templateId | `number` | `Long` | 模板 ID |
-| reviewerId | `number` | `Long` | 审核人 ID |
-| reviewLevel | `number` | `int` | 审核级别 |
-| status | `string` | `ReviewStatus` | 状态枚举 |
-| comment | `string?` | `String` | 评论 |
-| suggestions | `string[]?` | `List<String>` | 建议列表 |
-| createdAt | `string` | `Instant` | 创建时间 |
-| completedAt | `string?` | `Instant` | 完成时间 |
+| Field | TS type | Java type | Description |
+|------|---------|-----------|-------------|
+| id | `number` | `Long` | Primary key |
+| templateId | `number` | `Long` | Template id |
+| reviewerId | `number` | `Long` | Reviewer id |
+| reviewLevel | `number` | `int` | Review level |
+| status | `string` | `ReviewStatus` | Status |
+| comment | `string?` | `String` | Comment |
+| suggestions | `string[]?` | `List<String>` | Suggestions |
+| createdAt | `string` | `Instant` | Created |
+| completedAt | `string?` | `Instant` | Completed |
 
-### i18n Key 结构
+### i18n key layout
 
-新增 key 按模块前缀组织：
+New keys are grouped by prefix:
 
 ```
-webhook.*          — Webhook 管理相关（已有部分 key，需补充）
-admin.rateLimit.*  — 速率限制相关（已有部分 key，需补充）
-auth.*             — 认证相关（已有 resetPassword 等 key，需补充 forgotPassword）
-template.*         — 模板相关（已有 exportDocx 等 key，需补充 scanVariables、importTemplate 等）
-test.*             — 测试用例相关（已有 importCases/exportCases key）
-review.*           — 审核相关（已有部分 key，需补充 reviewInEditor、conditionalApproveDialog 等）
-common.*           — 通用 key（复用已有 key）
+webhook.*          — Webhook UI (some keys may already exist; extend as needed)
+admin.rateLimit.*  — Rate limits (extend as needed)
+auth.*             — Auth (reset password, forgot password, etc.)
+template.*         — Template actions (export, scan, import, etc.)
+test.*             — Test cases (import/export keys)
+review.*           — Review flows (editor URL, conditional approve, etc.)
+common.*           — Shared keys
 ```
 
-新增 key 示例（en-US）：
+Example additions (`en-US`):
 
 ```json
 {
@@ -503,77 +503,77 @@ common.*           — 通用 key（复用已有 key）
 }
 ```
 
-
-
 ## Correctness Properties
 
-本功能不适用 Property-Based Testing (PBT)。
+Property-based testing (PBT) does not apply here.
 
-原因：本期所有变更均为前端 API 薄封装层（Axios wrapper）、Vue UI 组件和 i18n 翻译。具体来说：
+Rationale: changes are thin Axios wrappers, Vue UI, and i18n JSON.
 
-1. **API 层**：每个函数都是对 Axios 实例的简单调用封装，输入输出行为完全确定，不存在需要通过大量随机输入验证的通用属性。
-2. **Vue 组件**：UI 渲染和交互行为属于 DOM 操作，适合使用 example-based 组件测试（Vitest + @vue/test-utils）验证。
-3. **i18n**：翻译 key 的完整性是静态检查，不涉及运行时逻辑。
+1. **API layer**: Each function is a deterministic HTTP call; there is no broad property to stress with random inputs.
+2. **Vue components**: DOM and interaction are better covered with example-based tests (Vitest + Vue Test Utils).
+3. **i18n**: Key completeness is a static check, not runtime logic.
 
-所有验收标准均归类为 EXAMPLE（具体场景测试）、EDGE_CASE（错误处理边界）或 SMOKE（编译/配置检查），无 PROPERTY 类型候选。
+Acceptance criteria map to EXAMPLE, EDGE_CASE, or SMOKE — not PROPERTY.
 
-替代测试策略见下方 Testing Strategy 章节。
+See **Testing Strategy** below.
 
 ## Error Handling
 
-### API 层错误处理
+### API errors
 
-所有 API 函数依赖 `request.ts` 中的全局 Axios 响应拦截器处理通用错误：
+All functions rely on the global Axios interceptor in `request.ts`:
 
-| HTTP 状态码 | 处理方式 |
-|-------------|---------|
-| 401 | 自动刷新 Token，失败则跳转登录页 |
+| HTTP status | Behavior |
+|-------------|----------|
+| 401 | Refresh token; on failure redirect to login |
 | 403 | `ElMessage.error('Access denied')` |
 | 429 | `ElMessage.warning('Too many requests...')` |
-| 其他 4xx/5xx | `ElMessage.error(response.message)` |
+| Other 4xx/5xx | `ElMessage.error(response.message)` |
 
-### 组件层错误处理
+### Component errors
 
-各组件在调用 API 时使用 `try/catch` 包裹，错误由拦截器统一处理。特殊场景：
+Wrap API calls in `try/catch`; interceptor handles most cases. Special cases:
 
-- **文件上传失败**（Import Template / Import Configuration）：在 catch 中显示 `ElMessage.error`，不刷新列表
-- **文件下载失败**（Export .docx / Export Config / Export Coverage）：在 catch 中显示 `ElMessage.error`
-- **Webhook 删除失败**：保持列表不变，显示错误消息
-- **密码重置失败**：在 ResetPasswordDialog 中显示 `ElMessage.error`，不关闭对话框
+- **Upload failure** (Import Template / Configuration): `ElMessage.error` in `catch`; do not refresh lists
+- **Download failure** (.docx / config / coverage export): `ElMessage.error`
+- **Webhook delete failure**: keep list; show error
+- **Password reset failure**: `ElMessage.error` in dialog; keep open
 
-### 文件上传校验
+### Upload validation
 
-- Import Template：仅接受 `.docx` 文件（通过 `accept=".docx"` 和 `before-upload` 校验）
-- Import Configuration：仅接受 `.json` 文件
-- Import Test Cases：仅接受 `.json` 文件
-- 文件大小限制由后端控制，前端不做额外限制
+- Import Template: `.docx` only (`accept` + `before-upload`)
+- Import Configuration: `.json` only
+- Import Test Cases: `.json` only
+- Size limits enforced by backend; frontend does not add extra caps
 
-### 空状态处理
+### Empty states
 
-- Webhook 列表为空时显示 `el-empty` 占位
-- Rate Limit 列表为空时显示 "No API Keys" 提示
-- 审核列表为空时显示 "No reviews" 提示
-- 可用状态转换为空时隐藏转换按钮区域
+- No webhooks: `el-empty`
+- No API keys for rate limits: "No API Keys"
+- No reviews: "No reviews"
+- No transitions: hide transition button area
 
 ## Testing Strategy
 
-### 测试框架
+### Stack
 
-- **单元测试 / 组件测试**：Vitest + @vue/test-utils
-- **API Mock**：vitest 的 `vi.mock` 或 MSW (Mock Service Worker)
+- **Unit / component**: Vitest + @vue/test-utils
+- **API mocking**: `vi.mock` or MSW
 
-### 测试分层
+### Layers
 
-#### 1. API 层单元测试
+#### 1. API unit tests
 
-为每个新增/扩展的 API 函数编写单元测试，验证：
-- 正确的 HTTP 方法（GET/POST/PUT/DELETE）
-- 正确的 URL 路径（含路径参数替换）
-- 正确的请求体 / 查询参数
-- 正确的 `responseType`（blob 下载场景）
-- 正确的 `Content-Type`（multipart 上传场景）
+For each new or extended API function, verify:
 
-测试文件：
+- Correct HTTP method (GET/POST/PUT/DELETE)
+- Correct URL (path params)
+- Correct body / query params
+- Correct `responseType` for blob downloads
+- Correct `Content-Type` for multipart uploads
+
+Files:
+
 - `frontend/src/__tests__/api/import-export.test.ts`
 - `frontend/src/__tests__/api/webhooks.test.ts`
 - `frontend/src/__tests__/api/rate-limits.test.ts`
@@ -582,40 +582,43 @@ common.*           — 通用 key（复用已有 key）
 - `frontend/src/__tests__/api/market-extensions.test.ts`
 - `frontend/src/__tests__/api/auth-extensions.test.ts`
 
-#### 2. 组件测试
+#### 2. Component tests
 
-为每个新增 Vue 组件编写组件测试，验证：
-- 组件正确渲染（表格列、表单字段、按钮）
-- 用户交互触发正确的 API 调用
-- 成功/失败后的 UI 反馈（ElMessage、列表刷新、对话框关闭）
-- i18n key 正确使用（通过 mock i18n 验证 `$t()` 调用）
+For each new component:
 
-测试文件：
+- Renders columns, fields, buttons
+- User actions invoke the right APIs
+- Success/failure feedback (ElMessage, refresh, dialog close)
+- i18n keys via mocked `$t()`
+
+Files:
+
 - `frontend/src/__tests__/views/templates/WebhookPanel.test.ts`
 - `frontend/src/__tests__/views/templates/WebhookFormDialog.test.ts`
 - `frontend/src/__tests__/views/templates/WebhookLogDialog.test.ts`
 - `frontend/src/__tests__/views/admin/RateLimitPanel.test.ts`
 - `frontend/src/__tests__/views/auth/ResetPasswordDialog.test.ts`
 
-#### 3. 集成点测试
+#### 3. Integration touchpoints
 
-验证现有页面正确集成新功能：
-- `Detail.vue` 包含 Webhook 标签页、Reviews 标签页、导出按钮、状态转换按钮
-- `Index.vue` 包含导入按钮
-- `LoginView.vue` 包含 "Forgot Password?" 链接
-- `admin/Index.vue` 包含 Rate Limits 标签页
+- `Detail.vue`: webhooks tab, reviews tab, export actions, transitions
+- `Index.vue`: import buttons
+- `LoginView.vue`: "Forgot Password?"
+- `admin/Index.vue`: Rate Limits tab
 
-#### 4. i18n 完整性检查
+#### 4. i18n completeness
 
-编写脚本或测试验证：
-- 所有新增 key 在 en-US.json、zh-CN.json、zh-TW.json 中均存在
-- 三个语言文件的 key 集合一致（无遗漏）
+Script or test that:
 
-### 不使用 PBT 的理由
+- New keys exist in `en-US.json`, `zh-CN.json`, and `zh-TW.json`
+- Key sets are aligned across locales
 
-本功能的所有代码路径均为：
-- **API 薄封装**：输入→Axios 调用→输出，无复杂转换逻辑
-- **UI 渲染与交互**：DOM 操作，适合 example-based 测试
-- **i18n 翻译**：静态 JSON 文件，适合 schema/completeness 检查
+### Why not PBT
 
-这些场景中，输入空间有限且行为确定，100 次随机迭代不会比 2-3 个具体示例发现更多 bug。Example-based 单元测试和组件测试是最合适的测试策略。
+Paths are:
+
+- **Thin API wrappers**: input → Axios → output
+- **UI**: example-based tests fit better
+- **i18n**: static JSON
+
+Input space is small and behavior is fixed; a few explicit examples beat 100 random iterations.

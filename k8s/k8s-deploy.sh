@@ -2,43 +2,43 @@
 set -e
 
 echo "========================================="
-echo "  DocGen Kubernetes 部署脚本"
+echo "  DocGen Kubernetes deployment script"
 echo "========================================="
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-# 1. 检查 kubectl
+# 1. Check kubectl
 if ! command -v kubectl &> /dev/null; then
-    echo "错误: kubectl 未安装"
-    echo "请访问 https://kubernetes.io/docs/tasks/tools/ 安装 kubectl"
+    echo "Error: kubectl is not installed"
+    echo "See https://kubernetes.io/docs/tasks/tools/"
     exit 1
 fi
 
 if ! kubectl cluster-info &> /dev/null; then
-    echo "错误: 无法连接到 Kubernetes 集群"
-    echo "请检查 kubeconfig 配置"
+    echo "Error: cannot connect to Kubernetes cluster"
+    echo "Check your kubeconfig"
     exit 1
 fi
 
-echo "✓ kubectl 已安装且可连接集群"
+echo "✓ kubectl is installed and can reach the cluster"
 
-# 2. 按顺序应用资源
+# 2. Apply manifests in order
 echo ""
-echo "正在部署资源..."
+echo "Applying resources..."
 
-echo "  创建命名空间..."
+echo "  Creating namespace..."
 kubectl apply -f "$SCRIPT_DIR/namespace.yaml"
 
-echo "  创建配置..."
+echo "  Creating config..."
 kubectl apply -f "$SCRIPT_DIR/configmap.yaml"
 kubectl apply -f "$SCRIPT_DIR/secret.yaml"
 
-echo "  创建持久卷..."
+echo "  Creating persistent volumes..."
 kubectl apply -f "$SCRIPT_DIR/redis-pvc.yaml"
 kubectl apply -f "$SCRIPT_DIR/minio-pvc.yaml"
 kubectl apply -f "$SCRIPT_DIR/onlyoffice-pvc.yaml"
 
-echo "  部署有状态服务..."
+echo "  Deploying stateful backing services..."
 kubectl apply -f "$SCRIPT_DIR/redis-deployment.yaml"
 kubectl apply -f "$SCRIPT_DIR/redis-service.yaml"
 kubectl apply -f "$SCRIPT_DIR/minio-deployment.yaml"
@@ -46,7 +46,7 @@ kubectl apply -f "$SCRIPT_DIR/minio-service.yaml"
 kubectl apply -f "$SCRIPT_DIR/onlyoffice-deployment.yaml"
 kubectl apply -f "$SCRIPT_DIR/onlyoffice-service.yaml"
 
-echo "  部署应用服务..."
+echo "  Deploying application services..."
 kubectl apply -f "$SCRIPT_DIR/docxtemplater-deployment.yaml"
 kubectl apply -f "$SCRIPT_DIR/docxtemplater-service.yaml"
 kubectl apply -f "$SCRIPT_DIR/backend-deployment.yaml"
@@ -54,25 +54,25 @@ kubectl apply -f "$SCRIPT_DIR/backend-service.yaml"
 kubectl apply -f "$SCRIPT_DIR/frontend-deployment.yaml"
 kubectl apply -f "$SCRIPT_DIR/frontend-service.yaml"
 
-echo "  创建 Ingress..."
+echo "  Creating Ingress..."
 kubectl apply -f "$SCRIPT_DIR/ingress.yaml"
 
-# 3. 等待 Deployment 就绪
+# 3. Wait for Deployments
 echo ""
-echo "等待 Deployment 就绪..."
+echo "Waiting for Deployments..."
 DEPLOYMENTS="docgen-redis docgen-minio docgen-onlyoffice docgen-docxtemplater docgen-backend docgen-frontend"
 
 for dep in $DEPLOYMENTS; do
-    echo -n "  等待 $dep..."
+    echo -n "  Waiting for $dep..."
     if kubectl rollout status deployment/"$dep" -n docgen --timeout=180s 2>/dev/null; then
         echo " ✓"
     else
-        echo " ✗ 失败"
-        echo "Pod 状态:"
+        echo " ✗ failed"
+        echo "Pod status:"
         kubectl get pods -n docgen -l app="$dep" -o wide
-        echo "Pod 日志:"
+        echo "Pod logs:"
         kubectl logs -n docgen -l app="$dep" --tail=30 2>/dev/null || true
-        echo "Pod 事件:"
+        echo "Pod events:"
         kubectl describe pods -n docgen -l app="$dep" 2>/dev/null | tail -20 || true
         exit 1
     fi
@@ -80,7 +80,7 @@ done
 
 echo ""
 echo "========================================="
-echo "  DocGen K8s 部署成功!"
+echo "  DocGen Kubernetes deployment succeeded"
 echo "========================================="
 kubectl get pods -n docgen
 echo ""

@@ -1,16 +1,11 @@
 package com.docgen.dto;
 
-/**
- * DTO for the system overview dashboard panel.
- */
 public class SystemOverviewDTO {
 
     private long totalTemplates;
     private long activeTemplates;
     private long totalApiCalls;
     private long totalDocuments;
-    private long segmentCount;
-    private long componentCount;
     private long compositeTemplateCount;
 
     public SystemOverviewDTO() {}
@@ -33,12 +28,6 @@ public class SystemOverviewDTO {
 
     public long getTotalDocuments() { return totalDocuments; }
     public void setTotalDocuments(long totalDocuments) { this.totalDocuments = totalDocuments; }
-
-    public long getSegmentCount() { return segmentCount; }
-    public void setSegmentCount(long segmentCount) { this.segmentCount = segmentCount; }
-
-    public long getComponentCount() { return componentCount; }
-    public void setComponentCount(long componentCount) { this.componentCount = componentCount; }
 
     public long getCompositeTemplateCount() { return compositeTemplateCount; }
     public void setCompositeTemplateCount(long compositeTemplateCount) { this.compositeTemplateCount = compositeTemplateCount; }

@@ -47,7 +47,6 @@ public class Permission {
         this.grantedAt = Instant.now();
     }
 
-    // ── Getters and Setters ──
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -76,3 +75,4 @@ public class Permission {
     public Long getGrantedBy() { return grantedBy; }
     public void setGrantedBy(Long grantedBy) { this.grantedBy = grantedBy; }
 }
+

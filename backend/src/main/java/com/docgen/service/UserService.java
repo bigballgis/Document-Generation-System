@@ -3,9 +3,12 @@ package com.docgen.service;
 import com.docgen.config.JwtProperties;
 import com.docgen.config.RedisConfig;
 import com.docgen.dto.*;
+import com.docgen.entity.Team;
+import com.docgen.entity.TeamApprovalMode;
 import com.docgen.entity.User;
 import com.docgen.exception.BusinessException;
 import com.docgen.exception.ErrorCode;
+import com.docgen.repository.TeamRepository;
 import com.docgen.repository.UserRepository;
 import com.docgen.util.JwtTokenProvider;
 import org.slf4j.Logger;
@@ -20,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 /**
@@ -40,17 +44,20 @@ public class UserService {
     private static final Pattern SPECIAL_CHAR_PATTERN = Pattern.compile("[^a-zA-Z0-9]");
 
     private final UserRepository userRepository;
+    private final TeamRepository teamRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final JwtProperties jwtProperties;
     private final RedisTemplate<String, String> redisTemplate;
 
     public UserService(UserRepository userRepository,
+                       TeamRepository teamRepository,
                        PasswordEncoder passwordEncoder,
                        JwtTokenProvider jwtTokenProvider,
                        JwtProperties jwtProperties,
                        RedisTemplate<String, String> redisTemplate) {
         this.userRepository = userRepository;
+        this.teamRepository = teamRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
         this.jwtProperties = jwtProperties;
@@ -64,11 +71,11 @@ public class UserService {
     public UserDTO register(RegisterRequest request, Long tenantId) {
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "用户名已存在", HttpStatus.CONFLICT);
+                    "Username already exists", HttpStatus.CONFLICT);
         }
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "邮箱已被注册", HttpStatus.CONFLICT);
+                    "Email is already registered", HttpStatus.CONFLICT);
         }
 
         validatePasswordStrength(request.getPassword());
@@ -92,18 +99,18 @@ public class UserService {
     public TokenPair login(LoginRequest request) {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new BusinessException(ErrorCode.AUTH_INVALID_CREDENTIALS,
-                        "用户名或密码错误", HttpStatus.UNAUTHORIZED));
+                        "Invalid username or password", HttpStatus.UNAUTHORIZED));
 
         // Check if account is locked
         if (user.getLockedUntil() != null && Instant.now().isBefore(user.getLockedUntil())) {
             throw new BusinessException(ErrorCode.AUTH_ACCOUNT_LOCKED,
-                    "账户已锁定，请稍后再试", HttpStatus.FORBIDDEN);
+                    "Account is locked. Try again later.", HttpStatus.FORBIDDEN);
         }
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             handleLoginFailure(user);
             throw new BusinessException(ErrorCode.AUTH_INVALID_CREDENTIALS,
-                    "用户名或密码错误", HttpStatus.UNAUTHORIZED);
+                    "Invalid username or password", HttpStatus.UNAUTHORIZED);
         }
 
         // Reset fail count on successful login
@@ -123,7 +130,7 @@ public class UserService {
     public TokenPair refreshToken(String refreshToken) {
         if (!jwtTokenProvider.validateToken(refreshToken)) {
             throw new BusinessException(ErrorCode.AUTH_INVALID_TOKEN,
-                    "无效的刷新令牌", HttpStatus.UNAUTHORIZED);
+                    "Invalid refresh token", HttpStatus.UNAUTHORIZED);
         }
 
         Long userId = jwtTokenProvider.getUserIdFromToken(refreshToken);
@@ -131,12 +138,12 @@ public class UserService {
 
         if (storedToken == null || !storedToken.equals(refreshToken)) {
             throw new BusinessException(ErrorCode.AUTH_INVALID_TOKEN,
-                    "刷新令牌已失效", HttpStatus.UNAUTHORIZED);
+                    "Refresh token is no longer valid", HttpStatus.UNAUTHORIZED);
         }
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.AUTH_INVALID_TOKEN,
-                        "用户不存在", HttpStatus.UNAUTHORIZED));
+                        "User not found", HttpStatus.UNAUTHORIZED));
 
         return generateTokenPair(user);
     }
@@ -159,7 +166,7 @@ public class UserService {
     public UserDTO updateProfile(Long userId, UpdateProfileRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.VALIDATION_FAILED,
-                        "用户不存在", HttpStatus.NOT_FOUND));
+                        "User not found", HttpStatus.NOT_FOUND));
 
         // UpdateProfileRequest has nickname, avatarUrl, contactInfo
         // The users table doesn't have these columns yet, so we log and return current state.
@@ -175,7 +182,7 @@ public class UserService {
     public UserDTO getUserById(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.VALIDATION_FAILED,
-                        "用户不存在", HttpStatus.NOT_FOUND));
+                        "User not found", HttpStatus.NOT_FOUND));
         return toDTO(user);
     }
 
@@ -188,20 +195,102 @@ public class UserService {
     }
 
     /**
+     * Tenant admin or super admin: update role, team assignment, and maker-checker lane.
+     */
+    @Transactional
+    public UserDTO updateUserAdmin(Long userId, AdminUserUpdateRequest request, UserPrincipal principal) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.VALIDATION_FAILED,
+                        "User not found", HttpStatus.NOT_FOUND));
+        assertAdminMayEditUser(principal, user);
+
+        Long oldTeamId = user.getTeamId();
+        user.setRole(request.getRole());
+        user.setTeamId(request.getTeamId());
+
+        if (request.getTeamId() == null) {
+            user.setTeamReviewLane(null);
+        } else {
+            if (request.getTeamReviewLane() == null) {
+                if (!Objects.equals(oldTeamId, request.getTeamId())) {
+                    user.setTeamReviewLane(null);
+                }
+            } else {
+                String lane = request.getTeamReviewLane().trim();
+                if (lane.isEmpty()) {
+                    user.setTeamReviewLane(null);
+                } else if (!"MAKER".equals(lane) && !"CHECKER".equals(lane)) {
+                    throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                            "teamReviewLane must be MAKER or CHECKER", HttpStatus.BAD_REQUEST);
+                } else {
+                    user.setTeamReviewLane(lane);
+                }
+            }
+        }
+
+        assertTeamAssignmentConsistent(user);
+
+        User saved = userRepository.save(user);
+        log.info("User admin update: userId={} by principalUserId={}", userId, principal.getUserId());
+        return toDTO(saved);
+    }
+
+    /**
+     * Ensures {@code teamId} refers to a team in the user's tenant, and that maker-checker teams
+     * always have a concrete {@link User#getTeamReviewLane()} (MAKER or CHECKER).
+     */
+    private void assertTeamAssignmentConsistent(User user) {
+        if (user.getTeamId() == null) {
+            return;
+        }
+        Team team = teamRepository.findById(user.getTeamId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.VALIDATION_FAILED,
+                        "Team not found for assignment", HttpStatus.NOT_FOUND));
+        if (!team.getTenantId().equals(user.getTenantId())) {
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                    "Team must belong to the same tenant as the user", HttpStatus.BAD_REQUEST);
+        }
+        if (team.getApprovalMode() == TeamApprovalMode.MAKER_CHECKER) {
+            String lane = user.getTeamReviewLane();
+            if (lane == null || lane.isBlank()
+                    || (!"MAKER".equals(lane) && !"CHECKER".equals(lane))) {
+                throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                        "Users on maker-checker teams must have teamReviewLane set to MAKER or CHECKER",
+                        HttpStatus.BAD_REQUEST);
+            }
+        }
+    }
+
+    private void assertAdminMayEditUser(UserPrincipal principal, User user) {
+        if (principal == null) {
+            throw new BusinessException(ErrorCode.AUTH_INVALID_TOKEN,
+                    "Not authenticated", HttpStatus.UNAUTHORIZED);
+        }
+        if ("SUPER_ADMIN".equals(principal.getRole())) {
+            return;
+        }
+        if ("TENANT_ADMIN".equals(principal.getRole())
+                && principal.getTenantId().equals(user.getTenantId())) {
+            return;
+        }
+        throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                "Not allowed to manage this user", HttpStatus.FORBIDDEN);
+    }
+
+    /**
      * Delete a user by ID.
      */
     @Transactional
     public void deleteUser(Long userId) {
         if (!userRepository.existsById(userId)) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "用户不存在", HttpStatus.NOT_FOUND);
+                    "User not found", HttpStatus.NOT_FOUND);
         }
         userRepository.deleteById(userId);
         RedisConfig.deleteRefreshToken(redisTemplate, userId);
         log.info("User deleted: userId={}", userId);
     }
 
-    // ── Password strength validation ──
 
     /**
      * Validate that the password meets strength requirements:
@@ -210,27 +299,26 @@ public class UserService {
     public void validatePasswordStrength(String password) {
         if (password == null || password.length() < 8) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "密码长度不能少于8位", HttpStatus.BAD_REQUEST);
+                    "Password must be at least 8 characters", HttpStatus.BAD_REQUEST);
         }
         if (!UPPERCASE_PATTERN.matcher(password).find()) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "密码必须包含大写字母", HttpStatus.BAD_REQUEST);
+                    "Password must contain an uppercase letter", HttpStatus.BAD_REQUEST);
         }
         if (!LOWERCASE_PATTERN.matcher(password).find()) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "密码必须包含小写字母", HttpStatus.BAD_REQUEST);
+                    "Password must contain a lowercase letter", HttpStatus.BAD_REQUEST);
         }
         if (!DIGIT_PATTERN.matcher(password).find()) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "密码必须包含数字", HttpStatus.BAD_REQUEST);
+                    "Password must contain a digit", HttpStatus.BAD_REQUEST);
         }
         if (!SPECIAL_CHAR_PATTERN.matcher(password).find()) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "密码必须包含特殊字符", HttpStatus.BAD_REQUEST);
+                    "Password must contain a special character", HttpStatus.BAD_REQUEST);
         }
     }
 
-    // ── Private helpers ──
 
     private void handleLoginFailure(User user) {
         int newFailCount = user.getLoginFailCount() + 1;
@@ -256,8 +344,8 @@ public class UserService {
         return new TokenPair(accessToken, refreshToken);
     }
 
-    private UserDTO toDTO(User user) {
-        return new UserDTO(
+    public UserDTO toDTO(User user) {
+        UserDTO dto = new UserDTO(
                 user.getId(),
                 user.getTenantId(),
                 user.getUsername(),
@@ -265,7 +353,9 @@ public class UserService {
                 user.getRole(),
                 user.getTeamId(),
                 user.getLanguagePreference(),
-                user.getCreatedAt()
-        );
+                user.getCreatedAt());
+        dto.setTeamReviewLane(user.getTeamReviewLane());
+        return dto;
     }
 }
+

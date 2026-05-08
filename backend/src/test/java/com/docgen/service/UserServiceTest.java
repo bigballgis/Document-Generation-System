@@ -2,8 +2,11 @@ package com.docgen.service;
 
 import com.docgen.config.JwtProperties;
 import com.docgen.dto.*;
+import com.docgen.entity.Team;
+import com.docgen.entity.TeamApprovalMode;
 import com.docgen.entity.User;
 import com.docgen.exception.BusinessException;
+import com.docgen.repository.TeamRepository;
 import com.docgen.repository.UserRepository;
 import com.docgen.util.JwtTokenProvider;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +33,8 @@ class UserServiceTest {
     @Mock
     private UserRepository userRepository;
     @Mock
+    private TeamRepository teamRepository;
+    @Mock
     private PasswordEncoder passwordEncoder;
     @Mock
     private JwtTokenProvider jwtTokenProvider;
@@ -44,11 +49,10 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(userRepository, passwordEncoder,
+        userService = new UserService(userRepository, teamRepository, passwordEncoder,
                 jwtTokenProvider, jwtProperties, redisTemplate);
     }
 
-    // ── Registration tests ──
 
     @Test
     void register_success() {
@@ -78,7 +82,7 @@ class UserServiceTest {
 
         BusinessException ex = assertThrows(BusinessException.class,
                 () -> userService.register(request, 1L));
-        assertEquals("用户名已存在", ex.getMessage());
+        assertEquals("Username already exists", ex.getMessage());
     }
 
     @Test
@@ -89,10 +93,9 @@ class UserServiceTest {
 
         BusinessException ex = assertThrows(BusinessException.class,
                 () -> userService.register(request, 1L));
-        assertEquals("邮箱已被注册", ex.getMessage());
+        assertEquals("Email is already registered", ex.getMessage());
     }
 
-    // ── Password strength tests ──
 
     @Test
     void validatePasswordStrength_tooShort_throws() {
@@ -129,7 +132,6 @@ class UserServiceTest {
         assertDoesNotThrow(() -> userService.validatePasswordStrength("Abcdefg1!"));
     }
 
-    // ── Login tests ──
 
     @Test
     void login_success() {
@@ -188,7 +190,6 @@ class UserServiceTest {
         assertNotNull(captor.getValue().getLockedUntil());
     }
 
-    // ── Refresh token tests ──
 
     @Test
     void refreshToken_success() {
@@ -217,7 +218,6 @@ class UserServiceTest {
                 () -> userService.refreshToken("bad-token"));
     }
 
-    // ── Delete user test ──
 
     @Test
     void deleteUser_success() {
@@ -235,7 +235,140 @@ class UserServiceTest {
         assertThrows(BusinessException.class, () -> userService.deleteUser(99L));
     }
 
-    // ── Helper ──
+
+    @Test
+    void updateUserAdmin_makerCheckerTeam_requiresLane() {
+        User user = createTestUser();
+        user.setTeamId(null);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        Team team = new Team();
+        team.setId(5L);
+        team.setTenantId(10L);
+        team.setApprovalMode(TeamApprovalMode.MAKER_CHECKER);
+        when(teamRepository.findById(5L)).thenReturn(Optional.of(team));
+
+        AdminUserUpdateRequest req = new AdminUserUpdateRequest();
+        req.setRole("USER");
+        req.setTeamId(5L);
+        req.setTeamReviewLane(null);
+
+        UserPrincipal principal = new UserPrincipal(2L, 10L, "TENANT_ADMIN", null, "admin");
+
+        assertThrows(BusinessException.class, () -> userService.updateUserAdmin(1L, req, principal));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void updateUserAdmin_makerCheckerTeam_withMakerLane_saves() {
+        User user = createTestUser();
+        user.setTeamId(null);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        Team team = new Team();
+        team.setId(5L);
+        team.setTenantId(10L);
+        team.setApprovalMode(TeamApprovalMode.MAKER_CHECKER);
+        when(teamRepository.findById(5L)).thenReturn(Optional.of(team));
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        AdminUserUpdateRequest req = new AdminUserUpdateRequest();
+        req.setRole("USER");
+        req.setTeamId(5L);
+        req.setTeamReviewLane("MAKER");
+
+        UserPrincipal principal = new UserPrincipal(2L, 10L, "TENANT_ADMIN", null, "admin");
+
+        UserDTO dto = userService.updateUserAdmin(1L, req, principal);
+        assertEquals("MAKER", dto.getTeamReviewLane());
+        verify(userRepository).save(any());
+    }
+
+    @Test
+    void updateUserAdmin_crossReviewTeam_nullLane_saves() {
+        User user = createTestUser();
+        user.setTeamId(null);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        Team team = new Team();
+        team.setId(5L);
+        team.setTenantId(10L);
+        team.setApprovalMode(TeamApprovalMode.CROSS_REVIEW);
+        when(teamRepository.findById(5L)).thenReturn(Optional.of(team));
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        AdminUserUpdateRequest req = new AdminUserUpdateRequest();
+        req.setRole("USER");
+        req.setTeamId(5L);
+        req.setTeamReviewLane(null);
+
+        UserPrincipal principal = new UserPrincipal(2L, 10L, "TENANT_ADMIN", null, "admin");
+
+        UserDTO dto = userService.updateUserAdmin(1L, req, principal);
+        assertNull(dto.getTeamReviewLane());
+        verify(userRepository).save(any());
+    }
+
+    @Test
+    void updateUserAdmin_teamWrongTenant_throws() {
+        User user = createTestUser();
+        user.setTeamId(null);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        Team team = new Team();
+        team.setId(5L);
+        team.setTenantId(99L);
+        team.setApprovalMode(TeamApprovalMode.CROSS_REVIEW);
+        when(teamRepository.findById(5L)).thenReturn(Optional.of(team));
+
+        AdminUserUpdateRequest req = new AdminUserUpdateRequest();
+        req.setRole("USER");
+        req.setTeamId(5L);
+
+        UserPrincipal principal = new UserPrincipal(2L, 10L, "TENANT_ADMIN", null, "admin");
+
+        assertThrows(BusinessException.class, () -> userService.updateUserAdmin(1L, req, principal));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void updateUserAdmin_teamNotFound_throws() {
+        User user = createTestUser();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(teamRepository.findById(5L)).thenReturn(Optional.empty());
+
+        AdminUserUpdateRequest req = new AdminUserUpdateRequest();
+        req.setRole("USER");
+        req.setTeamId(5L);
+        req.setTeamReviewLane("MAKER");
+
+        UserPrincipal principal = new UserPrincipal(2L, 10L, "TENANT_ADMIN", null, "admin");
+
+        assertThrows(BusinessException.class, () -> userService.updateUserAdmin(1L, req, principal));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void updateUserAdmin_preservesLaneWhenTeamUnchangedAndLaneOmitted() {
+        User user = createTestUser();
+        user.setTeamId(5L);
+        user.setTeamReviewLane("MAKER");
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        Team team = new Team();
+        team.setId(5L);
+        team.setTenantId(10L);
+        team.setApprovalMode(TeamApprovalMode.MAKER_CHECKER);
+        when(teamRepository.findById(5L)).thenReturn(Optional.of(team));
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        AdminUserUpdateRequest req = new AdminUserUpdateRequest();
+        req.setRole("TEAM_ADMIN");
+        req.setTeamId(5L);
+        req.setTeamReviewLane(null);
+
+        UserPrincipal principal = new UserPrincipal(2L, 10L, "TENANT_ADMIN", null, "admin");
+
+        UserDTO dto = userService.updateUserAdmin(1L, req, principal);
+        assertEquals("MAKER", dto.getTeamReviewLane());
+        verify(userRepository).save(any());
+    }
+
 
     private User createTestUser() {
         User user = new User();
@@ -251,3 +384,4 @@ class UserServiceTest {
         return user;
     }
 }
+

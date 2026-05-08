@@ -4,7 +4,6 @@ import com.docgen.dto.AssemblyConfigDTO;
 import com.docgen.dto.AssemblySegmentEntry;
 import com.docgen.exception.BusinessException;
 import com.docgen.exception.ErrorCode;
-import com.docgen.repository.SegmentRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -13,8 +12,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Service for Assembly_Config JSONB serialization, deserialization and validation.
@@ -27,12 +24,9 @@ public class AssemblyConfigService {
     private static final Logger log = LoggerFactory.getLogger(AssemblyConfigService.class);
 
     private final ObjectMapper objectMapper;
-    private final SegmentRepository segmentRepository;
 
-    public AssemblyConfigService(ObjectMapper objectMapper,
-                                 SegmentRepository segmentRepository) {
+    public AssemblyConfigService(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
-        this.segmentRepository = segmentRepository;
     }
 
     /**
@@ -55,9 +49,15 @@ public class AssemblyConfigService {
      * Deserialize a JSON string into an {@link AssemblyConfigDTO}.
      *
      * @param json the JSON string
-     * @return the deserialized assembly configuration DTO
+     * @return the deserialized assembly configuration DTO, or an empty config if json is null/blank
      */
     public AssemblyConfigDTO deserialize(String json) {
+        if (json == null || json.isBlank()) {
+            log.debug("Assembly config JSON is null or blank, returning empty config");
+            AssemblyConfigDTO empty = new AssemblyConfigDTO();
+            empty.setSegments(List.of());
+            return empty;
+        }
         try {
             return objectMapper.readValue(json, AssemblyConfigDTO.class);
         } catch (JsonProcessingException e) {
@@ -71,7 +71,7 @@ public class AssemblyConfigService {
      * Validate an {@link AssemblyConfigDTO} against business rules.
      * <ul>
      *   <li>At least one segment must be enabled (COMPOSITE_TEMPLATE_EMPTY, 422)</li>
-     *   <li>All referenced segment IDs must exist in the database (SEGMENT_NOT_FOUND, 422)</li>
+     *   <li>Every segment entry must have a non-null, non-blank filePath (ASSEMBLY_CONFIG_INVALID, 422)</li>
      * </ul>
      *
      * @param config the assembly configuration to validate
@@ -89,26 +89,13 @@ public class AssemblyConfigService {
                     HttpStatus.UNPROCESSABLE_ENTITY);
         }
 
-        // Collect all segment IDs referenced in the config
-        Set<Long> referencedIds = segments.stream()
-                .map(AssemblySegmentEntry::getSegmentId)
-                .collect(Collectors.toSet());
-
-        // Find which IDs actually exist in the database
-        Set<Long> existingIds = segmentRepository.findAllById(referencedIds).stream()
-                .map(segment -> segment.getId())
-                .collect(Collectors.toSet());
-
-        // Determine missing IDs
-        Set<Long> missingIds = referencedIds.stream()
-                .filter(id -> !existingIds.contains(id))
-                .collect(Collectors.toSet());
-
-        if (!missingIds.isEmpty()) {
-            log.warn("Assembly config references non-existent segment IDs: {}", missingIds);
-            throw new BusinessException(ErrorCode.SEGMENT_NOT_FOUND,
-                    "Segment IDs not found: " + missingIds,
-                    HttpStatus.UNPROCESSABLE_ENTITY);
+        // Check each segment entry has a non-null, non-blank filePath
+        for (AssemblySegmentEntry entry : segments) {
+            if (entry.getFilePath() == null || entry.getFilePath().isBlank()) {
+                throw new BusinessException(ErrorCode.ASSEMBLY_CONFIG_INVALID,
+                        "Segment entry missing filePath: " + entry.getName(),
+                        HttpStatus.UNPROCESSABLE_ENTITY);
+            }
         }
 
         log.debug("Assembly config validated successfully: {} segments, {} enabled",

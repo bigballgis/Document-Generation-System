@@ -1,0 +1,23 @@
+{
+  "name": "Insert Text",
+  "nameLocale": { "zh": "插入文本" },
+  "guid": "asc.{A8705DEE-7544-4C33-B3D5-168406D92F72}",
+  "version": "1.0.0",
+  "baseUrl": "",
+  "provider": "docgen",
+  "description": "Allows inserting text from external application via postMessage",
+  "descriptionLocale": { "zh": "允许通过 postMessage 从外部应用插入文本" },
+  "variations": [
+    {
+      "description": "Insert Text",
+      "url": "index.html",
+      "isViewer": false,
+      "EditorsSupport": ["word"],
+      "isVisual": false,
+      "isSystem": true,
+      "isInsideMode": false,
+      "initOnSelectionChanged": false,
+      "initDataType": "none"
+    }
+  ]
+}

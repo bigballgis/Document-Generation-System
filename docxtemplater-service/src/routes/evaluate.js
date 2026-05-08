@@ -1,25 +1,30 @@
 const express = require('express');
 const router = express.Router();
 const { evaluate, evaluateFormula, SandboxSecurityError, SandboxTimeoutError, SandboxMemoryError } = require('../sandbox');
+const { badRequest } = require('../utils/http-errors');
 
-/**
- * POST /evaluate
- * Body: {
- *   expression: string,         // JavaScript expression or Excel formula
- *   type: 'javascript' | 'excel',  // Expression type (default: javascript)
- *   context: object,            // Data context for expression evaluation
- *   timeout?: number,           // Execution timeout in ms (default: 5000)
- *   memoryLimit?: number        // Memory limit in MB (default: 64)
- * }
- */
 router.post('/', async (req, res) => {
   try {
-    const { expression, type = 'javascript', context = {}, timeout, memoryLimit } = req.body;
+    const { expression, context = {}, timeout, memoryLimit } = req.body;
 
     if (!expression || typeof expression !== 'string') {
-      return res.status(400).json({
-        error: { code: 'MISSING_EXPRESSION', message: 'expression string is required' },
-      });
+      return badRequest(res, 'MISSING_EXPRESSION', 'expression string is required');
+    }
+
+    let type = req.body.type;
+    if (type === undefined || type === null) {
+      type = 'javascript';
+    } else if (typeof type !== 'string') {
+      return badRequest(res, 'INVALID_EXPRESSION_TYPE', 'type must be a string');
+    } else {
+      type = type.trim();
+      if (type === '') {
+        type = 'javascript';
+      }
+    }
+
+    if (type !== 'javascript' && type !== 'excel') {
+      return badRequest(res, 'UNKNOWN_EXPRESSION_TYPE', 'type must be "javascript" or "excel"');
     }
 
     let result;

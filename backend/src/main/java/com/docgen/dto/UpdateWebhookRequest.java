@@ -1,8 +1,5 @@
 package com.docgen.dto;
 
-/**
- * Request DTO for updating an existing webhook configuration.
- */
 public class UpdateWebhookRequest {
 
     private String url;

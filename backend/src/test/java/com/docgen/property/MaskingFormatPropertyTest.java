@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p><b>Validates: Requirements 2.11, 50.3</b></p>
  */
-@Tag("Feature: low-code-document-generation-system, Property 4: 敏感信息脱敏格式正确性")
+@Tag("feature-low-code-document-generation-system-property-4")
 class MaskingFormatPropertyTest {
 
     private final EncryptionServiceImpl encryptionService;
@@ -86,7 +86,6 @@ class MaskingFormatPropertyTest {
         assertEquals("", encryptionService.mask(""));
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<String> stringsLengthAtLeast8() {
@@ -122,3 +121,4 @@ class MaskingFormatPropertyTest {
         );
     }
 }
+

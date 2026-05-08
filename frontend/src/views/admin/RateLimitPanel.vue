@@ -50,7 +50,7 @@ async function fetchRateLimits() {
   loadingLimits.value = true
   try {
     rateLimits.value = await getRateLimits()
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     loadingLimits.value = false
   }
 }
@@ -59,7 +59,7 @@ async function fetchUsageStats() {
   loadingStats.value = true
   try {
     usageStats.value = await getUsageStats()
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     loadingStats.value = false
   }
 }

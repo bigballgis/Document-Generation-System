@@ -22,7 +22,6 @@ class EncryptionServiceTest {
         encryptionService = new EncryptionServiceImpl(testKeyBase64);
     }
 
-    // ── encrypt / decrypt round-trip ──
 
     @Test
     void encryptDecrypt_roundTrip_returnsOriginal() {
@@ -41,7 +40,7 @@ class EncryptionServiceTest {
 
     @Test
     void encryptDecrypt_unicodeContent_returnsOriginal() {
-        String original = "密码🔑パスワード";
+        String original = "password🔑パスワード";
         String encrypted = encryptionService.encrypt(original);
         assertEquals(original, encryptionService.decrypt(encrypted));
     }
@@ -98,7 +97,6 @@ class EncryptionServiceTest {
         assertThrows(BusinessException.class, () -> otherService.decrypt(encrypted));
     }
 
-    // ── mask ──
 
     @Test
     void mask_lengthTwelve_showsFirstFourStarsLastFour() {
@@ -135,7 +133,6 @@ class EncryptionServiceTest {
         assertEquals("", encryptionService.mask(null));
     }
 
-    // ── rotateKey ──
 
     @Test
     void rotateKey_reEncryptsAllValues() throws NoSuchAlgorithmException {
@@ -172,7 +169,6 @@ class EncryptionServiceTest {
         assertTrue(result.isEmpty());
     }
 
-    // ── constructor validation ──
 
     @Test
     void constructor_invalidKeyLength_throws() {
@@ -187,7 +183,6 @@ class EncryptionServiceTest {
         assertThrows(BusinessException.class, () -> new EncryptionServiceImpl("not-valid-base64!!!"));
     }
 
-    // ── Helper ──
 
     private static String generateBase64Key() throws NoSuchAlgorithmException {
         KeyGenerator keyGen = KeyGenerator.getInstance("AES");
@@ -195,3 +190,4 @@ class EncryptionServiceTest {
         return Base64.getEncoder().encodeToString(keyGen.generateKey().getEncoded());
     }
 }
+

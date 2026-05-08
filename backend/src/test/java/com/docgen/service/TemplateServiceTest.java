@@ -1,17 +1,26 @@
 package com.docgen.service;
 
 import com.docgen.dto.CreateTemplateRequest;
+import com.docgen.dto.RenderConfigDocument;
+import com.docgen.dto.ReviewerCandidateDTO;
+import com.docgen.dto.TextWatermarkConfig;
 import com.docgen.dto.TemplateDTO;
 import com.docgen.dto.TemplateQueryRequest;
 import com.docgen.dto.UpdateTemplateRequest;
+import com.docgen.entity.Team;
+import com.docgen.entity.TeamApprovalMode;
 import com.docgen.entity.Template;
 import com.docgen.entity.TemplateVersion;
+import com.docgen.entity.User;
 import com.docgen.exception.BusinessException;
 import com.docgen.exception.ResourceNotFoundException;
+import com.docgen.repository.TeamRepository;
 import com.docgen.repository.TemplateRepository;
 import com.docgen.repository.TemplateTagMappingRepository;
 import com.docgen.repository.TemplateVersionRepository;
+import com.docgen.repository.UserRepository;
 import com.docgen.util.TenantContext;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.minio.MinioClient;
 import io.minio.ObjectWriteResponse;
 import org.junit.jupiter.api.AfterEach;
@@ -24,6 +33,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -34,6 +44,8 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -51,11 +63,22 @@ class TemplateServiceTest {
     @Mock
     private MinioClient minioClient;
 
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private TeamRepository teamRepository;
+
+    @Mock
+    private RenderConfigValidator renderConfigValidator;
+
     private TemplateService templateService;
 
     @BeforeEach
     void setUp() throws Exception {
-        templateService = new TemplateService(templateRepository, templateVersionRepository, tagMappingRepository, minioClient);
+        lenient().doNothing().when(renderConfigValidator).validateForImport(any());
+        templateService = new TemplateService(templateRepository, templateVersionRepository, tagMappingRepository,
+                userRepository, teamRepository, minioClient, new ObjectMapper(), renderConfigValidator);
         // Set the @Value-injected bucketName field via reflection for unit tests
         Field bucketField = TemplateService.class.getDeclaredField("bucketName");
         bucketField.setAccessible(true);
@@ -68,7 +91,6 @@ class TemplateServiceTest {
         TenantContext.clear();
     }
 
-    // ── Create tests ──
 
     @Test
     void createTemplate_success() throws Exception {
@@ -146,7 +168,144 @@ class TemplateServiceTest {
         assertEquals("DRAFT", result.getStatus());
     }
 
-    // ── Get tests ──
+    @Test
+    void createTemplate_inheritsTeamFromCreatorWhenOmitted() throws Exception {
+        CreateTemplateRequest request = new CreateTemplateRequest();
+        request.setName("T");
+        User creator = new User();
+        creator.setId(10L);
+        creator.setTeamId(5L);
+        when(userRepository.findById(10L)).thenReturn(Optional.of(creator));
+        Team team = new Team();
+        team.setId(5L);
+        team.setTenantId(1L);
+        when(teamRepository.findById(5L)).thenReturn(Optional.of(team));
+        when(minioClient.putObject(any())).thenReturn(mock(ObjectWriteResponse.class));
+        when(templateRepository.save(any(Template.class))).thenAnswer(inv -> {
+            Template t = inv.getArgument(0);
+            t.setId(1L);
+            t.setCreatedAt(Instant.now());
+            t.setUpdatedAt(Instant.now());
+            return t;
+        });
+        TemplateDTO result = templateService.createTemplate(request, null, 10L);
+        assertEquals(5L, result.getTeamId());
+    }
+
+    @Test
+    void createTemplate_rejectsUnknownTeamId() {
+        CreateTemplateRequest request = new CreateTemplateRequest();
+        request.setName("T");
+        request.setTeamId(99L);
+        when(teamRepository.findById(99L)).thenReturn(Optional.empty());
+        assertThrows(BusinessException.class, () -> templateService.createTemplate(request, null, 10L));
+    }
+
+    @Test
+    void listReviewerCandidates_excludesTemplateAuthor() {
+        Template t = createTestTemplate();
+        t.setTeamId(5L);
+        t.setCreatedBy(1L);
+        when(templateRepository.findById(1L)).thenReturn(Optional.of(t));
+        Team team = new Team();
+        team.setId(5L);
+        team.setTenantId(1L);
+        when(teamRepository.findById(5L)).thenReturn(Optional.of(team));
+        User author = new User();
+        author.setId(1L);
+        author.setUsername("author");
+        author.setEmail("a@t.com");
+        author.setTenantId(1L);
+        author.setTeamId(5L);
+        author.setRole("USER");
+        User other = new User();
+        other.setId(2L);
+        other.setUsername("other");
+        other.setEmail("o@t.com");
+        other.setTenantId(1L);
+        other.setTeamId(5L);
+        other.setRole("USER");
+        when(userRepository.findByTenantIdAndTeamIdOrderByUsernameAsc(1L, 5L)).thenReturn(List.of(author, other));
+        List<ReviewerCandidateDTO> list = templateService.listReviewerCandidates(1L, null);
+        assertEquals(1, list.size());
+        assertEquals(2L, list.get(0).getId());
+        assertEquals("other", list.get(0).getUsername());
+    }
+
+    @Test
+    void listReviewerCandidates_templateWithoutTeam_throws() {
+        Template t = createTestTemplate();
+        t.setTeamId(null);
+        when(templateRepository.findById(1L)).thenReturn(Optional.of(t));
+        assertThrows(BusinessException.class, () -> templateService.listReviewerCandidates(1L, null));
+    }
+
+    @Test
+    void listReviewerCandidates_makerChecker_level1_onlyMakers() {
+        Template t = createTestTemplate();
+        t.setTeamId(5L);
+        t.setCreatedBy(1L);
+        when(templateRepository.findById(1L)).thenReturn(Optional.of(t));
+        Team team = new Team();
+        team.setId(5L);
+        team.setTenantId(1L);
+        team.setApprovalMode(TeamApprovalMode.MAKER_CHECKER);
+        when(teamRepository.findById(5L)).thenReturn(Optional.of(team));
+        User maker = new User();
+        maker.setId(2L);
+        maker.setUsername("maker");
+        maker.setEmail("m@t.com");
+        maker.setTenantId(1L);
+        maker.setTeamId(5L);
+        maker.setRole("USER");
+        maker.setTeamReviewLane("MAKER");
+        User checker = new User();
+        checker.setId(3L);
+        checker.setUsername("checker");
+        checker.setEmail("c@t.com");
+        checker.setTenantId(1L);
+        checker.setTeamId(5L);
+        checker.setRole("USER");
+        checker.setTeamReviewLane("CHECKER");
+        when(userRepository.findByTenantIdAndTeamIdOrderByUsernameAsc(1L, 5L)).thenReturn(List.of(maker, checker));
+        List<ReviewerCandidateDTO> list = templateService.listReviewerCandidates(1L, 1);
+        assertEquals(1, list.size());
+        assertEquals(2L, list.get(0).getId());
+    }
+
+    @Test
+    void listReviewerCandidates_makerChecker_level2_onlyCheckers() {
+        Template t = createTestTemplate();
+        t.setTeamId(5L);
+        t.setCreatedBy(1L);
+        when(templateRepository.findById(1L)).thenReturn(Optional.of(t));
+        Team team = new Team();
+        team.setId(5L);
+        team.setTenantId(1L);
+        team.setApprovalMode(TeamApprovalMode.MAKER_CHECKER);
+        when(teamRepository.findById(5L)).thenReturn(Optional.of(team));
+        User maker = new User();
+        maker.setId(2L);
+        maker.setUsername("maker");
+        maker.setEmail("m@t.com");
+        maker.setTenantId(1L);
+        maker.setTeamId(5L);
+        maker.setRole("USER");
+        maker.setTeamReviewLane("MAKER");
+        User checker = new User();
+        checker.setId(3L);
+        checker.setUsername("checker");
+        checker.setEmail("c@t.com");
+        checker.setTenantId(1L);
+        checker.setTeamId(5L);
+        checker.setRole("USER");
+        checker.setTeamReviewLane("CHECKER");
+        when(userRepository.findByTenantIdAndTeamIdOrderByUsernameAsc(1L, 5L)).thenReturn(List.of(maker, checker));
+        List<ReviewerCandidateDTO> list = templateService.listReviewerCandidates(1L, 2);
+        assertEquals(1, list.size());
+        assertEquals(3L, list.get(0).getId());
+    }
+
 
     @Test
     void getTemplate_success() {
@@ -167,7 +326,6 @@ class TemplateServiceTest {
                 () -> templateService.getTemplate(99L));
     }
 
-    // ── List tests ──
 
     @Test
     void listTemplates_withKeyword_returnsPaginatedResults() {
@@ -195,7 +353,6 @@ class TemplateServiceTest {
         assertEquals(1, result.getTotalElements());
     }
 
-    // ── Update tests ──
 
     @Test
     void updateTemplate_success_noFileChange() {
@@ -224,7 +381,6 @@ class TemplateServiceTest {
                 () -> templateService.updateTemplate(99L, new UpdateTemplateRequest(), null));
     }
 
-    // ── Delete tests ──
 
     @Test
     void deleteTemplate_success() {
@@ -244,7 +400,6 @@ class TemplateServiceTest {
                 () -> templateService.deleteTemplate(99L));
     }
 
-    // ── Clone tests ──
 
     @Test
     void cloneTemplate_success() throws Exception {
@@ -261,7 +416,7 @@ class TemplateServiceTest {
 
         TemplateDTO result = templateService.cloneTemplate(1L);
 
-        assertEquals("Test Template - 副本", result.getName());
+        assertEquals("Test Template - Copy", result.getName());
         assertEquals("DRAFT", result.getStatus());
         assertEquals(source.getDescription(), result.getDescription());
         assertEquals(source.getOutputFormat(), result.getOutputFormat());
@@ -279,7 +434,54 @@ class TemplateServiceTest {
                 () -> templateService.cloneTemplate(99L));
     }
 
-    // ── Helper ──
+    @Test
+    void updateRenderConfig_valid_persistsJson() {
+        Template template = createTestTemplate();
+        template.setTemplateType("COMPOSITE");
+        when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
+        when(templateRepository.save(any(Template.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(templateVersionRepository.findMaxVersionNumber(anyLong())).thenReturn(Optional.of(1));
+
+        RenderConfigDocument doc = new RenderConfigDocument();
+        doc.setTextWatermark(new TextWatermarkConfig("WM"));
+
+        TemplateDTO dto = templateService.updateRenderConfig(1L, doc);
+
+        verify(renderConfigValidator).validateForImport(doc);
+        assertNotNull(dto.getRenderConfig());
+        assertTrue(dto.getRenderConfig().contains("WM"));
+    }
+
+    @Test
+    void updateRenderConfig_singleTemplate_throws() {
+        Template template = createTestTemplate();
+        template.setTemplateType("SINGLE");
+        when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
+
+        RenderConfigDocument doc = new RenderConfigDocument();
+        doc.setTextWatermark(new TextWatermarkConfig("WM"));
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> templateService.updateRenderConfig(1L, doc));
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getHttpStatus());
+        assertTrue(ex.getMessage().contains("composite"));
+        verify(templateRepository, never()).save(any());
+        verify(renderConfigValidator, never()).validateForImport(any());
+    }
+
+    @Test
+    void clearRenderConfig_setsNull() {
+        Template template = createTestTemplate();
+        template.setRenderConfig("{\"schemaVersion\":1}");
+        when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
+        when(templateRepository.save(any(Template.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(templateVersionRepository.findMaxVersionNumber(anyLong())).thenReturn(Optional.of(1));
+
+        templateService.clearRenderConfig(1L);
+
+        verify(templateRepository).save(argThat((Template t) -> t.getRenderConfig() == null));
+    }
+
 
     private Template createTestTemplate() {
         Template template = new Template();
@@ -301,3 +503,4 @@ class TemplateServiceTest {
         return template;
     }
 }
+

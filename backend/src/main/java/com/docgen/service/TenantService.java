@@ -35,7 +35,7 @@ public class TenantService {
     public TenantDTO createTenant(CreateTenantRequest request) {
         if (tenantRepository.existsByName(request.getName())) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "租户名称已存在", HttpStatus.CONFLICT);
+                    "Tenant name already exists", HttpStatus.CONFLICT);
         }
 
         Tenant tenant = new Tenant();
@@ -55,7 +55,7 @@ public class TenantService {
         if (request.getName() != null && !request.getName().equals(tenant.getName())) {
             if (tenantRepository.existsByName(request.getName())) {
                 throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                        "租户名称已存在", HttpStatus.CONFLICT);
+                        "Tenant name already exists", HttpStatus.CONFLICT);
             }
             tenant.setName(request.getName());
         }
@@ -113,12 +113,11 @@ public class TenantService {
         );
     }
 
-    // ── Private helpers ──
 
     private Tenant findTenantOrThrow(Long id) {
         return tenantRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.TENANT_NOT_FOUND, "租户不存在"));
+                        ErrorCode.TENANT_NOT_FOUND, "Tenant not found"));
     }
 
     private TenantDTO toDTO(Tenant tenant) {

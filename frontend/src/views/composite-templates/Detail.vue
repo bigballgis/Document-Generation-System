@@ -17,7 +17,6 @@
     </div>
 
     <template v-if="template">
-      <!-- Basic Info -->
       <el-card shadow="never" style="margin-bottom: 16px">
         <el-descriptions :column="3" border>
           <el-descriptions-item :label="$t('common.status')">
@@ -25,9 +24,6 @@
           </el-descriptions-item>
           <el-descriptions-item :label="$t('template.version')">
             {{ template.version }}
-          </el-descriptions-item>
-          <el-descriptions-item :label="$t('template.outputFormat')">
-            {{ template.outputFormat || 'DOCX' }}
           </el-descriptions-item>
           <el-descriptions-item :label="$t('common.createdAt')">
             {{ template.createdAt }}
@@ -41,38 +37,32 @@
         </el-descriptions>
       </el-card>
 
-      <!-- Coverage Indicator -->
       <CoverageIndicator :template-id="templateId" />
 
-      <!-- Tabs -->
       <el-tabs v-model="activeTab" type="border-card" style="margin-top: 16px">
         <el-tab-pane :label="$t('composite.segments')" name="segments">
-          <!-- Segment Preview List -->
-          <el-table :data="compositeSegments" v-loading="segmentsLoading" stripe>
-            <el-table-column prop="name" :label="$t('segment.name')" min-width="180" />
-            <el-table-column prop="description" :label="$t('common.description')" min-width="180" show-overflow-tooltip />
-            <el-table-column :label="$t('segment.isComponent')" width="100" align="center">
-              <template #default="{ row }">
-                <el-tag v-if="row.isComponent" size="small" type="success">{{ $t('segment.componentSegment') }}</el-tag>
-                <el-tag v-else size="small" type="info">{{ $t('segment.normalSegment') }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column :label="$t('segment.type')" width="120">
+          <el-table :data="assemblySegments" v-loading="configLoading" stripe>
+            <el-table-column prop="name" :label="$t('common.name')" min-width="180" />
+            <el-table-column :label="$t('common.type')" width="120">
               <template #default="{ row }">
                 <el-tag v-if="row.segmentType" size="small" type="info">{{ row.segmentType }}</el-tag>
                 <span v-else>-</span>
               </template>
             </el-table-column>
+            <el-table-column :label="$t('common.status')" width="100" align="center">
+              <template #default="{ row }">
+                <el-tag v-if="row.enabled" size="small" type="success">{{ $t('common.enable') }}</el-tag>
+                <el-tag v-else size="small" type="info">{{ $t('common.disable') }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column :label="$t('workspace.editor.position')" width="80" align="center">
+              <template #default="{ row }">{{ row.position + 1 }}</template>
+            </el-table-column>
           </el-table>
-        </el-tab-pane>
-
-        <el-tab-pane :label="$t('composite.reviews')" name="reviews">
-          <SegmentReviewPanel :template-id="templateId" />
         </el-tab-pane>
       </el-tabs>
     </template>
 
-    <!-- Migration Dialog -->
     <MigrationDialog v-model:visible="migrationDialogVisible" @migrated="fetchTemplate" />
   </div>
 </template>
@@ -84,10 +74,9 @@ import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { getTemplate, type TemplateDTO } from '@/api/templates'
-import { getCompositeSegments, previewCompositeTemplate } from '@/api/composite-templates'
-import type { Segment } from '@/types/segment'
+import { getAssemblyConfig, previewCompositeTemplate } from '@/api/composite-templates'
+import type { AssemblySegmentEntry } from '@/types/segment'
 import CoverageIndicator from './components/CoverageIndicator.vue'
-import SegmentReviewPanel from './components/SegmentReviewPanel.vue'
 import MigrationDialog from './components/MigrationDialog.vue'
 
 const route = useRoute()
@@ -98,12 +87,14 @@ const templateId = Number(route.params.id)
 const loading = ref(false)
 const template = ref<TemplateDTO | null>(null)
 const activeTab = ref('segments')
-const compositeSegments = ref<Segment[]>([])
-const segmentsLoading = ref(false)
+const assemblySegments = ref<AssemblySegmentEntry[]>([])
+const configLoading = ref(false)
 const migrationDialogVisible = ref(false)
 
-function statusTagType(status: string) {
-  const map: Record<string, string> = { DRAFT: 'info', PENDING_REVIEW: 'warning', REVIEWED: '', ACTIVE: 'success', ARCHIVED: 'danger' }
+type ElTagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
+
+function statusTagType(status: string): ElTagType {
+  const map: Record<string, ElTagType> = { DRAFT: 'info', PENDING_REVIEW: 'warning', REVIEWED: 'primary', ACTIVE: 'success', ARCHIVED: 'danger' }
   return map[status] || 'info'
 }
 
@@ -111,17 +102,18 @@ async function fetchTemplate() {
   loading.value = true
   try {
     template.value = await getTemplate(templateId)
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     loading.value = false
   }
 }
 
-async function fetchSegments() {
-  segmentsLoading.value = true
+async function fetchAssemblyConfig() {
+  configLoading.value = true
   try {
-    compositeSegments.value = await getCompositeSegments(templateId)
-  } catch { /* handled */ } finally {
-    segmentsLoading.value = false
+    const config = await getAssemblyConfig(templateId)
+    assemblySegments.value = config.segments ?? []
+  } catch {} finally {
+    configLoading.value = false
   }
 }
 
@@ -129,12 +121,12 @@ async function handlePreview() {
   try {
     await previewCompositeTemplate(templateId)
     ElMessage.success(t('common.preview'))
-  } catch { /* handled */ }
+  } catch {}
 }
 
 onMounted(() => {
   fetchTemplate()
-  fetchSegments()
+  fetchAssemblyConfig()
 })
 </script>
 
@@ -145,3 +137,4 @@ onMounted(() => {
 .header-left h2 { margin: 0; }
 .header-actions { display: flex; gap: 8px; }
 </style>
+

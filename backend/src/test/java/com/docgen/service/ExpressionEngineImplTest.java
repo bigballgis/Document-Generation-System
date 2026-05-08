@@ -6,6 +6,7 @@ import com.docgen.exception.BusinessException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpEntity;
@@ -20,6 +21,8 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,10 +37,10 @@ class ExpressionEngineImplTest {
 
     @BeforeEach
     void setUp() {
+        reset(restTemplate);
         engine = new ExpressionEngineImpl(restTemplate, SERVICE_URL);
     }
 
-    // ── evaluate ──
 
     @Test
     void evaluate_javascript_success() {
@@ -53,6 +56,14 @@ class ExpressionEngineImplTest {
                 Map.of("price", 6, "quantity", 7));
 
         assertEquals(42, result);
+
+        ArgumentCaptor<HttpEntity<Map<String, Object>>> captor = ArgumentCaptor.forClass(HttpEntity.class);
+        verify(restTemplate).exchange(
+                eq(SERVICE_URL + "/evaluate"),
+                eq(HttpMethod.POST),
+                captor.capture(),
+                eq(Map.class));
+        assertEquals("javascript", captor.getValue().getBody().get("type"));
     }
 
     @Test
@@ -68,6 +79,14 @@ class ExpressionEngineImplTest {
         Object result = engine.evaluate("SUM(1,2,3,4,5)", ExpressionType.EXCEL_FORMULA, Map.of());
 
         assertEquals(15.0, result);
+
+        ArgumentCaptor<HttpEntity<Map<String, Object>>> captor = ArgumentCaptor.forClass(HttpEntity.class);
+        verify(restTemplate).exchange(
+                eq(SERVICE_URL + "/evaluate"),
+                eq(HttpMethod.POST),
+                captor.capture(),
+                eq(Map.class));
+        assertEquals("excel", captor.getValue().getBody().get("type"));
     }
 
     @Test
@@ -84,6 +103,26 @@ class ExpressionEngineImplTest {
                 () -> engine.evaluate("x + 1", ExpressionType.JAVASCRIPT, Map.of()));
 
         assertTrue(ex.getMessage().contains("ReferenceError"));
+    }
+
+    @Test
+    void evaluate_serviceReturnsFailureWithStructuredError_includesCodeAndMessage() {
+        Map<String, Object> errorObj = Map.of(
+                "code", "UNKNOWN_EXPRESSION_TYPE",
+                "message", "type must be \"javascript\" or \"excel\"");
+        Map<String, Object> responseBody = Map.of("success", false, "error", errorObj);
+        when(restTemplate.exchange(
+                eq(SERVICE_URL + "/evaluate"),
+                eq(HttpMethod.POST),
+                any(HttpEntity.class),
+                eq(Map.class)))
+                .thenReturn(new ResponseEntity<>(responseBody, HttpStatus.OK));
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> engine.evaluate("1+1", ExpressionType.JAVASCRIPT, Map.of()));
+
+        assertTrue(ex.getMessage().contains("UNKNOWN_EXPRESSION_TYPE"));
+        assertTrue(ex.getMessage().contains("javascript"));
     }
 
     @Test
@@ -130,7 +169,6 @@ class ExpressionEngineImplTest {
         assertEquals(2, result);
     }
 
-    // ── evaluateAll ──
 
     @Test
     void evaluateAll_success() {
@@ -180,7 +218,6 @@ class ExpressionEngineImplTest {
         assertThrows(BusinessException.class, () -> engine.evaluateAll(configs, Map.of()));
     }
 
-    // ── validateExpression ──
 
     @Test
     void validateExpression_valid() {
@@ -196,6 +233,14 @@ class ExpressionEngineImplTest {
 
         assertTrue(result.isValid());
         assertNull(result.getErrorMessage());
+
+        ArgumentCaptor<HttpEntity<Map<String, Object>>> captor = ArgumentCaptor.forClass(HttpEntity.class);
+        verify(restTemplate).exchange(
+                eq(SERVICE_URL + "/evaluate"),
+                eq(HttpMethod.POST),
+                captor.capture(),
+                eq(Map.class));
+        assertEquals("javascript", captor.getValue().getBody().get("type"));
     }
 
     @Test
@@ -227,7 +272,7 @@ class ExpressionEngineImplTest {
         ExpressionValidationResult result = engine.validateExpression("1+1", ExpressionType.JAVASCRIPT);
 
         assertFalse(result.isValid());
-        assertTrue(result.getErrorMessage().contains("表达式服务不可用"));
+        assertTrue(result.getErrorMessage().contains("Expression service unavailable"));
     }
 
     @Test
@@ -242,6 +287,7 @@ class ExpressionEngineImplTest {
         ExpressionValidationResult result = engine.validateExpression("1+1", ExpressionType.JAVASCRIPT);
 
         assertFalse(result.isValid());
-        assertTrue(result.getErrorMessage().contains("验证服务返回空结果"));
+        assertTrue(result.getErrorMessage().contains("Validation service returned an empty result"));
     }
 }
+

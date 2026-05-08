@@ -71,12 +71,12 @@ public class PermissionService {
         // Template owner has all permissions
         Template template = templateRepository.findById(templateId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.TEMPLATE_NOT_FOUND, "模板不存在"));
+                        ErrorCode.TEMPLATE_NOT_FOUND, "Template not found"));
 
         // Verify template belongs to current tenant
         Long currentTenantId = TenantContext.getCurrentTenantId();
         if (currentTenantId != null && !currentTenantId.equals(template.getTenantId())) {
-            throw new AccessDeniedException("无权访问其他租户的模板");
+            throw new AccessDeniedException("Cannot access a template from another tenant");
         }
 
         if (userId.equals(template.getCreatedBy())) {
@@ -84,7 +84,7 @@ public class PermissionService {
         }
 
         if (!hasPermission(userId, teamId, templateId, type)) {
-            throw new AccessDeniedException("无权执行此操作，需要 " + type + " 权限");
+            throw new AccessDeniedException("Operation not permitted; required permission: " + type);
         }
     }
 
@@ -101,13 +101,13 @@ public class PermissionService {
                 permissionRepository.existsByTemplateIdAndUserIdAndPermissionType(
                         templateId, request.getUserId(), request.getPermissionType())) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "该用户已拥有此权限", HttpStatus.CONFLICT);
+                    "This user already has this permission", HttpStatus.CONFLICT);
         }
         if (request.getTeamId() != null &&
                 permissionRepository.existsByTemplateIdAndTeamIdAndPermissionType(
                         templateId, request.getTeamId(), request.getPermissionType())) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "该团队已拥有此权限", HttpStatus.CONFLICT);
+                    "This team already has this permission", HttpStatus.CONFLICT);
         }
 
         Permission permission = new Permission();
@@ -130,11 +130,11 @@ public class PermissionService {
     public void revokePermission(Long templateId, Long permissionId) {
         Permission permission = permissionRepository.findById(permissionId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.VALIDATION_FAILED, "权限记录不存在"));
+                        ErrorCode.VALIDATION_FAILED, "Permission record not found"));
 
         if (!permission.getTemplateId().equals(templateId)) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "权限记录不属于该模板", HttpStatus.BAD_REQUEST);
+                    "Permission record does not belong to this template", HttpStatus.BAD_REQUEST);
         }
 
         permissionRepository.delete(permission);
@@ -162,18 +162,17 @@ public class PermissionService {
                 .collect(Collectors.toList());
     }
 
-    // ── Private helpers ──
 
     private void validateGrantRequest(GrantPermissionRequest request) {
         if (request.getUserId() == null && request.getTeamId() == null) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "用户ID和团队ID不能同时为空", HttpStatus.BAD_REQUEST);
+                    "Either userId or teamId must be provided", HttpStatus.BAD_REQUEST);
         }
     }
 
     private void verifyTemplateExists(Long templateId) {
         if (!templateRepository.existsById(templateId)) {
-            throw new ResourceNotFoundException(ErrorCode.TEMPLATE_NOT_FOUND, "模板不存在");
+            throw new ResourceNotFoundException(ErrorCode.TEMPLATE_NOT_FOUND, "Template not found");
         }
     }
 

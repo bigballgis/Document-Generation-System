@@ -5,6 +5,8 @@ import com.docgen.entity.WebhookConfig;
 import com.docgen.entity.WebhookLog;
 import com.docgen.exception.ErrorCode;
 import com.docgen.exception.ResourceNotFoundException;
+import com.docgen.security.url.OutboundUrlPolicy;
+import com.docgen.security.url.UrlValidationResult;
 import com.docgen.repository.WebhookConfigRepository;
 import com.docgen.repository.WebhookLogRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -43,18 +45,20 @@ public class WebhookService {
     private final WebhookLogRepository logRepository;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final OutboundUrlPolicy outboundUrlPolicy;
 
     public WebhookService(WebhookConfigRepository configRepository,
                           WebhookLogRepository logRepository,
                           RestTemplate restTemplate,
-                          ObjectMapper objectMapper) {
+                          ObjectMapper objectMapper,
+                          OutboundUrlPolicy outboundUrlPolicy) {
         this.configRepository = configRepository;
         this.logRepository = logRepository;
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
+        this.outboundUrlPolicy = outboundUrlPolicy;
     }
 
-    // ── CRUD operations ──
 
     @Transactional
     public WebhookConfigDTO createWebhook(Long templateId, CreateWebhookRequest request) {
@@ -109,7 +113,6 @@ public class WebhookService {
                 .map(this::toLogDTO);
     }
 
-    // ── Notification sending ──
 
     /**
      * Send notifications to all enabled webhooks for the given template.
@@ -143,7 +146,6 @@ public class WebhookService {
             List<Map<String, Object>> segmentDetails = new ArrayList<>();
             for (SegmentRenderStat stat : segmentStats) {
                 Map<String, Object> detail = new LinkedHashMap<>();
-                detail.put("segmentId", stat.getSegmentId());
                 detail.put("segmentName", stat.getSegmentName());
                 detail.put("status", stat.isSuccess() ? "SUCCESS" : "FAILED");
                 detail.put("renderTimeMs", stat.getRenderTimeMs());
@@ -176,6 +178,13 @@ public class WebhookService {
         } catch (Exception e) {
             log.error("Failed to serialize webhook payload for config {}: {}", config.getId(), e.getMessage());
             recordLog(config.getId(), eventType, "{}", null, "Payload serialization failed: " + e.getMessage());
+            return;
+        }
+
+        UrlValidationResult urlCheck = outboundUrlPolicy.validatePublicEgressHttpUrl(config.getUrl());
+        if (!urlCheck.allowed()) {
+            recordLog(config.getId(), eventType, payloadJson, null,
+                    "Webhook URL rejected: " + urlCheck.reasonCode());
             return;
         }
 
@@ -234,7 +243,6 @@ public class WebhookService {
         }
     }
 
-    // ── Private helpers ──
 
     private void recordLog(Long configId, String eventType, String payload,
                            Integer responseStatus, String responseBody) {
@@ -282,3 +290,4 @@ public class WebhookService {
         return dto;
     }
 }
+

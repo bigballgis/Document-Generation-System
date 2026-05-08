@@ -12,6 +12,7 @@ import com.docgen.repository.TemplateRepository;
 import com.docgen.service.BatchDocumentService;
 import com.docgen.service.DocumentGeneratorService;
 import com.docgen.service.DocumentStorageService;
+import com.docgen.service.TemplateGenerationEligibilityService;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import net.jqwik.api.*;
@@ -29,7 +30,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Property 18: 批量生成完整性
+ * Property 18: batch generation completeness
  *
  * For any batch generation request with N data sets (1 ≤ N ≤ 1000),
  * after the batch task completes:
@@ -46,7 +47,7 @@ class BatchGenerationCompletenessPropertyTest {
      * **Validates: Requirements 24.2, 24.4, 24.5, 24.7**
      */
     @Property(tries = 100)
-    @Label("Feature: low-code-document-generation-system, Property 18: 批量生成完整性")
+    @Label("Feature: low-code-document-generation-system, Property 18: batch generation completeness")
     void batchGenerationCompleteness(
             @ForAll @IntRange(min = 1, max = 50) int totalDataSets,
             @ForAll @IntRange(min = 0, max = 100) int failPercentage) {
@@ -72,6 +73,7 @@ class BatchGenerationCompletenessPropertyTest {
         Template template = new Template();
         template.setId(1L);
         template.setTenantId(1L);
+        template.setStatus(TemplateGenerationEligibilityService.ACTIVE_TEMPLATE_STATUS);
         template.setOutputFormat("WORD");
         template.setStorageStrategy("TEMP");
         template.setTemplateFilePath("templates/1/test.docx");
@@ -113,7 +115,7 @@ class BatchGenerationCompletenessPropertyTest {
                     if (req == null || req.getParameters() == null) return false;
                     Object idx = req.getParameters().get("_index");
                     return idx != null && Integer.parseInt(idx.toString()) == index;
-                }))).thenThrow(new BusinessException("GENERATE_FAILED",
+                }), isNull())).thenThrow(new BusinessException("GENERATE_FAILED",
                         "Simulated failure for item " + index,
                         org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR));
             } else {
@@ -126,7 +128,7 @@ class BatchGenerationCompletenessPropertyTest {
                     if (req == null || req.getParameters() == null) return false;
                     Object idx = req.getParameters().get("_index");
                     return idx != null && Integer.parseInt(idx.toString()) == index;
-                }))).thenReturn(response);
+                }), isNull())).thenReturn(response);
 
                 // Mock download for ZIP packaging
                 byte[] fakeContent = ("Document content for item " + index).getBytes();
@@ -158,7 +160,8 @@ class BatchGenerationCompletenessPropertyTest {
 
         // Execute batch processing directly (not via submitBatchGeneration to avoid @Transactional)
         BatchDocumentService service = new BatchDocumentService(
-                asyncTaskRepo, templateRepo, docRepo, generatorService, storageService, minioClient);
+                asyncTaskRepo, templateRepo, new TemplateGenerationEligibilityService(),
+                docRepo, generatorService, storageService, minioClient);
 
         // Use reflection to set bucketName
         try {

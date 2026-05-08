@@ -19,7 +19,6 @@ class DataFormatServiceTest {
         service = new DataFormatService();
     }
 
-    // ── convertDate ──
 
     @Test
     void convertDate_validConversion() {
@@ -56,7 +55,6 @@ class DataFormatServiceTest {
         assertEquals("2024-01-15", result);
     }
 
-    // ── convertNumber ──
 
     @Test
     void convertNumber_withDecimalPlaces() {
@@ -108,7 +106,6 @@ class DataFormatServiceTest {
         assertEquals("3", result);
     }
 
-    // ── convertType ──
 
     @Test
     void convertType_toStringFromNumber() {
@@ -180,7 +177,6 @@ class DataFormatServiceTest {
         assertEquals("maybe", result);
     }
 
-    // ── applyFieldMapping ──
 
     @Test
     void applyFieldMapping_fieldRename() {
@@ -277,3 +273,4 @@ class DataFormatServiceTest {
         assertFalse(result.containsKey("second"));
     }
 }
+

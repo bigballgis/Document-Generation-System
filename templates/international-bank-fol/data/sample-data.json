@@ -1,0 +1,415 @@
+{
+  "document_ref": "FOL-2026-000142",
+  "document_date": "2026-04-20",
+  "document_version": "2.1",
+  "confidentiality_level": "STRICTLY_CONFIDENTIAL",
+  "bank_logo": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+  "base_currency": "USD",
+  "effective_date": "2026-06-01",
+  "expiry_date": "2031-05-31",
+  "acceptance_deadline": "2026-05-20",
+  "acceptance_period_days": 30,
+  "prepayment_notice_days": 30,
+  "prepayment_penalty_rate": 0.01,
+  "default_interest_margin": 0.02,
+  "material_adverse_change_threshold": 5000000,
+  "cross_default_threshold": 1000000,
+  "has_guarantor": true,
+  "has_security": true,
+  "is_syndicated": true,
+  "is_revolving": true,
+
+  "bank": {
+    "legal_name": "Global Pacific International Bank, N.A.",
+    "trading_name": "GPIB",
+    "swift_code": "GPIBUS33XXX",
+    "lei_code": "549300EXAMPLE000LEI01",
+    "license_number": "BL-2024-88901",
+    "address": {
+      "line1": "One Financial Center, 42nd Floor",
+      "line2": "388 Greenwich Street",
+      "city": "New York",
+      "state": "NY",
+      "postal_code": "10013",
+      "country": "United States of America"
+    },
+    "contact": {
+      "name": "James Richardson",
+      "title": "Senior Vice President, Corporate Lending",
+      "email": "j.richardson@gpib.example.com",
+      "phone": "+1 (212) 555-0142",
+      "department": "Corporate & Investment Banking"
+    }
+  },
+
+  "borrower": {
+    "legal_name": "Meridian Advanced Technologies Holdings Ltd.",
+    "trading_name": "Meridian Tech",
+    "registration_number": "HK-2019-2847561",
+    "tax_id": "TIN-8847-2019-HK",
+    "incorporation_date": "2019-03-15",
+    "incorporation_country": "Hong Kong SAR",
+    "industry_sector": "Technology & Manufacturing",
+    "sic_code": "3674",
+    "credit_rating": {
+      "agency": "Moody's Investors Service",
+      "rating": "Baa2",
+      "outlook": "Positive",
+      "rating_date": "2025-11-20"
+    },
+    "registered_address": {
+      "line1": "Suite 3801, Two International Finance Centre",
+      "line2": "8 Finance Street, Central",
+      "city": "Hong Kong",
+      "state": null,
+      "postal_code": "999077",
+      "country": "Hong Kong SAR, China"
+    },
+    "correspondence_address": {
+      "line1": "Level 28, Meridian Tower",
+      "line2": "100 Cyber Port Road",
+      "city": "Hong Kong",
+      "state": null,
+      "postal_code": "999077",
+      "country": "Hong Kong SAR, China"
+    },
+    "authorized_signatories": [
+      {
+        "name": "Dr. Chen Wei-Lin",
+        "title": "Chief Executive Officer",
+        "email": "wl.chen@meridiantech.example.com",
+        "phone": "+852 2555 0001"
+      },
+      {
+        "name": "Sarah Nakamura",
+        "title": "Chief Financial Officer",
+        "email": "s.nakamura@meridiantech.example.com",
+        "phone": "+852 2555 0002"
+      }
+    ],
+    "directors": [
+      { "name": "Dr. Chen Wei-Lin", "nationality": "Taiwanese", "appointment_date": "2019-03-15", "is_executive": true },
+      { "name": "Sarah Nakamura", "nationality": "Japanese", "appointment_date": "2020-01-10", "is_executive": true },
+      { "name": "Robert Hartley", "nationality": "British", "appointment_date": "2021-06-01", "is_executive": false },
+      { "name": "Priya Sharma", "nationality": "Indian", "appointment_date": "2022-09-15", "is_executive": false },
+      { "name": "Marcus Johansson", "nationality": "Swedish", "appointment_date": "2023-03-01", "is_executive": false }
+    ],
+    "shareholders": [
+      { "name": "Chen Family Trust", "percentage": 0.35, "country": "Taiwan", "is_ultimate_beneficial_owner": true },
+      { "name": "Pacific Ventures Capital LP", "percentage": 0.25, "country": "Singapore", "is_ultimate_beneficial_owner": false },
+      { "name": "Meridian Employee Stock Trust", "percentage": 0.15, "country": "Hong Kong", "is_ultimate_beneficial_owner": false },
+      { "name": "Public Float", "percentage": 0.25, "country": "Various", "is_ultimate_beneficial_owner": false }
+    ]
+  },
+
+  "facilities": [
+    {
+      "facility_name": "Term Loan Facility A",
+      "facility_type": "TERM_LOAN",
+      "currency": "USD",
+      "amount": 50000000,
+      "interest_rate": 0.0525,
+      "rate_type": "FLOATING",
+      "benchmark_rate": "SOFR",
+      "spread": 175,
+      "tenor_months": 60,
+      "availability_period_months": 6,
+      "drawdown_date": "2026-07-01",
+      "maturity_date": "2031-06-30",
+      "purpose": "Acquisition financing for semiconductor manufacturing facility in Malaysia",
+      "is_committed": true,
+      "repayment_schedule": [
+        { "period": 1, "due_date": "2026-12-31", "principal": 2500000, "interest": 1312500, "total_payment": 3812500, "outstanding_balance": 47500000 },
+        { "period": 2, "due_date": "2027-06-30", "principal": 2500000, "interest": 1246875, "total_payment": 3746875, "outstanding_balance": 45000000 },
+        { "period": 3, "due_date": "2027-12-31", "principal": 2500000, "interest": 1181250, "total_payment": 3681250, "outstanding_balance": 42500000 },
+        { "period": 4, "due_date": "2028-06-30", "principal": 2500000, "interest": 1115625, "total_payment": 3615625, "outstanding_balance": 40000000 },
+        { "period": 5, "due_date": "2028-12-31", "principal": 2500000, "interest": 1050000, "total_payment": 3550000, "outstanding_balance": 37500000 },
+        { "period": 6, "due_date": "2029-06-30", "principal": 2500000, "interest": 984375, "total_payment": 3484375, "outstanding_balance": 35000000 },
+        { "period": 7, "due_date": "2029-12-31", "principal": 2500000, "interest": 918750, "total_payment": 3418750, "outstanding_balance": 32500000 },
+        { "period": 8, "due_date": "2030-06-30", "principal": 2500000, "interest": 853125, "total_payment": 3353125, "outstanding_balance": 30000000 },
+        { "period": 9, "due_date": "2030-12-31", "principal": 2500000, "interest": 787500, "total_payment": 3287500, "outstanding_balance": 27500000 },
+        { "period": 10, "due_date": "2031-06-30", "principal": 27500000, "interest": 721875, "total_payment": 28221875, "outstanding_balance": 0 }
+      ],
+      "sub_limits": [
+        { "sub_limit_name": "Equipment Purchase", "sub_limit_amount": 30000000, "sub_limit_currency": "USD" },
+        { "sub_limit_name": "Working Capital", "sub_limit_amount": 15000000, "sub_limit_currency": "USD" },
+        { "sub_limit_name": "Contingency", "sub_limit_amount": 5000000, "sub_limit_currency": "USD" }
+      ]
+    },
+    {
+      "facility_name": "Revolving Credit Facility",
+      "facility_type": "REVOLVING_CREDIT",
+      "currency": "USD",
+      "amount": 30000000,
+      "interest_rate": 0.0475,
+      "rate_type": "FLOATING",
+      "benchmark_rate": "SOFR",
+      "spread": 150,
+      "tenor_months": 36,
+      "availability_period_months": 36,
+      "drawdown_date": null,
+      "maturity_date": "2029-05-31",
+      "purpose": "General corporate purposes and working capital requirements",
+      "is_committed": true,
+      "repayment_schedule": [
+        { "period": 1, "due_date": "2027-05-31", "principal": 0, "interest": 1425000, "total_payment": 1425000, "outstanding_balance": 30000000 },
+        { "period": 2, "due_date": "2028-05-31", "principal": 0, "interest": 1425000, "total_payment": 1425000, "outstanding_balance": 30000000 },
+        { "period": 3, "due_date": "2029-05-31", "principal": 30000000, "interest": 1425000, "total_payment": 31425000, "outstanding_balance": 0 }
+      ],
+      "sub_limits": null
+    },
+    {
+      "facility_name": "Trade Finance Facility",
+      "facility_type": "TRADE_FINANCE",
+      "currency": "EUR",
+      "amount": 15000000,
+      "interest_rate": 0.0395,
+      "rate_type": "FLOATING",
+      "benchmark_rate": "EURIBOR",
+      "spread": 125,
+      "tenor_months": 24,
+      "availability_period_months": 24,
+      "drawdown_date": null,
+      "maturity_date": "2028-05-31",
+      "purpose": "Import/export trade finance for European operations",
+      "is_committed": false,
+      "repayment_schedule": [
+        { "period": 1, "due_date": "2027-05-31", "principal": 7500000, "interest": 592500, "total_payment": 8092500, "outstanding_balance": 7500000 },
+        { "period": 2, "due_date": "2028-05-31", "principal": 7500000, "interest": 296250, "total_payment": 7796250, "outstanding_balance": 0 }
+      ],
+      "sub_limits": [
+        { "sub_limit_name": "Letters of Credit", "sub_limit_amount": 10000000, "sub_limit_currency": "EUR" },
+        { "sub_limit_name": "Import Bills", "sub_limit_amount": 5000000, "sub_limit_currency": "EUR" }
+      ]
+    },
+    {
+      "facility_name": "Standby Letter of Credit",
+      "facility_type": "LETTER_OF_CREDIT",
+      "currency": "USD",
+      "amount": 5000000,
+      "interest_rate": 0.02,
+      "rate_type": "FIXED",
+      "benchmark_rate": null,
+      "spread": null,
+      "tenor_months": 12,
+      "availability_period_months": 12,
+      "drawdown_date": "2026-06-15",
+      "maturity_date": "2027-06-14",
+      "purpose": "Performance guarantee for government procurement contract",
+      "is_committed": true,
+      "repayment_schedule": [
+        { "period": 1, "due_date": "2027-06-14", "principal": 5000000, "interest": 100000, "total_payment": 5100000, "outstanding_balance": 0 }
+      ],
+      "sub_limits": null
+    }
+  ],
+
+  "fees": [
+    { "fee_name": "Arrangement Fee", "category": "UPFRONT", "amount": 500000, "currency": "USD", "calculation_basis": "flat", "percentage_rate": null, "payment_frequency": null, "due_date": "2026-06-01", "is_refundable": false },
+    { "fee_name": "Commitment Fee", "category": "RECURRING", "amount": 75000, "currency": "USD", "calculation_basis": "per_annum", "percentage_rate": 0.005, "payment_frequency": "Quarterly", "due_date": null, "is_refundable": false },
+    { "fee_name": "Facility Fee", "category": "RECURRING", "amount": 100000, "currency": "USD", "calculation_basis": "per_annum", "percentage_rate": 0.001, "payment_frequency": "Semi-annually", "due_date": null, "is_refundable": false },
+    { "fee_name": "Utilization Fee (>50%)", "category": "UTILIZATION", "amount": 37500, "currency": "USD", "calculation_basis": "percentage", "percentage_rate": 0.0025, "payment_frequency": "Quarterly", "due_date": null, "is_refundable": false },
+    { "fee_name": "Utilization Fee (>75%)", "category": "UTILIZATION", "amount": 50000, "currency": "USD", "calculation_basis": "percentage", "percentage_rate": 0.005, "payment_frequency": "Quarterly", "due_date": null, "is_refundable": false },
+    { "fee_name": "Agency Fee", "category": "RECURRING", "amount": 50000, "currency": "USD", "calculation_basis": "per_annum", "percentage_rate": null, "payment_frequency": "Annually", "due_date": "2026-06-01", "is_refundable": false },
+    { "fee_name": "Legal Fee Deposit", "category": "UPFRONT", "amount": 150000, "currency": "USD", "calculation_basis": "flat", "percentage_rate": null, "payment_frequency": null, "due_date": "2026-05-15", "is_refundable": true },
+    { "fee_name": "Late Payment Penalty", "category": "PENALTY", "amount": 25000, "currency": "USD", "calculation_basis": "flat", "percentage_rate": null, "payment_frequency": null, "due_date": null, "is_refundable": false },
+    { "fee_name": "Prepayment Fee", "category": "PENALTY", "amount": 0, "currency": "USD", "calculation_basis": "percentage", "percentage_rate": 0.01, "payment_frequency": null, "due_date": null, "is_refundable": false },
+    { "fee_name": "LC Issuance Fee", "category": "UPFRONT", "amount": 25000, "currency": "USD", "calculation_basis": "percentage", "percentage_rate": 0.005, "payment_frequency": null, "due_date": "2026-06-15", "is_refundable": false }
+  ],
+
+  "covenants": [
+    { "covenant_name": "Debt Service Coverage Ratio", "type": "FINANCIAL", "description": "The Borrower shall maintain a Debt Service Coverage Ratio of not less than the threshold at all times, tested quarterly on a rolling 12-month basis.", "threshold_value": 1.25, "threshold_unit": "x", "testing_frequency": "Quarterly", "cure_period_days": 30, "is_material": true },
+    { "covenant_name": "Leverage Ratio", "type": "FINANCIAL", "description": "The ratio of Total Debt to EBITDA shall not exceed the threshold at any time.", "threshold_value": 3.5, "threshold_unit": "x", "testing_frequency": "Quarterly", "cure_period_days": 30, "is_material": true },
+    { "covenant_name": "Interest Coverage Ratio", "type": "FINANCIAL", "description": "The ratio of EBITDA to Interest Expense shall not be less than the threshold.", "threshold_value": 4.0, "threshold_unit": "x", "testing_frequency": "Semi-annually", "cure_period_days": 15, "is_material": true },
+    { "covenant_name": "Current Ratio", "type": "FINANCIAL", "description": "The ratio of Current Assets to Current Liabilities shall not be less than the threshold.", "threshold_value": 1.1, "threshold_unit": "x", "testing_frequency": "Quarterly", "cure_period_days": 30, "is_material": false },
+    { "covenant_name": "Tangible Net Worth", "type": "FINANCIAL", "description": "The Borrower shall maintain Tangible Net Worth of not less than the threshold amount.", "threshold_value": 50000000, "threshold_unit": "USD", "testing_frequency": "Annually", "cure_period_days": 60, "is_material": true },
+    { "covenant_name": "Financial Statements", "type": "INFORMATION", "description": "The Borrower shall deliver audited annual financial statements within 120 days of each financial year end, and unaudited quarterly statements within 45 days of each quarter end.", "threshold_value": null, "threshold_unit": null, "testing_frequency": "Quarterly/Annually", "cure_period_days": null, "is_material": true },
+    { "covenant_name": "Compliance Certificate", "type": "INFORMATION", "description": "The Borrower shall deliver a Compliance Certificate in the form of Appendix A within 45 days of each quarter end.", "threshold_value": null, "threshold_unit": null, "testing_frequency": "Quarterly", "cure_period_days": null, "is_material": true },
+    { "covenant_name": "Notification of Default", "type": "INFORMATION", "description": "The Borrower shall promptly notify the Lender of any Event of Default or potential Event of Default.", "threshold_value": null, "threshold_unit": null, "testing_frequency": "As required", "cure_period_days": null, "is_material": true },
+    { "covenant_name": "Maintain Insurance", "type": "POSITIVE", "description": "The Borrower shall maintain adequate insurance coverage on all assets as specified in the insurance requirements.", "threshold_value": null, "threshold_unit": null, "testing_frequency": "Annually", "cure_period_days": 30, "is_material": true },
+    { "covenant_name": "Maintain Licenses", "type": "POSITIVE", "description": "The Borrower shall maintain all licenses, permits, and authorizations necessary for the conduct of its business.", "threshold_value": null, "threshold_unit": null, "testing_frequency": "Ongoing", "cure_period_days": null, "is_material": true },
+    { "covenant_name": "Pari Passu", "type": "POSITIVE", "description": "The Borrower shall ensure that its obligations under this Letter rank at least pari passu with all other unsecured obligations.", "threshold_value": null, "threshold_unit": null, "testing_frequency": "Ongoing", "cure_period_days": null, "is_material": true },
+    { "covenant_name": "No Disposal of Assets", "type": "NEGATIVE", "description": "The Borrower shall not dispose of any material asset without the prior written consent of the Lender, except in the ordinary course of business.", "threshold_value": null, "threshold_unit": null, "testing_frequency": "Ongoing", "cure_period_days": null, "is_material": true },
+    { "covenant_name": "No Additional Indebtedness", "type": "NEGATIVE", "description": "The Borrower shall not incur any additional financial indebtedness exceeding USD 5,000,000 without prior consent.", "threshold_value": 5000000, "threshold_unit": "USD", "testing_frequency": "Ongoing", "cure_period_days": null, "is_material": true },
+    { "covenant_name": "No Change of Control", "type": "NEGATIVE", "description": "No change of control of the Borrower shall occur without the prior written consent of the Lender.", "threshold_value": null, "threshold_unit": null, "testing_frequency": "Ongoing", "cure_period_days": null, "is_material": true },
+    { "covenant_name": "No Dividends", "type": "NEGATIVE", "description": "The Borrower shall not declare or pay dividends exceeding 50% of net profit without prior consent.", "threshold_value": 0.5, "threshold_unit": "ratio", "testing_frequency": "Annually", "cure_period_days": null, "is_material": false },
+    { "covenant_name": "Environmental Compliance", "type": "GENERAL", "description": "The Borrower shall comply with all applicable environmental laws and regulations in all jurisdictions where it operates.", "threshold_value": null, "threshold_unit": null, "testing_frequency": "Ongoing", "cure_period_days": null, "is_material": true },
+    { "covenant_name": "Anti-Money Laundering", "type": "GENERAL", "description": "The Borrower shall comply with all applicable anti-money laundering and counter-terrorism financing laws.", "threshold_value": null, "threshold_unit": null, "testing_frequency": "Ongoing", "cure_period_days": null, "is_material": true }
+  ],
+
+  "security_items": [
+    {
+      "security_type": "REAL_ESTATE",
+      "description": "First legal mortgage over the Borrower's semiconductor manufacturing facility and land in Penang, Malaysia",
+      "estimated_value": 45000000,
+      "currency": "USD",
+      "valuation_date": "2026-02-15",
+      "valuer_name": "Jones Lang LaSalle (JLL)",
+      "ltv_ratio": 0.67,
+      "property_details": {
+        "title_deed_number": "PN-2024-88901",
+        "location": "Bayan Lepas Free Industrial Zone, Phase IV, Penang, Malaysia",
+        "area_sqm": 25000,
+        "zoning": "Industrial"
+      }
+    },
+    {
+      "security_type": "EQUIPMENT",
+      "description": "First priority security interest over all semiconductor manufacturing equipment, including lithography machines, etching systems, and testing equipment",
+      "estimated_value": 35000000,
+      "currency": "USD",
+      "valuation_date": "2026-03-01",
+      "valuer_name": "KPMG Advisory",
+      "ltv_ratio": 0.57,
+      "property_details": null
+    },
+    {
+      "security_type": "RECEIVABLES",
+      "description": "Assignment of all trade receivables from top 10 customers, with minimum coverage of USD 20 million at all times",
+      "estimated_value": 25000000,
+      "currency": "USD",
+      "valuation_date": "2026-03-31",
+      "valuer_name": null,
+      "ltv_ratio": 0.80,
+      "property_details": null
+    },
+    {
+      "security_type": "SHARES",
+      "description": "Pledge of 100% shares in Meridian Malaysia Sdn Bhd (wholly-owned subsidiary)",
+      "estimated_value": 20000000,
+      "currency": "USD",
+      "valuation_date": "2026-01-31",
+      "valuer_name": "Deloitte",
+      "ltv_ratio": null,
+      "property_details": null
+    },
+    {
+      "security_type": "CASH_DEPOSIT",
+      "description": "Cash deposit of USD 5,000,000 held in escrow account at GPIB",
+      "estimated_value": 5000000,
+      "currency": "USD",
+      "valuation_date": "2026-04-01",
+      "valuer_name": null,
+      "ltv_ratio": 1.0,
+      "property_details": null
+    }
+  ],
+
+  "guarantors": [
+    {
+      "name": "Chen Family Trust",
+      "type": "INDIVIDUAL",
+      "registration_number": null,
+      "guarantee_amount": 50000000,
+      "guarantee_currency": "USD",
+      "guarantee_type": "LIMITED",
+      "guarantee_expiry": "2031-05-31",
+      "address": { "line1": "88 Xinyi Road, Section 5", "city": "Taipei", "country": "Taiwan" }
+    },
+    {
+      "name": "Meridian Malaysia Sdn Bhd",
+      "type": "CORPORATE",
+      "registration_number": "MY-2020-1234567",
+      "guarantee_amount": 100000000,
+      "guarantee_currency": "USD",
+      "guarantee_type": "JOINT_AND_SEVERAL",
+      "guarantee_expiry": null,
+      "address": { "line1": "Lot 88, Bayan Lepas FIZ Phase IV", "city": "Penang", "country": "Malaysia" }
+    }
+  ],
+
+  "conditions_precedent": [
+    { "cp_number": 1, "description": "Certified copies of the Borrower's constitutional documents (Memorandum and Articles of Association)", "category": "LEGAL", "deadline": "2026-05-15", "is_waivable": false, "responsible_party": "Borrower" },
+    { "cp_number": 2, "description": "Board resolution of the Borrower authorizing the execution of this Letter and the borrowing", "category": "LEGAL", "deadline": "2026-05-15", "is_waivable": false, "responsible_party": "Borrower" },
+    { "cp_number": 3, "description": "Legal opinion from Borrower's counsel confirming capacity, authority, and enforceability", "category": "LEGAL", "deadline": "2026-05-20", "is_waivable": false, "responsible_party": "Borrower's Counsel" },
+    { "cp_number": 4, "description": "Audited financial statements for the last three financial years", "category": "FINANCIAL", "deadline": "2026-05-10", "is_waivable": false, "responsible_party": "Borrower" },
+    { "cp_number": 5, "description": "Management accounts for the most recent quarter", "category": "FINANCIAL", "deadline": "2026-05-10", "is_waivable": true, "responsible_party": "Borrower" },
+    { "cp_number": 6, "description": "Business plan and financial projections for the next 5 years", "category": "FINANCIAL", "deadline": "2026-05-15", "is_waivable": true, "responsible_party": "Borrower" },
+    { "cp_number": 7, "description": "All regulatory approvals required for the borrowing and the proposed acquisition", "category": "REGULATORY", "deadline": "2026-05-25", "is_waivable": false, "responsible_party": "Borrower" },
+    { "cp_number": 8, "description": "Environmental compliance certificate for the Penang manufacturing facility", "category": "REGULATORY", "deadline": "2026-05-20", "is_waivable": true, "responsible_party": "Borrower" },
+    { "cp_number": 9, "description": "Execution and registration of all security documents", "category": "DOCUMENTATION", "deadline": "2026-05-25", "is_waivable": false, "responsible_party": "Borrower/Lender" },
+    { "cp_number": 10, "description": "Insurance policies meeting the requirements of this Letter", "category": "OPERATIONAL", "deadline": "2026-05-20", "is_waivable": false, "responsible_party": "Borrower" },
+    { "cp_number": 11, "description": "KYC/AML documentation for all parties", "category": "REGULATORY", "deadline": "2026-05-10", "is_waivable": false, "responsible_party": "All Parties" },
+    { "cp_number": 12, "description": "Guarantee documents duly executed by all Guarantors", "category": "DOCUMENTATION", "deadline": "2026-05-25", "is_waivable": false, "responsible_party": "Guarantors" }
+  ],
+
+  "representations": [
+    { "rep_number": 1, "title": "Status", "description": "It is a limited liability company, duly incorporated and validly existing under the laws of Hong Kong SAR.", "is_repeating": true, "qualification": null },
+    { "rep_number": 2, "title": "Binding Obligations", "description": "The obligations expressed to be assumed by it in this Letter are legal, valid, binding, and enforceable obligations.", "is_repeating": true, "qualification": null },
+    { "rep_number": 3, "title": "Non-Conflict", "description": "The entry into and performance by it of this Letter does not and will not conflict with any law, regulation, or its constitutional documents.", "is_repeating": true, "qualification": null },
+    { "rep_number": 4, "title": "Power and Authority", "description": "It has the power to enter into, perform, and deliver this Letter and has taken all necessary action to authorize its entry into and performance.", "is_repeating": true, "qualification": null },
+    { "rep_number": 5, "title": "No Default", "description": "No Event of Default is continuing or might reasonably be expected to result from the making of any utilization.", "is_repeating": true, "qualification": null },
+    { "rep_number": 6, "title": "Financial Statements", "description": "Its most recent audited financial statements give a true and fair view of its financial condition as at the date to which they were drawn up.", "is_repeating": false, "qualification": "Subject to normal year-end audit adjustments" },
+    { "rep_number": 7, "title": "No Material Adverse Change", "description": "There has been no material adverse change in its business, operations, property, condition (financial or otherwise) since the date of its most recent audited financial statements.", "is_repeating": true, "qualification": null },
+    { "rep_number": 8, "title": "Litigation", "description": "No litigation, arbitration, or administrative proceedings are current or pending which might have a Material Adverse Effect.", "is_repeating": true, "qualification": "Except as disclosed in writing to the Lender" },
+    { "rep_number": 9, "title": "Taxation", "description": "It has paid all taxes due and payable by it and is not aware of any pending tax claims.", "is_repeating": true, "qualification": null },
+    { "rep_number": 10, "title": "Environmental Compliance", "description": "It is in compliance with all applicable environmental laws and has obtained all necessary environmental permits.", "is_repeating": true, "qualification": null },
+    { "rep_number": 11, "title": "Intellectual Property", "description": "It owns or has the right to use all intellectual property necessary for the conduct of its business.", "is_repeating": false, "qualification": null },
+    { "rep_number": 12, "title": "Anti-Corruption", "description": "Neither it nor any of its directors, officers, or employees has engaged in any activity which would constitute an offense under applicable anti-corruption laws.", "is_repeating": true, "qualification": null },
+    { "rep_number": 13, "title": "Sanctions", "description": "Neither it nor any of its subsidiaries is a Sanctioned Person or is located in a Sanctioned Country.", "is_repeating": true, "qualification": null },
+    { "rep_number": 14, "title": "Pari Passu", "description": "Its payment obligations under this Letter rank at least pari passu with all its other present and future unsecured and unsubordinated obligations.", "is_repeating": true, "qualification": null }
+  ],
+
+  "events_of_default": [
+    { "eod_number": 1, "title": "Non-Payment", "description": "The Borrower fails to pay any amount due under this Letter on its due date.", "cure_period_days": 5, "is_cross_default": false, "cross_default_threshold": null },
+    { "eod_number": 2, "title": "Financial Covenant Breach", "description": "The Borrower fails to comply with any financial covenant set out in Part G.", "cure_period_days": 30, "is_cross_default": false, "cross_default_threshold": null },
+    { "eod_number": 3, "title": "Other Covenant Breach", "description": "The Borrower fails to comply with any other provision of this Letter (other than financial covenants).", "cure_period_days": 15, "is_cross_default": false, "cross_default_threshold": null },
+    { "eod_number": 4, "title": "Misrepresentation", "description": "Any representation or warranty made by the Borrower is or proves to have been incorrect or misleading in any material respect.", "cure_period_days": null, "is_cross_default": false, "cross_default_threshold": null },
+    { "eod_number": 5, "title": "Cross-Default", "description": "The Borrower defaults on any other financial obligation exceeding the Cross-Default Threshold.", "cure_period_days": null, "is_cross_default": true, "cross_default_threshold": 1000000 },
+    { "eod_number": 6, "title": "Insolvency", "description": "The Borrower is unable to pay its debts as they fall due, or commences any insolvency proceedings.", "cure_period_days": null, "is_cross_default": false, "cross_default_threshold": null },
+    { "eod_number": 7, "title": "Material Adverse Change", "description": "A Material Adverse Change occurs in the opinion of the Lender.", "cure_period_days": null, "is_cross_default": false, "cross_default_threshold": null },
+    { "eod_number": 8, "title": "Change of Control", "description": "A change of control of the Borrower occurs without the prior consent of the Lender.", "cure_period_days": null, "is_cross_default": false, "cross_default_threshold": null },
+    { "eod_number": 9, "title": "Illegality", "description": "It becomes unlawful for the Borrower to perform any of its obligations under this Letter.", "cure_period_days": null, "is_cross_default": false, "cross_default_threshold": null },
+    { "eod_number": 10, "title": "Security Impairment", "description": "Any security granted under this Letter ceases to be valid, enforceable, or of the agreed priority.", "cure_period_days": 10, "is_cross_default": false, "cross_default_threshold": null }
+  ],
+
+  "governing_law": {
+    "law_jurisdiction": "England and Wales",
+    "court_jurisdiction": "London",
+    "arbitration_institution": "London Court of International Arbitration (LCIA)",
+    "arbitration_rules": "LCIA Arbitration Rules",
+    "arbitration_seat": "London",
+    "language": "English",
+    "is_arbitration": true
+  },
+
+  "syndicate_members": [
+    { "bank_name": "Global Pacific International Bank, N.A.", "role": "LEAD_ARRANGER", "commitment_amount": 40000000, "commitment_percentage": 0.40, "currency": "USD" },
+    { "bank_name": "Asia Development Finance Corporation", "role": "ARRANGER", "commitment_amount": 25000000, "commitment_percentage": 0.25, "currency": "USD" },
+    { "bank_name": "European Commercial Bank AG", "role": "BOOKRUNNER", "commitment_amount": 20000000, "commitment_percentage": 0.20, "currency": "USD" },
+    { "bank_name": "Pacific Rim Banking Group", "role": "PARTICIPANT", "commitment_amount": 15000000, "commitment_percentage": 0.15, "currency": "USD" }
+  ],
+
+  "agent_bank": {
+    "name": "Global Pacific International Bank, N.A.",
+    "account_number": "GPIB-AGENT-2026-0142",
+    "swift_code": "GPIBUS33XXX",
+    "correspondent_bank": "JPMorgan Chase Bank, N.A."
+  },
+
+  "financial_statements": [
+    { "statement_type": "Annual Audited Financial Statements", "frequency": "Annually", "deadline_days": 120, "requires_audit": true },
+    { "statement_type": "Quarterly Management Accounts", "frequency": "Quarterly", "deadline_days": 45, "requires_audit": false },
+    { "statement_type": "Annual Budget and Projections", "frequency": "Annually", "deadline_days": 30, "requires_audit": false },
+    { "statement_type": "Monthly Cash Flow Statement", "frequency": "Monthly", "deadline_days": 15, "requires_audit": false }
+  ],
+
+  "insurance_requirements": [
+    { "insurance_type": "Property All Risks", "minimum_coverage": 80000000, "currency": "USD", "insurer_rating": "A- (AM Best)" },
+    { "insurance_type": "Business Interruption", "minimum_coverage": 50000000, "currency": "USD", "insurer_rating": "A- (AM Best)" },
+    { "insurance_type": "Public Liability", "minimum_coverage": 20000000, "currency": "USD", "insurer_rating": "BBB+ (S&P)" },
+    { "insurance_type": "Directors & Officers", "minimum_coverage": 10000000, "currency": "USD", "insurer_rating": null },
+    { "insurance_type": "Marine Cargo", "minimum_coverage": 15000000, "currency": "USD", "insurer_rating": "A (AM Best)" }
+  ],
+
+  "bank_signatories": [
+    { "name": "James Richardson", "title": "Senior Vice President, Corporate Lending" },
+    { "name": "Elizabeth Wong", "title": "Managing Director, Asia Pacific Coverage" }
+  ],
+
+  "appendix_notes": [
+    { "note_number": 1, "content": "All financial covenants shall be tested based on the consolidated financial statements of the Borrower and its subsidiaries." },
+    { "note_number": 2, "content": "The Lender reserves the right to request additional security if the overall LTV ratio exceeds 80% at any time." },
+    { "note_number": 3, "content": "Currency conversion for covenant testing purposes shall be based on the spot rate published by Bloomberg at 4:00 PM London time on the relevant testing date." }
+  ]
+}

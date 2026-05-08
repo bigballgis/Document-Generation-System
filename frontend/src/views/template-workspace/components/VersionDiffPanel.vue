@@ -1,0 +1,114 @@
+<template>
+  <div class="version-diff-panel">
+    <el-row :gutter="16" align="middle">
+      <el-col :span="8">
+        <el-select v-model="versionA" :placeholder="t('workspace.settings.versionA')" clearable>
+          <el-option v-for="v in store.versions" :key="v.id" :label="`v${v.versionNumber}`" :value="v.versionNumber" />
+        </el-select>
+      </el-col>
+      <el-col :span="8">
+        <el-select v-model="versionB" :placeholder="t('workspace.settings.versionB')" clearable>
+          <el-option v-for="v in store.versions" :key="v.id" :label="`v${v.versionNumber}`" :value="v.versionNumber" />
+        </el-select>
+      </el-col>
+      <el-col :span="8">
+        <el-button type="primary" :loading="comparing" :disabled="isCompareDisabled" @click="handleCompare">
+          {{ t('workspace.settings.compareVersions') }}
+        </el-button>
+      </el-col>
+    </el-row>
+
+    <template v-if="diffResult">
+      <div class="diff-summary" style="margin-top: 16px">
+        <el-tag type="success">+{{ diffResult.summary.added }}</el-tag>
+        <el-tag type="danger" style="margin-left: 8px">-{{ diffResult.summary.removed }}</el-tag>
+        <el-tag type="warning" style="margin-left: 8px">~{{ diffResult.summary.modified }}</el-tag>
+      </div>
+
+      <el-table v-if="allDiffs.length > 0" :data="allDiffs" border stripe style="margin-top: 12px">
+        <el-table-column prop="field" :label="t('workspace.settings.versionDiffField')" width="200" />
+        <el-table-column :label="t('workspace.settings.versionDiffType')" width="120">
+          <template #default="{ row }">
+            <el-tag :type="diffTypeTag(row.type)" size="small">{{ formatDiffChangeType(row.type) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column :label="t('workspace.settings.versionDiffOldValue')">
+          <template #default="{ row }">
+            <div class="diff-cell diff-cell-old">{{ row.oldValue ?? t('common.emptyValue') }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column :label="t('workspace.settings.versionDiffNewValue')">
+          <template #default="{ row }">
+            <div class="diff-cell diff-cell-new">{{ row.newValue ?? t('common.emptyValue') }}</div>
+          </template>
+        </el-table-column>
+      </el-table>
+    </template>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { ElMessage } from 'element-plus'
+import { useTemplateWorkspaceStore } from '@/stores/templateWorkspace'
+import { getVersionDiff } from '@/api/templates'
+import type { VersionDiffResult } from '@/api/templates'
+
+const store = useTemplateWorkspaceStore()
+const { t, te } = useI18n()
+
+const versionA = ref<number | null>(null)
+const versionB = ref<number | null>(null)
+const diffResult = ref<VersionDiffResult | null>(null)
+const comparing = ref(false)
+
+const isCompareDisabled = computed(() =>
+  versionA.value === null || versionB.value === null || versionA.value === versionB.value,
+)
+
+const allDiffs = computed(() => {
+  if (!diffResult.value) return []
+  return [
+    ...diffResult.value.textDiffs,
+    ...diffResult.value.variableDiffs,
+    ...diffResult.value.dataSourceDiffs,
+    ...diffResult.value.expressionDiffs,
+  ]
+})
+
+async function handleCompare() {
+  if (versionA.value === null || versionB.value === null) return
+  comparing.value = true
+  try {
+    diffResult.value = await getVersionDiff(store.templateId, versionA.value, versionB.value)
+  } catch (e: any) {
+    ElMessage.error(e.response?.data?.message || e.message || t('message.operationFailed'))
+  } finally {
+    comparing.value = false
+  }
+}
+
+function diffTypeTag(type: string): 'primary' | 'success' | 'danger' | 'warning' | 'info' {
+  switch (type) {
+    case 'ADDED': return 'success'
+    case 'REMOVED': return 'danger'
+    case 'MODIFIED': return 'warning'
+    default: return 'info'
+  }
+}
+
+function formatDiffChangeType(code: string) {
+  const key = `workspace.settings.versionDiffChangeType.${code}`
+  return te(key) ? t(key) : code
+}
+</script>
+
+<style scoped>
+.version-diff-panel {
+  padding: 8px 0;
+}
+.diff-cell { font-size: 12px; white-space: pre-wrap; word-break: break-all; max-height: 120px; overflow-y: auto; padding: 4px 6px; border-radius: 2px; }
+.diff-cell-old { background: var(--el-color-danger-light-9); }
+.diff-cell-new { background: var(--el-color-success-light-9); }
+</style>

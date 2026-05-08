@@ -1,0 +1,41 @@
+# WS-07-T04: Docxtemplater service validation in CI (lockfile install, Jest).
+name: Docxtemplater CI
+
+on:
+  push:
+    paths:
+      - 'docxtemplater-service/**'
+      - '.github/workflows/docxtemplater-ci.yml'
+  pull_request:
+    paths:
+      - 'docxtemplater-service/**'
+      - '.github/workflows/docxtemplater-ci.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: docxtemplater-ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  npm-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: docxtemplater-service/package-lock.json
+
+      - name: Install dependencies
+        working-directory: docxtemplater-service
+        run: npm ci
+
+      - name: Run Jest tests
+        working-directory: docxtemplater-service
+        run: npm test

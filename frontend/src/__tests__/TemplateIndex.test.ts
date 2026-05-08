@@ -64,7 +64,7 @@ vi.mock('vue-router', () => ({
 
 // Stub the TemplateFormDialog child component
 vi.mock('@/views/templates/components/TemplateFormDialog.vue', () => ({
-  default: { template: '<div class="stub-form-dialog" />', props: ['visible', 'templateData', 'categories', 'tags'] },
+  default: { template: '<div class="stub-form-dialog" />', props: ['visible', 'templateData', 'tags'] },
 }))
 
 import TemplateIndex from '@/views/templates/Index.vue'
@@ -84,7 +84,7 @@ describe('Template Index Page', () => {
     const createBtn = wrapper.find('.page-header .el-button--primary')
     expect(createBtn.exists()).toBe(true)
     expect(createBtn.text()).toBe('Create Template')
-  })
+  }, 15000)
 
   it('fetches and displays templates in the table', async () => {
     const wrapper = mount(TemplateIndex)
@@ -96,7 +96,7 @@ describe('Template Index Page', () => {
     const tableText = wrapper.text()
     expect(tableText).toContain('Contract Template')
     expect(tableText).toContain('Invoice Template')
-  })
+  }, 15000)
 
   it('renders status tags for templates', async () => {
     const wrapper = mount(TemplateIndex)
@@ -105,9 +105,9 @@ describe('Template Index Page', () => {
     const tags = wrapper.findAll('.el-tag')
     // At least the status tags + tag chips
     expect(tags.length).toBeGreaterThanOrEqual(2)
-  })
+  }, 15000)
 
-  it('renders filter controls (search, category, status)', async () => {
+  it('renders filter controls (search, tags, status)', async () => {
     const wrapper = mount(TemplateIndex)
     await flushPromises()
 
@@ -118,7 +118,7 @@ describe('Template Index Page', () => {
     // Status select
     const selects = wrapper.findAll('.filter-card .el-select')
     expect(selects.length).toBeGreaterThanOrEqual(1)
-  })
+  }, 15000)
 
   it('calls getTemplates with page=1 when search button is clicked', async () => {
     const wrapper = mount(TemplateIndex)

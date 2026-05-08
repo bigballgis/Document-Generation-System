@@ -2,9 +2,6 @@ package com.docgen.dto;
 
 import java.time.Instant;
 
-/**
- * Response DTO for task execution history entries.
- */
 public class TaskExecutionDTO {
 
     private Long id;

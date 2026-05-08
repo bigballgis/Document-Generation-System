@@ -2,9 +2,6 @@ package com.docgen.dto;
 
 import java.time.Instant;
 
-/**
- * DTO for generated document metadata.
- */
 public class GeneratedDocumentDTO {
 
     private Long id;

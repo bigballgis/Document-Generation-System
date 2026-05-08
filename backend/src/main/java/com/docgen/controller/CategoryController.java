@@ -10,9 +10,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * REST controller for template category management.
- */
 @RestController
 @RequestMapping("/api/categories")
 public class CategoryController {

@@ -17,6 +17,11 @@ vi.mock('@/views/documents/components/MergeDialog.vue', () => ({
   default: { template: '<div />', props: ['visible', 'documentIds'], emits: ['update:visible', 'merged'] },
 }))
 
+vi.mock('vue-router', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+  useRoute: () => ({ query: {} }),
+}))
+
 import { mount, flushPromises } from '@vue/test-utils'
 import DocumentsIndex from '@/views/documents/Index.vue'
 

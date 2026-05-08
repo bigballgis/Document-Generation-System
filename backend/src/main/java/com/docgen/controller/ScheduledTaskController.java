@@ -11,9 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * REST controller for scheduled task CRUD, enable/disable, and execution history.
- */
 @RestController
 public class ScheduledTaskController {
 

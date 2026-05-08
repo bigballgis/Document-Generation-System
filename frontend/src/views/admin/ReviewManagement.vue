@@ -54,7 +54,6 @@
       />
     </div>
 
-    <!-- Approve/Reject Dialog -->
     <el-dialog v-model="actionDialogVisible" :title="actionType === 'approve' ? $t('review.approve') : $t('review.reject')" width="450px" destroy-on-close>
       <el-form label-width="80px">
         <el-form-item :label="actionType === 'approve' ? $t('review.comment') : $t('review.rejectReason')">
@@ -119,7 +118,7 @@ async function loadData() {
     const res = await getReviews({ page: page.value - 1, size: pageSize.value, status: statusFilter.value || undefined })
     list.value = res.content || []
     total.value = res.totalElements || 0
-  } catch { /* interceptor */ } finally {
+  } catch {} finally {
     loading.value = false
   }
 }
@@ -144,7 +143,7 @@ async function handleAction() {
     }
     actionDialogVisible.value = false
     loadData()
-  } catch { /* interceptor */ } finally {
+  } catch {} finally {
     saving.value = false
   }
 }
@@ -165,3 +164,4 @@ onMounted(() => loadData())
   color: var(--el-text-color-secondary);
 }
 </style>
+

@@ -24,16 +24,12 @@ public class CompositeCoverageReport {
      */
     public static class SegmentCoverageEntry {
 
-        private Long segmentId;
         private String segmentName;
         private int totalVariables;
         private int boundVariables;
         private double coveragePercent;
 
         public SegmentCoverageEntry() {}
-
-        public Long getSegmentId() { return segmentId; }
-        public void setSegmentId(Long segmentId) { this.segmentId = segmentId; }
 
         public String getSegmentName() { return segmentName; }
         public void setSegmentName(String segmentName) { this.segmentName = segmentName; }

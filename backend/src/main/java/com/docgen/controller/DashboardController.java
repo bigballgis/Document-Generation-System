@@ -1,9 +1,7 @@
 package com.docgen.controller;
 
 import com.docgen.dto.ApiCallMetricDTO;
-import com.docgen.dto.ComponentRankingDTO;
 import com.docgen.dto.DataSourceHealthDTO;
-import com.docgen.dto.SegmentStatsDTO;
 import com.docgen.dto.SystemOverviewDTO;
 import com.docgen.dto.SystemResourceDTO;
 import com.docgen.service.DashboardService;
@@ -17,9 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * REST controller exposing dashboard endpoints for the operations dashboard.
- */
 @RestController
 @RequestMapping("/api/dashboard")
 @Tag(name = "Dashboard", description = "Operations dashboard endpoints")
@@ -46,13 +41,6 @@ public class DashboardController {
         return ResponseEntity.ok(dashboardService.getApiCallMetrics(minutes));
     }
 
-    @GetMapping("/data-source-health")
-    @Operation(summary = "Data source health",
-            description = "Returns connectivity and response time for all registered data sources")
-    public ResponseEntity<List<DataSourceHealthDTO>> getDataSourceHealth() {
-        return ResponseEntity.ok(dashboardService.getDataSourceHealth());
-    }
-
     @GetMapping("/system-resources")
     @Operation(summary = "System resource usage",
             description = "Returns JVM memory, database connection pool, and Redis memory usage")
@@ -60,17 +48,10 @@ public class DashboardController {
         return ResponseEntity.ok(dashboardService.getSystemResources());
     }
 
-    @GetMapping("/segment-stats")
-    @Operation(summary = "Segment statistics",
-            description = "Returns segment and composite template statistics")
-    public ResponseEntity<SegmentStatsDTO> getSegmentStats() {
-        return ResponseEntity.ok(dashboardService.getSegmentStats());
-    }
-
-    @GetMapping("/component-ranking")
-    @Operation(summary = "Component reuse ranking",
-            description = "Returns top 10 component templates ranked by reference count")
-    public ResponseEntity<List<ComponentRankingDTO>> getComponentRanking() {
-        return ResponseEntity.ok(dashboardService.getComponentRanking());
+    @GetMapping("/data-source-health")
+    @Operation(summary = "Data source health",
+            description = "Returns health status of PostgreSQL, Redis, and MinIO")
+    public ResponseEntity<List<DataSourceHealthDTO>> getDataSourceHealth() {
+        return ResponseEntity.ok(dashboardService.getDataSourceHealth());
     }
 }

@@ -1,0 +1,20 @@
+[
+  {
+    "name": "FOL — Full scenario (secured + guarantor + syndicated) — derived values",
+    "testData": "{\"__use\":\"templates/international-bank-fol/data/sample-data.json\"}",
+    "expectedResult": "{\"total_facility_amount\":100000000,\"total_fee_amount\":1012500,\"weighted_avg_rate\":0.047425,\"total_security_value\":130000000,\"overall_ltv\":0.7692307692307693}",
+    "compareMode": "VARIABLE_VALUE"
+  },
+  {
+    "name": "FOL — No security / no guarantor — conditional segments excluded",
+    "testData": "{\"__use\":\"templates/international-bank-fol/data/sample-data.json\",\"has_security\":false,\"has_guarantor\":false}",
+    "expectedResult": "{\"has_security\":false,\"has_guarantor\":false}",
+    "compareMode": "VARIABLE_VALUE"
+  },
+  {
+    "name": "FOL — Base currency switch (EUR) — aggregation still stable",
+    "testData": "{\"__use\":\"templates/international-bank-fol/data/sample-data.json\",\"base_currency\":\"EUR\"}",
+    "expectedResult": "{\"base_currency\":\"EUR\",\"total_facility_amount\":100000000}",
+    "compareMode": "VARIABLE_VALUE"
+  }
+]

@@ -26,7 +26,7 @@ import static org.mockito.Mockito.*;
  *
  * <p><b>Validates: Requirements 36.1, 36.3, 36.4</b></p>
  */
-@Tag("Feature: low-code-document-generation-system, Property 11: API 限流执行正确性")
+@Tag("feature-low-code-document-generation-system-property-11-api")
 class RateLimitPropertyTest {
 
     /**
@@ -51,7 +51,6 @@ class RateLimitPropertyTest {
         return new RateLimitService(redisTemplate, rateLimitConfigRepository);
     }
 
-    // ── Property Tests ──
 
     /**
      * Property 11a: When the number of calls in any window equals or exceeds the limit,
@@ -193,7 +192,6 @@ class RateLimitPropertyTest {
                 "X-RateLimit-Remaining must be 0 when per-second limit is reached");
     }
 
-    // ── Helper: per-window mock ──
 
     @SuppressWarnings("unchecked")
     private RateLimitService createServiceWithPerWindowCounts(
@@ -225,7 +223,6 @@ class RateLimitPropertyTest {
         return new RateLimitService(redisTemplate, rateLimitConfigRepository);
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<RateLimitConfig> rateLimitConfigs() {
@@ -242,3 +239,4 @@ class RateLimitPropertyTest {
 
     record RateLimitConfig(long apiKeyId, int limitPerSecond, int limitPerMinute, int limitPerHour) {}
 }
+

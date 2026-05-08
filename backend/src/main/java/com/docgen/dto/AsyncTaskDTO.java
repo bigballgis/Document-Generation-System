@@ -2,9 +2,6 @@ package com.docgen.dto;
 
 import java.time.Instant;
 
-/**
- * DTO for async task status responses.
- */
 public class AsyncTaskDTO {
 
     private String taskId;

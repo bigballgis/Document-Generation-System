@@ -1,6 +1,5 @@
 package com.docgen.integration;
 
-import com.docgen.entity.Segment;
 import com.docgen.entity.Tenant;
 import com.docgen.entity.User;
 import com.docgen.repository.*;
@@ -19,6 +18,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Integration tests for CompositeTemplateController REST API endpoints.
  * Uses Testcontainers (PostgreSQL, Redis, MinIO) via BaseIntegrationTest.
+ *
+ * <p>Updated for inline segment model — no longer references segments table or
+ * SegmentRepository. Tests use filePath/name/segmentType inline entries.</p>
+ *
  * Validates: Requirements 2.1, 2.8, 2.9, 2.12
  */
 class CompositeTemplateControllerIntegrationTest extends BaseIntegrationTest {
@@ -31,9 +34,6 @@ class CompositeTemplateControllerIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private TemplateRepository templateRepository;
-
-    @Autowired
-    private SegmentRepository segmentRepository;
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
@@ -70,30 +70,17 @@ class CompositeTemplateControllerIntegrationTest extends BaseIntegrationTest {
 
     @AfterEach
     void tearDown() {
-        segmentRepository.deleteAll();
         templateRepository.deleteAll();
         userRepository.deleteAll();
         tenantRepository.deleteAll();
     }
 
-    // ── Helper methods ──
 
     private HttpHeaders authHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(token);
         headers.setContentType(MediaType.APPLICATION_JSON);
         return headers;
-    }
-
-    private Segment createSegmentInDb(String name) {
-        Segment segment = new Segment();
-        segment.setTenantId(tenantId);
-        segment.setName(name);
-        segment.setDescription("Test segment: " + name);
-        segment.setFilePath("/test/segments/" + name.replaceAll("\\s+", "_") + ".docx");
-        segment.setComponent(false);
-        segment.setCreatedBy(userId);
-        return segmentRepository.save(segment);
     }
 
     @SuppressWarnings("unchecked")
@@ -114,7 +101,6 @@ class CompositeTemplateControllerIntegrationTest extends BaseIntegrationTest {
         return response.getBody();
     }
 
-    // ── 1. POST /api/composite-templates — Create composite template ──
 
     @Test
     void shouldCreateCompositeTemplate() throws Exception {
@@ -137,20 +123,18 @@ class CompositeTemplateControllerIntegrationTest extends BaseIntegrationTest {
         assertThat(response.getBody().get("status")).isEqualTo("DRAFT");
     }
 
-    // ── 2. PUT /api/composite-templates/{id}/assembly-config — Update assembly config ──
 
     @Test
     void shouldUpdateAssemblyConfig() throws Exception {
         Map<String, Object> created = createCompositeTemplate("Config Test Template");
         Long templateId = ((Number) created.get("id")).longValue();
 
-        Segment seg1 = createSegmentInDb("Cover Page");
-        Segment seg2 = createSegmentInDb("Content Body");
-
         Map<String, Object> configBody = Map.of(
                 "segments", List.of(
-                        Map.of("segmentId", seg1.getId(), "position", 0, "enabled", true, "pageBreakBefore", false),
-                        Map.of("segmentId", seg2.getId(), "position", 1, "enabled", true, "pageBreakBefore", true)
+                        Map.of("filePath", "segments/1/cover.docx", "name", "Cover Page",
+                                "segmentType", "COVER", "position", 0, "enabled", true, "pageBreakBefore", false),
+                        Map.of("filePath", "segments/2/content.docx", "name", "Content Body",
+                                "segmentType", "CHAPTER", "position", 1, "enabled", true, "pageBreakBefore", true)
                 )
         );
         HttpEntity<String> request = new HttpEntity<>(objectMapper.writeValueAsString(configBody), authHeaders());
@@ -168,20 +152,18 @@ class CompositeTemplateControllerIntegrationTest extends BaseIntegrationTest {
         assertThat(segments).hasSize(2);
     }
 
-    // ── 3. PUT with all disabled segments — Should return 422 ──
 
     @Test
     void shouldReturn422WhenAllSegmentsDisabled() throws Exception {
         Map<String, Object> created = createCompositeTemplate("Empty Config Template");
         Long templateId = ((Number) created.get("id")).longValue();
 
-        Segment seg1 = createSegmentInDb("Disabled Seg 1");
-        Segment seg2 = createSegmentInDb("Disabled Seg 2");
-
         Map<String, Object> configBody = Map.of(
                 "segments", List.of(
-                        Map.of("segmentId", seg1.getId(), "position", 0, "enabled", false),
-                        Map.of("segmentId", seg2.getId(), "position", 1, "enabled", false)
+                        Map.of("filePath", "segments/1/a.docx", "name", "Disabled Seg 1",
+                                "position", 0, "enabled", false),
+                        Map.of("filePath", "segments/2/b.docx", "name", "Disabled Seg 2",
+                                "position", 1, "enabled", false)
                 )
         );
         HttpEntity<String> request = new HttpEntity<>(objectMapper.writeValueAsString(configBody), authHeaders());
@@ -195,16 +177,16 @@ class CompositeTemplateControllerIntegrationTest extends BaseIntegrationTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
     }
 
-    // ── 4. PUT with non-existent segment IDs — Should return 422 ──
 
     @Test
-    void shouldReturn422WhenSegmentIdsNotExist() throws Exception {
-        Map<String, Object> created = createCompositeTemplate("Bad Refs Template");
+    void shouldReturn422WhenFilePathEmpty() throws Exception {
+        Map<String, Object> created = createCompositeTemplate("Bad FilePath Template");
         Long templateId = ((Number) created.get("id")).longValue();
 
         Map<String, Object> configBody = Map.of(
                 "segments", List.of(
-                        Map.of("segmentId", 999999L, "position", 0, "enabled", true)
+                        Map.of("filePath", "", "name", "Missing File",
+                                "position", 0, "enabled", true)
                 )
         );
         HttpEntity<String> request = new HttpEntity<>(objectMapper.writeValueAsString(configBody), authHeaders());
@@ -218,19 +200,17 @@ class CompositeTemplateControllerIntegrationTest extends BaseIntegrationTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
     }
 
-    // ── 5. GET /api/composite-templates/{id}/assembly-config — Get assembly config ──
 
     @Test
     void shouldGetAssemblyConfig() throws Exception {
         Map<String, Object> created = createCompositeTemplate("Get Config Template");
         Long templateId = ((Number) created.get("id")).longValue();
 
-        Segment seg = createSegmentInDb("Config Segment");
-
-        // First set the config
+        // First set the config with inline segments
         Map<String, Object> configBody = Map.of(
                 "segments", List.of(
-                        Map.of("segmentId", seg.getId(), "position", 0, "enabled", true)
+                        Map.of("filePath", "segments/1/test.docx", "name", "Config Segment",
+                                "segmentType", "CHAPTER", "position", 0, "enabled", true)
                 )
         );
         HttpEntity<String> putRequest = new HttpEntity<>(objectMapper.writeValueAsString(configBody), authHeaders());
@@ -274,21 +254,19 @@ class CompositeTemplateControllerIntegrationTest extends BaseIntegrationTest {
         assertThat(segments).isEmpty();
     }
 
-    // ── 6. POST /api/composite-templates/{id}/preview — Preview ──
 
     @Test
     void shouldPreviewCompositeTemplate() throws Exception {
         Map<String, Object> created = createCompositeTemplate("Preview Template");
         Long templateId = ((Number) created.get("id")).longValue();
 
-        Segment seg1 = createSegmentInDb("Preview Seg 1");
-        Segment seg2 = createSegmentInDb("Preview Seg 2");
-
-        // Set assembly config
+        // Set assembly config with inline segments
         Map<String, Object> configBody = Map.of(
                 "segments", List.of(
-                        Map.of("segmentId", seg1.getId(), "position", 0, "enabled", true),
-                        Map.of("segmentId", seg2.getId(), "position", 1, "enabled", false)
+                        Map.of("filePath", "segments/1/preview1.docx", "name", "Preview Seg 1",
+                                "segmentType", "COVER", "position", 0, "enabled", true),
+                        Map.of("filePath", "segments/2/preview2.docx", "name", "Preview Seg 2",
+                                "segmentType", "CHAPTER", "position", 1, "enabled", false)
                 )
         );
         HttpEntity<String> putRequest = new HttpEntity<>(objectMapper.writeValueAsString(configBody), authHeaders());
@@ -313,45 +291,6 @@ class CompositeTemplateControllerIntegrationTest extends BaseIntegrationTest {
         assertThat(segmentPreviews).hasSize(2);
     }
 
-    // ── 7. GET /api/composite-templates/{id}/segments — Get segments ──
-
-    @Test
-    void shouldGetSegmentsForCompositeTemplate() throws Exception {
-        Map<String, Object> created = createCompositeTemplate("Segments List Template");
-        Long templateId = ((Number) created.get("id")).longValue();
-
-        Segment seg1 = createSegmentInDb("List Seg A");
-        Segment seg2 = createSegmentInDb("List Seg B");
-
-        // Set assembly config
-        Map<String, Object> configBody = Map.of(
-                "segments", List.of(
-                        Map.of("segmentId", seg1.getId(), "position", 0, "enabled", true),
-                        Map.of("segmentId", seg2.getId(), "position", 1, "enabled", true)
-                )
-        );
-        HttpEntity<String> putRequest = new HttpEntity<>(objectMapper.writeValueAsString(configBody), authHeaders());
-        restTemplate.exchange(
-                baseUrl() + "/api/composite-templates/" + templateId + "/assembly-config",
-                HttpMethod.PUT,
-                putRequest,
-                Map.class);
-
-        // Get segments
-        HttpHeaders getHeaders = new HttpHeaders();
-        getHeaders.setBearerAuth(token);
-        ResponseEntity<List> response = restTemplate.exchange(
-                baseUrl() + "/api/composite-templates/" + templateId + "/segments",
-                HttpMethod.GET,
-                new HttpEntity<>(getHeaders),
-                List.class);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody()).hasSize(2);
-    }
-
-    // ── 8. Authentication required ──
 
     @Test
     void shouldReturnUnauthorizedWithoutToken() throws Exception {
@@ -369,3 +308,4 @@ class CompositeTemplateControllerIntegrationTest extends BaseIntegrationTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 }
+

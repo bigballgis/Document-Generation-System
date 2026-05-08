@@ -1,8 +1,5 @@
 package com.docgen.dto;
 
-/**
- * DTO for tenant resource usage statistics.
- */
 public class TenantUsageDTO {
 
     private long currentTemplateCount;

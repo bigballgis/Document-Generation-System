@@ -1,16 +1,16 @@
 package com.docgen.property;
 
 import com.docgen.dto.CoverageReport;
-import com.docgen.entity.DataSource;
-import com.docgen.entity.Expression;
+import com.docgen.dto.PlaceholderInfo;
+import com.docgen.entity.ParameterDefinition;
 import com.docgen.entity.Template;
-import com.docgen.entity.TemplateVariable;
-import com.docgen.repository.DataSourceRepository;
-import com.docgen.repository.ExpressionRepository;
+import com.docgen.entity.TestCase;
+import com.docgen.repository.ParameterRepository;
 import com.docgen.repository.TemplateRepository;
-import com.docgen.repository.TemplateVariableRepository;
+import com.docgen.repository.TestCaseRepository;
 import com.docgen.service.CoverageCheckService;
-import com.docgen.service.TemplateVariableService;
+import com.docgen.service.TemplateScanService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import net.jqwik.api.*;
 import net.jqwik.api.constraints.IntRange;
 
@@ -22,194 +22,127 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Property 13: 模板覆盖率计算正确性
+ * Property 13: template coverage calculation correctness (updated for three-dimensional coverage)
  *
- * For any set of template variables (bound and unbound), the coverage percentage
- * should equal (boundTags / totalTags) × 100%, rounded to 2 decimal places,
- * and unbound tag names should be correctly identified.
+ * For any set of parameters and test cases, the parameter coverage percentage
+ * should equal (coveredParams / totalParams) × 100%, and overall coverage
+ * should be correctly computed.
  *
- * <p><b>Validates: Requirements 47.3, 47.4, 47.6</b></p>
+ * <p><b>Validates: Requirements 8.2, 8.3, 8.4, 8.5</b></p>
  */
-@Tag("Feature: low-code-document-generation-system, Property 13: 模板覆盖率计算正确性")
+@Tag("feature-template-parameter-redesign-property-13")
 class CoverageCalculationPropertyTest {
 
     private static final Long TEMPLATE_ID = 1L;
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     /**
-     * Property 1: Coverage percentage = (boundTags / totalTags) × 100%, rounded to 2 decimal places.
-     * Also verifies totalTags = boundTags + unboundTags.
-     *
-     * <b>Validates: Requirements 47.3, 47.4</b>
+     * Property 1: Parameter coverage = (coveredParams / totalParams) × 100%.
      */
     @Property(tries = 200)
-    @Label("Coverage percentage equals boundTags/totalTags * 100 rounded to 2 decimals")
-    void coveragePercentageIsCorrect(
-            @ForAll @IntRange(min = 0, max = 50) int boundCount,
-            @ForAll @IntRange(min = 0, max = 50) int unboundCount) {
+    @Label("Parameter coverage percentage is correct")
+    void parameterCoverageIsCorrect(
+            @ForAll @IntRange(min = 0, max = 50) int coveredCount,
+            @ForAll @IntRange(min = 0, max = 50) int uncoveredCount) {
 
-        int totalTags = boundCount + unboundCount;
-        List<TemplateVariable> variables = buildVariableList(boundCount, unboundCount);
-        CoverageCheckService service = buildServiceWithVariables(variables);
+        int totalParams = coveredCount + uncoveredCount;
+        if (totalParams == 0) {
+            // No params → overall 100%
+            CoverageCheckService service = buildService(List.of(), List.of(), List.of());
+            CoverageReport report = service.checkCoverage(TEMPLATE_ID);
+            assertEquals(100.0, report.getOverallCoverage(), 0.001);
+            return;
+        }
 
+        List<ParameterDefinition> params = new ArrayList<>();
+        Map<String, Object> data = new LinkedHashMap<>();
+        for (int i = 0; i < coveredCount; i++) {
+            params.add(makeParam((long) (i + 1), "covered_" + i));
+            data.put("covered_" + i, "value_" + i);
+        }
+        for (int i = 0; i < uncoveredCount; i++) {
+            params.add(makeParam((long) (coveredCount + i + 1), "uncovered_" + i));
+        }
+
+        List<TestCase> testCases = data.isEmpty() ? List.of() : List.of(makeTestCase("tc", data));
+        CoverageCheckService service = buildService(List.of(), params, testCases);
         CoverageReport report = service.checkCoverage(TEMPLATE_ID);
 
-        // Verify totalTags = boundTags + unboundTags
-        assertEquals(totalTags, report.getTotalTags(),
-                "totalTags should equal boundCount + unboundCount");
-        assertEquals(boundCount, report.getBoundTags(),
-                "boundTags should equal the number of bound variables");
-        assertEquals(unboundCount, report.getUnboundTags(),
-                "unboundTags should equal the number of unbound variables");
-        assertEquals(totalTags, report.getBoundTags() + report.getUnboundTags(),
-                "totalTags must equal boundTags + unboundTags");
-
-        // Verify coverage percentage calculation
-        double expectedCoverage = totalTags == 0 ? 100.0 : (boundCount * 100.0) / totalTags;
+        double expectedCoverage = (coveredCount * 100.0) / totalParams;
         expectedCoverage = Math.round(expectedCoverage * 100.0) / 100.0;
-        assertEquals(expectedCoverage, report.getCoveragePercentage(), 0.001,
-                "Coverage should be (bound/total)*100 rounded to 2 decimals");
+        assertEquals(expectedCoverage, report.getParameterCoverage(), 0.01);
+        assertEquals(totalParams, report.getTotalParameters());
+        assertEquals(coveredCount, report.getCoveredParameters());
     }
 
     /**
-     * Property 2: Unbound tag names list size equals unboundTags count,
-     * and contains exactly the names of unbound variables.
-     *
-     * <b>Validates: Requirements 47.4, 47.6</b>
+     * Property 2: Coverage is always in [0, 100].
      */
     @Property(tries = 200)
-    @Label("Unbound tag names list matches unbound variable count and names")
-    void unboundTagNamesAreCorrect(
-            @ForAll @IntRange(min = 0, max = 30) int boundCount,
-            @ForAll @IntRange(min = 0, max = 30) int unboundCount) {
-
-        List<TemplateVariable> variables = buildVariableList(boundCount, unboundCount);
-        CoverageCheckService service = buildServiceWithVariables(variables);
-
-        CoverageReport report = service.checkCoverage(TEMPLATE_ID);
-
-        assertEquals(unboundCount, report.getUnboundTagNames().size(),
-                "unboundTagNames size should equal unboundTags count");
-
-        // Verify all unbound variable names are present
-        Set<String> expectedUnbound = new HashSet<>();
-        for (TemplateVariable v : variables) {
-            if (!v.isBound()) {
-                expectedUnbound.add(v.getName());
-            }
-        }
-        assertEquals(expectedUnbound, new HashSet<>(report.getUnboundTagNames()),
-                "unboundTagNames should contain exactly the names of unbound variables");
-    }
-
-    /**
-     * Property 3: When all variables are bound, coverage = 100%.
-     *
-     * <b>Validates: Requirements 47.3</b>
-     */
-    @Property(tries = 100)
-    @Label("All variables bound implies 100% coverage")
-    void allBoundMeansFullCoverage(
-            @ForAll @IntRange(min = 1, max = 50) int totalCount) {
-
-        List<TemplateVariable> variables = buildVariableList(totalCount, 0);
-        CoverageCheckService service = buildServiceWithVariables(variables);
-
-        CoverageReport report = service.checkCoverage(TEMPLATE_ID);
-
-        assertEquals(100.0, report.getCoveragePercentage(), 0.001,
-                "Coverage should be 100% when all variables are bound");
-        assertTrue(report.getUnboundTagNames().isEmpty(),
-                "No unbound tag names when all are bound");
-    }
-
-    /**
-     * Property 4: When no variables exist, coverage = 100%.
-     *
-     * <b>Validates: Requirements 47.3</b>
-     */
-    @Property(tries = 10)
-    @Label("Empty template has 100% coverage")
-    void emptyTemplateMeansFullCoverage() {
-        List<TemplateVariable> variables = Collections.emptyList();
-        CoverageCheckService service = buildServiceWithVariables(variables);
-
-        CoverageReport report = service.checkCoverage(TEMPLATE_ID);
-
-        assertEquals(100.0, report.getCoveragePercentage(), 0.001,
-                "Coverage should be 100% when no variables exist");
-        assertEquals(0, report.getTotalTags());
-        assertEquals(0, report.getBoundTags());
-        assertEquals(0, report.getUnboundTags());
-        assertTrue(report.getUnboundTagNames().isEmpty());
-    }
-
-    /**
-     * Property 5: Coverage is always between 0 and 100 inclusive.
-     *
-     * <b>Validates: Requirements 47.3</b>
-     */
-    @Property(tries = 200)
-    @Label("Coverage percentage is always in [0, 100]")
+    @Label("Coverage percentages are always in [0, 100]")
     void coverageIsAlwaysInRange(
-            @ForAll @IntRange(min = 0, max = 50) int boundCount,
-            @ForAll @IntRange(min = 0, max = 50) int unboundCount) {
+            @ForAll @IntRange(min = 0, max = 20) int numParams,
+            @ForAll @IntRange(min = 0, max = 20) int coveredCount) {
 
-        List<TemplateVariable> variables = buildVariableList(boundCount, unboundCount);
-        CoverageCheckService service = buildServiceWithVariables(variables);
+        int actualCovered = Math.min(coveredCount, numParams);
+        List<ParameterDefinition> params = IntStream.range(0, numParams)
+                .mapToObj(i -> makeParam((long) (i + 1), "p_" + i)).toList();
 
+        Map<String, Object> data = new LinkedHashMap<>();
+        for (int i = 0; i < actualCovered; i++) data.put("p_" + i, "v");
+        List<TestCase> testCases = data.isEmpty() ? List.of() : List.of(makeTestCase("tc", data));
+
+        CoverageCheckService service = buildService(List.of(), params, testCases);
         CoverageReport report = service.checkCoverage(TEMPLATE_ID);
 
-        assertTrue(report.getCoveragePercentage() >= 0.0,
-                "Coverage should be >= 0");
-        assertTrue(report.getCoveragePercentage() <= 100.0,
-                "Coverage should be <= 100");
+        assertTrue(report.getParameterCoverage() >= 0.0);
+        assertTrue(report.getParameterCoverage() <= 100.0);
+        assertTrue(report.getOverallCoverage() >= 0.0);
+        assertTrue(report.getOverallCoverage() <= 100.0);
     }
 
-    // ── Helper methods ──
 
-    private List<TemplateVariable> buildVariableList(int boundCount, int unboundCount) {
-        List<TemplateVariable> variables = new ArrayList<>();
-        for (int i = 0; i < boundCount; i++) {
-            TemplateVariable v = new TemplateVariable();
-            v.setId((long) (i + 1));
-            v.setTemplateId(TEMPLATE_ID);
-            v.setName("bound_var_" + i);
-            v.setBound(true);
-            v.setBindingSource("datasource");
-            v.setBindingField("ds.field_" + i);
-            variables.add(v);
-        }
-        for (int i = 0; i < unboundCount; i++) {
-            TemplateVariable v = new TemplateVariable();
-            v.setId((long) (boundCount + i + 1));
-            v.setTemplateId(TEMPLATE_ID);
-            v.setName("unbound_var_" + i);
-            v.setBound(false);
-            variables.add(v);
-        }
-        // Sort by name to match repository behavior
-        variables.sort(Comparator.comparing(TemplateVariable::getName));
-        return variables;
+    private ParameterDefinition makeParam(Long id, String name) {
+        ParameterDefinition p = new ParameterDefinition();
+        p.setId(id);
+        p.setTemplateId(TEMPLATE_ID);
+        p.setName(name);
+        p.setParameterType("REQUEST");
+        p.setDataType("STRING");
+        p.setSortOrder(id.intValue());
+        return p;
     }
 
-    private CoverageCheckService buildServiceWithVariables(List<TemplateVariable> variables) {
-        TemplateVariableRepository variableRepo = mock(TemplateVariableRepository.class);
+    private TestCase makeTestCase(String name, Map<String, Object> data) {
+        TestCase tc = new TestCase();
+        tc.setId((long) name.hashCode());
+        tc.setTemplateId(TEMPLATE_ID);
+        tc.setName(name);
+        try { tc.setTestDataJson(MAPPER.writeValueAsString(data)); }
+        catch (Exception e) { throw new RuntimeException(e); }
+        return tc;
+    }
+
+    private CoverageCheckService buildService(List<PlaceholderInfo> placeholders,
+                                               List<ParameterDefinition> params,
+                                               List<TestCase> testCases) {
         TemplateRepository templateRepo = mock(TemplateRepository.class);
-        DataSourceRepository dataSourceRepo = mock(DataSourceRepository.class);
-        ExpressionRepository expressionRepo = mock(ExpressionRepository.class);
-        TemplateVariableService variableService = mock(TemplateVariableService.class);
+        TemplateScanService scanService = mock(TemplateScanService.class);
+        ParameterRepository paramRepo = mock(ParameterRepository.class);
+        TestCaseRepository testCaseRepo = mock(TestCaseRepository.class);
 
         Template template = new Template();
         template.setId(TEMPLATE_ID);
         template.setName("Test Template");
         template.setTenantId(1L);
+        template.setTemplateFilePath("templates/1/test.docx");
 
         when(templateRepo.findById(TEMPLATE_ID)).thenReturn(Optional.of(template));
-        when(variableRepo.findByTemplateIdOrderByNameAsc(TEMPLATE_ID)).thenReturn(variables);
-        when(dataSourceRepo.findByTemplateIdOrderByPriorityDesc(TEMPLATE_ID)).thenReturn(Collections.emptyList());
-        when(expressionRepo.findByTemplateIdOrderByExecutionOrderAsc(TEMPLATE_ID)).thenReturn(Collections.emptyList());
-        doReturn(Collections.emptyList()).when(variableService).scanVariables(anyLong());
+        when(scanService.scanPlaceholders(anyString())).thenReturn(placeholders);
+        when(paramRepo.findByTemplateIdOrderBySortOrderAsc(TEMPLATE_ID)).thenReturn(params);
+        when(testCaseRepo.findByTemplateIdOrderByCreatedAtDesc(TEMPLATE_ID)).thenReturn(testCases);
 
-        return new CoverageCheckService(variableRepo, templateRepo, dataSourceRepo, expressionRepo, variableService);
+        return new CoverageCheckService(templateRepo, scanService, paramRepo, testCaseRepo, MAPPER,
+                new com.docgen.service.TemplateCoverageAnalyzer());
     }
 }

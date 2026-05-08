@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p><b>Validates: Requirements 52.1, 52.2, 52.3</b></p>
  */
-@Tag("Feature: low-code-document-generation-system, Property 15: 模板状态机转换合法性")
+@Tag("feature-low-code-document-generation-system-property-15")
 class TemplateStateMachinePropertyTest {
 
     /**
@@ -27,8 +27,9 @@ class TemplateStateMachinePropertyTest {
 
     static {
         Map<TemplateState, Set<TemplateState>> map = new EnumMap<>(TemplateState.class);
-        map.put(TemplateState.DRAFT, EnumSet.of(TemplateState.PENDING_REVIEW, TemplateState.ACTIVE));
-        map.put(TemplateState.PENDING_REVIEW, EnumSet.of(TemplateState.REVIEWED, TemplateState.DRAFT));
+        map.put(TemplateState.DRAFT, EnumSet.of(TemplateState.IN_TEST, TemplateState.ACTIVE));
+        map.put(TemplateState.IN_TEST, EnumSet.of(TemplateState.DRAFT, TemplateState.PENDING_REVIEW));
+        map.put(TemplateState.PENDING_REVIEW, EnumSet.of(TemplateState.REVIEWED, TemplateState.IN_TEST));
         map.put(TemplateState.REVIEWED, EnumSet.of(TemplateState.ACTIVE));
         map.put(TemplateState.ACTIVE, EnumSet.of(TemplateState.ARCHIVED));
         map.put(TemplateState.ARCHIVED, EnumSet.of(TemplateState.DRAFT));
@@ -115,7 +116,6 @@ class TemplateStateMachinePropertyTest {
         }
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<StatePair> allStatePairs() {
@@ -128,7 +128,7 @@ class TemplateStateMachinePropertyTest {
         return Arbitraries.of(true, false);
     }
 
-    // ── Helper record ──
 
     record StatePair(TemplateState from, TemplateState to) {}
 }
+

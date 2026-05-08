@@ -1,32 +1,31 @@
 package com.docgen.service;
 
 import com.docgen.dto.CoverageReport;
-import com.docgen.entity.DataSource;
-import com.docgen.entity.Expression;
+import com.docgen.dto.PlaceholderInfo;
+import com.docgen.dto.UncoveredItem;
+import com.docgen.entity.ParameterDefinition;
 import com.docgen.entity.Template;
-import com.docgen.entity.TemplateVariable;
-import com.docgen.exception.BusinessException;
+import com.docgen.entity.TestCase;
 import com.docgen.exception.ErrorCode;
 import com.docgen.exception.ResourceNotFoundException;
-import com.docgen.repository.DataSourceRepository;
-import com.docgen.repository.ExpressionRepository;
+import com.docgen.repository.ParameterRepository;
 import com.docgen.repository.TemplateRepository;
-import com.docgen.repository.TemplateVariableRepository;
+import com.docgen.repository.TestCaseRepository;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
- * Service for checking template data-binding coverage.
+ * Service for computing three-dimensional template coverage:
+ * Branch coverage, Loop coverage, and Parameter coverage.
  * <p>
- * Forward coverage: percentage of template tags that are bound to a data source or expression.
- * Reverse coverage: data source fields / expression names that are not used by any template tag.
+ * Coverage is computed based on test case data against template placeholders and parameter definitions.
  */
 @Service
 public class CoverageCheckService {
@@ -34,152 +33,154 @@ public class CoverageCheckService {
     private static final Logger log = LoggerFactory.getLogger(CoverageCheckService.class);
     private static final double DEFAULT_THRESHOLD = 100.0;
 
-    private final TemplateVariableRepository variableRepository;
     private final TemplateRepository templateRepository;
-    private final DataSourceRepository dataSourceRepository;
-    private final ExpressionRepository expressionRepository;
-    private final TemplateVariableService templateVariableService;
+    private final TemplateScanService templateScanService;
+    private final ParameterRepository parameterRepository;
+    private final TestCaseRepository testCaseRepository;
+    private final ObjectMapper objectMapper;
+    private final TemplateCoverageAnalyzer coverageAnalyzer;
 
-    public CoverageCheckService(TemplateVariableRepository variableRepository,
-                                TemplateRepository templateRepository,
-                                DataSourceRepository dataSourceRepository,
-                                ExpressionRepository expressionRepository,
-                                TemplateVariableService templateVariableService) {
-        this.variableRepository = variableRepository;
+    public CoverageCheckService(TemplateRepository templateRepository,
+                                TemplateScanService templateScanService,
+                                ParameterRepository parameterRepository,
+                                TestCaseRepository testCaseRepository,
+                                ObjectMapper objectMapper,
+                                TemplateCoverageAnalyzer coverageAnalyzer) {
         this.templateRepository = templateRepository;
-        this.dataSourceRepository = dataSourceRepository;
-        this.expressionRepository = expressionRepository;
-        this.templateVariableService = templateVariableService;
+        this.templateScanService = templateScanService;
+        this.parameterRepository = parameterRepository;
+        this.testCaseRepository = testCaseRepository;
+        this.objectMapper = objectMapper;
+        this.coverageAnalyzer = coverageAnalyzer;
     }
 
-    /**
-     * Perform a full coverage check for the given template.
-     * Scans variables first to ensure the variable list is up-to-date,
-     * then computes forward and reverse coverage.
-     *
-     * @param templateId the template to check
-     * @return coverage report
-     */
-    @Transactional
+    @Transactional(readOnly = true)
     public CoverageReport checkCoverage(Long templateId) {
         return checkCoverage(templateId, DEFAULT_THRESHOLD);
     }
 
-    /**
-     * Perform a full coverage check with a custom threshold.
-     *
-     * @param templateId the template to check
-     * @param threshold  coverage threshold percentage (0-100)
-     * @return coverage report
-     */
-    @Transactional
+    @Transactional(readOnly = true)
     public CoverageReport checkCoverage(Long templateId, double threshold) {
         Template template = findTemplateOrThrow(templateId);
+        List<String> warnings = new ArrayList<>();
 
-        // Ensure variables are up-to-date by scanning the template file
-        templateVariableService.scanVariables(templateId);
+        // Scan template placeholders
+        List<PlaceholderInfo> placeholders;
+        String filePath = template.getTemplateFilePath();
+        if (filePath == null || filePath.isBlank()) {
+            placeholders = List.of();
+            warnings.add("Template has no uploaded file; placeholder scan skipped");
+        } else {
+            try {
+                placeholders = templateScanService.scanPlaceholders(filePath);
+            } catch (Exception e) {
+                log.warn("Failed to scan template {} placeholders: {}", templateId, e.getMessage());
+                placeholders = List.of();
+                warnings.add("Template scan failed; coverage may be inaccurate: " + e.getMessage());
+            }
+        }
 
-        List<TemplateVariable> variables = variableRepository.findByTemplateIdOrderByNameAsc(templateId);
+        // Extract conditions and loops from placeholders
+        List<PlaceholderInfo> conditions = new ArrayList<>();
+        List<PlaceholderInfo> loops = new ArrayList<>();
+        coverageAnalyzer.collectConditionsAndLoops(placeholders, conditions, loops);
 
-        // Forward coverage: bound tags / total tags
-        int totalTags = variables.size();
-        List<TemplateVariable> boundVars = variables.stream()
-                .filter(TemplateVariable::isBound)
-                .toList();
-        int boundTags = boundVars.size();
-        int unboundTags = totalTags - boundTags;
+        // Get parameter definitions and test cases
+        List<ParameterDefinition> params = parameterRepository.findByTemplateIdOrderBySortOrderAsc(templateId);
+        List<TestCase> testCases = testCaseRepository.findByTemplateIdOrderByCreatedAtDesc(templateId);
 
-        double coveragePercentage = totalTags == 0 ? 100.0 : (boundTags * 100.0) / totalTags;
+        // Parse test case data
+        List<Map<String, Object>> testDataList = parseTestCaseData(testCases, warnings);
 
-        List<String> unboundTagNames = variables.stream()
-                .filter(v -> !v.isBound())
-                .map(TemplateVariable::getName)
-                .toList();
+        TemplateCoverageAnalyzer.CoverageAnalysisResult analysis =
+                coverageAnalyzer.analyze(conditions, loops, params, testDataList);
+        double branchCov = analysis.getBranchCoverage();
+        double loopCov = analysis.getLoopCoverage();
+        double paramCov = analysis.getParameterCoverage();
+        double overall = analysis.getOverallCoverage();
+        List<UncoveredItem> uncoveredItems = analysis.getUncoveredItems();
 
-        // Reverse coverage: find unused data source fields and expression names
-        List<String> unusedFields = computeUnusedDataSourceFields(templateId, boundVars);
-
+        // Build report
         CoverageReport report = new CoverageReport();
         report.setTemplateId(templateId);
         report.setTemplateName(template.getName());
-        report.setCoveragePercentage(Math.round(coveragePercentage * 100.0) / 100.0);
-        report.setTotalTags(totalTags);
-        report.setBoundTags(boundTags);
-        report.setUnboundTags(unboundTags);
-        report.setUnboundTagNames(unboundTagNames);
-        report.setUnusedDataSourceFields(unusedFields);
-        report.setBelowThreshold(coveragePercentage < threshold);
+        report.setBranchCoverage(round(branchCov));
+        report.setLoopCoverage(round(loopCov));
+        report.setParameterCoverage(round(paramCov));
+        report.setOverallCoverage(round(overall));
+        report.setTotalBranches(analysis.getTotalBranches());
+        report.setCoveredBranches(analysis.getCoveredBranches());
+        report.setTotalLoopScenarios(analysis.getTotalLoopScenarios());
+        report.setCoveredLoopScenarios(analysis.getCoveredLoopScenarios());
+        report.setTotalParameters(analysis.getTotalParameters());
+        report.setCoveredParameters(analysis.getCoveredParameters());
+        report.setUncoveredItems(uncoveredItems);
+        report.setBelowThreshold(overall < threshold);
         report.setThreshold(threshold);
         report.setCheckedAt(Instant.now());
+        report.setWarnings(warnings);
 
-        log.info("Coverage check for template {}: {}/{} bound ({}%), threshold={}%, belowThreshold={}",
-                templateId, boundTags, totalTags, report.getCoveragePercentage(),
-                threshold, report.isBelowThreshold());
+        log.info("Coverage check for template {}: branch={}%, loop={}%, param={}%, overall={}%, threshold={}%",
+                templateId, report.getBranchCoverage(), report.getLoopCoverage(),
+                report.getParameterCoverage(), report.getOverallCoverage(), threshold);
 
         return report;
     }
 
     /**
-     * Check if coverage is below threshold — used during template activation to warn.
-     *
-     * @param templateId the template to check
-     * @param threshold  coverage threshold percentage
-     * @return true if coverage is below threshold
+     * Branch coverage: delegates to {@link TemplateCoverageAnalyzer} for property tests and tooling.
      */
-    @Transactional(readOnly = true)
-    public boolean isBelowThreshold(Long templateId, double threshold) {
-        findTemplateOrThrow(templateId);
-        List<TemplateVariable> variables = variableRepository.findByTemplateIdOrderByNameAsc(templateId);
-        if (variables.isEmpty()) {
-            return false;
-        }
-        long boundCount = variables.stream().filter(TemplateVariable::isBound).count();
-        double coverage = (boundCount * 100.0) / variables.size();
-        return coverage < threshold;
+    public double computeBranchCoverage(List<PlaceholderInfo> conditions, List<Map<String, Object>> testDataList) {
+        return coverageAnalyzer.computeBranchCoverage(conditions, testDataList);
     }
 
-    /**
-     * Compute reverse coverage: data source field names and expression names
-     * that are not referenced by any bound template variable.
-     */
-    List<String> computeUnusedDataSourceFields(Long templateId, List<TemplateVariable> boundVars) {
-        // Collect all binding fields that are actually used
-        Set<String> usedBindings = boundVars.stream()
-                .filter(v -> v.getBindingField() != null)
-                .map(TemplateVariable::getBindingField)
-                .collect(Collectors.toSet());
+    public double computeLoopCoverage(List<PlaceholderInfo> loops, List<Map<String, Object>> testDataList) {
+        return coverageAnalyzer.computeLoopCoverage(loops, testDataList);
+    }
 
-        List<String> unused = new ArrayList<>();
+    public double computeParameterCoverage(List<ParameterDefinition> params, List<Map<String, Object>> testDataList) {
+        return coverageAnalyzer.computeParameterCoverage(params, testDataList);
+    }
 
-        // Check data source names
-        List<DataSource> dataSources = dataSourceRepository.findByTemplateIdOrderByPriorityDesc(templateId);
-        for (DataSource ds : dataSources) {
-            String dsName = ds.getName();
-            // A data source is considered "used" if any bound variable references it in its binding field
-            boolean referenced = usedBindings.stream()
-                    .anyMatch(field -> field.startsWith(dsName + ".") || field.equals(dsName));
-            if (!referenced) {
-                unused.add("datasource:" + dsName);
+    double computeOverallCoverage(double branchCov, double loopCov, double paramCov,
+                                   int conditionCount, int loopCount, int paramCount) {
+        return coverageAnalyzer.computeOverallCoverage(branchCov, loopCov, paramCov,
+                conditionCount, loopCount, paramCount);
+    }
+
+
+    private List<Map<String, Object>> parseTestCaseData(List<TestCase> testCases, List<String> warnings) {
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (TestCase tc : testCases) {
+            try {
+                if (tc.getTestDataJson() != null && !tc.getTestDataJson().isBlank()) {
+                    Map<String, Object> data = objectMapper.readValue(
+                            tc.getTestDataJson(), new TypeReference<>() {});
+                    result.add(data);
+                }
+            } catch (Exception e) {
+                warnings.add("Test case '" + tc.getName() + "' data parse failed: " + e.getMessage());
             }
         }
+        return result;
+    }
 
-        // Check expression names
-        List<Expression> expressions = expressionRepository.findByTemplateIdOrderByExecutionOrderAsc(templateId);
-        for (Expression expr : expressions) {
-            String exprName = expr.getName();
-            boolean referenced = usedBindings.stream()
-                    .anyMatch(field -> field.startsWith(exprName + ".") || field.equals(exprName));
-            if (!referenced) {
-                unused.add("expression:" + exprName);
-            }
-        }
-
-        return unused;
+    private double round(double value) {
+        return Math.round(value * 100.0) / 100.0;
     }
 
     private Template findTemplateOrThrow(Long templateId) {
         return templateRepository.findById(templateId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.TEMPLATE_NOT_FOUND, "模板不存在"));
+                        ErrorCode.TEMPLATE_NOT_FOUND, "Template not found"));
+    }
+
+    /**
+     * Check if coverage is below threshold — used during template activation to warn.
+     */
+    @Transactional(readOnly = true)
+    public boolean isBelowThreshold(Long templateId, double threshold) {
+        CoverageReport report = checkCoverage(templateId, threshold);
+        return report.isBelowThreshold();
     }
 }

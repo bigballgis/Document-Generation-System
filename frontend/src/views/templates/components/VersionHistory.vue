@@ -42,7 +42,7 @@ async function fetchVersions() {
   loading.value = true
   try {
     versions.value = await getTemplateVersions(props.templateId)
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     loading.value = false
   }
 }
@@ -52,7 +52,7 @@ async function handleRollback(row: TemplateVersionDTO) {
     await rollbackVersion(props.templateId, row.id)
     ElMessage.success(t('template.rollbackSuccess'))
     fetchVersions()
-  } catch { /* handled */ }
+  } catch {}
 }
 
 onMounted(fetchVersions)

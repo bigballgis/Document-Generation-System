@@ -1,6 +1,5 @@
 <template>
   <div>
-    <!-- Toolbar -->
     <div class="toolbar">
       <el-input
         v-model="keyword"
@@ -12,7 +11,6 @@
       <el-button type="primary" @click="openDialog(null)">{{ $t('admin.tenant.create') }}</el-button>
     </div>
 
-    <!-- Table -->
     <el-table v-loading="loading" :data="list" stripe>
       <el-table-column prop="name" :label="$t('admin.tenant.name')" min-width="160" />
       <el-table-column :label="$t('admin.tenant.status')" width="120">
@@ -46,7 +44,6 @@
       </el-table-column>
     </el-table>
 
-    <!-- Pagination -->
     <div class="pagination-wrapper">
       <el-pagination
         v-model:current-page="page"
@@ -59,7 +56,6 @@
       />
     </div>
 
-    <!-- Create/Edit Dialog -->
     <el-dialog v-model="dialogVisible" :title="editing ? $t('admin.tenant.edit') : $t('admin.tenant.create')" width="500px" destroy-on-close>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="160px">
         <el-form-item :label="$t('admin.tenant.name')" prop="name">
@@ -81,7 +77,6 @@
       </template>
     </el-dialog>
 
-    <!-- Usage Dialog -->
     <el-dialog v-model="usageVisible" :title="$t('admin.tenant.usage')" width="450px" destroy-on-close>
       <div v-if="usage" class="usage-list">
         <div class="usage-item">
@@ -130,7 +125,6 @@ const pageSize = ref(10)
 const total = ref(0)
 const list = ref<TenantDTO[]>([])
 
-// Dialog
 const dialogVisible = ref(false)
 const editing = ref<TenantDTO | null>(null)
 const formRef = ref<FormInstance>()
@@ -148,7 +142,6 @@ const rules: FormRules = {
   maxStorageGb: [{ required: true, message: () => t('validation.required', { field: t('admin.tenant.maxStorage') }), trigger: 'blur' }],
 }
 
-// Usage
 const usageVisible = ref(false)
 const usage = ref<TenantUsageDTO | null>(null)
 
@@ -162,7 +155,7 @@ async function loadData() {
     const res = await getTenants({ page: page.value - 1, size: pageSize.value, keyword: keyword.value || undefined })
     list.value = res.content || []
     total.value = res.totalElements || 0
-  } catch { /* interceptor */ } finally {
+  } catch {} finally {
     loading.value = false
   }
 }
@@ -196,7 +189,7 @@ async function handleSave() {
     }
     dialogVisible.value = false
     loadData()
-  } catch { /* interceptor */ } finally {
+  } catch {} finally {
     saving.value = false
   }
 }
@@ -213,7 +206,7 @@ async function toggleEnabled(tenant: TenantDTO) {
     }
     ElMessage.success(t('message.operationSuccess'))
     loadData()
-  } catch { /* cancelled or error */ }
+  } catch {}
 }
 
 async function viewUsage(tenant: TenantDTO) {
@@ -221,7 +214,7 @@ async function viewUsage(tenant: TenantDTO) {
   usageVisible.value = true
   try {
     usage.value = await getTenantUsage(tenant.id)
-  } catch { /* interceptor */ }
+  } catch {}
 }
 
 onMounted(() => loadData())
@@ -254,3 +247,4 @@ onMounted(() => loadData())
   text-align: right;
 }
 </style>
+

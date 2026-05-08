@@ -1,13 +1,11 @@
-// ── Generate Types ──
 
 export interface GenerateDocumentRequest {
   parameters?: Record<string, unknown>
-  outputFormat?: string       // 'WORD' | 'PDF' | 'BOTH'
+  outputFormat?: string       // WORD | PDF; BOTH rejected if sent explicitly; legacy template BOTH treated as WORD server-side
   storageStrategy?: string    // 'TEMP' | 'PERSISTENT'
 }
 
 export interface SegmentRenderStat {
-  segmentId: number
   segmentName: string
   renderTimeMs: number
   success: boolean
@@ -36,7 +34,6 @@ export interface BatchGenerateRequest {
   failureThreshold?: number
 }
 
-// ── Async Task Types ──
 
 export type TaskStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED'
 
@@ -74,7 +71,6 @@ export interface TaskQuery {
   size: number
 }
 
-// ── Document Types ──
 
 export interface GeneratedDocumentDTO {
   id: number
@@ -106,7 +102,6 @@ export interface MergeDocumentsRequest {
   outputFormat: string        // 'DOCX' | 'PDF'
 }
 
-// ── Expression Types ──
 
 export type ExpressionType = 'JAVASCRIPT' | 'EXCEL'
 
@@ -147,3 +142,4 @@ export interface ExpressionValidationResult {
   errorMessage?: string
   errorPosition?: number
 }
+

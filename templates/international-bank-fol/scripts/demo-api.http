@@ -1,0 +1,49 @@
+### International Bank FOL — Demo API calls (REST Client / curl-like)
+### Requires: set {{baseUrl}} and login once to set {{accessToken}}
+
+@baseUrl = http://localhost:8080
+@accessToken = REPLACE_ME
+@templateId = REPLACE_ME
+
+### Health
+GET {{baseUrl}}/actuator/health/ping
+
+### Login (copy accessToken from response)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "sunsun",
+  "password": "REPLACE_ME"
+}
+
+### Create COMPOSITE template
+POST {{baseUrl}}/api/composite-templates
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "International Bank Commercial Loan — Facility Offer Letter (FOL) — Full Demo",
+  "description": "Enterprise demo composite template: parameters + derived + assembly + OnlyOffice + tests",
+  "outputFormat": "WORD"
+}
+
+### Get assembly config
+GET {{baseUrl}}/api/composite-templates/{{templateId}}/assembly-config
+Authorization: Bearer {{accessToken}}
+
+### Parameter schema endpoints
+GET {{baseUrl}}/api/templates/{{templateId}}/parameter-schema
+Authorization: Bearer {{accessToken}}
+
+GET {{baseUrl}}/api/templates/{{templateId}}/aggregation-schema
+Authorization: Bearer {{accessToken}}
+
+### Scan placeholders vs parameter table
+POST {{baseUrl}}/api/templates/{{templateId}}/parameters/scan
+Authorization: Bearer {{accessToken}}
+
+### Run all test cases
+POST {{baseUrl}}/api/templates/{{templateId}}/test-cases/run-all
+Authorization: Bearer {{accessToken}}
+

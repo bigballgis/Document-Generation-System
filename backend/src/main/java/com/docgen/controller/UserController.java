@@ -1,17 +1,16 @@
 package com.docgen.controller;
 
-import com.docgen.dto.UpdateProfileRequest;
+import com.docgen.dto.AdminUserUpdateRequest;
 import com.docgen.dto.UserDTO;
+import com.docgen.dto.UserPrincipal;
 import com.docgen.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-/**
- * REST controller for user management endpoints.
- */
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
@@ -33,10 +32,11 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UserDTO> updateProfile(
+    public ResponseEntity<UserDTO> updateUserAdmin(
             @PathVariable Long id,
-            @Valid @RequestBody UpdateProfileRequest request) {
-        return ResponseEntity.ok(userService.updateProfile(id, request));
+            @Valid @RequestBody AdminUserUpdateRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(userService.updateUserAdmin(id, request, principal));
     }
 
     @DeleteMapping("/{id}")

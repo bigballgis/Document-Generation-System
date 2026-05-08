@@ -23,13 +23,22 @@
           style="display: none"
           @change="handleImportConfig"
         />
-        <el-button type="primary" @click="openCreateDialog">
+        <el-button type="success" @click="importZipInput?.click()">
+          {{ $t('template.importCompositePackage') }}
+        </el-button>
+        <input
+          ref="importZipInput"
+          type="file"
+          accept=".zip"
+          style="display: none"
+          @change="handleImportZip"
+        />
+        <el-button type="primary" @click="wizardVisible = true">
           {{ $t('template.create') }}
         </el-button>
       </div>
     </div>
 
-    <!-- Filters -->
     <el-card class="filter-card" shadow="never">
       <el-form :inline="true" @submit.prevent="handleSearch">
         <el-form-item :label="$t('common.search')">
@@ -39,18 +48,6 @@
             clearable
             style="width: 240px"
             @clear="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item :label="$t('template.category')">
-          <el-tree-select
-            v-model="query.categoryId"
-            :data="categoryTree"
-            :props="{ label: 'name', value: 'id', children: 'children' }"
-            :placeholder="$t('common.all')"
-            clearable
-            check-strictly
-            style="width: 180px"
-            @change="handleSearch"
           />
         </el-form-item>
         <el-form-item :label="$t('template.tags')">
@@ -78,6 +75,7 @@
             @change="handleSearch"
           >
             <el-option label="Draft" value="DRAFT" />
+            <el-option label="In testing" value="IN_TEST" />
             <el-option label="Pending Review" value="PENDING_REVIEW" />
             <el-option label="Reviewed" value="REVIEWED" />
             <el-option label="Active" value="ACTIVE" />
@@ -91,12 +89,11 @@
       </el-form>
     </el-card>
 
-    <!-- Table -->
     <el-card shadow="never" style="margin-top: 16px">
       <el-table :data="templates" v-loading="loading" stripe>
         <el-table-column prop="name" :label="$t('template.name')" min-width="180">
           <template #default="{ row }">
-            <router-link :to="`/templates/${row.id}`" class="template-link">
+            <router-link :to="`/templates/${row.id}/workspace`" class="template-link">
               {{ row.name }}
             </router-link>
           </template>
@@ -109,7 +106,6 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="categoryName" :label="$t('template.category')" width="130" />
         <el-table-column :label="$t('template.tags')" width="200">
           <template #default="{ row }">
             <el-tag
@@ -126,14 +122,31 @@
         <el-table-column prop="version" :label="$t('template.version')" width="90" align="center">
           <template #default="{ row }">v{{ row.version }}</template>
         </el-table-column>
-        <el-table-column prop="updatedAt" :label="$t('common.updatedAt')" width="170" />
-        <el-table-column :label="$t('common.actions')" width="260" fixed="right">
+        <el-table-column prop="updatedAt" :label="$t('common.updatedAt')" width="170">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="openEditDialog(row)">
-              {{ $t('common.edit') }}
-            </el-button>
+            {{ formatDateTime(row.updatedAt) }}
+          </template>
+        </el-table-column>
+        <el-table-column :label="$t('common.actions')" width="380" fixed="right">
+          <template #default="{ row }">
             <el-button link type="primary" size="small" @click="handleClone(row)">
               {{ $t('common.clone') }}
+            </el-button>
+            <el-button link type="primary" size="small" @click="router.push(`/templates/${row.id}/api`)">
+              {{ $t('workspace.api.apiButton') }}
+            </el-button>
+            <el-button
+              v-if="row.status === 'ACTIVE'"
+              link type="primary" size="small"
+              @click="
+                router.push({
+                  name: 'TemplateIntegrations',
+                  params: { id: String(row.id) },
+                  query: { tab: 'webhooks' },
+                })
+              "
+            >
+              {{ $t('workspace.publish.openIntegrations') }}
             </el-button>
             <el-button
               v-if="row.status === 'DRAFT' || row.status === 'REVIEWED'"
@@ -169,13 +182,10 @@
       </div>
     </el-card>
 
-    <!-- Create/Edit Dialog -->
-    <TemplateFormDialog
-      v-model:visible="formDialogVisible"
-      :template-data="editingTemplate"
-      :categories="categoryTree"
+    <TemplateCreationWizard
+      v-model:visible="wizardVisible"
       :tags="tagList"
-      @saved="onFormSaved"
+      @created="onWizardCreated"
     />
   </div>
 </template>
@@ -183,31 +193,32 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getTemplates, deleteTemplate, cloneTemplate, activateTemplate, archiveTemplate,
-  getCategories, getTags,
-  type TemplateDTO, type TemplateQuery, type CategoryDTO, type TagDTO,
+  getTags,
+  type TemplateDTO, type TemplateQuery, type TagDTO,
 } from '@/api/templates'
-import TemplateFormDialog from './components/TemplateFormDialog.vue'
+import TemplateCreationWizard from '@/views/template-workspace/components/TemplateCreationWizard.vue'
 import { importDocx, importConfig } from '@/api/import-export'
+import { importCompositeFromZip } from '@/api/composite-templates'
 
 const { t } = useI18n()
+const router = useRouter()
 
 const loading = ref(false)
 const templates = ref<TemplateDTO[]>([])
 const total = ref(0)
-const categoryTree = ref<CategoryDTO[]>([])
 const tagList = ref<TagDTO[]>([])
-const formDialogVisible = ref(false)
-const editingTemplate = ref<TemplateDTO | null>(null)
+const wizardVisible = ref(false)
 
 const importDocxInput = ref<HTMLInputElement | null>(null)
 const importConfigInput = ref<HTMLInputElement | null>(null)
+const importZipInput = ref<HTMLInputElement | null>(null)
 
 const query = reactive<TemplateQuery>({
   keyword: '',
-  categoryId: null,
   tagId: null,
   status: '',
   page: 1,
@@ -216,9 +227,29 @@ const query = reactive<TemplateQuery>({
 
 type TagType = 'primary' | 'success' | 'info' | 'warning' | 'danger'
 
+function formatDateTime(value: unknown): string {
+  if (value === null || value === undefined || value === '') return '-'
+  const date = value instanceof Date ? value : new Date(value as any)
+  if (Number.isNaN(date.getTime())) return String(value)
+
+  const parts = new Intl.DateTimeFormat(undefined, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).formatToParts(date)
+
+  const map = Object.fromEntries(parts.map((p) => [p.type, p.value]))
+  return `${map.year}-${map.month}-${map.day} ${map.hour}:${map.minute}:${map.second}`
+}
+
 function statusTagType(status: string): TagType {
   const map: Record<string, TagType> = {
     DRAFT: 'info',
+    IN_TEST: 'warning',
     PENDING_REVIEW: 'warning',
     REVIEWED: 'primary',
     ACTIVE: 'success',
@@ -230,6 +261,7 @@ function statusTagType(status: string): TagType {
 function statusLabel(status: string) {
   const map: Record<string, string> = {
     DRAFT: 'Draft',
+    IN_TEST: 'InTest',
     PENDING_REVIEW: 'PendingReview',
     REVIEWED: 'Reviewed',
     ACTIVE: 'Active',
@@ -244,17 +276,15 @@ async function fetchTemplates() {
     const res = await getTemplates(query)
     templates.value = res.content
     total.value = res.totalElements
-  } catch { /* handled by interceptor */ } finally {
+  } catch {} finally {
     loading.value = false
   }
 }
 
 async function fetchFilters() {
   try {
-    const [cats, tags] = await Promise.all([getCategories(), getTags()])
-    categoryTree.value = cats
-    tagList.value = tags
-  } catch { /* ignore */ }
+    tagList.value = await getTags()
+  } catch {}
 }
 
 function handleSearch() {
@@ -264,25 +294,13 @@ function handleSearch() {
 
 function resetFilters() {
   query.keyword = ''
-  query.categoryId = null
   query.tagId = null
   query.status = ''
   handleSearch()
 }
 
-function openCreateDialog() {
-  editingTemplate.value = null
-  formDialogVisible.value = true
-}
-
-function openEditDialog(row: TemplateDTO) {
-  editingTemplate.value = { ...row }
-  formDialogVisible.value = true
-}
-
-function onFormSaved() {
-  formDialogVisible.value = false
-  fetchTemplates()
+function onWizardCreated(template: TemplateDTO) {
+  router.push(`/templates/${template.id}/workspace`)
 }
 
 async function handleClone(row: TemplateDTO) {
@@ -290,7 +308,7 @@ async function handleClone(row: TemplateDTO) {
     await cloneTemplate(row.id)
     ElMessage.success(t('template.cloneSuccess'))
     fetchTemplates()
-  } catch { /* handled */ }
+  } catch {}
 }
 
 async function handleActivate(row: TemplateDTO) {
@@ -299,7 +317,7 @@ async function handleActivate(row: TemplateDTO) {
     await activateTemplate(row.id)
     ElMessage.success(t('template.activateSuccess'))
     fetchTemplates()
-  } catch { /* cancelled or error */ }
+  } catch {}
 }
 
 async function handleArchive(row: TemplateDTO) {
@@ -308,7 +326,7 @@ async function handleArchive(row: TemplateDTO) {
     await archiveTemplate(row.id)
     ElMessage.success(t('template.archiveSuccess'))
     fetchTemplates()
-  } catch { /* cancelled or error */ }
+  } catch {}
 }
 
 async function handleDelete(row: TemplateDTO) {
@@ -321,7 +339,7 @@ async function handleDelete(row: TemplateDTO) {
     await deleteTemplate(row.id)
     ElMessage.success(t('message.deleteSuccess'))
     fetchTemplates()
-  } catch { /* cancelled or error */ }
+  } catch {}
 }
 
 async function handleImportDocx(event: Event) {
@@ -332,7 +350,7 @@ async function handleImportDocx(event: Event) {
     await importDocx(file)
     ElMessage.success(t('message.importSuccess'))
     fetchTemplates()
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     input.value = ''
   }
 }
@@ -345,7 +363,20 @@ async function handleImportConfig(event: Event) {
     await importConfig(file)
     ElMessage.success(t('message.importSuccess'))
     fetchTemplates()
-  } catch { /* handled */ } finally {
+  } catch {} finally {
+    input.value = ''
+  }
+}
+
+async function handleImportZip(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  try {
+    await importCompositeFromZip(file)
+    ElMessage.success(t('message.importSuccess'))
+    fetchTemplates()
+  } catch {} finally {
     input.value = ''
   }
 }
@@ -386,3 +417,4 @@ onMounted(() => {
   text-decoration: underline;
 }
 </style>
+

@@ -7,7 +7,9 @@ import com.docgen.entity.TemplateVersion;
 import com.docgen.repository.TemplateRepository;
 import com.docgen.repository.TemplateTagMappingRepository;
 import com.docgen.repository.TemplateVersionRepository;
+import com.docgen.service.RenderConfigValidator;
 import com.docgen.service.TemplateService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.docgen.util.TenantContext;
 import io.minio.MinioClient;
 import io.minio.ObjectWriteResponse;
@@ -30,7 +32,7 @@ import static org.mockito.Mockito.*;
  *
  * <p><b>Validates: Requirements 1.7, 1.8</b></p>
  */
-@Tag("Feature: low-code-document-generation-system, Property 2: 模板克隆独立性")
+@Tag("template-clone-independence")
 class TemplateClonePropertyTest {
 
     private static final String[] OUTPUT_FORMATS = {"WORD", "PDF", "BOTH"};
@@ -41,7 +43,7 @@ class TemplateClonePropertyTest {
      * Property 2: Template clone independence.
      *
      * For any existing template, cloning should produce an independent copy whose name
-     * is the original name + " - 副本", status is DRAFT, and configuration matches the
+     * is the original name + " - Copy", status is DRAFT, and configuration matches the
      * original. Modifying the clone must not affect the original template.
      */
     @Property(tries = 100)
@@ -55,7 +57,12 @@ class TemplateClonePropertyTest {
 
         TemplateVersionRepository templateVersionRepository = mock(TemplateVersionRepository.class);
         TemplateTagMappingRepository tagMappingRepository = mock(TemplateTagMappingRepository.class);
-        TemplateService templateService = new TemplateService(templateRepository, templateVersionRepository, tagMappingRepository, minioClient);
+        RenderConfigValidator renderConfigValidator = mock(RenderConfigValidator.class);
+        org.mockito.Mockito.lenient().doNothing().when(renderConfigValidator)
+                .validateForImport(org.mockito.ArgumentMatchers.any());
+        TemplateService templateService = new TemplateService(templateRepository, templateVersionRepository, tagMappingRepository,
+                mock(com.docgen.repository.UserRepository.class), mock(com.docgen.repository.TeamRepository.class), minioClient,
+                new ObjectMapper(), renderConfigValidator);
         Field bucketField = TemplateService.class.getDeclaredField("bucketName");
         bucketField.setAccessible(true);
         bucketField.set(templateService, "docgen-test");
@@ -112,9 +119,9 @@ class TemplateClonePropertyTest {
             // Act: clone the template
             TemplateDTO cloneDTO = templateService.cloneTemplate(source.getId());
 
-            // Assert: clone name = original name + " - 副本"
-            assertEquals(originalName + " - 副本", cloneDTO.getName(),
-                    "Clone name should be original name + ' - 副本'");
+            // Assert: clone name = original name + " - Copy"
+            assertEquals(originalName + " - Copy", cloneDTO.getName(),
+                    "Clone name should be original name + ' - Copy'");
 
             // Assert: clone status = DRAFT
             assertEquals("DRAFT", cloneDTO.getStatus(),
@@ -165,7 +172,6 @@ class TemplateClonePropertyTest {
         }
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<Template> sourceTemplates() {
@@ -257,7 +263,6 @@ class TemplateClonePropertyTest {
                 });
     }
 
-    // ── Helpers ──
 
     private Template copyTemplate(Template src) {
         Template copy = new Template();
@@ -279,3 +284,4 @@ class TemplateClonePropertyTest {
         return copy;
     }
 }
+

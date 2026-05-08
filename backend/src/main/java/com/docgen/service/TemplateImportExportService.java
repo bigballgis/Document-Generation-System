@@ -2,17 +2,11 @@ package com.docgen.service;
 
 import com.docgen.dto.TemplateConfigExport;
 import com.docgen.dto.TemplateDTO;
-import com.docgen.entity.DataSource;
-import com.docgen.entity.Expression;
 import com.docgen.entity.Template;
-import com.docgen.entity.TemplateVariable;
 import com.docgen.exception.BusinessException;
 import com.docgen.exception.ErrorCode;
 import com.docgen.exception.ResourceNotFoundException;
-import com.docgen.repository.DataSourceRepository;
-import com.docgen.repository.ExpressionRepository;
 import com.docgen.repository.TemplateRepository;
-import com.docgen.repository.TemplateVariableRepository;
 import com.docgen.util.TenantContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.minio.GetObjectArgs;
@@ -33,9 +27,8 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Service for template import/export operations.
  * Supports importing .docx files as new templates, exporting templates as .docx,
- * and full config export/import as JSON (requirements 30.1-30.7).
+ * and full config export/import as JSON.
  */
 @Service
 public class TemplateImportExportService {
@@ -46,9 +39,6 @@ public class TemplateImportExportService {
     private static final byte[] DOCX_MAGIC = {0x50, 0x4B, 0x03, 0x04};
 
     private final TemplateRepository templateRepository;
-    private final DataSourceRepository dataSourceRepository;
-    private final ExpressionRepository expressionRepository;
-    private final TemplateVariableRepository templateVariableRepository;
     private final MinioClient minioClient;
     private final ObjectMapper objectMapper;
 
@@ -56,21 +46,15 @@ public class TemplateImportExportService {
     private String bucketName;
 
     public TemplateImportExportService(TemplateRepository templateRepository,
-                                       DataSourceRepository dataSourceRepository,
-                                       ExpressionRepository expressionRepository,
-                                       TemplateVariableRepository templateVariableRepository,
                                        MinioClient minioClient,
                                        ObjectMapper objectMapper) {
         this.templateRepository = templateRepository;
-        this.dataSourceRepository = dataSourceRepository;
-        this.expressionRepository = expressionRepository;
-        this.templateVariableRepository = templateVariableRepository;
         this.minioClient = minioClient;
         this.objectMapper = objectMapper;
     }
 
     /**
-     * Import a .docx file as a new template (requirement 30.1, 30.2).
+     * Import a .docx file as a new template.
      */
     @Transactional
     public TemplateDTO importFromDocx(MultipartFile file, Long userId) {
@@ -93,7 +77,7 @@ public class TemplateImportExportService {
     }
 
     /**
-     * Export a template as a .docx file (requirement 30.3).
+     * Export a template as a .docx file.
      */
     @Transactional(readOnly = true)
     public byte[] exportToDocx(Long templateId) {
@@ -109,12 +93,12 @@ public class TemplateImportExportService {
         } catch (Exception e) {
             log.error("Failed to export template docx: templateId={}, error={}", templateId, e.getMessage(), e);
             throw new BusinessException(ErrorCode.EXPORT_FAILED,
-                    "模板文件导出失败", HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Template file export failed", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 
     /**
-     * Export template complete configuration as JSON (requirement 30.4).
+     * Export template complete configuration as JSON.
      */
     @Transactional(readOnly = true)
     public byte[] exportConfig(Long templateId) {
@@ -132,29 +116,17 @@ public class TemplateImportExportService {
         metadata.setReviewRequired(template.isReviewRequired());
         config.setTemplate(metadata);
 
-        // Data sources
-        List<DataSource> dataSources = dataSourceRepository.findByTemplateIdOrderByPriorityDesc(templateId);
-        config.setDataSources(dataSources.stream().map(this::toDataSourceExport).toList());
-
-        // Expressions
-        List<Expression> expressions = expressionRepository.findByTemplateIdOrderByExecutionOrderAsc(templateId);
-        config.setExpressions(expressions.stream().map(this::toExpressionExport).toList());
-
-        // Variables
-        List<TemplateVariable> variables = templateVariableRepository.findByTemplateIdOrderByNameAsc(templateId);
-        config.setVariables(variables.stream().map(this::toVariableExport).toList());
-
         try {
             return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(config);
         } catch (Exception e) {
             log.error("Failed to serialize template config: templateId={}", templateId, e);
             throw new BusinessException(ErrorCode.EXPORT_FAILED,
-                    "模板配置导出失败", HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Template configuration export failed", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 
     /**
-     * Import template configuration from JSON (requirements 30.5, 30.6, 30.7).
+     * Import template configuration from JSON.
      */
     @Transactional
     public TemplateDTO importConfig(MultipartFile configFile, Long userId) {
@@ -178,77 +150,26 @@ public class TemplateImportExportService {
         template.setTemplateFilePath("imported/" + UUID.randomUUID() + "/placeholder.docx");
 
         Template saved = templateRepository.save(template);
-        Long templateId = saved.getId();
 
-        // Restore data sources
-        if (config.getDataSources() != null) {
-            for (TemplateConfigExport.DataSourceExport dsExport : config.getDataSources()) {
-                DataSource ds = new DataSource();
-                ds.setTemplateId(templateId);
-                ds.setName(dsExport.getName());
-                ds.setType(dsExport.getType());
-                ds.setConfigJson(dsExport.getConfigJson() != null ? dsExport.getConfigJson() : "{}");
-                ds.setCacheEnabled(dsExport.isCacheEnabled());
-                ds.setCacheTtl(dsExport.getCacheTtl());
-                ds.setPriority(dsExport.getPriority());
-                dataSourceRepository.save(ds);
-            }
-        }
-
-        // Restore expressions
-        if (config.getExpressions() != null) {
-            for (TemplateConfigExport.ExpressionExport exExport : config.getExpressions()) {
-                Expression expr = new Expression();
-                expr.setTemplateId(templateId);
-                expr.setName(exExport.getName());
-                expr.setExpressionType(exExport.getExpressionType());
-                expr.setExpressionText(exExport.getExpressionText());
-                expr.setDescription(exExport.getDescription());
-                expr.setExecutionOrder(exExport.getExecutionOrder());
-                expressionRepository.save(expr);
-            }
-        }
-
-        // Restore variables
-        if (config.getVariables() != null) {
-            for (TemplateConfigExport.VariableExport varExport : config.getVariables()) {
-                TemplateVariable variable = new TemplateVariable();
-                variable.setTemplateId(templateId);
-                variable.setName(varExport.getName());
-                variable.setVariableType(varExport.getVariableType() != null ? varExport.getVariableType() : "STRING");
-                variable.setDefaultValue(varExport.getDefaultValue());
-                variable.setDescription(varExport.getDescription());
-                variable.setBindingSource(varExport.getBindingSource());
-                variable.setBindingField(varExport.getBindingField());
-                variable.setBound(varExport.isBound());
-                templateVariableRepository.save(variable);
-            }
-        }
-
-        log.info("Template config imported: name={}, id={}, dataSources={}, expressions={}, variables={}",
-                saved.getName(), saved.getId(),
-                config.getDataSources() != null ? config.getDataSources().size() : 0,
-                config.getExpressions() != null ? config.getExpressions().size() : 0,
-                config.getVariables() != null ? config.getVariables().size() : 0);
+        log.info("Template config imported: name={}, id={}", saved.getName(), saved.getId());
 
         return toDTO(saved);
     }
 
-    // ── Validation helpers ──
 
     /**
-     * Validate that the uploaded file is a valid .docx (requirement 30.2).
+     * Validate that the uploaded file is a valid .docx.
      */
     void validateDocxFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new BusinessException(ErrorCode.IMPORT_INVALID_FILE,
-                    "上传文件不能为空", HttpStatus.BAD_REQUEST);
+                    "Uploaded file cannot be empty", HttpStatus.BAD_REQUEST);
         }
 
         String filename = file.getOriginalFilename();
         if (filename == null || !filename.toLowerCase().endsWith(".docx")) {
             throw new BusinessException(ErrorCode.IMPORT_INVALID_FILE,
-                    "仅支持 .docx 格式文件", HttpStatus.BAD_REQUEST);
+                    "Only .docx files are supported", HttpStatus.BAD_REQUEST);
         }
 
         // Check DOCX magic bytes (ZIP PK header)
@@ -258,24 +179,24 @@ public class TemplateImportExportService {
                 int read = is.read(header);
                 if (read < 4 || !matchesMagicBytes(header)) {
                     throw new BusinessException(ErrorCode.IMPORT_INVALID_FILE,
-                            "文件格式无效，不是有效的 .docx 文件", HttpStatus.BAD_REQUEST);
+                            "Invalid file format; not a valid .docx file", HttpStatus.BAD_REQUEST);
                 }
             }
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.IMPORT_INVALID_FILE,
-                    "文件读取失败", HttpStatus.BAD_REQUEST, e);
+                    "Failed to read file", HttpStatus.BAD_REQUEST, e);
         }
     }
 
     /**
-     * Parse and validate JSON config file (requirements 30.6, 30.7).
+     * Parse and validate JSON config file.
      */
     TemplateConfigExport parseAndValidateConfig(MultipartFile configFile) {
         if (configFile == null || configFile.isEmpty()) {
             throw new BusinessException(ErrorCode.IMPORT_INVALID_CONFIG,
-                    "配置文件不能为空", HttpStatus.BAD_REQUEST);
+                    "Configuration file cannot be empty", HttpStatus.BAD_REQUEST);
         }
 
         TemplateConfigExport config;
@@ -283,56 +204,28 @@ public class TemplateImportExportService {
             config = objectMapper.readValue(configFile.getInputStream(), TemplateConfigExport.class);
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.IMPORT_INVALID_CONFIG,
-                    "配置文件 JSON 格式无效: " + e.getMessage(), HttpStatus.BAD_REQUEST, e);
+                    "Invalid configuration JSON: " + e.getMessage(), HttpStatus.BAD_REQUEST, e);
         }
 
         // Validate required structure
         List<String> errors = new ArrayList<>();
 
         if (config.getTemplate() == null) {
-            errors.add("缺少 'template' 字段");
+            errors.add("Missing required 'template' field");
         } else {
             if (config.getTemplate().getName() == null || config.getTemplate().getName().isBlank()) {
-                errors.add("template.name 不能为空");
-            }
-        }
-
-        if (config.getDataSources() != null) {
-            for (int i = 0; i < config.getDataSources().size(); i++) {
-                TemplateConfigExport.DataSourceExport ds = config.getDataSources().get(i);
-                if (ds.getName() == null || ds.getName().isBlank()) {
-                    errors.add("dataSources[" + i + "].name 不能为空");
-                }
-                if (ds.getType() == null || ds.getType().isBlank()) {
-                    errors.add("dataSources[" + i + "].type 不能为空");
-                }
-            }
-        }
-
-        if (config.getExpressions() != null) {
-            for (int i = 0; i < config.getExpressions().size(); i++) {
-                TemplateConfigExport.ExpressionExport expr = config.getExpressions().get(i);
-                if (expr.getName() == null || expr.getName().isBlank()) {
-                    errors.add("expressions[" + i + "].name 不能为空");
-                }
-                if (expr.getExpressionType() == null || expr.getExpressionType().isBlank()) {
-                    errors.add("expressions[" + i + "].expressionType 不能为空");
-                }
-                if (expr.getExpressionText() == null || expr.getExpressionText().isBlank()) {
-                    errors.add("expressions[" + i + "].expressionText 不能为空");
-                }
+                errors.add("template.name cannot be blank");
             }
         }
 
         if (!errors.isEmpty()) {
             throw new BusinessException(ErrorCode.IMPORT_INVALID_CONFIG,
-                    "配置文件验证失败: " + String.join("; ", errors), HttpStatus.BAD_REQUEST);
+                    "Configuration validation failed: " + String.join("; ", errors), HttpStatus.BAD_REQUEST);
         }
 
         return config;
     }
 
-    // ── Private helpers ──
 
     private boolean matchesMagicBytes(byte[] header) {
         for (int i = 0; i < DOCX_MAGIC.length; i++) {
@@ -361,7 +254,7 @@ public class TemplateImportExportService {
         } catch (Exception e) {
             log.error("Failed to upload imported template to MinIO: {}", e.getMessage(), e);
             throw new BusinessException(ErrorCode.INTERNAL_ERROR,
-                    "模板文件上传失败", HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Template file upload failed", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
 
         return objectName;
@@ -370,7 +263,7 @@ public class TemplateImportExportService {
     private Template findTemplateOrThrow(Long id) {
         return templateRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.TEMPLATE_NOT_FOUND, "模板不存在"));
+                        ErrorCode.TEMPLATE_NOT_FOUND, "Template not found"));
     }
 
     private TemplateDTO toDTO(Template template) {
@@ -382,37 +275,5 @@ public class TemplateImportExportService {
                 template.getCategoryId(), template.isReviewRequired(),
                 template.getStatus(), template.getCreatedAt(), template.getUpdatedAt());
     }
-
-    private TemplateConfigExport.DataSourceExport toDataSourceExport(DataSource ds) {
-        TemplateConfigExport.DataSourceExport export = new TemplateConfigExport.DataSourceExport();
-        export.setName(ds.getName());
-        export.setType(ds.getType());
-        export.setConfigJson(ds.getConfigJson());
-        export.setCacheEnabled(ds.isCacheEnabled());
-        export.setCacheTtl(ds.getCacheTtl());
-        export.setPriority(ds.getPriority());
-        return export;
-    }
-
-    private TemplateConfigExport.ExpressionExport toExpressionExport(Expression expr) {
-        TemplateConfigExport.ExpressionExport export = new TemplateConfigExport.ExpressionExport();
-        export.setName(expr.getName());
-        export.setExpressionType(expr.getExpressionType());
-        export.setExpressionText(expr.getExpressionText());
-        export.setDescription(expr.getDescription());
-        export.setExecutionOrder(expr.getExecutionOrder());
-        return export;
-    }
-
-    private TemplateConfigExport.VariableExport toVariableExport(TemplateVariable var) {
-        TemplateConfigExport.VariableExport export = new TemplateConfigExport.VariableExport();
-        export.setName(var.getName());
-        export.setVariableType(var.getVariableType());
-        export.setDefaultValue(var.getDefaultValue());
-        export.setDescription(var.getDescription());
-        export.setBindingSource(var.getBindingSource());
-        export.setBindingField(var.getBindingField());
-        export.setBound(var.isBound());
-        return export;
-    }
 }
+

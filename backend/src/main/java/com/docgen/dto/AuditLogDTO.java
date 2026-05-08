@@ -2,9 +2,6 @@ package com.docgen.dto;
 
 import java.time.Instant;
 
-/**
- * Response DTO for audit log records.
- */
 public class AuditLogDTO {
 
     private Long id;

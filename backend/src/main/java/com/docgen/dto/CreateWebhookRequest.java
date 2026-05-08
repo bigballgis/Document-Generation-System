@@ -2,9 +2,6 @@ package com.docgen.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
-/**
- * Request DTO for creating a new webhook configuration.
- */
 public class CreateWebhookRequest {
 
     @NotBlank(message = "Webhook URL is required")

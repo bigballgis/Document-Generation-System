@@ -2,9 +2,6 @@ package com.docgen.dto;
 
 import java.util.Map;
 
-/**
- * Request DTO for template preview.
- */
 public class PreviewRequest {
 
     /** User-provided test data for preview. */

@@ -1,7 +1,25 @@
 import request from './request'
 import type { PageResult } from '@/types'
+import type { ScenarioReadinessReportDTO } from '@/types/scenarioReadiness'
 
-// --- Types ---
+
+/** Matches backend RenderConfigDocument / render-config.json (REQ-R7-001). */
+export interface RenderConfigDocument {
+  schemaVersion?: number
+  textWatermark?: {
+    text: string
+    fontSize?: number
+    color?: string
+    opacity?: number
+    rotation?: number
+  }
+  imageWatermark?: {
+    imageSource: string
+    position?: string
+    opacity?: number
+  }
+  barcodes?: unknown[]
+}
 
 export interface TemplateDTO {
   id: number
@@ -15,12 +33,15 @@ export interface TemplateDTO {
   outputFormat: string
   reviewRequired: boolean
   tenantId: number
+  templateType: 'SINGLE' | 'COMPOSITE'
+  /** JSON string of {@link RenderConfigDocument} when set */
+  renderConfig?: string | null
   createdAt: string
   updatedAt: string
   createdBy?: string
 }
 
-export type TemplateStatus = 'DRAFT' | 'PENDING_REVIEW' | 'REVIEWED' | 'ACTIVE' | 'ARCHIVED'
+export type TemplateStatus = 'DRAFT' | 'IN_TEST' | 'PENDING_REVIEW' | 'REVIEWED' | 'ACTIVE' | 'ARCHIVED'
 
 export interface CreateTemplateRequest {
   name: string
@@ -111,7 +132,6 @@ export interface TagDTO {
   name: string
 }
 
-// --- API Functions ---
 
 export function getTemplates(query: TemplateQuery) {
   return request.get<any, PageResult<TemplateDTO>>('/templates', {
@@ -130,12 +150,36 @@ export function getTemplate(id: number) {
   return request.get<any, TemplateDTO>(`/templates/${id}`)
 }
 
+/** Same-tenant, same-team users who may review the template (excludes template author). */
+export interface ReviewerCandidateDTO {
+  id: number
+  username: string
+  email: string
+  teamId: number | null
+  role: string
+  teamReviewLane?: string | null
+}
+
+export function getReviewerCandidates(templateId: number, reviewLevel?: number) {
+  return request.get<any, ReviewerCandidateDTO[]>(`/templates/${templateId}/reviewers/candidates`, {
+    params: reviewLevel != null ? { reviewLevel } : {},
+  })
+}
+
 export function createTemplate(data: CreateTemplateRequest) {
   return request.post<any, TemplateDTO>('/templates', data)
 }
 
 export function updateTemplate(id: number, data: UpdateTemplateRequest) {
   return request.put<any, TemplateDTO>(`/templates/${id}`, data)
+}
+
+export function updateTemplateRenderConfig(templateId: number, body: RenderConfigDocument) {
+  return request.put<any, TemplateDTO>(`/templates/${templateId}/render-config`, body)
+}
+
+export function clearTemplateRenderConfig(templateId: number) {
+  return request.delete<any, TemplateDTO>(`/templates/${templateId}/render-config`)
 }
 
 export function deleteTemplate(id: number) {
@@ -154,7 +198,6 @@ export function archiveTemplate(id: number) {
   return request.post(`/templates/${id}/archive`)
 }
 
-// Versions
 export function getTemplateVersions(id: number) {
   return request.get<any, TemplateVersionDTO[]>(`/templates/${id}/versions`)
 }
@@ -169,7 +212,6 @@ export function getVersionDiff(templateId: number, versionA: number, versionB: n
   })
 }
 
-// Variables
 export function getTemplateVariables(templateId: number) {
   return request.get<any, VariableDTO[]>(`/templates/${templateId}/variables`)
 }
@@ -178,12 +220,10 @@ export function bindVariable(templateId: number, varId: number, data: BindVariab
   return request.put(`/templates/${templateId}/variables/${varId}/bind`, data)
 }
 
-// Coverage
 export function getTemplateCoverage(templateId: number) {
   return request.get<any, CoverageReport>(`/templates/${templateId}/coverage`)
 }
 
-// Categories & Tags
 export function getCategories() {
   return request.get<any, CategoryDTO[]>('/categories')
 }
@@ -192,22 +232,32 @@ export function getTags() {
   return request.get<any, TagDTO[]>('/tags')
 }
 
-// OnlyOffice
 export function getOnlyOfficeUrl(templateId: number) {
   return request.get<any, { url: string }>(`/templates/${templateId}/onlyoffice-url`)
 }
 
-/** Submit template for review via state machine (DRAFT → PENDING_REVIEW) */
+/** DRAFT → IN_TEST: enter testing phase (must use workspace flow for composite templates in practice). */
+export function submitTemplateToTest(templateId: number) {
+  return request.post<any, TemplateDTO>(`/templates/${templateId}/submit-test`)
+}
+
+/** IN_TEST → DRAFT: leave testing and return to design. */
+export function returnTemplateToDesign(templateId: number) {
+  return request.post<any, TemplateDTO>(`/templates/${templateId}/return-design`)
+}
+
+/**
+ * @deprecated Use {@link submitTemplateToTest} (DRAFT) then admin {@code submitForReview} (IN_TEST).
+ * Legacy DRAFT → PENDING_REVIEW in one step is no longer allowed.
+ */
 export function submitReview(templateId: number) {
   return request.post<any, TemplateDTO>(`/templates/${templateId}/submit-review`)
 }
 
-/** Get available state transitions for a template */
 export function getAvailableTransitions(templateId: number) {
   return request.get<any, string[]>(`/templates/${templateId}/available-transitions`)
 }
 
-/** Trigger a manual variable scan */
 export function scanVariables(templateId: number) {
   return request.post<any, VariableDTO[]>(`/templates/${templateId}/variables/scan`)
 }
@@ -217,7 +267,6 @@ export function exportCoverageReport(templateId: number) {
   return request.get(`/templates/${templateId}/coverage/export`, { responseType: 'blob' })
 }
 
-// Category CRUD
 export function getCategory(id: number) {
   return request.get<any, CategoryDTO>(`/categories/${id}`)
 }
@@ -234,7 +283,6 @@ export function deleteCategory(id: number) {
   return request.delete(`/categories/${id}`)
 }
 
-// Tag CRUD
 export function getTag(id: number) {
   return request.get<any, TagDTO>(`/tags/${id}`)
 }
@@ -262,3 +310,14 @@ export function removeTagFromTemplate(tagId: number, templateId: number) {
 export function getTemplateTags(templateId: number) {
   return request.get<any, TagDTO[]>(`/tags/templates/${templateId}`)
 }
+
+/** Create a new draft version from an ACTIVE template */
+export function createDraftVersion(templateId: number) {
+  return request.post<any, TemplateDTO>(`/templates/${templateId}/create-draft-version`)
+}
+
+/** Scenario validation workspace: aggregate + per-scenario readiness (branch/loop/parameter semantics). */
+export function getScenarioReadiness(templateId: number) {
+  return request.get<any, ScenarioReadinessReportDTO>(`/templates/${templateId}/scenario-readiness`)
+}
+

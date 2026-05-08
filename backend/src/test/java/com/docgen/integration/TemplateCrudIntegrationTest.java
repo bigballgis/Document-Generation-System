@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -219,7 +220,82 @@ class TemplateCrudIntegrationTest extends BaseIntegrationTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
+    @Test
+    @Order(8)
+    void putRenderConfig_singleTemplate_returnsBadRequest() {
+        Template template = createTestTemplate("Single render-config");
+
+        ResponseEntity<Map> response = restTemplate.exchange(
+                baseUrl() + "/api/templates/" + template.getId() + "/render-config",
+                HttpMethod.PUT,
+                new HttpEntity<>(validTextWatermarkRenderConfigBody(), authHeaders()),
+                Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).isNotNull();
+        @SuppressWarnings("unchecked")
+        Map<String, Object> err = (Map<String, Object>) response.getBody().get("error");
+        assertThat(err).isNotNull();
+        assertThat(String.valueOf(err.get("message"))).containsIgnoringCase("composite");
+    }
+
+    @Test
+    @Order(9)
+    void putRenderConfig_compositeTemplate_returnsOk() {
+        Template template = createTestTemplate("Composite render-config", "COMPOSITE");
+
+        ResponseEntity<Map> response = restTemplate.exchange(
+                baseUrl() + "/api/templates/" + template.getId() + "/render-config",
+                HttpMethod.PUT,
+                new HttpEntity<>(validTextWatermarkRenderConfigBody(), authHeaders()),
+                Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        Object rc = response.getBody().get("renderConfig");
+        assertThat(rc).isNotNull();
+        assertThat(String.valueOf(rc)).contains("CONFIDENTIAL");
+    }
+
+    @Test
+    @Order(10)
+    void deleteRenderConfig_singleTemplate_withStoredConfig_returnsOk() {
+        Template template = createTestTemplate("Single delete render-config");
+        template.setRenderConfig(
+                "{\"schemaVersion\":1,\"textWatermark\":{\"text\":\"X\",\"fontSize\":36,\"color\":\"#cccccc\",\"opacity\":0.3,\"rotation\":-45}}");
+        template = templateRepository.save(template);
+
+        ResponseEntity<Map> response = restTemplate.exchange(
+                baseUrl() + "/api/templates/" + template.getId() + "/render-config",
+                HttpMethod.DELETE,
+                new HttpEntity<>(authHeaders()),
+                Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+
+        Template reloaded = templateRepository.findById(template.getId()).orElseThrow();
+        assertThat(reloaded.getRenderConfig()).isNull();
+    }
+
+    private static Map<String, Object> validTextWatermarkRenderConfigBody() {
+        Map<String, Object> tw = new LinkedHashMap<>();
+        tw.put("text", "CONFIDENTIAL");
+        tw.put("fontSize", 36);
+        tw.put("color", "#cccccc");
+        tw.put("opacity", 0.3);
+        tw.put("rotation", -45.0);
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("schemaVersion", 1);
+        body.put("textWatermark", tw);
+        return body;
+    }
+
     private Template createTestTemplate(String name) {
+        return createTestTemplate(name, "SINGLE");
+    }
+
+    private Template createTestTemplate(String name, String templateType) {
         Template template = new Template();
         template.setTenantId(tenantId);
         template.setName(name);
@@ -228,6 +304,7 @@ class TemplateCrudIntegrationTest extends BaseIntegrationTest {
         template.setOutputFormat("WORD");
         template.setCreatedBy(userId);
         template.setStatus("DRAFT");
+        template.setTemplateType(templateType);
         return templateRepository.save(template);
     }
 }

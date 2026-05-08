@@ -6,6 +6,8 @@ import com.docgen.entity.WebhookLog;
 import com.docgen.exception.ResourceNotFoundException;
 import com.docgen.repository.WebhookConfigRepository;
 import com.docgen.repository.WebhookLogRepository;
+import com.docgen.security.url.OutboundUrlPolicy;
+import com.docgen.security.url.UrlPolicyProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,10 +48,16 @@ class WebhookServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new WebhookService(configRepository, logRepository, restTemplate, objectMapper);
+        UrlPolicyProperties urlPolicyProperties = new UrlPolicyProperties();
+        urlPolicyProperties.setAllowPrivateAddresses(false);
+        urlPolicyProperties.setAllowedHosts(List.of());
+        urlPolicyProperties.setAllowedPorts(List.of(80, 443));
+        urlPolicyProperties.setWebhookRequireHttps(true);
+        OutboundUrlPolicy outboundUrlPolicy = new OutboundUrlPolicy(urlPolicyProperties);
+
+        service = new WebhookService(configRepository, logRepository, restTemplate, objectMapper, outboundUrlPolicy);
     }
 
-    // ── createWebhook ──
 
     @Test
     void createWebhook_success() {
@@ -82,7 +90,6 @@ class WebhookServiceTest {
         assertEquals("my-secret", saved.getSecret());
     }
 
-    // ── listWebhooks ──
 
     @Test
     void listWebhooks_success() {
@@ -99,7 +106,6 @@ class WebhookServiceTest {
         assertEquals("https://other.com/hook", result.get(1).getUrl());
     }
 
-    // ── updateWebhook ──
 
     @Test
     void updateWebhook_success() {
@@ -139,7 +145,6 @@ class WebhookServiceTest {
         assertThrows(ResourceNotFoundException.class, () -> service.updateWebhook(999L, request));
     }
 
-    // ── deleteWebhook ──
 
     @Test
     void deleteWebhook_success() {
@@ -157,7 +162,6 @@ class WebhookServiceTest {
         assertThrows(ResourceNotFoundException.class, () -> service.deleteWebhook(999L));
     }
 
-    // ── getWebhookLogs ──
 
     @Test
     void getWebhookLogs_success() {
@@ -184,7 +188,6 @@ class WebhookServiceTest {
                 () -> service.getWebhookLogs(999L, PageRequest.of(0, 10)));
     }
 
-    // ── HMAC-SHA256 signature ──
 
     @Test
     void computeHmacSha256_producesValidSignature() {
@@ -209,7 +212,6 @@ class WebhookServiceTest {
         assertNotEquals(sig1, sig2);
     }
 
-    // ── sendWithRetry ──
 
     @Test
     void sendWithRetry_successOnFirstAttempt() {
@@ -288,7 +290,34 @@ class WebhookServiceTest {
         assertEquals("{\"ok\":true}", savedLog.getResponseBody());
     }
 
-    // ── sendNotifications ──
+    @Test
+    void sendWithRetry_rejectsDisallowedUrl_withoutCallingRestTemplate() {
+        WebhookConfig config = createSampleConfig(1L, 100L);
+        config.setUrl("https://127.0.0.1/hook");
+        Map<String, Object> payload = Map.of("event", "test");
+
+        when(logRepository.save(any(WebhookLog.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.sendWithRetry(config, "DOCUMENT_GENERATED", payload);
+
+        verifyNoInteractions(restTemplate);
+        verify(logRepository).save(any(WebhookLog.class));
+    }
+
+    @Test
+    void sendWithRetry_rejectsHttpUrl_whenHttpsRequired() {
+        WebhookConfig config = createSampleConfig(1L, 100L);
+        config.setUrl("http://example.com/hook");
+        Map<String, Object> payload = Map.of("event", "test");
+
+        when(logRepository.save(any(WebhookLog.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.sendWithRetry(config, "DOCUMENT_GENERATED", payload);
+
+        verifyNoInteractions(restTemplate);
+        verify(logRepository).save(any(WebhookLog.class));
+    }
+
 
     @Test
     void sendNotifications_sendsToAllEnabledWebhooks() {
@@ -309,7 +338,6 @@ class WebhookServiceTest {
         verify(restTemplate, times(2)).exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(String.class));
     }
 
-    // ── Helpers ──
 
     private WebhookConfig createSampleConfig(Long id, Long templateId) {
         WebhookConfig config = new WebhookConfig();
@@ -336,3 +364,4 @@ class WebhookServiceTest {
         return log;
     }
 }
+

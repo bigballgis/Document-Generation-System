@@ -3,6 +3,9 @@ package com.docgen.controller;
 import com.docgen.dto.*;
 import com.docgen.service.TemplateTestService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -10,9 +13,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * REST controller for template test case CRUD, execution, and import/export.
- */
 @RestController
 public class TemplateTestController {
 
@@ -31,9 +31,11 @@ public class TemplateTestController {
     }
 
     @GetMapping("/api/templates/{templateId}/test-cases")
-    public ResponseEntity<List<TestCaseDTO>> listTestCases(
-            @PathVariable Long templateId) {
-        return ResponseEntity.ok(templateTestService.listTestCases(templateId));
+    public ResponseEntity<Page<TestCaseDTO>> listTestCases(
+            @PathVariable Long templateId,
+            @RequestParam(required = false) String q,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(templateTestService.listTestCases(templateId, q, pageable));
     }
 
     @PutMapping("/api/test-cases/{testCaseId}")
@@ -52,6 +54,16 @@ public class TemplateTestController {
     @PostMapping("/api/test-cases/{testCaseId}/run")
     public ResponseEntity<TestResultDTO> runTestCase(@PathVariable Long testCaseId) {
         return ResponseEntity.ok(templateTestService.runTestCase(testCaseId));
+    }
+
+    /**
+     * Paged trial run history for a test case (read-only). Ordered by {@code executedAt DESC, id DESC}.
+     */
+    @GetMapping("/api/test-cases/{testCaseId}/results")
+    public ResponseEntity<Page<TestResultDTO>> listTestResults(
+            @PathVariable Long testCaseId,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(templateTestService.listTestResults(testCaseId, pageable));
     }
 
     @PostMapping("/api/templates/{templateId}/test-cases/run-all")

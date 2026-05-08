@@ -2,9 +2,6 @@ package com.docgen.dto;
 
 import java.util.List;
 
-/**
- * Request DTO for querying templates with optional filters.
- */
 public class TemplateQueryRequest {
 
     private String keyword;

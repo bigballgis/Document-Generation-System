@@ -20,7 +20,8 @@ export function getDocument(id: number) {
 }
 
 export function downloadDocument(id: number) {
-  return request.get(`/documents/${id}/download`, { responseType: 'blob' })
+  // Interceptor returns `response.data` (the Blob in blob mode).
+  return request.get<any, Blob>(`/documents/${id}/download`, { responseType: 'blob' })
 }
 
 export function mergeDocuments(data: MergeDocumentsRequest) {

@@ -2,15 +2,12 @@ package com.docgen.dto;
 
 import jakarta.validation.constraints.Email;
 
-/**
- * Request DTO for updating an existing tenant.
- */
 public class UpdateTenantRequest {
 
     private String name;
     private String contactName;
 
-    @Email(message = "联系邮箱格式不正确")
+    @Email(message = "Contact email format is invalid")
     private String contactEmail;
 
     public UpdateTenantRequest() {}

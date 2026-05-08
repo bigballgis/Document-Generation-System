@@ -6,16 +6,12 @@ package com.docgen.dto;
  */
 public class SegmentRenderStat {
 
-    private Long segmentId;
     private String segmentName;
     private long renderTimeMs;
     private boolean success;
     private String errorMessage;
 
     public SegmentRenderStat() {}
-
-    public Long getSegmentId() { return segmentId; }
-    public void setSegmentId(Long segmentId) { this.segmentId = segmentId; }
 
     public String getSegmentName() { return segmentName; }
     public void setSegmentName(String segmentName) { this.segmentName = segmentName; }

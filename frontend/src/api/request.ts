@@ -1,6 +1,7 @@
 import axios from 'axios'
 import type { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios'
 import { ElMessage } from 'element-plus'
+import i18n from '@/i18n'
 
 const service: AxiosInstance = axios.create({
   baseURL: '/api',
@@ -35,7 +36,6 @@ function redirectToLogin() {
   }
 }
 
-// Request interceptor — attach JWT token
 service.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = getAccessToken()
@@ -47,7 +47,6 @@ service.interceptors.request.use(
   (error) => Promise.reject(error),
 )
 
-// Response interceptor — handle 401 with token refresh
 service.interceptors.response.use(
   (response: AxiosResponse) => response.data,
   async (error: AxiosError) => {
@@ -106,11 +105,12 @@ service.interceptors.response.use(
     }
 
     if (status === 403) {
-      ElMessage.error('Access denied')
+      ElMessage.error(i18n.global.t('message.forbidden'))
     } else if (status === 429) {
-      ElMessage.warning('Too many requests, please try again later')
+      ElMessage.warning(i18n.global.t('message.tooManyRequests'))
     } else if (status !== 401) {
-      const message = (error.response?.data as any)?.message || error.message
+      const message =
+        (error.response?.data as any)?.message || error.message || i18n.global.t('message.operationFailed')
       ElMessage.error(message)
     }
 

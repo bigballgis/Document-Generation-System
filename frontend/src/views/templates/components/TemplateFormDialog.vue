@@ -18,27 +18,9 @@
       <el-form-item :label="$t('template.description')" prop="description">
         <el-input v-model="form.description" type="textarea" :rows="3" maxlength="500" />
       </el-form-item>
-      <el-form-item :label="$t('template.category')">
-        <el-tree-select
-          v-model="form.categoryId"
-          :data="categories"
-          :props="{ label: 'name', value: 'id', children: 'children' }"
-          :placeholder="$t('category.rootCategory')"
-          clearable
-          check-strictly
-          style="width: 100%"
-        />
-      </el-form-item>
       <el-form-item :label="$t('template.tags')">
         <el-select v-model="form.tagIds" multiple :placeholder="$t('tag.addTag')" style="width: 100%">
           <el-option v-for="tag in tags" :key="tag.id" :label="tag.name" :value="tag.id" />
-        </el-select>
-      </el-form-item>
-      <el-form-item :label="$t('template.outputFormat')">
-        <el-select v-model="form.outputFormat" style="width: 100%">
-          <el-option label="Word (.docx)" value="WORD" />
-          <el-option label="PDF" value="PDF" />
-          <el-option label="Both" value="BOTH" />
         </el-select>
       </el-form-item>
       <el-form-item :label="$t('template.reviewRequired')">
@@ -59,13 +41,12 @@ import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import {
   createTemplate, updateTemplate,
-  type TemplateDTO, type CategoryDTO, type TagDTO,
+  type TemplateDTO, type TagDTO,
 } from '@/api/templates'
 
 const props = defineProps<{
   visible: boolean
   templateData: TemplateDTO | null
-  categories: CategoryDTO[]
   tags: TagDTO[]
 }>()
 
@@ -82,9 +63,7 @@ const isEdit = ref(false)
 const form = reactive({
   name: '',
   description: '',
-  categoryId: null as number | null,
   tagIds: [] as number[],
-  outputFormat: 'WORD',
   reviewRequired: false,
 })
 
@@ -97,9 +76,7 @@ watch(() => props.visible, (val) => {
     isEdit.value = true
     form.name = props.templateData.name
     form.description = props.templateData.description || ''
-    form.categoryId = props.templateData.categoryId
     form.tagIds = props.templateData.tags?.map(t => t.id) || []
-    form.outputFormat = props.templateData.outputFormat || 'WORD'
     form.reviewRequired = props.templateData.reviewRequired ?? false
   } else if (val) {
     isEdit.value = false
@@ -109,9 +86,7 @@ watch(() => props.visible, (val) => {
 function resetForm() {
   form.name = ''
   form.description = ''
-  form.categoryId = null
   form.tagIds = []
-  form.outputFormat = 'WORD'
   form.reviewRequired = false
   formRef.value?.resetFields()
 }
@@ -125,9 +100,8 @@ async function handleSave() {
     const payload = {
       name: form.name,
       description: form.description,
-      categoryId: form.categoryId,
       tagIds: form.tagIds,
-      outputFormat: form.outputFormat,
+      outputFormat: 'WORD',
       reviewRequired: form.reviewRequired,
     }
     if (isEdit.value && props.templateData) {
@@ -138,7 +112,7 @@ async function handleSave() {
       ElMessage.success(t('message.createSuccess'))
     }
     emit('saved')
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     saving.value = false
   }
 }

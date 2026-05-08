@@ -1,8 +1,5 @@
 package com.docgen.dto;
 
-/**
- * Request DTO for approve or reject review actions.
- */
 public class ReviewActionRequest {
 
     private String comment;

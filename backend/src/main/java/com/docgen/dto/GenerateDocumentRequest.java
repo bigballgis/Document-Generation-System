@@ -2,15 +2,12 @@ package com.docgen.dto;
 
 import java.util.Map;
 
-/**
- * Request DTO for synchronous document generation.
- */
 public class GenerateDocumentRequest {
 
     /** Runtime parameters passed to data sources and expressions. */
     private Map<String, Object> parameters;
 
-    /** Output format: WORD, PDF, or BOTH. Defaults to template's configured format. */
+    /** Output format for this request: WORD or PDF only. BOTH is rejected when sent explicitly; legacy template BOTH (DB) defaults to WORD server-side. */
     private String outputFormat;
 
     /** Storage strategy override: TEMP or PERSISTENT. Defaults to template's configured strategy. */

@@ -119,7 +119,6 @@ public class AuditLogService {
         return retentionDays;
     }
 
-    // ── Private helpers ──
 
     private AuditLogDTO toDTO(AuditLog entity) {
         return new AuditLogDTO(

@@ -44,7 +44,6 @@
       </el-table-column>
     </el-table>
 
-    <!-- Grant Permission Dialog -->
     <el-dialog v-model="grantDialogVisible" :title="$t('admin.permission.grant')" width="450px" destroy-on-close>
       <el-form label-width="120px">
         <el-form-item :label="$t('admin.permission.granteeType')">
@@ -138,7 +137,7 @@ async function handleGrant() {
     ElMessage.success(t('admin.permission.grantSuccess'))
     grantDialogVisible.value = false
     loadPermissions()
-  } catch { /* interceptor */ } finally {
+  } catch {} finally {
     saving.value = false
   }
 }
@@ -149,7 +148,7 @@ async function handleRevoke(permId: number) {
     await revokePermission(selectedTemplateId.value, permId)
     ElMessage.success(t('admin.permission.revokeSuccess'))
     loadPermissions()
-  } catch { /* interceptor */ }
+  } catch {}
 }
 
 onMounted(() => loadTemplates())
@@ -162,3 +161,4 @@ onMounted(() => loadTemplates())
   margin-bottom: 16px;
 }
 </style>
+

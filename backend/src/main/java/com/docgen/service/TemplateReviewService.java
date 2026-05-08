@@ -7,11 +7,16 @@ import com.docgen.entity.ReviewStatus;
 import com.docgen.entity.Template;
 import com.docgen.entity.TemplateReview;
 import com.docgen.entity.TemplateState;
+import com.docgen.entity.User;
 import com.docgen.exception.BusinessException;
 import com.docgen.exception.ErrorCode;
 import com.docgen.exception.ResourceNotFoundException;
+import com.docgen.entity.Team;
+import com.docgen.entity.TeamApprovalMode;
+import com.docgen.repository.TeamRepository;
 import com.docgen.repository.TemplateRepository;
 import com.docgen.repository.TemplateReviewRepository;
+import com.docgen.repository.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,17 +44,26 @@ public class TemplateReviewService {
 
     private final TemplateReviewRepository reviewRepository;
     private final TemplateRepository templateRepository;
+    private final UserRepository userRepository;
+    private final TeamRepository teamRepository;
     private final TemplateStateMachineService stateMachineService;
     private final ObjectMapper objectMapper;
+    private final AutoActivationService autoActivationService;
 
     public TemplateReviewService(TemplateReviewRepository reviewRepository,
                                  TemplateRepository templateRepository,
+                                 UserRepository userRepository,
+                                 TeamRepository teamRepository,
                                  TemplateStateMachineService stateMachineService,
-                                 ObjectMapper objectMapper) {
+                                 ObjectMapper objectMapper,
+                                 AutoActivationService autoActivationService) {
         this.reviewRepository = reviewRepository;
         this.templateRepository = templateRepository;
+        this.userRepository = userRepository;
+        this.teamRepository = teamRepository;
         this.stateMachineService = stateMachineService;
         this.objectMapper = objectMapper;
+        this.autoActivationService = autoActivationService;
     }
 
     /**
@@ -59,6 +73,13 @@ public class TemplateReviewService {
     @Transactional
     public List<TemplateReviewDTO> submitForReview(Long templateId, SubmitReviewRequest request) {
         Template template = findTemplateOrThrow(templateId);
+        assertReviewersAllowedForTemplate(template, request.getReviewerIds(), request.getReviewLevel());
+        TemplateState current = TemplateState.valueOf(template.getStatus());
+        if (current != TemplateState.IN_TEST) {
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                    "Template must be in IN_TEST before submitting for review; use POST /api/templates/{id}/submit-test first",
+                    HttpStatus.BAD_REQUEST);
+        }
 
         // Transition template to PENDING_REVIEW
         stateMachineService.transition(templateId, TemplateState.PENDING_REVIEW);
@@ -120,7 +141,7 @@ public class TemplateReviewService {
     }
 
     /**
-     * Reject a review. Transitions the template back to DRAFT state.
+     * Reject a review. Transitions the template back to IN_TEST for further changes and re-test.
      */
     @Transactional
     public TemplateReviewDTO rejectReview(Long reviewId, Long reviewerId, String reason) {
@@ -129,7 +150,7 @@ public class TemplateReviewService {
 
         if (reason == null || reason.isBlank()) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "驳回原因不能为空", HttpStatus.BAD_REQUEST);
+                    "Rejection reason is required", HttpStatus.BAD_REQUEST);
         }
 
         review.setStatus(ReviewStatus.REJECTED);
@@ -137,8 +158,8 @@ public class TemplateReviewService {
         review.setCompletedAt(Instant.now());
         TemplateReview saved = reviewRepository.save(review);
 
-        // Transition template back to DRAFT
-        stateMachineService.transition(review.getTemplateId(), TemplateState.DRAFT);
+        // Send back to testing
+        stateMachineService.transition(review.getTemplateId(), TemplateState.IN_TEST);
 
         log.info("Review rejected: reviewId={}, templateId={}, reason={}",
                 reviewId, review.getTemplateId(), reason);
@@ -195,7 +216,6 @@ public class TemplateReviewService {
                 template.getTemplateFilePath());
     }
 
-    // ── Private helpers ──
 
     /**
      * After a review action, check if all reviews at the given level are completed
@@ -219,33 +239,78 @@ public class TemplateReviewService {
                 .existsByTemplateIdAndReviewLevelAndStatus(templateId, reviewLevel + 1, ReviewStatus.PENDING);
 
         if (!nextLevelPending) {
-            // All levels completed — transition to REVIEWED
-            stateMachineService.transition(templateId, TemplateState.REVIEWED);
-            log.info("All review levels completed, template {} transitioned to REVIEWED", templateId);
+            // All levels completed — auto-activate (PENDING_REVIEW → REVIEWED → ACTIVE + API Key)
+            autoActivationService.tryAutoActivate(templateId);
+            log.info("All review levels completed, auto-activation triggered for template {}", templateId);
+        }
+    }
+
+    /**
+     * Enforces same-tenant, same-team reviewers; template must have a team; author cannot review own template.
+     */
+    private void assertReviewersAllowedForTemplate(Template template, List<Long> reviewerIds, int reviewLevel) {
+        if (template.getTeamId() == null) {
+            throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                    "Template must be assigned to a team before submitting for review",
+                    HttpStatus.BAD_REQUEST);
+        }
+        Long templateTenantId = template.getTenantId();
+        Long teamId = template.getTeamId();
+        Long createdBy = template.getCreatedBy();
+
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.VALIDATION_FAILED,
+                        "Template team not found", HttpStatus.BAD_REQUEST));
+        String expectedLane = null;
+        if (team.getApprovalMode() == TeamApprovalMode.MAKER_CHECKER) {
+            expectedLane = reviewLevel <= 1 ? "MAKER" : "CHECKER";
+        }
+
+        for (Long reviewerId : reviewerIds) {
+            User u = userRepository.findById(reviewerId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.VALIDATION_FAILED,
+                            "Reviewer user not found", HttpStatus.BAD_REQUEST));
+            if (!u.getTenantId().equals(templateTenantId)) {
+                throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                        "Reviewer must belong to the same tenant as the template", HttpStatus.BAD_REQUEST);
+            }
+            if (u.getTeamId() == null || !u.getTeamId().equals(teamId)) {
+                throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                        "Reviewer must belong to the template's team", HttpStatus.BAD_REQUEST);
+            }
+            if (createdBy != null && u.getId().equals(createdBy)) {
+                throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                        "Template author cannot be a reviewer", HttpStatus.BAD_REQUEST);
+            }
+            if (expectedLane != null && !expectedLane.equals(u.getTeamReviewLane())) {
+                throw new BusinessException(ErrorCode.VALIDATION_FAILED,
+                        "Reviewer must have team review lane " + expectedLane + " for this review level",
+                        HttpStatus.BAD_REQUEST);
+            }
         }
     }
 
     private void validateReviewerAndPending(TemplateReview review, Long reviewerId) {
         if (!review.getReviewerId().equals(reviewerId)) {
             throw new BusinessException(ErrorCode.REVIEW_NOT_AUTHORIZED,
-                    "只有指定的审查人才能执行此操作", HttpStatus.FORBIDDEN);
+                    "Only the assigned reviewer can perform this action", HttpStatus.FORBIDDEN);
         }
         if (review.getStatus() != ReviewStatus.PENDING) {
             throw new BusinessException(ErrorCode.REVIEW_ALREADY_COMPLETED,
-                    "该审查已完成，不能重复操作", HttpStatus.BAD_REQUEST);
+                    "This review is already completed", HttpStatus.BAD_REQUEST);
         }
     }
 
     private TemplateReview findReviewOrThrow(Long reviewId) {
         return reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.REVIEW_NOT_FOUND, "审查记录不存在"));
+                        ErrorCode.REVIEW_NOT_FOUND, "Review record not found"));
     }
 
     private Template findTemplateOrThrow(Long templateId) {
         return templateRepository.findById(templateId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.TEMPLATE_NOT_FOUND, "模板不存在"));
+                        ErrorCode.TEMPLATE_NOT_FOUND, "Template not found"));
     }
 
     TemplateReviewDTO toDTO(TemplateReview review) {
@@ -283,7 +348,7 @@ public class TemplateReviewService {
             return objectMapper.writeValueAsString(suggestions);
         } catch (JsonProcessingException e) {
             throw new BusinessException(ErrorCode.INTERNAL_ERROR,
-                    "序列化建议列表失败", HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Failed to serialize review suggestions", HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 }

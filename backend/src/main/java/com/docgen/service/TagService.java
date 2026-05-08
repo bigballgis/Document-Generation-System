@@ -46,7 +46,7 @@ public class TagService {
 
         if (tagRepository.existsByTenantIdAndName(tenantId, request.getName())) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "标签名称在该租户下已存在", HttpStatus.CONFLICT);
+                    "Tag name already exists for this tenant", HttpStatus.CONFLICT);
         }
 
         TemplateTag tag = new TemplateTag();
@@ -66,7 +66,7 @@ public class TagService {
         if (!tag.getName().equals(request.getName())
                 && tagRepository.existsByTenantIdAndName(tenantId, request.getName())) {
             throw new BusinessException(ErrorCode.VALIDATION_FAILED,
-                    "标签名称在该租户下已存在", HttpStatus.CONFLICT);
+                    "Tag name already exists for this tenant", HttpStatus.CONFLICT);
         }
 
         tag.setName(request.getName());
@@ -103,7 +103,7 @@ public class TagService {
         // Verify template exists
         templateRepository.findById(templateId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.TEMPLATE_NOT_FOUND, "模板不存在"));
+                        ErrorCode.TEMPLATE_NOT_FOUND, "Template not found"));
         // Verify tag exists
         findTagOrThrow(tagId);
 
@@ -131,12 +131,11 @@ public class TagService {
                 .collect(Collectors.toList());
     }
 
-    // ── Private helpers ──
 
     private TemplateTag findTagOrThrow(Long id) {
         return tagRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.VALIDATION_FAILED, "标签不存在"));
+                        ErrorCode.VALIDATION_FAILED, "Tag not found"));
     }
 
     private TagDTO toDTO(TemplateTag tag) {

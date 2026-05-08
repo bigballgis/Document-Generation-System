@@ -11,7 +11,6 @@
       </el-button>
     </div>
 
-    <!-- Filters -->
     <el-card class="filter-card" shadow="never">
       <el-form :inline="true" @submit.prevent="handleSearch">
         <el-form-item :label="$t('document.templateId')">
@@ -56,7 +55,6 @@
       </el-form>
     </el-card>
 
-    <!-- Table -->
     <el-card shadow="never" style="margin-top: 16px">
       <el-table
         :data="documents"
@@ -113,7 +111,6 @@
       </div>
     </el-card>
 
-    <!-- Merge Dialog -->
     <MergeDialog
       v-model:visible="mergeDialogVisible"
       :document-ids="selectedIds"
@@ -124,6 +121,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { getDocuments, downloadDocument } from '@/api/documents'
@@ -131,6 +129,7 @@ import MergeDialog from './components/MergeDialog.vue'
 import type { GeneratedDocumentDTO, DocumentQuery } from '@/types/document'
 
 const { t } = useI18n()
+const route = useRoute()
 
 const loading = ref(false)
 const documents = ref<GeneratedDocumentDTO[]>([])
@@ -148,8 +147,10 @@ const query = reactive<DocumentQuery>({
   size: 10,
 })
 
-function statusTagType(status: string) {
-  const map: Record<string, string> = {
+type ElTagType = 'primary' | 'success' | 'warning' | 'info' | 'danger'
+
+function statusTagType(status: string): ElTagType {
+  const map: Record<string, ElTagType> = {
     GENERATED: 'success',
     EXPIRED: 'warning',
     DELETED: 'danger',
@@ -169,7 +170,7 @@ async function fetchDocuments() {
     const res = await getDocuments(query)
     documents.value = res.content
     total.value = res.totalElements
-  } catch { /* interceptor handles */ } finally {
+  } catch {} finally {
     loading.value = false
   }
 }
@@ -220,7 +221,7 @@ async function handleDownload(row: GeneratedDocumentDTO) {
     const filename = `document-${row.id}.${row.format.toLowerCase()}`
     triggerBlobDownload(blob, filename)
     ElMessage.success(t('message.downloadStarted'))
-  } catch { /* interceptor handles */ }
+  } catch {}
 }
 
 function onMerged() {
@@ -228,6 +229,13 @@ function onMerged() {
 }
 
 onMounted(() => {
+  const raw = route.query.templateId
+  if (raw !== undefined && raw !== null && raw !== '') {
+    const n = Number(Array.isArray(raw) ? raw[0] : raw)
+    if (Number.isFinite(n) && n > 0) {
+      query.templateId = n
+    }
+  }
   fetchDocuments()
 })
 </script>
@@ -254,3 +262,4 @@ onMounted(() => {
   margin-top: 16px;
 }
 </style>
+

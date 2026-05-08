@@ -1,24 +1,10 @@
 const PizZip = require('pizzip');
 
-/**
- * Apply a text watermark to a .docx buffer by injecting a watermark shape into the document header.
- * Uses the Word XML watermark approach (VML shape in header).
- *
- * @param {Buffer} docxBuffer - The rendered .docx buffer
- * @param {object} config - Watermark configuration
- * @param {string} config.text - Watermark text
- * @param {number} [config.fontSize=48] - Font size
- * @param {string} [config.color='#C0C0C0'] - Hex color
- * @param {number} [config.opacity=0.5] - Opacity (0-1)
- * @param {number} [config.rotation=-45] - Rotation angle in degrees
- * @returns {Promise<Buffer>} Modified .docx buffer
- */
 async function applyTextWatermark(docxBuffer, config) {
   const { text = 'WATERMARK', fontSize = 48, color = '#C0C0C0', opacity = 0.5, rotation = -45 } = config;
 
   const zip = new PizZip(docxBuffer);
 
-  // Build VML watermark shape
   const hexColor = color.replace('#', '');
   const opacityStr = opacity.toString();
   const rotationStyle = `rotation:${rotation}`;
@@ -45,33 +31,20 @@ async function applyTextWatermark(docxBuffer, config) {
       <v:textpath style="font-family:&quot;Calibri&quot;;font-size:${fontSize}pt" string="${escapeXml(text)}"/>
     </v:shape>`;
 
-  // Find or create header
   const headerPath = findOrCreateHeader(zip, watermarkShape);
 
   return zip.generate({ type: 'nodebuffer' });
 }
 
-/**
- * Apply an image watermark to a .docx buffer.
- * Simplified: injects a background image reference into the header.
- *
- * @param {Buffer} docxBuffer - The rendered .docx buffer
- * @param {object} config - Watermark configuration
- * @param {string} config.imageBase64 - Base64 encoded image
- * @param {number} [config.opacity=0.3] - Opacity (0-1)
- * @returns {Promise<Buffer>} Modified .docx buffer
- */
 async function applyImageWatermark(docxBuffer, config) {
   const { imageBase64, opacity = 0.3 } = config;
   if (!imageBase64) return docxBuffer;
 
   const zip = new PizZip(docxBuffer);
 
-  // Add image to media folder
   const imgData = Buffer.from(imageBase64, 'base64');
   zip.file('word/media/watermark.png', imgData);
 
-  // Add relationship for the image in header
   const watermarkShape = `
     <v:shape id="WatermarkImage" o:spid="_x0000_s2050"
       style="position:absolute;margin-left:0;margin-top:0;width:468pt;height:468pt;z-index:-251657216;mso-position-horizontal:center;mso-position-horizontal-relative:margin;mso-position-vertical:center;mso-position-vertical-relative:margin"
@@ -85,13 +58,11 @@ async function applyImageWatermark(docxBuffer, config) {
 }
 
 function findOrCreateHeader(zip, watermarkContent) {
-  // Check if header1.xml exists
   let headerXml;
   const headerPath = 'word/header1.xml';
 
   if (zip.file(headerPath)) {
     headerXml = zip.file(headerPath).asText();
-    // Insert watermark before closing </w:hdr>
     headerXml = headerXml.replace('</w:hdr>', `<w:p><w:r><w:pict>${watermarkContent}</w:pict></w:r></w:p></w:hdr>`);
   } else {
     headerXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -100,9 +71,8 @@ function findOrCreateHeader(zip, watermarkContent) {
        xmlns:o="urn:schemas-microsoft-com:office:office"
        xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <w:p><w:r><w:pict>${watermarkContent}</w:pict></w:r></w:p>
-</w:hdr>`;
+  </w:hdr>`;
 
-    // Add header reference to document.xml.rels
     ensureHeaderRelationship(zip, headerPath);
   }
 

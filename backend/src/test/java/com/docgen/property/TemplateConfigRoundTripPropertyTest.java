@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p><b>Validates: Requirements 30.4, 30.5, 30.6</b></p>
  */
-@Tag("Feature: low-code-document-generation-system, Property 9: 模板配置导入导出往返一致性")
+@Tag("feature-low-code-document-generation-system-property-9")
 class TemplateConfigRoundTripPropertyTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -54,7 +54,6 @@ class TemplateConfigRoundTripPropertyTest {
                 "Version should be preserved");
     }
 
-    // ── Assertion helpers ──
 
     private void assertTemplateMetadataEqual(
             TemplateConfigExport.TemplateMetadata expected,
@@ -131,7 +130,6 @@ class TemplateConfigRoundTripPropertyTest {
         }
     }
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<TemplateConfigExport> validTemplateConfigs() {
@@ -338,3 +336,4 @@ class TemplateConfigRoundTripPropertyTest {
                 });
     }
 }
+

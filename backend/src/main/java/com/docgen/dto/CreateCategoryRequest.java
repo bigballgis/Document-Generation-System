@@ -2,12 +2,9 @@ package com.docgen.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
-/**
- * Request DTO for creating a new template category.
- */
 public class CreateCategoryRequest {
 
-    @NotBlank(message = "分类名称不能为空")
+    @NotBlank(message = "Category name must not be blank")
     private String name;
 
     private Long parentId;

@@ -2,20 +2,20 @@
 
 ## Introduction
 
-本需求文档定义了文档生成系统前端补全功能（document-generation-frontend）。后端已提供完整的 REST API（GenerateController、TaskController、DocumentController、ExpressionController），但前端缺少对应的 API 调用层、视图页面和组件。本功能旨在补全前端 UI，使用户能够通过浏览器完成文档生成、异步任务监控、生成历史查询和表达式管理的全部操作。
+This requirements document defines the **document-generation-frontend** gap-fill: the backend already exposes full REST APIs (`GenerateController`, `TaskController`, `DocumentController`, `ExpressionController`), but the frontend lacked matching API modules, views, and components. This scope adds UI so operators can generate documents, monitor async jobs, browse download history, and manage expressions from the browser.
 
 ## Glossary
 
-- **Generation_UI**: 文档生成界面，用户通过该界面选择模板并触发同步/异步/批量文档生成
-- **Task_Monitor**: 异步任务监控面板，展示正在运行和已完成的异步生成任务及其进度
-- **Document_History**: 已生成文档历史页面，支持浏览、搜索、筛选和下载历史文档
-- **Expression_Panel**: 表达式管理面板，集成在模板详情页中，用于创建、编辑、验证和删除表达式
-- **API_Layer**: 前端 API 调用层，封装 Axios 请求函数，对应后端 Controller 端点
-- **Generate_API**: 前端 API 文件 `frontend/src/api/generate.ts`，封装 GenerateController 的所有端点
-- **Task_API**: 前端 API 文件 `frontend/src/api/tasks.ts`，封装 TaskController 的所有端点
-- **Document_API**: 前端 API 文件 `frontend/src/api/documents.ts`，封装 DocumentController 的所有端点
-- **Expression_API**: 前端 API 文件 `frontend/src/api/expressions.ts`，封装 ExpressionController 的所有端点
-- **i18n_Keys**: 国际化翻译键，所有用户可见文本必须使用 vue-i18n 的 `$t()` 函数引用
+- **Generation_UI**: Generation dialog — choose template and run sync/async/batch generation
+- **Task_Monitor**: Async task dashboard — running/completed jobs and progress
+- **Document_History**: Generated-documents page — browse, filter, search, download
+- **Expression_Panel**: Expression management tab on template detail — CRUD + validate
+- **API_Layer**: Typed Axios wrappers per backend controller
+- **Generate_API**: `frontend/src/api/generate.ts` — `GenerateController` endpoints
+- **Task_API**: `frontend/src/api/tasks.ts` — `TaskController` endpoints
+- **Document_API**: `frontend/src/api/documents.ts` — `DocumentController` endpoints
+- **Expression_API**: `frontend/src/api/expressions.ts` — `ExpressionController` endpoints
+- **i18n_Keys**: vue-i18n keys — all user-visible strings via `$t()`
 
 ## Requirements
 

@@ -4,12 +4,9 @@ import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
 
-/**
- * Request DTO for updating the assembly configuration of a Composite_Template.
- */
 public class UpdateAssemblyConfigRequest {
 
-    @NotNull(message = "段落列表不能为空")
+    @NotNull(message = "Segment list must not be null")
     private List<AssemblySegmentEntry> segments;
 
     public UpdateAssemblyConfigRequest() {}

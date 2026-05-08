@@ -21,7 +21,7 @@ import org.testcontainers.utility.DockerImageName;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("integration")
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 public abstract class BaseIntegrationTest {
 
     @LocalServerPort
@@ -50,7 +50,7 @@ public abstract class BaseIntegrationTest {
 
     @Container
     static final GenericContainer<?> minio = new GenericContainer<>(
-            DockerImageName.parse("minio/minio:latest"))
+            DockerImageName.parse("minio/minio:RELEASE.2025-04-08T15-41-24Z"))
             .withExposedPorts(9000)
             .withEnv("MINIO_ROOT_USER", "minioadmin")
             .withEnv("MINIO_ROOT_PASSWORD", "minioadmin")

@@ -2,6 +2,8 @@ package com.docgen.entity;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 
@@ -42,6 +44,7 @@ public class GeneratedDocument {
     private Integer pageCount;
 
     @Column(name = "metadata", columnDefinition = "JSONB")
+    @JdbcTypeCode(SqlTypes.JSON)
     private String metadata;
 
     @Column(name = "download_url", length = 1000)
@@ -63,7 +66,6 @@ public class GeneratedDocument {
         }
     }
 
-    // ── Getters and Setters ──
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -107,3 +109,4 @@ public class GeneratedDocument {
     public Instant getExpiresAt() { return expiresAt; }
     public void setExpiresAt(Instant expiresAt) { this.expiresAt = expiresAt; }
 }
+

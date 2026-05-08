@@ -3,8 +3,7 @@ package com.docgen.dto;
 import java.util.List;
 
 /**
- * DTO representing the result of comparing two template or segment versions.
- * Contains categorized diffs and a change summary.
+ * Categorized diffs between two template or segment versions plus a change summary.
  */
 public class VersionDiffResult {
 

@@ -73,7 +73,6 @@ public class DataValidationService {
         };
     }
 
-    // ── REQUIRED ──
 
     private DataValidationError validateRequired(String field, Object value) {
         if (value == null) {
@@ -87,7 +86,6 @@ public class DataValidationService {
         return null;
     }
 
-    // ── TYPE ──
 
     private DataValidationError validateType(String field, Object value, Map<String, Object> params) {
         if (value == null) {
@@ -113,7 +111,6 @@ public class DataValidationService {
         return null;
     }
 
-    // ── RANGE ──
 
     private DataValidationError validateRange(String field, Object value, Map<String, Object> params) {
         if (value == null) {
@@ -139,7 +136,6 @@ public class DataValidationService {
         return null;
     }
 
-    // ── LENGTH ──
 
     private DataValidationError validateLength(String field, Object value, Map<String, Object> params) {
         if (value == null) {
@@ -162,7 +158,6 @@ public class DataValidationService {
         return null;
     }
 
-    // ── REGEX ──
 
     private DataValidationError validateRegex(String field, Object value, Map<String, Object> params) {
         if (value == null) {
@@ -186,7 +181,6 @@ public class DataValidationService {
         return null;
     }
 
-    // ── Helpers ──
 
     private DataType resolveDataType(Map<String, Object> params) {
         if (params == null) return null;

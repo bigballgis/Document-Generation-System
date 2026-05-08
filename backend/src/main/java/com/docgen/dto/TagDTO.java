@@ -2,9 +2,6 @@ package com.docgen.dto;
 
 import java.time.Instant;
 
-/**
- * Response DTO for template tag information.
- */
 public class TagDTO {
 
     private Long id;

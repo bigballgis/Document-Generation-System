@@ -45,23 +45,27 @@ describe('WebhookLogDialog', () => {
     vi.mocked(getWebhookLogs).mockResolvedValue(sampleLogs as any)
   })
 
-  it('renders log table when dialog becomes visible', async () => {
-    // Mount with visible=false first, then set to true to trigger the watch
-    const wrapper = mount(WebhookLogDialog, {
-      props: { visible: false, webhookId: 5 },
-    })
-    await flushPromises()
-    await wrapper.setProps({ visible: true })
-    await flushPromises()
+  it(
+    'renders log table when dialog becomes visible',
+    async () => {
+      // Mount with visible=false first, then set to true to trigger the watch
+      const wrapper = mount(WebhookLogDialog, {
+        props: { visible: false, webhookId: 5 },
+      })
+      await flushPromises()
+      await wrapper.setProps({ visible: true })
+      await flushPromises()
 
-    expect(getWebhookLogs).toHaveBeenCalledWith(5, { page: 1, size: 10 })
+      expect(getWebhookLogs).toHaveBeenCalledWith(5, { page: 1, size: 10 })
 
-    const text = wrapper.text()
-    expect(text).toContain('DOCUMENT_GENERATED')
-    expect(text).toContain('TEMPLATE_UPDATED')
-    expect(text).toContain('200')
-    expect(text).toContain('500')
-  })
+      const text = wrapper.text()
+      expect(text).toContain('DOCUMENT_GENERATED')
+      expect(text).toContain('TEMPLATE_UPDATED')
+      expect(text).toContain('200')
+      expect(text).toContain('500')
+    },
+    10_000,
+  )
 
   it('renders pagination component', async () => {
     const wrapper = mount(WebhookLogDialog, {

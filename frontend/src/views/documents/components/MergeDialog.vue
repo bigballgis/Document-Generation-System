@@ -74,7 +74,7 @@ async function handleSubmit() {
     ElMessage.success(t('document.mergeSuccess'))
     emit('merged')
     emit('update:visible', false)
-  } catch { /* interceptor handles */ } finally {
+  } catch {} finally {
     submitting.value = false
   }
 }

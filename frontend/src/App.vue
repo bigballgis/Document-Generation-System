@@ -2,10 +2,6 @@
   <router-view />
 </template>
 
-<script setup lang="ts">
-// Root application component
-</script>
-
 <style>
 html, body, #app {
   margin: 0;

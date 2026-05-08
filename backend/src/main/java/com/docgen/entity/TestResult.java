@@ -1,6 +1,8 @@
 package com.docgen.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 
@@ -25,6 +27,7 @@ public class TestResult {
     private TestStatus status;
 
     @Column(name = "actual_result_json", columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
     private String actualResultJson;
 
     @Column(name = "diff_details", columnDefinition = "TEXT")
@@ -33,6 +36,13 @@ public class TestResult {
     @Column(name = "executed_at", nullable = false)
     private Instant executedAt;
 
+    @Column(name = "generated_document_id")
+    private Long generatedDocumentId;
+
+    /** Optional PDF sample stored alongside {@link #generatedDocumentId} Word/DOCX trial output. */
+    @Column(name = "generated_pdf_document_id")
+    private Long generatedPdfDocumentId;
+
     @PrePersist
     protected void onCreate() {
         if (this.executedAt == null) {
@@ -40,7 +50,6 @@ public class TestResult {
         }
     }
 
-    // ── Getters and Setters ──
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -59,4 +68,11 @@ public class TestResult {
 
     public Instant getExecutedAt() { return executedAt; }
     public void setExecutedAt(Instant executedAt) { this.executedAt = executedAt; }
+
+    public Long getGeneratedDocumentId() { return generatedDocumentId; }
+    public void setGeneratedDocumentId(Long generatedDocumentId) { this.generatedDocumentId = generatedDocumentId; }
+
+    public Long getGeneratedPdfDocumentId() { return generatedPdfDocumentId; }
+    public void setGeneratedPdfDocumentId(Long generatedPdfDocumentId) { this.generatedPdfDocumentId = generatedPdfDocumentId; }
 }
+

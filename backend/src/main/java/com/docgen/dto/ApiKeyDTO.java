@@ -3,7 +3,6 @@ package com.docgen.dto;
 import java.time.Instant;
 
 /**
- * Response DTO for API Key information.
  * The raw key is only returned once upon creation (in {@code rawKey}).
  * After that, only the masked prefix is available.
  */

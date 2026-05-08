@@ -4,9 +4,6 @@ import com.docgen.entity.ComparisonType;
 
 import java.time.Instant;
 
-/**
- * Response DTO for a template test case.
- */
 public class TestCaseDTO {
 
     private Long id;
@@ -17,6 +14,9 @@ public class TestCaseDTO {
     private ComparisonType comparisonType;
     private Instant createdAt;
     private Instant updatedAt;
+
+    /** Latest execution result for this case (list endpoint only; omitted in export payloads). */
+    private TestResultDTO lastRun;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -41,4 +41,7 @@ public class TestCaseDTO {
 
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+
+    public TestResultDTO getLastRun() { return lastRun; }
+    public void setLastRun(TestResultDTO lastRun) { this.lastRun = lastRun; }
 }

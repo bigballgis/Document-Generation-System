@@ -2,55 +2,55 @@
 
 ## Overview
 
-本设计文档描述文档生成系统前端补全功能的技术方案。后端已提供完整的 REST API（GenerateController、TaskController、DocumentController、ExpressionController），前端需要补全对应的 API 调用层、TypeScript 类型定义、Vue 页面组件、composable 函数、路由配置和 i18n 翻译。
+This design covers the document-generation frontend gap-fill. The backend already exposes GenerateController, TaskController, DocumentController, and ExpressionController; the frontend adds API modules, TypeScript models, Vue pages, one composable, routes, and i18n.
 
-本功能以前端实现为主，仅需在后端 TaskController 中新增一个任务列表查询端点（`GET /api/tasks`）。设计遵循项目现有的前端架构规范（Vue 3 Composition API + Element Plus + Pinia + vue-i18n），并复用已有的 Axios 封装、类型体系和组件模式。
+Work is mostly frontend-only, plus one backend addition: **GET /api/tasks** on TaskController for paging async tasks. The UI follows existing conventions (Vue 3 Composition API, Element Plus, Pinia, vue-i18n) and reuses the shared Axios client and patterns.
 
-### 核心交付物
+### Deliverables
 
-1. 4 个 API 文件：`generate.ts`、`tasks.ts`、`documents.ts`、`expressions.ts`
-2. 2 个新页面：Task Monitor (`/tasks`)、Document History (`/documents`)
-3. 1 个集成面板：Expression Panel（嵌入模板详情页 tab）
-4. 1 个生成对话框：GenerateDialog（从模板详情页触发）
-5. 1 个 composable：`useTaskPolling`（异步任务轮询）
-6. 路由注册 + 导航菜单扩展 + 三语 i18n 翻译
+1. Four API modules: `generate.ts`, `tasks.ts`, `documents.ts`, `expressions.ts`
+2. Two routes: Task monitor (`/tasks`), Document history (`/documents`)
+3. Expression panel (new tab on template detail)
+4. GenerateDialog (opened from template detail)
+5. Composable `useTaskPolling` for async polling
+6. Router + sidebar entries + locale strings (en-US, zh-CN, zh-TW)
 
 ## Architecture
 
-### 前端文件结构
+### Frontend file layout
 
 ```
 frontend/src/
 ├── api/
-│   ├── generate.ts          # GenerateController 端点
-│   ├── tasks.ts             # TaskController 端点
-│   ├── documents.ts         # DocumentController 端点
-│   └── expressions.ts       # ExpressionController 端点
+│   ├── generate.ts          # GenerateController
+│   ├── tasks.ts             # TaskController
+│   ├── documents.ts         # DocumentController
+│   └── expressions.ts       # ExpressionController
 ├── types/
-│   └── document.ts          # 文档生成相关类型定义
+│   └── document.ts          # Generation-related types
 ├── composables/
-│   └── useTaskPolling.ts    # 异步任务轮询 composable
+│   └── useTaskPolling.ts    # Async task polling
 ├── views/
 │   ├── tasks/
-│   │   └── Index.vue        # 异步任务监控页
+│   │   └── Index.vue        # Task monitor
 │   ├── documents/
-│   │   └── Index.vue        # 生成文档历史页
+│   │   └── Index.vue        # Generated documents history
 │   │   └── components/
-│   │       └── MergeDialog.vue  # 文档合并对话框
+│   │       └── MergeDialog.vue  # Merge selected documents
 │   └── templates/
 │       └── components/
-│           ├── GenerateDialog.vue      # 文档生成对话框
-│           ├── ExpressionPanel.vue     # 表达式管理面板
-│           └── ExpressionFormDialog.vue # 表达式创建/编辑对话框
-├── router/index.ts          # 新增 /tasks、/documents 路由
-├── layouts/MainLayout.vue   # 新增导航菜单项
+│           ├── GenerateDialog.vue      # Generate flow
+│           ├── ExpressionPanel.vue     # Expressions list
+│           └── ExpressionFormDialog.vue # Create/edit expression
+├── router/index.ts          # /tasks, /documents
+├── layouts/MainLayout.vue   # Nav items
 └── i18n/
-    ├── en-US.json           # 新增 document.*, task.*, expression.* 翻译
+    ├── en-US.json           # document.*, task.*, expression.*
     ├── zh-CN.json
     └── zh-TW.json
 ```
 
-### 数据流架构
+### Data flow
 
 ```mermaid
 graph TD
@@ -71,9 +71,9 @@ graph TD
 
 ## Components and Interfaces
 
-### API Layer Design
+### API layer
 
-所有 API 文件遵循现有模式：从 `@/api/request` 导入共享 Axios 实例，函数签名使用泛型 `request.get<any, ResponseType>(url, config)`。
+All modules import the shared client from `@/api/request` and use typed `request.get<any, ResponseType>(url, config)` (and POST/PUT/DELETE variants) like existing API files.
 
 #### generate.ts
 
@@ -197,49 +197,24 @@ export function useTaskPolling(taskId: Ref<string | null>, intervalMs = 3000) {
   const isPolling = ref(false)
   const error = ref<string | null>(null)
 
-  // 当 taskId 变化时自动开始/停止轮询
-  // 当 task.status 不再是 PENDING/RUNNING 时自动停止
-  // 组件卸载时通过 onBeforeUnmount 自动清理 interval
+  // Start/stop polling when taskId changes
+  // Stop when task.status is no longer PENDING/RUNNING
+  // Clear interval in onBeforeUnmount
 
   return { task, progress, isPolling, error, start, stop }
 }
 ```
 
-### Vue Component Architecture
+### Vue components
 
-#### GenerateDialog
+- **GenerateDialog** — template detail header; modes sync/async/batch; batch fields for data sets and failure policy.
+- **ExpressionPanel** — new tab on `Detail.vue`; list + `ExpressionFormDialog` for create/edit.
+- **Task monitor** — filters + table; `useTaskPolling` for RUNNING rows; `<el-progress>` / `<el-tag>`.
+- **Document history** — filters, selection, **MergeDialog** for merge options.
 
-- 触发方式：模板详情页 header 区域新增 "Generate" 按钮
-- Props: `visible: boolean`, `templateId: number`
-- Emits: `update:visible`, `generated`
-- 内部状态：generation mode (sync/async/batch), parameters JSON, outputFormat, storageStrategy
-- Batch 模式额外字段：dataSets JSON array, failureStrategy, failureThreshold
+### Router
 
-#### ExpressionPanel
-
-- 集成位置：`Detail.vue` 的 `<el-tabs>` 中新增一个 `<el-tab-pane>`
-- Props: `templateId: number`
-- 内部管理表达式列表的加载、CRUD 操作
-- 子组件 `ExpressionFormDialog`：创建/编辑表达式的对话框
-
-#### Task Monitor Page (views/tasks/Index.vue)
-
-- 遵循标准列表页模式（page-header + filter-card + table + pagination）
-- 筛选区域：status dropdown、templateId input
-- 页面加载时调用 `getTasks` 获取任务列表
-- 使用 `useTaskPolling` composable 实现 RUNNING 任务的实时进度更新
-- 进度列使用 `<el-progress>` 组件
-- Status 列使用 `<el-tag>` 颜色映射
-
-#### Document History Page (views/documents/Index.vue)
-
-- 遵循标准列表页模式
-- 筛选区域：templateId input、status dropdown、date range picker
-- 支持多选 + Merge 操作，通过 MergeDialog 子组件配置合并选项
-
-### Router Configuration Changes
-
-在 `router/index.ts` 的 main layout children 中新增：
+Add under main layout `children` in `router/index.ts`:
 
 ```typescript
 {
@@ -256,9 +231,9 @@ export function useTaskPolling(taskId: Ref<string | null>, intervalMs = 3000) {
 },
 ```
 
-### Navigation Menu Changes
+### Navigation
 
-在 `MainLayout.vue` 的 `<el-menu>` 中，在 Templates 菜单项之后新增：
+After the Templates item in `MainLayout.vue` `<el-menu>`:
 
 ```vue
 <el-menu-item index="/documents">
@@ -271,13 +246,13 @@ export function useTaskPolling(taskId: Ref<string | null>, intervalMs = 3000) {
 </el-menu-item>
 ```
 
-同时更新 `navTitleMap` 添加 `/tasks` 和 `/documents` 映射。
+Update `navTitleMap` for `/tasks` and `/documents`.
 
-## Data Models
+## Data models
 
-### TypeScript 类型定义 (types/document.ts)
+### `types/document.ts`
 
-所有类型与后端 DTO 字段名一一对应（camelCase），时间字段使用 `string`（ISO 8601 格式）。
+Types mirror backend DTO field names (camelCase). Timestamps are `string` (ISO 8601).
 
 ```typescript
 // ── Generate Types ──
@@ -431,13 +406,13 @@ export interface ExpressionValidationResult {
 }
 ```
 
-### i18n Key Structure
+### i18n keys
 
-新增 key 遵循 `{module}.{page}.{element}` 命名规范：
+Use `{module}.{page}.{element}`. Full translations live in `en-US.json`, `zh-CN.json`, and `zh-TW.json` (examples below are English defaults).
 
 ```
-nav.tasks          → "Tasks" / "任务" / "任務"
-nav.documents      → "Documents" / "文档" / "文件"
+nav.tasks
+nav.documents
 
 document.generate         → "Generate Document"
 document.generateAsync    → "Generate Asynchronously"
@@ -512,7 +487,7 @@ expression.errorPosition    → "Error at position {pos}"
 
 *A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
 
-本功能以前端 UI 和 API 调用层为主，大部分验收标准属于 UI 交互测试（EXAMPLE）或配置检查（SMOKE）。经过 prework 分析，识别出以下可用 property-based testing 验证的属性：
+This feature is mostly UI and thin API facades; many acceptance checks are example UI tests or smoke checks. The following properties are suitable for PBT:
 
 ### Property 1: Document query parameter mapping preserves all filter fields
 
@@ -532,62 +507,62 @@ expression.errorPosition    → "Error at position {pos}"
 
 **Validates: Requirements 8.7**
 
-## Error Handling
+## Error handling
 
-### API Layer Error Handling
+### API layer
 
-- 所有 API 调用的错误由 `request.ts` 的响应拦截器统一处理（401 自动刷新 token、403/429/5xx 显示 ElMessage）
-- 各组件内部使用 `try/catch` 包裹 API 调用，`catch` 块中不重复显示错误（拦截器已处理）
-- 仅在需要特殊处理时（如重置 loading 状态）在 `finally` 块中执行清理
+- `request.ts` interceptors handle errors (401 refresh, 403/429/5xx → `ElMessage`)
+- Components wrap calls in `try/catch`; avoid duplicate toasts in `catch` when the interceptor already notified
+- Use `finally` for loading flags and other cleanup
 
-### 组件级错误处理
+### Component-level
 
-| 场景 | 处理方式 |
-|------|----------|
-| 同步生成失败 | ElMessage.error 显示后端错误消息 |
-| 异步任务轮询失败 | 停止轮询，显示错误提示，提供手动重试按钮 |
-| 批量生成提交失败 | ElMessage.error，保留表单数据不清空 |
-| 表达式验证失败 | 在对话框内显示 errorMessage 和 errorPosition |
-| 文档下载失败 | ElMessage.error 提示下载失败 |
-| Blob 下载异常 | 检查 response content-type，非 blob 时解析 JSON 错误消息 |
-
-### 轮询容错
-
-`useTaskPolling` composable 实现以下容错逻辑：
-- 单次轮询请求失败时不立即停止，允许最多 3 次连续失败后停止轮询并显示错误
-- 组件卸载时通过 `onBeforeUnmount` 自动清理 `setInterval`
-- 任务状态变为 COMPLETED 或 FAILED 时自动停止轮询
-
-## Testing Strategy
-
-### 测试框架
-
-- 前端单元测试：Vitest + @vue/test-utils
-- Property-based testing：fast-check（与 Vitest 集成）
-- Mock HTTP：vitest mock 或 msw
-
-### 单元测试（Example-based）
-
-| 测试目标 | 测试内容 |
+| Scenario | Handling |
 |----------|----------|
-| API 函数 | 验证各 API 函数发送正确的 HTTP method、URL、payload |
-| useTaskPolling | 验证轮询启动/停止逻辑、状态变更时自动停止、组件卸载清理 |
-| GenerateDialog | 验证三种模式切换、表单提交调用正确 API、错误显示 |
-| ExpressionPanel | 验证 CRUD 操作流程、验证结果显示 |
-| Task Monitor | 验证表格渲染、进度条更新、下载按钮条件显示 |
-| Document History | 验证筛选、分页、多选合并流程 |
+| Sync generate fails | `ElMessage.error` with server message |
+| Polling fails | Stop polling, show error, optional manual retry |
+| Batch submit fails | `ElMessage.error`; keep form values |
+| Expression validate fails | Show `errorMessage` / `errorPosition` in dialog |
+| Document download fails | `ElMessage.error` |
+| Blob download wrong type | Inspect `content-type`; if JSON, parse error body |
 
-### Property-Based Tests (fast-check)
+### Polling resilience
 
-每个 property test 运行最少 100 次迭代，使用 `fc.assert(fc.property(...), { numRuns: 100 })` 配置。
+`useTaskPolling`:
+- Do not stop on first failure; after 3 consecutive failures, stop and surface error
+- `onBeforeUnmount` clears interval
+- Stop when status is COMPLETED or FAILED
 
-| Property | 测试策略 |
+## Testing strategy
+
+### Tooling
+
+- Unit: Vitest + `@vue/test-utils`
+- PBT: fast-check with Vitest
+- HTTP: vitest mocks or MSW
+
+### Example-based unit tests
+
+| Target | Focus |
+|--------|--------|
+| API helpers | Correct method, URL, payload |
+| useTaskPolling | start/stop, terminal states, unmount cleanup |
+| GenerateDialog | Mode switches, submit wiring, errors |
+| ExpressionPanel | CRUD + validation UX |
+| Task monitor | Table, progress, conditional download |
+| Document history | Filters, pagination, merge flow |
+
+### Property-based (fast-check)
+
+Run at least 100 iterations: `fc.assert(fc.property(...), { numRuns: 100 })`.
+
+| Property | Approach |
 |----------|----------|
-| Property 1: Document query parameter mapping | 生成随机 DocumentQuery（optional 字段随机 present/absent），mock Axios，验证传递的 params 与输入一致 |
-| Property 2: Document history filter-to-API mapping | 生成随机筛选组合，mount 组件，触发搜索，验证 API 调用参数 |
-| Property 3: Expression validation result rendering | 生成随机 ExpressionValidationResult，mount ExpressionPanel，验证 UI 渲染 |
+| Property 1: Document query mapping | Random `DocumentQuery`; mock client; assert query params |
+| Property 2: History filters → API | Random filter combos; mount; assert `getDocuments` args |
+| Property 3: Expression validation UI | Random `ExpressionValidationResult`; assert rendered state |
 
-Tag 格式：
+Comment tags (ASCII):
 - `// Feature: document-generation-frontend, Property 1: Document query parameter mapping preserves all filter fields`
 - `// Feature: document-generation-frontend, Property 2: Document history filter-to-API mapping`
 - `// Feature: document-generation-frontend, Property 3: Expression validation result rendering`

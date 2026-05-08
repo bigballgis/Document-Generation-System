@@ -1,0 +1,1427 @@
+[
+  {
+    "name": "bank_logo",
+    "dataType": "STRING",
+    "parameterType": "REQUEST",
+    "required": true,
+    "description": "银行 Logo (base64 图片数据，用于 {%bank_logo} 图片标签)"
+  },
+  {
+    "name": "document_ref",
+    "dataType": "STRING",
+    "parameterType": "REQUEST",
+    "required": true,
+    "description": "文档编号",
+    "validationRules": {
+      "not_blank": true,
+      "pattern": "^FOL-\\d{4}-\\d{6}$",
+      "custom_message": "文档编号格式: FOL-YYYY-NNNNNN"
+    }
+  },
+  {
+    "name": "document_date",
+    "dataType": "DATE",
+    "parameterType": "REQUEST",
+    "required": true,
+    "description": "文档日期",
+    "validationRules": {
+      "not_null": true,
+      "date_format": "YYYY-MM-DD"
+    }
+  },
+  {
+    "name": "document_version",
+    "dataType": "STRING",
+    "parameterType": "REQUEST",
+    "required": false,
+    "defaultValue": "1.0",
+    "description": "文档版本号"
+  },
+  {
+    "name": "confidentiality_level",
+    "dataType": "STRING",
+    "parameterType": "REQUEST",
+    "required": true,
+    "defaultValue": "CONFIDENTIAL",
+    "description": "保密级别",
+    "validationRules": {
+      "enum_values": [
+        "PUBLIC",
+        "INTERNAL",
+        "CONFIDENTIAL",
+        "STRICTLY_CONFIDENTIAL"
+      ]
+    }
+  },
+  {
+    "name": "bank",
+    "dataType": "OBJECT",
+    "parameterType": "REQUEST",
+    "required": true,
+    "description": "银行信息 (贷方)",
+    "children": [
+      {
+        "name": "legal_name",
+        "dataType": "STRING",
+        "required": true,
+        "description": "银行法定名称",
+        "validationRules": {
+          "not_blank": true,
+          "max_length": 200
+        }
+      },
+      {
+        "name": "trading_name",
+        "dataType": "STRING",
+        "required": false,
+        "description": "银行商业名称"
+      },
+      {
+        "name": "swift_code",
+        "dataType": "STRING",
+        "required": true,
+        "description": "SWIFT 代码",
+        "validationRules": {
+          "pattern": "^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$"
+        }
+      },
+      {
+        "name": "lei_code",
+        "dataType": "STRING",
+        "required": false,
+        "description": "LEI 法人实体识别码"
+      },
+      {
+        "name": "license_number",
+        "dataType": "STRING",
+        "required": true,
+        "description": "银行牌照号码"
+      },
+      {
+        "name": "address",
+        "dataType": "OBJECT",
+        "required": true,
+        "description": "银行注册地址",
+        "children": [
+          {
+            "name": "line1",
+            "dataType": "STRING",
+            "required": true
+          },
+          {
+            "name": "line2",
+            "dataType": "STRING",
+            "required": false
+          },
+          {
+            "name": "city",
+            "dataType": "STRING",
+            "required": true
+          },
+          {
+            "name": "state",
+            "dataType": "STRING",
+            "required": false
+          },
+          {
+            "name": "postal_code",
+            "dataType": "STRING",
+            "required": true
+          },
+          {
+            "name": "country",
+            "dataType": "STRING",
+            "required": true
+          }
+        ]
+      },
+      {
+        "name": "contact",
+        "dataType": "OBJECT",
+        "required": true,
+        "description": "银行联系人",
+        "children": [
+          {
+            "name": "name",
+            "dataType": "STRING",
+            "required": true
+          },
+          {
+            "name": "title",
+            "dataType": "STRING",
+            "required": true
+          },
+          {
+            "name": "email",
+            "dataType": "STRING",
+            "required": true,
+            "validationRules": {
+              "pattern": "^[\\w.-]+@[\\w.-]+\\.\\w+$"
+            }
+          },
+          {
+            "name": "phone",
+            "dataType": "STRING",
+            "required": true
+          },
+          {
+            "name": "department",
+            "dataType": "STRING",
+            "required": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "borrower",
+    "dataType": "OBJECT",
+    "parameterType": "REQUEST",
+    "required": true,
+    "description": "借款人信息",
+    "children": [
+      {
+        "name": "legal_name",
+        "dataType": "STRING",
+        "required": true,
+        "description": "借款人法定名称",
+        "validationRules": {
+          "not_blank": true,
+          "max_length": 200
+        }
+      },
+      {
+        "name": "trading_name",
+        "dataType": "STRING",
+        "required": false
+      },
+      {
+        "name": "registration_number",
+        "dataType": "STRING",
+        "required": true,
+        "description": "公司注册号"
+      },
+      {
+        "name": "tax_id",
+        "dataType": "STRING",
+        "required": true,
+        "description": "税务识别号"
+      },
+      {
+        "name": "incorporation_date",
+        "dataType": "DATE",
+        "required": true
+      },
+      {
+        "name": "incorporation_country",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "name": "industry_sector",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "name": "sic_code",
+        "dataType": "STRING",
+        "required": false
+      },
+      {
+        "name": "credit_rating",
+        "dataType": "OBJECT",
+        "required": false,
+        "description": "信用评级",
+        "children": [
+          {
+            "name": "agency",
+            "dataType": "STRING",
+            "required": true
+          },
+          {
+            "name": "rating",
+            "dataType": "STRING",
+            "required": true
+          },
+          {
+            "name": "outlook",
+            "dataType": "STRING",
+            "required": false
+          },
+          {
+            "name": "rating_date",
+            "dataType": "DATE",
+            "required": true
+          }
+        ]
+      },
+      {
+        "name": "registered_address",
+        "dataType": "OBJECT",
+        "required": true,
+        "children": [
+          {
+            "name": "line1",
+            "dataType": "STRING",
+            "required": true
+          },
+          {
+            "name": "line2",
+            "dataType": "STRING",
+            "required": false
+          },
+          {
+            "name": "city",
+            "dataType": "STRING",
+            "required": true
+          },
+          {
+            "name": "state",
+            "dataType": "STRING",
+            "required": false
+          },
+          {
+            "name": "postal_code",
+            "dataType": "STRING",
+            "required": true
+          },
+          {
+            "name": "country",
+            "dataType": "STRING",
+            "required": true
+          }
+        ]
+      },
+      {
+        "name": "correspondence_address",
+        "dataType": "OBJECT",
+        "required": false,
+        "children": [
+          {
+            "name": "line1",
+            "dataType": "STRING",
+            "required": true
+          },
+          {
+            "name": "line2",
+            "dataType": "STRING",
+            "required": false
+          },
+          {
+            "name": "city",
+            "dataType": "STRING",
+            "required": true
+          },
+          {
+            "name": "state",
+            "dataType": "STRING",
+            "required": false
+          },
+          {
+            "name": "postal_code",
+            "dataType": "STRING",
+            "required": true
+          },
+          {
+            "name": "country",
+            "dataType": "STRING",
+            "required": true
+          }
+        ]
+      },
+      {
+        "name": "authorized_signatories",
+        "dataType": "ARRAY",
+        "required": true,
+        "description": "授权签字人列表",
+        "validationRules": {
+          "min_items": 1,
+          "max_items": 10
+        },
+        "children": [
+          {
+            "name": "name",
+            "dataType": "STRING",
+            "required": true
+          },
+          {
+            "name": "title",
+            "dataType": "STRING",
+            "required": true
+          },
+          {
+            "name": "email",
+            "dataType": "STRING",
+            "required": true
+          },
+          {
+            "name": "phone",
+            "dataType": "STRING",
+            "required": false
+          },
+          {
+            "name": "specimen_signature",
+            "dataType": "STRING",
+            "required": false,
+            "description": "签名图片 base64"
+          }
+        ]
+      },
+      {
+        "name": "directors",
+        "dataType": "ARRAY",
+        "required": true,
+        "description": "董事列表",
+        "validationRules": {
+          "min_items": 1
+        },
+        "children": [
+          {
+            "name": "name",
+            "dataType": "STRING",
+            "required": true
+          },
+          {
+            "name": "nationality",
+            "dataType": "STRING",
+            "required": true
+          },
+          {
+            "name": "appointment_date",
+            "dataType": "DATE",
+            "required": true
+          },
+          {
+            "name": "is_executive",
+            "dataType": "BOOLEAN",
+            "required": true
+          }
+        ]
+      },
+      {
+        "name": "shareholders",
+        "dataType": "ARRAY",
+        "required": false,
+        "description": "主要股东列表",
+        "children": [
+          {
+            "name": "name",
+            "dataType": "STRING",
+            "required": true
+          },
+          {
+            "name": "percentage",
+            "dataType": "NUMBER",
+            "required": true
+          },
+          {
+            "name": "country",
+            "dataType": "STRING",
+            "required": true
+          },
+          {
+            "name": "is_ultimate_beneficial_owner",
+            "dataType": "BOOLEAN",
+            "required": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "has_guarantor",
+    "dataType": "BOOLEAN",
+    "parameterType": "REQUEST",
+    "required": true,
+    "defaultValue": "false",
+    "description": "是否有担保人 (控制 Guarantee Segment 显示)"
+  },
+  {
+    "name": "has_security",
+    "dataType": "BOOLEAN",
+    "parameterType": "REQUEST",
+    "required": true,
+    "defaultValue": "true",
+    "description": "是否有抵押品 (控制 Security Segment 显示)"
+  },
+  {
+    "name": "is_syndicated",
+    "dataType": "BOOLEAN",
+    "parameterType": "REQUEST",
+    "required": true,
+    "defaultValue": "false",
+    "description": "是否为银团贷款"
+  },
+  {
+    "name": "is_revolving",
+    "dataType": "BOOLEAN",
+    "parameterType": "REQUEST",
+    "required": false,
+    "defaultValue": "false",
+    "description": "是否为循环贷款"
+  },
+  {
+    "name": "base_currency",
+    "dataType": "STRING",
+    "parameterType": "REQUEST",
+    "required": true,
+    "defaultValue": "USD",
+    "description": "基础货币",
+    "validationRules": {
+      "enum_values": [
+        "USD",
+        "EUR",
+        "GBP",
+        "JPY",
+        "CHF",
+        "HKD",
+        "SGD",
+        "CNY",
+        "AUD",
+        "CAD"
+      ]
+    }
+  },
+  {
+    "name": "facilities",
+    "dataType": "ARRAY",
+    "parameterType": "REQUEST",
+    "required": true,
+    "description": "贷款设施列表 (核心数组，演示循环、嵌套循环、聚合)",
+    "validationRules": {
+      "min_items": 1,
+      "max_items": 20
+    },
+    "children": [
+      {
+        "name": "facility_name",
+        "dataType": "STRING",
+        "required": true,
+        "description": "设施名称"
+      },
+      {
+        "name": "facility_type",
+        "dataType": "STRING",
+        "required": true,
+        "validationRules": {
+          "enum_values": [
+            "TERM_LOAN",
+            "REVOLVING_CREDIT",
+            "OVERDRAFT",
+            "TRADE_FINANCE",
+            "GUARANTEE_LINE",
+            "LETTER_OF_CREDIT"
+          ]
+        }
+      },
+      {
+        "name": "currency",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "name": "amount",
+        "dataType": "NUMBER",
+        "required": true,
+        "validationRules": {
+          "min": 0
+        }
+      },
+      {
+        "name": "interest_rate",
+        "dataType": "NUMBER",
+        "required": true,
+        "description": "年利率 (小数形式, 如 0.045)"
+      },
+      {
+        "name": "rate_type",
+        "dataType": "STRING",
+        "required": true,
+        "validationRules": {
+          "enum_values": [
+            "FIXED",
+            "FLOATING"
+          ]
+        }
+      },
+      {
+        "name": "benchmark_rate",
+        "dataType": "STRING",
+        "required": false,
+        "description": "基准利率 (如 SOFR, EURIBOR)"
+      },
+      {
+        "name": "spread",
+        "dataType": "NUMBER",
+        "required": false,
+        "description": "利差 (bps)"
+      },
+      {
+        "name": "tenor_months",
+        "dataType": "NUMBER",
+        "required": true,
+        "description": "期限 (月)"
+      },
+      {
+        "name": "availability_period_months",
+        "dataType": "NUMBER",
+        "required": false
+      },
+      {
+        "name": "drawdown_date",
+        "dataType": "DATE",
+        "required": false
+      },
+      {
+        "name": "maturity_date",
+        "dataType": "DATE",
+        "required": true
+      },
+      {
+        "name": "purpose",
+        "dataType": "STRING",
+        "required": true,
+        "description": "贷款用途"
+      },
+      {
+        "name": "is_committed",
+        "dataType": "BOOLEAN",
+        "required": true,
+        "defaultValue": "true"
+      },
+      {
+        "name": "repayment_schedule",
+        "dataType": "ARRAY",
+        "required": true,
+        "description": "还款计划 (嵌套数组)",
+        "children": [
+          {
+            "name": "period",
+            "dataType": "NUMBER",
+            "required": true
+          },
+          {
+            "name": "due_date",
+            "dataType": "DATE",
+            "required": true
+          },
+          {
+            "name": "principal",
+            "dataType": "NUMBER",
+            "required": true
+          },
+          {
+            "name": "interest",
+            "dataType": "NUMBER",
+            "required": true
+          },
+          {
+            "name": "total_payment",
+            "dataType": "NUMBER",
+            "required": true
+          },
+          {
+            "name": "outstanding_balance",
+            "dataType": "NUMBER",
+            "required": true
+          }
+        ]
+      },
+      {
+        "name": "sub_limits",
+        "dataType": "ARRAY",
+        "required": false,
+        "description": "子限额 (嵌套数组)",
+        "children": [
+          {
+            "name": "sub_limit_name",
+            "dataType": "STRING",
+            "required": true
+          },
+          {
+            "name": "sub_limit_amount",
+            "dataType": "NUMBER",
+            "required": true
+          },
+          {
+            "name": "sub_limit_currency",
+            "dataType": "STRING",
+            "required": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "fees",
+    "dataType": "ARRAY",
+    "parameterType": "REQUEST",
+    "required": true,
+    "description": "费用列表 (演示 sortBy, groupBy, sumBy, 聚合)",
+    "children": [
+      {
+        "name": "fee_name",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "name": "category",
+        "dataType": "STRING",
+        "required": true,
+        "validationRules": {
+          "enum_values": [
+            "UPFRONT",
+            "RECURRING",
+            "UTILIZATION",
+            "PENALTY"
+          ]
+        }
+      },
+      {
+        "name": "amount",
+        "dataType": "NUMBER",
+        "required": true
+      },
+      {
+        "name": "currency",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "name": "calculation_basis",
+        "dataType": "STRING",
+        "required": false,
+        "description": "计算基础 (如 flat, percentage, per_annum)"
+      },
+      {
+        "name": "percentage_rate",
+        "dataType": "NUMBER",
+        "required": false
+      },
+      {
+        "name": "payment_frequency",
+        "dataType": "STRING",
+        "required": false
+      },
+      {
+        "name": "due_date",
+        "dataType": "DATE",
+        "required": false
+      },
+      {
+        "name": "is_refundable",
+        "dataType": "BOOLEAN",
+        "required": false,
+        "defaultValue": "false"
+      }
+    ]
+  },
+  {
+    "name": "covenants",
+    "dataType": "ARRAY",
+    "parameterType": "REQUEST",
+    "required": true,
+    "description": "契约条款 (演示 where 过滤器)",
+    "children": [
+      {
+        "name": "covenant_name",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "name": "type",
+        "dataType": "STRING",
+        "required": true,
+        "validationRules": {
+          "enum_values": [
+            "FINANCIAL",
+            "INFORMATION",
+            "POSITIVE",
+            "NEGATIVE",
+            "GENERAL"
+          ]
+        }
+      },
+      {
+        "name": "description",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "name": "threshold_value",
+        "dataType": "NUMBER",
+        "required": false
+      },
+      {
+        "name": "threshold_unit",
+        "dataType": "STRING",
+        "required": false
+      },
+      {
+        "name": "testing_frequency",
+        "dataType": "STRING",
+        "required": false
+      },
+      {
+        "name": "cure_period_days",
+        "dataType": "NUMBER",
+        "required": false
+      },
+      {
+        "name": "is_material",
+        "dataType": "BOOLEAN",
+        "required": true,
+        "defaultValue": "true"
+      }
+    ]
+  },
+  {
+    "name": "security_items",
+    "dataType": "ARRAY",
+    "parameterType": "REQUEST",
+    "required": false,
+    "description": "抵押品列表",
+    "children": [
+      {
+        "name": "security_type",
+        "dataType": "STRING",
+        "required": true,
+        "validationRules": {
+          "enum_values": [
+            "REAL_ESTATE",
+            "EQUIPMENT",
+            "INVENTORY",
+            "RECEIVABLES",
+            "SHARES",
+            "CASH_DEPOSIT",
+            "GUARANTEE",
+            "INSURANCE",
+            "OTHER"
+          ]
+        }
+      },
+      {
+        "name": "description",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "name": "estimated_value",
+        "dataType": "NUMBER",
+        "required": true
+      },
+      {
+        "name": "currency",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "name": "valuation_date",
+        "dataType": "DATE",
+        "required": true
+      },
+      {
+        "name": "valuer_name",
+        "dataType": "STRING",
+        "required": false
+      },
+      {
+        "name": "ltv_ratio",
+        "dataType": "NUMBER",
+        "required": false,
+        "description": "贷款价值比"
+      },
+      {
+        "name": "property_details",
+        "dataType": "OBJECT",
+        "required": false,
+        "description": "不动产详情 (3层嵌套)",
+        "children": [
+          {
+            "name": "title_deed_number",
+            "dataType": "STRING",
+            "required": false
+          },
+          {
+            "name": "location",
+            "dataType": "STRING",
+            "required": false
+          },
+          {
+            "name": "area_sqm",
+            "dataType": "NUMBER",
+            "required": false
+          },
+          {
+            "name": "zoning",
+            "dataType": "STRING",
+            "required": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "guarantors",
+    "dataType": "ARRAY",
+    "parameterType": "REQUEST",
+    "required": false,
+    "description": "担保人列表",
+    "children": [
+      {
+        "name": "name",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "name": "type",
+        "dataType": "STRING",
+        "required": true,
+        "validationRules": {
+          "enum_values": [
+            "CORPORATE",
+            "INDIVIDUAL",
+            "SOVEREIGN"
+          ]
+        }
+      },
+      {
+        "name": "registration_number",
+        "dataType": "STRING",
+        "required": false
+      },
+      {
+        "name": "guarantee_amount",
+        "dataType": "NUMBER",
+        "required": true
+      },
+      {
+        "name": "guarantee_currency",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "name": "guarantee_type",
+        "dataType": "STRING",
+        "required": true,
+        "validationRules": {
+          "enum_values": [
+            "FULL",
+            "LIMITED",
+            "JOINT_AND_SEVERAL"
+          ]
+        }
+      },
+      {
+        "name": "guarantee_expiry",
+        "dataType": "DATE",
+        "required": false
+      },
+      {
+        "name": "address",
+        "dataType": "OBJECT",
+        "required": true,
+        "children": [
+          {
+            "name": "line1",
+            "dataType": "STRING",
+            "required": true
+          },
+          {
+            "name": "city",
+            "dataType": "STRING",
+            "required": true
+          },
+          {
+            "name": "country",
+            "dataType": "STRING",
+            "required": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "conditions_precedent",
+    "dataType": "ARRAY",
+    "parameterType": "REQUEST",
+    "required": true,
+    "description": "先决条件列表",
+    "children": [
+      {
+        "name": "cp_number",
+        "dataType": "NUMBER",
+        "required": true
+      },
+      {
+        "name": "description",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "name": "category",
+        "dataType": "STRING",
+        "required": true,
+        "validationRules": {
+          "enum_values": [
+            "LEGAL",
+            "FINANCIAL",
+            "REGULATORY",
+            "OPERATIONAL",
+            "DOCUMENTATION"
+          ]
+        }
+      },
+      {
+        "name": "deadline",
+        "dataType": "DATE",
+        "required": false
+      },
+      {
+        "name": "is_waivable",
+        "dataType": "BOOLEAN",
+        "required": false,
+        "defaultValue": "false"
+      },
+      {
+        "name": "responsible_party",
+        "dataType": "STRING",
+        "required": false
+      }
+    ]
+  },
+  {
+    "name": "representations",
+    "dataType": "ARRAY",
+    "parameterType": "REQUEST",
+    "required": true,
+    "description": "陈述与保证列表",
+    "children": [
+      {
+        "name": "rep_number",
+        "dataType": "NUMBER",
+        "required": true
+      },
+      {
+        "name": "title",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "name": "description",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "name": "is_repeating",
+        "dataType": "BOOLEAN",
+        "required": true,
+        "description": "是否为持续性陈述"
+      },
+      {
+        "name": "qualification",
+        "dataType": "STRING",
+        "required": false
+      }
+    ]
+  },
+  {
+    "name": "events_of_default",
+    "dataType": "ARRAY",
+    "parameterType": "REQUEST",
+    "required": true,
+    "description": "违约事件列表",
+    "children": [
+      {
+        "name": "eod_number",
+        "dataType": "NUMBER",
+        "required": true
+      },
+      {
+        "name": "title",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "name": "description",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "name": "cure_period_days",
+        "dataType": "NUMBER",
+        "required": false
+      },
+      {
+        "name": "is_cross_default",
+        "dataType": "BOOLEAN",
+        "required": false
+      },
+      {
+        "name": "cross_default_threshold",
+        "dataType": "NUMBER",
+        "required": false
+      }
+    ]
+  },
+  {
+    "name": "governing_law",
+    "dataType": "OBJECT",
+    "parameterType": "REQUEST",
+    "required": true,
+    "description": "适用法律与管辖权",
+    "children": [
+      {
+        "name": "law_jurisdiction",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "name": "court_jurisdiction",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "name": "arbitration_institution",
+        "dataType": "STRING",
+        "required": false
+      },
+      {
+        "name": "arbitration_rules",
+        "dataType": "STRING",
+        "required": false
+      },
+      {
+        "name": "arbitration_seat",
+        "dataType": "STRING",
+        "required": false
+      },
+      {
+        "name": "language",
+        "dataType": "STRING",
+        "required": true,
+        "defaultValue": "English"
+      },
+      {
+        "name": "is_arbitration",
+        "dataType": "BOOLEAN",
+        "required": true,
+        "defaultValue": "false"
+      }
+    ]
+  },
+  {
+    "name": "syndicate_members",
+    "dataType": "ARRAY",
+    "parameterType": "REQUEST",
+    "required": false,
+    "description": "银团成员 (仅银团贷款时使用)",
+    "children": [
+      {
+        "name": "bank_name",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "name": "role",
+        "dataType": "STRING",
+        "required": true,
+        "validationRules": {
+          "enum_values": [
+            "LEAD_ARRANGER",
+            "ARRANGER",
+            "BOOKRUNNER",
+            "PARTICIPANT",
+            "AGENT"
+          ]
+        }
+      },
+      {
+        "name": "commitment_amount",
+        "dataType": "NUMBER",
+        "required": true
+      },
+      {
+        "name": "commitment_percentage",
+        "dataType": "NUMBER",
+        "required": true
+      },
+      {
+        "name": "currency",
+        "dataType": "STRING",
+        "required": true
+      }
+    ]
+  },
+  {
+    "name": "financial_statements",
+    "dataType": "ARRAY",
+    "parameterType": "REQUEST",
+    "required": false,
+    "description": "财务报表要求",
+    "children": [
+      {
+        "name": "statement_type",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "name": "frequency",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "name": "deadline_days",
+        "dataType": "NUMBER",
+        "required": true,
+        "description": "期末后提交天数"
+      },
+      {
+        "name": "requires_audit",
+        "dataType": "BOOLEAN",
+        "required": true
+      }
+    ]
+  },
+  {
+    "name": "insurance_requirements",
+    "dataType": "ARRAY",
+    "parameterType": "REQUEST",
+    "required": false,
+    "description": "保险要求",
+    "children": [
+      {
+        "name": "insurance_type",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "name": "minimum_coverage",
+        "dataType": "NUMBER",
+        "required": true
+      },
+      {
+        "name": "currency",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "name": "insurer_rating",
+        "dataType": "STRING",
+        "required": false
+      }
+    ]
+  },
+  {
+    "name": "effective_date",
+    "dataType": "DATE",
+    "parameterType": "REQUEST",
+    "required": true,
+    "description": "生效日期"
+  },
+  {
+    "name": "expiry_date",
+    "dataType": "DATE",
+    "parameterType": "REQUEST",
+    "required": true,
+    "description": "到期日期"
+  },
+  {
+    "name": "acceptance_deadline",
+    "dataType": "DATE",
+    "parameterType": "REQUEST",
+    "required": true,
+    "description": "接受截止日期"
+  },
+  {
+    "name": "acceptance_period_days",
+    "dataType": "NUMBER",
+    "parameterType": "REQUEST",
+    "required": true,
+    "defaultValue": "30",
+    "description": "接受期限 (天)",
+    "validationRules": {
+      "min": 7,
+      "max": 90
+    }
+  },
+  {
+    "name": "prepayment_notice_days",
+    "dataType": "NUMBER",
+    "parameterType": "REQUEST",
+    "required": true,
+    "defaultValue": "30",
+    "description": "提前还款通知天数"
+  },
+  {
+    "name": "prepayment_penalty_rate",
+    "dataType": "NUMBER",
+    "parameterType": "REQUEST",
+    "required": false,
+    "defaultValue": "0.01",
+    "description": "提前还款罚金比率"
+  },
+  {
+    "name": "default_interest_margin",
+    "dataType": "NUMBER",
+    "parameterType": "REQUEST",
+    "required": true,
+    "defaultValue": "0.02",
+    "description": "违约利率加点"
+  },
+  {
+    "name": "material_adverse_change_threshold",
+    "dataType": "NUMBER",
+    "parameterType": "REQUEST",
+    "required": false,
+    "description": "重大不利变化阈值金额"
+  },
+  {
+    "name": "cross_default_threshold",
+    "dataType": "NUMBER",
+    "parameterType": "REQUEST",
+    "required": false,
+    "defaultValue": "1000000",
+    "description": "交叉违约阈值"
+  },
+  {
+    "name": "agent_bank",
+    "dataType": "OBJECT",
+    "parameterType": "REQUEST",
+    "required": false,
+    "description": "代理行信息 (银团贷款)",
+    "children": [
+      {
+        "name": "name",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "name": "account_number",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "name": "swift_code",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "name": "correspondent_bank",
+        "dataType": "STRING",
+        "required": false
+      }
+    ]
+  },
+  {
+    "name": "total_facility_amount",
+    "dataType": "NUMBER",
+    "parameterType": "DERIVED",
+    "required": false,
+    "description": "总贷款额度 (自动计算)",
+    "expressionText": "data.facilities.reduce((sum, f) => sum + (f.amount || 0), 0)",
+    "expressionType": "JAVASCRIPT"
+  },
+  {
+    "name": "total_fee_amount",
+    "dataType": "NUMBER",
+    "parameterType": "DERIVED",
+    "required": false,
+    "description": "总费用金额 (自动计算)",
+    "expressionText": "data.fees.reduce((sum, f) => sum + (f.amount || 0), 0)",
+    "expressionType": "JAVASCRIPT"
+  },
+  {
+    "name": "weighted_avg_rate",
+    "dataType": "NUMBER",
+    "parameterType": "DERIVED",
+    "required": false,
+    "description": "加权平均利率 (自动计算)",
+    "expressionText": "data.facilities.reduce((s, f) => s + f.amount * f.interest_rate, 0) / data.facilities.reduce((s, f) => s + f.amount, 0)",
+    "expressionType": "JAVASCRIPT"
+  },
+  {
+    "name": "total_security_value",
+    "dataType": "NUMBER",
+    "parameterType": "DERIVED",
+    "required": false,
+    "description": "总抵押品价值 (自动计算)",
+    "expressionText": "(data.security_items || []).reduce((sum, s) => sum + (s.estimated_value || 0), 0)",
+    "expressionType": "JAVASCRIPT"
+  },
+  {
+    "name": "overall_ltv",
+    "dataType": "NUMBER",
+    "parameterType": "DERIVED",
+    "required": false,
+    "description": "整体贷款价值比 (自动计算)",
+    "expressionText": "data.total_security_value > 0 ? data.total_facility_amount / data.total_security_value : 0",
+    "expressionType": "JAVASCRIPT"
+  },
+  {
+    "name": "facility_count",
+    "dataType": "NUMBER",
+    "parameterType": "DERIVED",
+    "required": false,
+    "description": "设施数量 (Excel 公式演示)",
+    "expressionText": "COUNT(data.facilities)",
+    "expressionType": "EXCEL_FORMULA"
+  },
+  {
+    "name": "max_tenor_months",
+    "dataType": "NUMBER",
+    "parameterType": "DERIVED",
+    "required": false,
+    "description": "最长期限 (月)",
+    "expressionText": "Math.max(...data.facilities.map(f => f.tenor_months))",
+    "expressionType": "JAVASCRIPT"
+  },
+  {
+    "name": "bank_signatories",
+    "dataType": "ARRAY",
+    "parameterType": "REQUEST",
+    "required": true,
+    "description": "银行签字人",
+    "validationRules": {
+      "min_items": 1,
+      "max_items": 5
+    },
+    "children": [
+      {
+        "name": "name",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "name": "title",
+        "dataType": "STRING",
+        "required": true
+      },
+      {
+        "name": "signature_image",
+        "dataType": "STRING",
+        "required": false,
+        "description": "签名图片 base64"
+      }
+    ]
+  },
+  {
+    "name": "appendix_notes",
+    "dataType": "ARRAY",
+    "parameterType": "REQUEST",
+    "required": false,
+    "description": "附录备注",
+    "children": [
+      {
+        "name": "note_number",
+        "dataType": "NUMBER",
+        "required": true
+      },
+      {
+        "name": "content",
+        "dataType": "STRING",
+        "required": true
+      }
+    ]
+  }
+]

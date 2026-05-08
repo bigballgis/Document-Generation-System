@@ -41,7 +41,7 @@ export interface Template {
   updatedAt: string
 }
 
-export type TemplateStatus = 'DRAFT' | 'PENDING_REVIEW' | 'REVIEWED' | 'ACTIVE' | 'ARCHIVED'
+export type TemplateStatus = 'DRAFT' | 'IN_TEST' | 'PENDING_REVIEW' | 'REVIEWED' | 'ACTIVE' | 'ARCHIVED'
 
 // User roles
 export type UserRole = 'SUPER_ADMIN' | 'TENANT_ADMIN' | 'TEAM_ADMIN' | 'USER'

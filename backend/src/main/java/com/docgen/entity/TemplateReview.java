@@ -1,6 +1,8 @@
 package com.docgen.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 
@@ -34,6 +36,7 @@ public class TemplateReview {
     private String comment;
 
     @Column(name = "suggestions_json", columnDefinition = "JSONB")
+    @JdbcTypeCode(SqlTypes.JSON)
     private String suggestionsJson;
 
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -47,7 +50,6 @@ public class TemplateReview {
         this.createdAt = Instant.now();
     }
 
-    // ── Getters and Setters ──
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -76,3 +78,4 @@ public class TemplateReview {
     public Instant getCompletedAt() { return completedAt; }
     public void setCompletedAt(Instant completedAt) { this.completedAt = completedAt; }
 }
+

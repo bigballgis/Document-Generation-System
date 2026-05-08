@@ -17,6 +17,8 @@ import java.util.*;
 /**
  * Service managing template lifecycle state transitions.
  * Validates transitions against the allowed state machine and records audit logs.
+ * Composite template activation ({@link CompositeTemplateService#activateCompositeTemplate}) uses this service
+ * after assembly completeness checks.
  */
 @Service
 public class TemplateStateMachineService {
@@ -31,8 +33,12 @@ public class TemplateStateMachineService {
 
     static {
         Map<TemplateState, Set<TemplateState>> map = new EnumMap<>(TemplateState.class);
-        map.put(TemplateState.DRAFT, EnumSet.of(TemplateState.PENDING_REVIEW, TemplateState.ACTIVE));
-        map.put(TemplateState.PENDING_REVIEW, EnumSet.of(TemplateState.REVIEWED, TemplateState.DRAFT));
+        // DRAFT → IN_TEST (submit to test) or → ACTIVE when review is not required
+        map.put(TemplateState.DRAFT, EnumSet.of(TemplateState.IN_TEST, TemplateState.ACTIVE));
+        // IN_TEST → DRAFT (return to design) or → PENDING_REVIEW (submit for team review)
+        map.put(TemplateState.IN_TEST, EnumSet.of(TemplateState.DRAFT, TemplateState.PENDING_REVIEW));
+        // PENDING_REVIEW → REVIEWED (after approvals) or → IN_TEST (reject / send back to testing)
+        map.put(TemplateState.PENDING_REVIEW, EnumSet.of(TemplateState.REVIEWED, TemplateState.IN_TEST));
         map.put(TemplateState.REVIEWED, EnumSet.of(TemplateState.ACTIVE));
         map.put(TemplateState.ACTIVE, EnumSet.of(TemplateState.ARCHIVED));
         map.put(TemplateState.ARCHIVED, EnumSet.of(TemplateState.DRAFT));
@@ -101,7 +107,7 @@ public class TemplateStateMachineService {
         if (!allowed.contains(to)) {
             throw new BusinessException(
                     ErrorCode.TEMPLATE_INVALID_STATE_TRANSITION,
-                    String.format("非法状态转换: %s → %s", from.name(), to.name()),
+                    String.format("Illegal state transition: %s -> %s", from.name(), to.name()),
                     HttpStatus.BAD_REQUEST);
         }
 
@@ -109,7 +115,7 @@ public class TemplateStateMachineService {
         if (from == TemplateState.DRAFT && to == TemplateState.ACTIVE && reviewRequired) {
             throw new BusinessException(
                     ErrorCode.TEMPLATE_REVIEW_REQUIRED,
-                    String.format("模板需要审查，不允许从 %s 直接转换到 %s", from.name(), to.name()),
+                    String.format("Review is required for this template; cannot transition from %s to %s directly", from.name(), to.name()),
                     HttpStatus.BAD_REQUEST);
         }
     }
@@ -117,6 +123,6 @@ public class TemplateStateMachineService {
     private Template findTemplateOrThrow(Long id) {
         return templateRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.TEMPLATE_NOT_FOUND, "模板不存在"));
+                        ErrorCode.TEMPLATE_NOT_FOUND, "Template not found"));
     }
 }

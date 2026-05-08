@@ -2,24 +2,54 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mockGet = vi.fn()
 const mockPost = vi.fn()
+const mockPut = vi.fn()
+const mockDelete = vi.fn()
 
 vi.mock('@/api/request', () => ({
   default: {
     get: (...args: any[]) => mockGet(...args),
     post: (...args: any[]) => mockPost(...args),
-    put: vi.fn(),
-    delete: vi.fn(),
+    put: (...args: any[]) => mockPut(...args),
+    delete: (...args: any[]) => mockDelete(...args),
   },
 }))
 
-import { submitReview, getAvailableTransitions, scanVariables, exportCoverageReport } from '@/api/templates'
+import {
+  submitReview,
+  submitTemplateToTest,
+  returnTemplateToDesign,
+  getAvailableTransitions,
+  scanVariables,
+  exportCoverageReport,
+  updateTemplateRenderConfig,
+  clearTemplateRenderConfig,
+  type RenderConfigDocument,
+} from '@/api/templates'
 
 describe('templates.ts extension functions', () => {
   beforeEach(() => {
-    mockGet.mockClear()
-    mockPost.mockClear()
+    mockGet.mockReset()
+    mockPost.mockReset()
+    mockPut.mockReset()
+    mockDelete.mockReset()
     mockGet.mockResolvedValue({})
     mockPost.mockResolvedValue({})
+    mockPut.mockResolvedValue({})
+    mockDelete.mockResolvedValue({})
+  })
+
+  describe('submitTemplateToTest', () => {
+    it('sends POST to /templates/{templateId}/submit-test', async () => {
+      await submitTemplateToTest(42)
+      expect(mockPost).toHaveBeenCalledWith('/templates/42/submit-test')
+    })
+  })
+
+  describe('returnTemplateToDesign', () => {
+    it('sends POST to /templates/{templateId}/return-design', async () => {
+      await returnTemplateToDesign(7)
+      expect(mockPost).toHaveBeenCalledWith('/templates/7/return-design')
+    })
   })
 
   describe('submitReview', () => {
@@ -27,6 +57,20 @@ describe('templates.ts extension functions', () => {
       await submitReview(42)
 
       expect(mockPost).toHaveBeenCalledWith('/templates/42/submit-review')
+      expect(mockGet).not.toHaveBeenCalled()
+    })
+
+    it('interpolates different templateId values correctly', async () => {
+      await submitReview(1)
+      expect(mockPost).toHaveBeenCalledWith('/templates/1/submit-review')
+    })
+
+    it('returns the resolved value from the API call', async () => {
+      const mockTemplate = { id: 42, name: 'Test', status: 'PENDING_REVIEW' }
+      mockPost.mockResolvedValueOnce(mockTemplate)
+
+      const result = await submitReview(42)
+      expect(result).toEqual(mockTemplate)
     })
   })
 
@@ -35,6 +79,20 @@ describe('templates.ts extension functions', () => {
       await getAvailableTransitions(42)
 
       expect(mockGet).toHaveBeenCalledWith('/templates/42/available-transitions')
+      expect(mockPost).not.toHaveBeenCalled()
+    })
+
+    it('interpolates different templateId values correctly', async () => {
+      await getAvailableTransitions(99)
+      expect(mockGet).toHaveBeenCalledWith('/templates/99/available-transitions')
+    })
+
+    it('returns the resolved transitions array', async () => {
+      const transitions = ['ACTIVE', 'ARCHIVED']
+      mockGet.mockResolvedValueOnce(transitions)
+
+      const result = await getAvailableTransitions(42)
+      expect(result).toEqual(transitions)
     })
   })
 
@@ -43,14 +101,72 @@ describe('templates.ts extension functions', () => {
       await scanVariables(42)
 
       expect(mockPost).toHaveBeenCalledWith('/templates/42/variables/scan')
+      expect(mockGet).not.toHaveBeenCalled()
+    })
+
+    it('interpolates different templateId values correctly', async () => {
+      await scanVariables(7)
+      expect(mockPost).toHaveBeenCalledWith('/templates/7/variables/scan')
+    })
+
+    it('returns the resolved variables array', async () => {
+      const variables = [{ id: 1, name: 'userName', type: 'STRING', bound: false }]
+      mockPost.mockResolvedValueOnce(variables)
+
+      const result = await scanVariables(42)
+      expect(result).toEqual(variables)
     })
   })
 
   describe('exportCoverageReport', () => {
-    it('sends GET to /templates/{templateId}/coverage/export with responseType blob', async () => {
+    it('sends GET with responseType blob', async () => {
       await exportCoverageReport(42)
 
       expect(mockGet).toHaveBeenCalledWith('/templates/42/coverage/export', { responseType: 'blob' })
+      expect(mockPost).not.toHaveBeenCalled()
+    })
+
+    it('interpolates different templateId values correctly', async () => {
+      await exportCoverageReport(15)
+      expect(mockGet).toHaveBeenCalledWith('/templates/15/coverage/export', { responseType: 'blob' })
+    })
+
+    it('returns the blob response', async () => {
+      const blob = new Blob(['report-data'])
+      mockGet.mockResolvedValueOnce(blob)
+
+      const result = await exportCoverageReport(42)
+      expect(result).toBe(blob)
+    })
+  })
+
+  describe('updateTemplateRenderConfig', () => {
+    it('sends PUT to /templates/{id}/render-config with body', async () => {
+      const body: RenderConfigDocument = {
+        schemaVersion: 1,
+        textWatermark: {
+          text: 'WM',
+          fontSize: 36,
+          color: '#cccccc',
+          opacity: 0.3,
+          rotation: -45,
+        },
+      }
+      await updateTemplateRenderConfig(5, body)
+
+      expect(mockPut).toHaveBeenCalledWith('/templates/5/render-config', body)
+      expect(mockGet).not.toHaveBeenCalled()
+      expect(mockPost).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('clearTemplateRenderConfig', () => {
+    it('sends DELETE to /templates/{id}/render-config', async () => {
+      await clearTemplateRenderConfig(12)
+
+      expect(mockDelete).toHaveBeenCalledWith('/templates/12/render-config')
+      expect(mockGet).not.toHaveBeenCalled()
+      expect(mockPost).not.toHaveBeenCalled()
     })
   })
 })

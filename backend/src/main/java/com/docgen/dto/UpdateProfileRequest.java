@@ -1,8 +1,5 @@
 package com.docgen.dto;
 
-/**
- * Request DTO for updating user profile.
- */
 public class UpdateProfileRequest {
 
     private String nickname;

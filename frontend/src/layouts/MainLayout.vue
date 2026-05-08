@@ -1,108 +1,85 @@
 <template>
   <el-container class="main-layout">
-    <el-aside :width="isCollapsed ? '64px' : '220px'">
-      <div class="logo">
-        <span v-if="!isCollapsed">DocGen</span>
-        <span v-else>D</span>
+    <el-header class="app-header">
+      <div class="header-left">
+        <div class="logo">
+          <span class="logo-icon">📄</span>
+          <span v-if="!isCollapsed" class="logo-text">DocGen</span>
+        </div>
+        <el-icon class="collapse-btn" @click="isCollapsed = !isCollapsed">
+          <Fold v-if="!isCollapsed" />
+          <Expand v-else />
+        </el-icon>
       </div>
-      <el-menu
-        :default-active="route.path"
-        :collapse="isCollapsed"
-        router
-        background-color="#304156"
-        text-color="#bfcbd9"
-        active-text-color="#409eff"
-      >
-        <el-menu-item index="/dashboard">
-          <el-icon><Monitor /></el-icon>
-          <template #title>{{ $t('nav.dashboard') }}</template>
-        </el-menu-item>
-        <el-menu-item index="/templates">
-          <el-icon><Document /></el-icon>
-          <template #title>{{ $t('nav.templates') }}</template>
-        </el-menu-item>
-        <el-menu-item index="/documents">
-          <el-icon><Files /></el-icon>
-          <template #title>{{ $t('nav.documents') }}</template>
-        </el-menu-item>
-        <el-menu-item index="/tasks">
-          <el-icon><Clock /></el-icon>
-          <template #title>{{ $t('nav.tasks') }}</template>
-        </el-menu-item>
-        <el-menu-item index="/data-sources">
-          <el-icon><Connection /></el-icon>
-          <template #title>{{ $t('nav.dataSources') }}</template>
-        </el-menu-item>
-        <el-menu-item index="/market">
-          <el-icon><Shop /></el-icon>
-          <template #title>{{ $t('nav.market') }}</template>
-        </el-menu-item>
-        <el-menu-item v-if="canAccessAdmin" index="/admin">
-          <el-icon><Setting /></el-icon>
-          <template #title>{{ $t('nav.admin') }}</template>
-        </el-menu-item>
-        <el-menu-item v-if="canAccessAudit" index="/audit">
-          <el-icon><List /></el-icon>
-          <template #title>{{ $t('nav.audit') }}</template>
-        </el-menu-item>
-        <el-sub-menu index="template-components">
-          <template #title>
-            <el-icon><Grid /></el-icon>
-            <span>{{ $t('nav.templateComponents') }}</span>
+      <div class="header-right">
+        <el-dropdown @command="changeLocale">
+          <span class="locale-trigger">{{ currentLocaleName }}</span>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="en-US">English</el-dropdown-item>
+              <el-dropdown-item command="zh-CN">简体中文</el-dropdown-item>
+              <el-dropdown-item command="zh-TW">繁體中文</el-dropdown-item>
+            </el-dropdown-menu>
           </template>
-          <el-menu-item index="/segments">{{ $t('segment.title') }}</el-menu-item>
-          <el-menu-item index="/components">{{ $t('component.title') }}</el-menu-item>
-          <el-menu-item index="/composite-templates">{{ $t('composite.title') }}</el-menu-item>
-        </el-sub-menu>
-      </el-menu>
-    </el-aside>
-    <el-container>
-      <el-header>
-        <div class="header-left">
-          <el-icon class="collapse-btn" @click="isCollapsed = !isCollapsed">
-            <Fold v-if="!isCollapsed" />
-            <Expand v-else />
-          </el-icon>
-          <el-breadcrumb separator="/">
-            <el-breadcrumb-item
-              v-for="item in breadcrumbs"
-              :key="item.path"
-              :to="item.path"
-            >
-              {{ item.title }}
-            </el-breadcrumb-item>
-          </el-breadcrumb>
-        </div>
-        <div class="header-right">
-          <el-dropdown @command="changeLocale">
-            <span class="locale-trigger">{{ currentLocaleName }}</span>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="en-US">English</el-dropdown-item>
-                <el-dropdown-item command="zh-CN">简体中文</el-dropdown-item>
-                <el-dropdown-item command="zh-TW">繁體中文</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-          <el-dropdown @command="handleUserCommand">
-            <span class="user-trigger">
-              <el-avatar :size="28" :icon="UserFilled" />
-              <span class="username">{{ displayName }}</span>
-            </span>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item disabled>
-                  <el-tag size="small" type="info">{{ userStore.userRole || 'USER' }}</el-tag>
-                </el-dropdown-item>
-                <el-dropdown-item divided command="logout">
-                  {{ $t('auth.logout') }}
-                </el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-        </div>
-      </el-header>
-      <el-main>
+        </el-dropdown>
+        <el-dropdown @command="handleUserCommand">
+          <span class="user-trigger">
+            <el-avatar :size="28" :icon="UserFilled" />
+            <span class="username">{{ displayName }}</span>
+          </span>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item disabled>
+                <el-tag size="small" type="info">{{ userStore.userRole || 'USER' }}</el-tag>
+              </el-dropdown-item>
+              <el-dropdown-item divided command="logout">
+                {{ $t('auth.logout') }}
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+      </div>
+    </el-header>
+
+    <el-container class="app-body">
+      <el-aside :width="isCollapsed ? '64px' : '240px'" class="app-aside">
+        <el-scrollbar>
+          <el-menu
+            :default-active="activeMenuIndex"
+            :collapse="isCollapsed"
+            :collapse-transition="false"
+            class="app-menu"
+            router
+          >
+            <el-menu-item index="/dashboard">
+              <el-icon><Monitor /></el-icon>
+              <template #title>{{ $t('nav.dashboard') }}</template>
+            </el-menu-item>
+            <el-menu-item index="/templates">
+              <el-icon><Document /></el-icon>
+              <template #title>{{ $t('nav.templateManagement') }}</template>
+            </el-menu-item>
+            <el-menu-item index="/documents">
+              <el-icon><Files /></el-icon>
+              <template #title>{{ $t('nav.documents') }}</template>
+            </el-menu-item>
+            <el-menu-item index="/generation">
+              <el-icon><Connection /></el-icon>
+              <template #title>{{ $t('nav.generation') }}</template>
+            </el-menu-item>
+            <el-menu-item v-if="canAccessAdmin" index="/admin">
+              <el-icon><Setting /></el-icon>
+              <template #title>{{ $t('nav.admin') }}</template>
+            </el-menu-item>
+            <el-menu-item v-if="canAccessAudit" index="/audit">
+              <el-icon><List /></el-icon>
+              <template #title>{{ $t('nav.audit') }}</template>
+            </el-menu-item>
+          </el-menu>
+        </el-scrollbar>
+      </el-aside>
+
+      <el-main class="app-main">
         <router-view />
       </el-main>
     </el-container>
@@ -114,17 +91,24 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import {
-  Monitor, Document, Connection, Shop, Setting, List,
-  Fold, Expand, UserFilled, Files, Clock, Grid,
+  Monitor, Document, Connection, Setting, List,
+  Fold, Expand, UserFilled, Files,
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
 const router = useRouter()
-const { locale, t } = useI18n()
+const { locale } = useI18n()
 const userStore = useUserStore()
 
 const isCollapsed = ref(false)
+
+const activeMenuIndex = computed(() => {
+  const path = route.path
+  if (path.startsWith('/templates')) return '/templates'
+  if (path.startsWith('/generation')) return '/generation'
+  return path
+})
 
 const localeNames: Record<string, string> = {
   'en-US': 'English',
@@ -148,32 +132,6 @@ const canAccessAudit = computed(() => {
   return role ? auditRoles.includes(role) : false
 })
 
-const navTitleMap: Record<string, string> = {
-  '/dashboard': 'nav.dashboard',
-  '/templates': 'nav.templates',
-  '/data-sources': 'nav.dataSources',
-  '/market': 'nav.market',
-  '/admin': 'nav.admin',
-  '/audit': 'nav.audit',
-  '/documents': 'nav.documents',
-  '/tasks': 'nav.tasks',
-  '/segments': 'segment.title',
-  '/components': 'component.title',
-  '/composite-templates': 'composite.title',
-}
-
-const breadcrumbs = computed(() => {
-  const items: Array<{ path: string; title: string }> = []
-  const path = route.path
-  const titleKey = navTitleMap[path]
-  if (titleKey) {
-    items.push({ path, title: t(titleKey) })
-  } else if (route.meta.title) {
-    items.push({ path, title: route.meta.title as string })
-  }
-  return items
-})
-
 function changeLocale(lang: string) {
   locale.value = lang
   localStorage.setItem('locale', lang)
@@ -190,58 +148,146 @@ function handleUserCommand(command: string) {
 <style scoped>
 .main-layout {
   height: 100vh;
-}
-.logo {
-  height: 60px;
-  line-height: 60px;
-  text-align: center;
-  font-size: 20px;
-  font-weight: bold;
-  color: #fff;
-  background-color: #2b2f3a;
   overflow: hidden;
-  white-space: nowrap;
 }
-.el-aside {
-  background-color: #304156;
-  transition: width 0.3s;
-  overflow-x: hidden;
-}
-.el-header {
+
+/* ── Top Header ── */
+.app-header {
+  height: 60px;
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #e6e6e6;
-  padding: 0 16px;
+  align-items: center;
+  background: linear-gradient(135deg, #DB0011 0%, #8B0000 100%);
+  color: white;
+  padding: 0 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 100;
 }
+
 .header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 20px;
 }
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-icon {
+  font-size: 24px;
+}
+
+.logo-text {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: white;
+}
+
 .collapse-btn {
-  cursor: pointer;
   font-size: 20px;
-  color: #606266;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  color: white;
+  transition: background-color 0.3s;
 }
+
+.collapse-btn:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
 .header-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 24px;
 }
+
 .locale-trigger {
   cursor: pointer;
   font-size: 14px;
-  color: #606266;
+  color: rgba(255, 255, 255, 0.9);
 }
+
+.locale-trigger:hover {
+  color: white;
+}
+
 .user-trigger {
   display: flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
 }
+
 .username {
   font-size: 14px;
-  color: #303133;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* ── Body ── */
+.app-body {
+  height: calc(100vh - 60px);
+}
+
+/* ── White Sidebar ── */
+.app-aside {
+  background: #ffffff;
+  border-right: 1px solid #e6e8eb;
+  transition: width 0.3s;
+  overflow: hidden;
+}
+
+.app-menu {
+  border-right: none;
+  height: 100%;
+}
+
+.app-menu :deep(.el-menu-item),
+.app-menu :deep(.el-sub-menu__title) {
+  height: 50px;
+  line-height: 50px;
+  margin: 4px 8px;
+  border-radius: 8px;
+}
+
+.app-menu :deep(.el-menu-item:hover),
+.app-menu :deep(.el-sub-menu__title:hover) {
+  background-color: rgba(219, 0, 17, 0.08);
+}
+
+.app-menu :deep(.el-menu-item.is-active) {
+  background-color: rgba(219, 0, 17, 0.12);
+  color: #DB0011;
+  font-weight: 500;
+  position: relative;
+}
+
+.app-menu :deep(.el-menu-item.is-active::before) {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 24px;
+  background-color: #DB0011;
+  border-radius: 0 3px 3px 0;
+}
+
+.app-menu :deep(.el-menu--collapse .el-menu-item),
+.app-menu :deep(.el-menu--collapse .el-sub-menu__title) {
+  margin: 4px;
+}
+
+/* ── Main Content ── */
+.app-main {
+  background-color: #f5f7fa;
+  padding: 20px;
+  overflow-y: auto;
 }
 </style>
+

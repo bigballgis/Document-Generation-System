@@ -2,9 +2,6 @@ package com.docgen.dto;
 
 import java.time.Instant;
 
-/**
- * Response DTO for template version information.
- */
 public class TemplateVersionDTO {
 
     private Long id;

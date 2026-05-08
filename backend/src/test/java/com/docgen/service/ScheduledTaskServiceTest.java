@@ -46,7 +46,6 @@ class ScheduledTaskServiceTest {
                 taskExecutionRepository, documentGeneratorService);
     }
 
-    // ── createTask ──
 
     @Test
     void createTask_success() {
@@ -104,7 +103,6 @@ class ScheduledTaskServiceTest {
         assertEquals(3, result.getMaxRetries());
     }
 
-    // ── listTasks ──
 
     @Test
     void listTasks_success() {
@@ -121,7 +119,6 @@ class ScheduledTaskServiceTest {
         assertEquals("0 30 * * * *", result.get(1).getCronExpression());
     }
 
-    // ── updateTask ──
 
     @Test
     void updateTask_success() {
@@ -173,7 +170,6 @@ class ScheduledTaskServiceTest {
         assertThrows(ResourceNotFoundException.class, () -> service.updateTask(999L, request));
     }
 
-    // ── deleteTask ──
 
     @Test
     void deleteTask_success() {
@@ -191,7 +187,6 @@ class ScheduledTaskServiceTest {
         assertThrows(ResourceNotFoundException.class, () -> service.deleteTask(999L));
     }
 
-    // ── enableTask / disableTask ──
 
     @Test
     void enableTask_success() {
@@ -216,7 +211,6 @@ class ScheduledTaskServiceTest {
         assertFalse(result.isEnabled());
     }
 
-    // ── getExecutionHistory ──
 
     @Test
     void getExecutionHistory_success() {
@@ -246,7 +240,6 @@ class ScheduledTaskServiceTest {
                 () -> service.getExecutionHistory(999L, PageRequest.of(0, 10)));
     }
 
-    // ── executeTask ──
 
     @Test
     void executeTask_success() {
@@ -263,7 +256,7 @@ class ScheduledTaskServiceTest {
 
         GenerateDocumentResponse response = new GenerateDocumentResponse();
         response.setDocumentId(42L);
-        when(documentGeneratorService.generateDocument(eq(100L), any(GenerateDocumentRequest.class)))
+        when(documentGeneratorService.generateDocument(eq(100L), any(GenerateDocumentRequest.class), isNull()))
                 .thenReturn(response);
 
         service.executeTask(1L);
@@ -299,7 +292,7 @@ class ScheduledTaskServiceTest {
         assertTrue(skipped.getErrorMessage().contains("5"));
 
         // Should NOT call document generator
-        verify(documentGeneratorService, never()).generateDocument(anyLong(), any());
+        verify(documentGeneratorService, never()).generateDocument(anyLong(), any(), any());
     }
 
     @Test
@@ -316,13 +309,13 @@ class ScheduledTaskServiceTest {
         });
         when(scheduledTaskRepository.save(any(ScheduledTask.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        when(documentGeneratorService.generateDocument(eq(100L), any(GenerateDocumentRequest.class)))
+        when(documentGeneratorService.generateDocument(eq(100L), any(GenerateDocumentRequest.class), isNull()))
                 .thenThrow(new RuntimeException("Service unavailable"));
 
         service.executeTask(1L);
 
         // Should attempt 1 initial + 2 retries = 3 total
-        verify(documentGeneratorService, times(3)).generateDocument(eq(100L), any());
+        verify(documentGeneratorService, times(3)).generateDocument(eq(100L), any(), isNull());
 
         // Last execution save should be FAILED
         ArgumentCaptor<TaskExecution> captor = ArgumentCaptor.forClass(TaskExecution.class);
@@ -348,15 +341,14 @@ class ScheduledTaskServiceTest {
 
         GenerateDocumentResponse response = new GenerateDocumentResponse();
         response.setDocumentId(99L);
-        when(documentGeneratorService.generateDocument(eq(100L), any(GenerateDocumentRequest.class)))
+        when(documentGeneratorService.generateDocument(eq(100L), any(GenerateDocumentRequest.class), isNull()))
                 .thenReturn(response);
 
         service.executeTask(1L);
 
-        verify(documentGeneratorService).generateDocument(eq(100L), any());
+        verify(documentGeneratorService).generateDocument(eq(100L), any(), isNull());
     }
 
-    // ── Helpers ──
 
     private ScheduledTask createSampleTask(Long id, Long templateId) {
         ScheduledTask task = new ScheduledTask();
@@ -380,3 +372,4 @@ class ScheduledTaskServiceTest {
         return exec;
     }
 }
+

@@ -20,7 +20,7 @@ import java.util.*;
 
 /**
  * Service for generating template previews.
- * Supports user-provided test data or real data source preview.
+ * Supports user-provided test data or parameter-based data context.
  * Supports OnlyOffice in-browser preview and direct download.
  */
 @Service
@@ -29,7 +29,7 @@ public class TemplatePreviewService {
     private static final Logger log = LoggerFactory.getLogger(TemplatePreviewService.class);
 
     private final TemplateRepository templateRepository;
-    private final DataAggregationService dataAggregationService;
+    private final ParameterValidationService parameterValidationService;
     private final DocumentGeneratorService documentGeneratorService;
     private final RestTemplate restTemplate;
     private final MinioClient minioClient;
@@ -47,12 +47,12 @@ public class TemplatePreviewService {
     private String onlyOfficeUrl;
 
     public TemplatePreviewService(TemplateRepository templateRepository,
-                                   DataAggregationService dataAggregationService,
+                                   ParameterValidationService parameterValidationService,
                                    DocumentGeneratorService documentGeneratorService,
                                    RestTemplate restTemplate,
                                    MinioClient minioClient) {
         this.templateRepository = templateRepository;
-        this.dataAggregationService = dataAggregationService;
+        this.parameterValidationService = parameterValidationService;
         this.documentGeneratorService = documentGeneratorService;
         this.restTemplate = restTemplate;
         this.minioClient = minioClient;
@@ -64,14 +64,14 @@ public class TemplatePreviewService {
     public PreviewResult preview(Long templateId, PreviewRequest request) {
         Template template = templateRepository.findById(templateId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.TEMPLATE_NOT_FOUND,
-                        "模板不存在: " + templateId, HttpStatus.NOT_FOUND));
+                        "Template not found: " + templateId, HttpStatus.NOT_FOUND));
 
-        // Resolve data: use test data or real data sources
+        // Resolve data: use test data or parameter-based data context
         Map<String, Object> data;
         if (request.isUseRealDataSources()) {
             Map<String, Object> params = request.getParameters() != null
                     ? request.getParameters() : Collections.emptyMap();
-            data = dataAggregationService.aggregateData(templateId, params);
+            data = parameterValidationService.validateAndBuildContext(templateId, params);
         } else {
             data = request.getTestData() != null ? request.getTestData() : Collections.emptyMap();
         }
@@ -116,7 +116,7 @@ public class TemplatePreviewService {
 
             if (response.getBody() == null || response.getBody().length == 0) {
                 throw new BusinessException(ErrorCode.GENERATE_RENDER_FAILED,
-                        "预览渲染返回空结果", HttpStatus.INTERNAL_SERVER_ERROR);
+                        "Preview rendering returned an empty result", HttpStatus.INTERNAL_SERVER_ERROR);
             }
             return response.getBody();
         } catch (BusinessException e) {
@@ -124,7 +124,7 @@ public class TemplatePreviewService {
         } catch (Exception e) {
             log.error("Preview rendering failed: {}", e.getMessage());
             throw new BusinessException(ErrorCode.GENERATE_RENDER_FAILED,
-                    "预览渲染失败: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Preview rendering failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 

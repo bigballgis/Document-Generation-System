@@ -1,7 +1,6 @@
 <template>
   <div class="coverage-panel" v-loading="loading">
     <template v-if="report">
-      <!-- Coverage Rate -->
       <el-row :gutter="20" style="margin-bottom: 20px">
         <el-col :span="6">
           <el-card shadow="never" class="coverage-stat">
@@ -34,7 +33,6 @@
         </el-col>
       </el-row>
 
-      <!-- Warning -->
       <el-alert
         v-if="report.coverageRate < 100"
         :title="$t('template.coverageWarning', { threshold: 100 })"
@@ -43,7 +41,6 @@
         style="margin-bottom: 16px"
       />
 
-      <!-- Bound Tags -->
       <el-card shadow="never" style="margin-bottom: 16px">
         <template #header>{{ $t('template.boundTags') }}</template>
         <div v-if="report.boundTags.length">
@@ -58,7 +55,6 @@
         <el-empty v-else :image-size="60" :description="$t('common.noData')" />
       </el-card>
 
-      <!-- Unbound Tags -->
       <el-card shadow="never" style="margin-bottom: 16px">
         <template #header>{{ $t('template.unboundTags') }}</template>
         <div v-if="report.unboundTags.length">
@@ -73,7 +69,6 @@
         <el-empty v-else :image-size="60" :description="$t('common.noData')" />
       </el-card>
 
-      <!-- Unused Fields -->
       <el-card shadow="never">
         <template #header>{{ $t('template.unusedFields') }}</template>
         <div v-if="report.unusedFields.length">
@@ -114,7 +109,7 @@ async function fetchCoverage() {
   loading.value = true
   try {
     report.value = await getTemplateCoverage(props.templateId)
-  } catch { /* handled */ } finally {
+  } catch {} finally {
     loading.value = false
   }
 }
@@ -138,3 +133,4 @@ onMounted(fetchCoverage)
   font-size: 14px;
 }
 </style>
+

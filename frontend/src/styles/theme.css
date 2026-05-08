@@ -1,0 +1,50 @@
+/* DocGen Theme — inspired by Workflow-Station---sun */
+
+:root {
+  --primary-color: #DB0011;
+  --primary-light: #ff4d4f;
+  --primary-dark: #8B0000;
+  --aside-bg: #ffffff;
+  --main-bg: #f5f7fa;
+  --header-height: 60px;
+}
+
+/* Element Plus primary color override */
+.el-button--primary {
+  --el-button-bg-color: var(--primary-color);
+  --el-button-border-color: var(--primary-color);
+  --el-button-hover-bg-color: var(--primary-light);
+  --el-button-hover-border-color: var(--primary-light);
+  --el-button-active-bg-color: var(--primary-dark);
+  --el-button-active-border-color: var(--primary-dark);
+}
+
+/* Override Element Plus CSS variables globally */
+:root {
+  --el-color-primary: #DB0011;
+  --el-color-primary-light-3: #e64d57;
+  --el-color-primary-light-5: #ed808a;
+  --el-color-primary-light-7: #f4b3b9;
+  --el-color-primary-light-8: #f8ccd0;
+  --el-color-primary-light-9: #fce6e8;
+  --el-color-primary-dark-2: #af000e;
+}
+
+/* Active menu item color */
+.el-menu-item.is-active {
+  color: var(--primary-color) !important;
+}
+
+/* Link color */
+a {
+  color: var(--primary-color);
+}
+a:hover {
+  color: var(--primary-light);
+}
+
+/* Switch active color */
+.el-switch.is-checked .el-switch__core {
+  border-color: var(--primary-color);
+  background-color: var(--primary-color);
+}

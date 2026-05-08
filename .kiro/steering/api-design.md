@@ -1,67 +1,32 @@
 ---
-description: RESTful API 设计规范，包括 URL 命名、HTTP 方法语义、响应格式和前端 API 调用规范
 inclusion: auto
-fileMatchPattern: '**/*Controller*.java,**/*controller*.java,**/api/**/*.ts'
+name: api-design
+description: RESTful API design — use when adding or changing Controllers or frontend API modules
 ---
 
-# API 设计规范
+# API design
 
-## RESTful API 设计原则
+## URLs
 
-### URL 命名
+- Lowercase, hyphens, plural resources: `/api/composite-templates/{id}/segments`
+- At most two nesting levels; actions as verb sub-paths: `/api/templates/{id}/activate`
 
-- 使用小写字母和连字符: `/api/composite-templates/{id}/segments`
-- 资源名使用复数: `/api/segments`, `/api/templates`
-- 嵌套资源最多两层: `/api/templates/{id}/versions`
-- 操作使用动词子路径: `/api/templates/{id}/activate`, `/api/segments/{id}/promote`
+## HTTP methods → success codes
 
-### HTTP 方法语义
+| Method | Use | Idempotent | Success |
+|--------|-----|------------|---------|
+| GET | Read | Yes | 200 |
+| POST | Create | No | 201 |
+| PUT | Full replace | Yes | 200 |
+| PATCH | Partial update | No | 200 |
+| DELETE | Delete | Yes | 204 |
 
-| 方法 | 用途 | 幂等性 | 响应码 |
-|------|------|--------|--------|
-| GET | 查询资源 | 是 | 200 |
-| POST | 创建资源 | 否 | 201 |
-| PUT | 全量更新 | 是 | 200 |
-| PATCH | 部分更新 | 否 | 200 |
-| DELETE | 删除资源 | 是 | 204 |
+## Response shapes
 
-### 响应格式
+- Pagination: `{ content, totalElements, totalPages, number, size }` (Spring `Page`)
+- Errors: `{ code, message, timestamp }` — `code` from #[[file:backend/src/main/java/com/docgen/exception/ErrorCode.java]]
 
-成功响应:
-```json
-{
-  "id": 1,
-  "name": "...",
-  ...
-}
-```
+## Frontend API layer
 
-分页响应:
-```json
-{
-  "content": [...],
-  "totalElements": 100,
-  "totalPages": 10,
-  "number": 0,
-  "size": 10
-}
-```
-
-错误响应:
-```json
-{
-  "code": "RESOURCE_NOT_FOUND",
-  "message": "模板不存在",
-  "timestamp": "2025-01-01T00:00:00Z"
-}
-```
-
-### 版本控制
-
-- API 版本通过 URL 前缀: `/api/v1/...`（当前版本不加前缀，未来破坏性变更时引入）
-
-## 前端 API 调用规范
-
-- 所有 API 调用通过 `src/api/request.ts` 的 Axios 实例
-- 每个功能模块一个 API 文件: `src/api/segments.ts`, `src/api/composite-templates.ts`
-- 使用 TypeScript 类型定义请求和响应
+- One file per domain: `frontend/src/api/{module}.ts`
+- Reference: #[[file:frontend/src/api/parameters.ts]]

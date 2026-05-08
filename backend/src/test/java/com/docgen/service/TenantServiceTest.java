@@ -39,7 +39,6 @@ class TenantServiceTest {
         tenantService = new TenantService(tenantRepository);
     }
 
-    // ── Create tests ──
 
     @Test
     void createTenant_success() {
@@ -69,10 +68,9 @@ class TenantServiceTest {
 
         BusinessException ex = assertThrows(BusinessException.class,
                 () -> tenantService.createTenant(request));
-        assertEquals("租户名称已存在", ex.getMessage());
+        assertEquals("Tenant name already exists", ex.getMessage());
     }
 
-    // ── Update tests ──
 
     @Test
     void updateTenant_success() {
@@ -97,7 +95,6 @@ class TenantServiceTest {
                 () -> tenantService.updateTenant(99L, new UpdateTenantRequest()));
     }
 
-    // ── Enable / Disable tests ──
 
     @Test
     void enableTenant_success() {
@@ -122,7 +119,6 @@ class TenantServiceTest {
         assertEquals("DISABLED", result.getStatus());
     }
 
-    // ── Get / List tests ──
 
     @Test
     void getTenantById_success() {
@@ -156,7 +152,6 @@ class TenantServiceTest {
         assertEquals("Acme Corp", result.getContent().get(0).getName());
     }
 
-    // ── Usage test ──
 
     @Test
     void getTenantUsage_returnsPlaceholderStats() {
@@ -173,7 +168,6 @@ class TenantServiceTest {
         assertEquals(10737418240L, usage.getMaxStorageBytes());
     }
 
-    // ── Helper ──
 
     private Tenant createTestTenant() {
         Tenant tenant = new Tenant();
@@ -190,3 +184,4 @@ class TenantServiceTest {
         return tenant;
     }
 }
+

@@ -26,8 +26,8 @@ import java.util.stream.Collectors;
  * Service for merging multiple generated Word documents into a single document.
  * <p>
  * The actual document merging is delegated to the Docxtemplater Node.js service
- * via its {@code POST /merge} endpoint. This service handles validation, document
- * retrieval from MinIO, and storage of the merged result.
+ * via its {@code POST /merge-segments} endpoint (base64 segment buffers).
+ * This service handles validation, document retrieval from MinIO, and storage of the merged result.
  */
 @Service
 public class DocumentMergeService {
@@ -78,7 +78,7 @@ public class DocumentMergeService {
 
         if (!invalidIds.isEmpty()) {
             throw new BusinessException(ErrorCode.MERGE_INVALID_DOCUMENT_IDS,
-                    "无效的文档 ID: " + invalidIds, HttpStatus.BAD_REQUEST);
+                    "Invalid document ID(s): " + invalidIds, HttpStatus.BAD_REQUEST);
         }
 
         // Fetch document contents from MinIO in the specified order
@@ -113,31 +113,29 @@ public class DocumentMergeService {
         return documentRepository.save(merged);
     }
 
-    // ── Validation ──
 
     void validateRequest(MergeDocumentsRequest request) {
         if (request == null) {
             throw new BusinessException(ErrorCode.MERGE_INVALID_REQUEST,
-                    "合并请求不能为空", HttpStatus.BAD_REQUEST);
+                    "Merge request cannot be empty", HttpStatus.BAD_REQUEST);
         }
         if (request.getDocumentIds() == null || request.getDocumentIds().isEmpty()) {
             throw new BusinessException(ErrorCode.MERGE_INVALID_REQUEST,
-                    "文档 ID 列表不能为空", HttpStatus.BAD_REQUEST);
+                    "Document ID list cannot be empty", HttpStatus.BAD_REQUEST);
         }
         if (request.getDocumentIds().size() < 2) {
             throw new BusinessException(ErrorCode.MERGE_INVALID_REQUEST,
-                    "至少需要 2 个文档才能合并", HttpStatus.BAD_REQUEST);
+                    "At least two documents are required to merge", HttpStatus.BAD_REQUEST);
         }
         String format = request.getOutputFormat();
         if (format != null && !format.isBlank()
                 && !"DOCX".equalsIgnoreCase(format) && !"PDF".equalsIgnoreCase(format)) {
             throw new BusinessException(ErrorCode.MERGE_INVALID_REQUEST,
-                    "不支持的输出格式: " + format + "，仅支持 DOCX 或 PDF",
+                    "Unsupported output format: " + format + "; only DOCX or PDF are supported",
                     HttpStatus.BAD_REQUEST);
         }
     }
 
-    // ── MinIO operations ──
 
     byte[] fetchDocumentContent(GeneratedDocument doc) {
         try (InputStream stream = minioClient.getObject(GetObjectArgs.builder()
@@ -148,7 +146,7 @@ public class DocumentMergeService {
         } catch (Exception e) {
             log.error("Failed to fetch document {} from MinIO: {}", doc.getId(), e.getMessage());
             throw new BusinessException(ErrorCode.DOCUMENT_DOWNLOAD_FAILED,
-                    "获取文档内容失败: " + doc.getId(), HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Failed to fetch document content: " + doc.getId(), HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 
@@ -166,19 +164,37 @@ public class DocumentMergeService {
         } catch (Exception e) {
             log.error("Failed to upload merged document to MinIO: {}", e.getMessage());
             throw new BusinessException(ErrorCode.GENERATE_STORAGE_FAILED,
-                    "合并文档存储失败: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Failed to store merged document: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 
-    // ── Node.js service call ──
 
+    /**
+     * Builds the {@code segments} array expected by {@code POST /merge-segments}.
+     */
+    static List<Map<String, Object>> buildMergeSegmentsPayload(List<String> base64Documents,
+                                                               boolean insertPageBreaks) {
+        List<Map<String, Object>> segments = new ArrayList<>();
+        for (int i = 0; i < base64Documents.size(); i++) {
+            Map<String, Object> seg = new LinkedHashMap<>();
+            seg.put("buffer", base64Documents.get(i));
+            if (i > 0) {
+                seg.put("pageBreakBefore", insertPageBreaks);
+            }
+            segments.add(seg);
+        }
+        return segments;
+    }
+
+    /**
+     * @param generateToc reserved for product metadata; not sent to merge-segments
+     * @param outputFormat  reserved for persisted format; merge-segments always returns DOCX bytes
+     */
+    @SuppressWarnings("unused")
     byte[] callMergeEndpoint(List<String> base64Documents, boolean insertPageBreaks,
                              boolean generateToc, String outputFormat) {
         Map<String, Object> body = new HashMap<>();
-        body.put("documents", base64Documents);
-        body.put("insertPageBreaks", insertPageBreaks);
-        body.put("generateToc", generateToc);
-        body.put("outputFormat", outputFormat != null ? outputFormat : "DOCX");
+        body.put("segments", buildMergeSegmentsPayload(base64Documents, insertPageBreaks));
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -186,12 +202,12 @@ public class DocumentMergeService {
 
         try {
             ResponseEntity<byte[]> response = restTemplate.exchange(
-                    docxtemplaterServiceUrl + "/merge",
+                    docxtemplaterServiceUrl + "/merge-segments",
                     HttpMethod.POST, entity, byte[].class);
 
             if (response.getBody() == null || response.getBody().length == 0) {
                 throw new BusinessException(ErrorCode.MERGE_FAILED,
-                        "合并服务返回空结果", HttpStatus.INTERNAL_SERVER_ERROR);
+                        "Merge service returned an empty result", HttpStatus.INTERNAL_SERVER_ERROR);
             }
             return response.getBody();
         } catch (BusinessException e) {
@@ -199,11 +215,11 @@ public class DocumentMergeService {
         } catch (RestClientException e) {
             log.error("Merge service call failed: {}", e.getMessage());
             throw new BusinessException(ErrorCode.MERGE_FAILED,
-                    "文档合并服务调用失败: " + e.getMessage(), HttpStatus.SERVICE_UNAVAILABLE, e);
+                    "Document merge service call failed: " + e.getMessage(), HttpStatus.SERVICE_UNAVAILABLE, e);
         } catch (Exception e) {
             log.error("Document merge failed: {}", e.getMessage());
             throw new BusinessException(ErrorCode.MERGE_FAILED,
-                    "文档合并失败: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
+                    "Document merge failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR, e);
         }
     }
 
@@ -214,3 +230,4 @@ public class DocumentMergeService {
         return "DOCX";
     }
 }
+

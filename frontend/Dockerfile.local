@@ -1,0 +1,26 @@
+# Local image: copy a host-built dist/ (no npm in Docker). Build first: cd frontend && npm run build
+# Reproducible deps: use lockfile-based `frontend/Dockerfile` for in-container builds.
+FROM nginx:1.25-alpine
+
+ENV NGINX_ENVSUBST_FILTER=BACKEND_URL
+ENV BACKEND_URL=http://app:8080
+
+RUN apk add --no-cache libcap \
+    && setcap 'cap_net_bind_service=+ep' /usr/sbin/nginx \
+    && apk del libcap \
+    && mkdir -p /var/cache/nginx/client_temp /var/cache/nginx/proxy_temp \
+        /var/cache/nginx/fastcgi_temp /var/cache/nginx/uwsgi_temp /var/cache/nginx/scgi_temp \
+        /etc/nginx/templates \
+    && chown -R nginx:nginx /var/cache/nginx /var/run /var/log/nginx \
+        /etc/nginx/conf.d /etc/nginx/templates \
+    && sed -i 's|pid        /var/run/nginx.pid;|pid        /var/cache/nginx/nginx.pid;|' /etc/nginx/nginx.conf
+
+COPY dist /usr/share/nginx/html
+RUN chown -R nginx:nginx /usr/share/nginx/html
+
+COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
+RUN chown nginx:nginx /etc/nginx/templates/default.conf.template
+
+USER nginx
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

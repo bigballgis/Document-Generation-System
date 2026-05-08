@@ -1,10 +1,14 @@
-# 本地构建版本：使用宿主机预编译的 JAR，跳过 Docker 内 Maven 构建
-# 使用前请先运行: cd backend && mvn clean package -DskipTests
-# eclipse-temurin:17-jre-alpine 内置 BusyBox wget，无需额外安装
+# Local build: copy a pre-built JAR from the host (no Maven inside the image).
+# Build the JAR first: cd backend && mvn clean package -DskipTests
+# eclipse-temurin:17-jre-alpine includes BusyBox wget for health checks.
 FROM eclipse-temurin:17-jre-alpine
+
+RUN addgroup -S app && adduser -S app -G app -u 10001
 
 WORKDIR /app
 COPY target/*.jar app.jar
+RUN chown app:app /app/app.jar
 
+USER app
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -23,7 +23,6 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    // ── Business exceptions (custom hierarchy) ──
 
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity<ErrorResponse> handleValidation(ValidationException ex) {
@@ -55,7 +54,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(ex.getHttpStatus()).body(response);
     }
 
-    // ── Spring Security access denied ──
 
     @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleSpringAccessDenied(
@@ -63,16 +61,15 @@ public class GlobalExceptionHandler {
         String traceId = generateTraceId();
         log.warn("Access denied [traceId={}]: {}", traceId, ex.getMessage());
         ErrorResponse response = new ErrorResponse(
-                ErrorCode.AUTH_ACCESS_DENIED, "无权访问", traceId);
+                ErrorCode.AUTH_ACCESS_DENIED, "Access denied", traceId);
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
 
-    // ── Bean validation (e.g. @Valid on request bodies) ──
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         String traceId = generateTraceId();
-        String message = String.format("参数 '%s' 的值 '%s' 无效", ex.getName(), ex.getValue());
+        String message = String.format("Invalid value '%s' for parameter '%s'", ex.getValue(), ex.getName());
         log.warn("Type mismatch [traceId={}]: {}", traceId, message);
         ErrorResponse response = new ErrorResponse(
                 ErrorCode.VALIDATION_TYPE_MISMATCH, message, traceId);
@@ -88,18 +85,17 @@ public class GlobalExceptionHandler {
                 fieldErrors.put(fe.getField(), fe.getDefaultMessage()));
         log.warn("Validation error [traceId={}]: {}", traceId, fieldErrors);
         ErrorResponse response = new ErrorResponse(
-                ErrorCode.VALIDATION_FAILED, "请求参数验证失败", traceId, fieldErrors);
+                ErrorCode.VALIDATION_FAILED, "Request validation failed", traceId, fieldErrors);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
     }
 
-    // ── Catch-all ──
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
         String traceId = generateTraceId();
         log.error("Unexpected error [traceId={}]", traceId, ex);
         ErrorResponse response = new ErrorResponse(
-                ErrorCode.INTERNAL_ERROR, "系统内部错误", traceId);
+                ErrorCode.INTERNAL_ERROR, "Internal server error", traceId);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 
@@ -107,3 +103,4 @@ public class GlobalExceptionHandler {
         return UUID.randomUUID().toString();
     }
 }
+

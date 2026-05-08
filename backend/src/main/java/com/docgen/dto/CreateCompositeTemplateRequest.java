@@ -3,13 +3,10 @@ package com.docgen.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-/**
- * Request DTO for creating a new Composite_Template.
- */
 public class CreateCompositeTemplateRequest {
 
-    @NotBlank(message = "组合模板名称不能为空")
-    @Size(max = 200, message = "组合模板名称最长 200 个字符")
+    @NotBlank(message = "Composite template name must not be blank")
+    @Size(max = 200, message = "Composite template name must not exceed 200 characters")
     private String name;
 
     private String description;

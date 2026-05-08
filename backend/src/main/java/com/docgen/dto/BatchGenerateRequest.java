@@ -3,9 +3,6 @@ package com.docgen.dto;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Request DTO for batch document generation.
- */
 public class BatchGenerateRequest {
 
     /** List of data sets, each producing one document. Max 1000. */

@@ -40,7 +40,7 @@ public class ExpressionEngineImpl implements ExpressionEngine {
     public Object evaluate(String expression, ExpressionType type, Map<String, Object> context) {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("expression", expression);
-        requestBody.put("type", type.name());
+        requestBody.put("type", type.toEvaluateApiType());
         requestBody.put("context", context != null ? context : Collections.emptyMap());
 
         HttpHeaders headers = new HttpHeaders();
@@ -57,14 +57,14 @@ public class ExpressionEngineImpl implements ExpressionEngine {
             Map<?, ?> body = response.getBody();
             if (body == null) {
                 throw new BusinessException(ErrorCode.EXPRESSION_EVALUATION_FAILED,
-                        "表达式执行返回空结果", HttpStatus.INTERNAL_SERVER_ERROR);
+                        "Expression evaluation returned an empty result", HttpStatus.INTERNAL_SERVER_ERROR);
             }
 
             Boolean success = (Boolean) body.get("success");
             if (Boolean.FALSE.equals(success)) {
-                String error = (String) body.get("error");
+                String error = stringifyEvaluateError(body.get("error"));
                 throw new BusinessException(ErrorCode.EXPRESSION_EVALUATION_FAILED,
-                        "表达式执行失败: " + error, HttpStatus.BAD_REQUEST);
+                        "Expression evaluation failed: " + error, HttpStatus.BAD_REQUEST);
             }
 
             return body.get("result");
@@ -73,7 +73,7 @@ public class ExpressionEngineImpl implements ExpressionEngine {
         } catch (RestClientException e) {
             log.error("Failed to call expression evaluation service: {}", e.getMessage());
             throw new BusinessException(ErrorCode.EXPRESSION_EVALUATION_FAILED,
-                    "表达式服务调用失败: " + e.getMessage(), HttpStatus.SERVICE_UNAVAILABLE, e);
+                    "Expression service call failed: " + e.getMessage(), HttpStatus.SERVICE_UNAVAILABLE, e);
         }
     }
 
@@ -103,7 +103,7 @@ public class ExpressionEngineImpl implements ExpressionEngine {
     public ExpressionValidationResult validateExpression(String expression, ExpressionType type) {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("expression", expression);
-        requestBody.put("type", type.name());
+        requestBody.put("type", type.toEvaluateApiType());
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -118,7 +118,7 @@ public class ExpressionEngineImpl implements ExpressionEngine {
 
             Map<?, ?> body = response.getBody();
             if (body == null) {
-                return ExpressionValidationResult.failure("验证服务返回空结果", null);
+                return ExpressionValidationResult.failure("Validation service returned an empty result", null);
             }
 
             Boolean success = (Boolean) body.get("success");
@@ -126,14 +126,37 @@ public class ExpressionEngineImpl implements ExpressionEngine {
                 return ExpressionValidationResult.success();
             }
 
-            String error = (String) body.get("error");
+            String error = stringifyEvaluateError(body.get("error"));
             Integer position = body.get("errorPosition") != null
                     ? ((Number) body.get("errorPosition")).intValue()
                     : null;
             return ExpressionValidationResult.failure(error, position);
         } catch (RestClientException e) {
             log.error("Failed to call expression validation service: {}", e.getMessage());
-            return ExpressionValidationResult.failure("表达式服务不可用: " + e.getMessage(), null);
+            return ExpressionValidationResult.failure("Expression service unavailable: " + e.getMessage(), null);
         }
+    }
+
+    /**
+     * Normalizes {@code error} from {@code /evaluate}: either a plain string or {@code { code, message }}.
+     */
+    static String stringifyEvaluateError(Object error) {
+        if (error == null) {
+            return "Unknown error";
+        }
+        if (error instanceof String s) {
+            return s;
+        }
+        if (error instanceof Map<?, ?> m) {
+            Object message = m.get("message");
+            Object code = m.get("code");
+            if (message != null && code != null) {
+                return code + ": " + message;
+            }
+            if (message != null) {
+                return String.valueOf(message);
+            }
+        }
+        return String.valueOf(error);
     }
 }

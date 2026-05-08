@@ -74,13 +74,11 @@ public class ResponseTransformerService {
         };
     }
 
-    // ── JSONPath (Req 42.1) ──
 
     Object applyJsonPath(Object rawResponse, String expression) {
         return JsonPath.read(rawResponse, expression);
     }
 
-    // ── XPath (Req 42.2) ──
 
     Object applyXPath(Object rawResponse, String expression) {
         try {
@@ -107,7 +105,6 @@ public class ResponseTransformerService {
         }
     }
 
-    // ── Flatten (Req 42.3) ──
 
     @SuppressWarnings("unchecked")
     Object applyFlatten(Object rawResponse) {
@@ -133,7 +130,6 @@ public class ResponseTransformerService {
         }
     }
 
-    // ── Group By (Req 42.4) ──
 
     @SuppressWarnings("unchecked")
     Object applyGroupBy(Object rawResponse, String field) {
@@ -151,7 +147,6 @@ public class ResponseTransformerService {
                 ));
     }
 
-    // ── Sort (Req 42.5) ──
 
     @SuppressWarnings("unchecked")
     Object applySort(Object rawResponse, String field, SortDirection direction) {
@@ -188,3 +183,4 @@ public class ResponseTransformerService {
         return error;
     }
 }
+

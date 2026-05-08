@@ -1,7 +1,7 @@
 /**
  * Integration tests for Docxtemplater Service
  *
- * Tests the HTTP endpoints: /health, /evaluate, /render, /convert-pdf
+ * Tests the HTTP endpoints: /health, /evaluate, /scan-variables, /watermark, /render, /convert-pdf
  *
  * **Validates: Requirements 6, 11, 21, 51**
  */
@@ -11,14 +11,11 @@ const Docxtemplater = require('docxtemplater');
 const PizZip = require('pizzip');
 const { execFile } = require('child_process');
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
 /**
  * Create a minimal valid .docx buffer with given template content.
  * Uses docxtemplater to produce a real docx from a blank template.
  */
 function createTestDocx(content) {
-  // Minimal OOXML document.xml content
   const docXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas"
             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -77,9 +74,6 @@ function isLibreOfficeAvailable() {
   });
 }
 
-// ── Mock MinIO before requiring app ──────────────────────────────────────────
-
-// Store for mock files
 const mockFileStore = new Map();
 
 jest.mock('../minio-client', () => ({
@@ -163,8 +157,6 @@ function request(method, path, body) {
   });
 }
 
-// ── Tests ────────────────────────────────────────────────────────────────────
-
 describe('GET /health', () => {
   it('should return health status with service name', async () => {
     const res = await request('GET', '/health');
@@ -196,8 +188,80 @@ describe('GET /health', () => {
   });
 });
 
+describe('POST /scan-variables', () => {
+  it('returns sorted unique variables from segment docx', async () => {
+    const path = 'templates/coverage-scan.docx';
+    mockFileStore.set(path, createTestDocx('{z_tag}{a_tag}{a_tag}'));
+    const res = await request('POST', '/scan-variables', { templatePath: path });
+    expect(res.status).toBe(200);
+    expect(res.body.variables).toEqual(['a_tag', 'z_tag']);
+  });
+
+  it('returns empty variables when template has no placeholders', async () => {
+    const path = 'templates/plain-scan.docx';
+    mockFileStore.set(path, createTestDocx('Hello world'));
+    const res = await request('POST', '/scan-variables', { templatePath: path });
+    expect(res.status).toBe(200);
+    expect(res.body.variables).toEqual([]);
+  });
+
+  it('returns 400 when templatePath is missing', async () => {
+    const res = await request('POST', '/scan-variables', {});
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('MISSING_TEMPLATE_PATH');
+  });
+
+  it('returns 404 when MinIO object is missing', async () => {
+    const res = await request('POST', '/scan-variables', { templatePath: 'missing/object.docx' });
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe('TEMPLATE_NOT_FOUND');
+  });
+});
 
 describe('POST /evaluate', () => {
+  describe('expression type validation', () => {
+    it('rejects unknown type with 400 and does not run the sandbox', async () => {
+      const res = await request('POST', '/evaluate', {
+        expression: "typeof process !== 'undefined' ? 'sandbox-leak' : '1+1'",
+        type: 'python',
+        context: {},
+      });
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('UNKNOWN_EXPRESSION_TYPE');
+    });
+
+    it('rejects non-string type with 400', async () => {
+      const res = await request('POST', '/evaluate', {
+        expression: '1+1',
+        type: 123,
+        context: {},
+      });
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('INVALID_EXPRESSION_TYPE');
+    });
+
+    it('defaults omitted type to javascript', async () => {
+      const res = await request('POST', '/evaluate', {
+        expression: '1+1',
+        context: {},
+      });
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.result).toBe(2);
+    });
+
+    it('accepts explicit javascript type', async () => {
+      const res = await request('POST', '/evaluate', {
+        expression: '2+2',
+        type: 'javascript',
+        context: {},
+      });
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.result).toBe(4);
+    });
+  });
+
   describe('valid JavaScript expressions', () => {
     it('should evaluate simple arithmetic', async () => {
       const res = await request('POST', '/evaluate', {
@@ -442,6 +506,83 @@ describe('POST /evaluate', () => {
   });
 });
 
+describe('POST /watermark', () => {
+  const ONE_PX_PNG_B64 =
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
+  it('returns 400 when document is missing', async () => {
+    const res = await request('POST', '/watermark', { type: 'text', text: 'X' });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('MISSING_DOCUMENT');
+  });
+
+  it('returns 400 for invalid watermark type', async () => {
+    const buf = createTestDocx('hi');
+    const res = await request('POST', '/watermark', {
+      document: buf.toString('base64'),
+      type: 'vector',
+      text: 'x',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('INVALID_WATERMARK_TYPE');
+  });
+
+  it('applies text watermark and returns a docx buffer', async () => {
+    const buf = createTestDocx('body');
+    const res = await request('POST', '/watermark', {
+      document: buf.toString('base64'),
+      type: 'text',
+      text: 'CONFIDENTIAL',
+      fontSize: 36,
+      color: '#CCCCCC',
+      opacity: 0.3,
+      rotation: -45,
+    });
+    expect(res.status).toBe(200);
+    expect(String(res.headers['content-type'] || '')).toMatch(/wordprocessingml/);
+    const out = Buffer.isBuffer(res.body) ? res.body : res.rawBody;
+    expect(Buffer.isBuffer(out)).toBe(true);
+    expect(out.length).toBeGreaterThan(200);
+    const zip = new PizZip(out);
+    expect(zip.files['word/document.xml']).toBeDefined();
+  });
+
+  it('applies image watermark with raw base64 imageSource', async () => {
+    const buf = createTestDocx('x');
+    const res = await request('POST', '/watermark', {
+      document: buf.toString('base64'),
+      type: 'image',
+      imageSource: ONE_PX_PNG_B64,
+      opacity: 0.3,
+      position: 'CENTER',
+    });
+    expect(res.status).toBe(200);
+    const out = Buffer.isBuffer(res.body) ? res.body : res.rawBody;
+    expect(out.length).toBeGreaterThan(200);
+  });
+
+  it('accepts data URI in imageSource', async () => {
+    const buf = createTestDocx('x');
+    const dataUri = `data:image/png;base64,${ONE_PX_PNG_B64}`;
+    const res = await request('POST', '/watermark', {
+      document: buf.toString('base64'),
+      type: 'image',
+      imageSource: dataUri,
+    });
+    expect(res.status).toBe(200);
+  });
+
+  it('rejects remote image URLs', async () => {
+    const buf = createTestDocx('x');
+    const res = await request('POST', '/watermark', {
+      document: buf.toString('base64'),
+      type: 'image',
+      imageSource: 'https://example.com/logo.png',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('WATERMARK_IMAGE_URL_REJECTED');
+  });
+});
 
 describe('POST /render', () => {
   describe('simple variable substitution', () => {

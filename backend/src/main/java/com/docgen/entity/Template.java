@@ -2,6 +2,8 @@ package com.docgen.entity;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 
@@ -60,7 +62,15 @@ public class Template {
     private String templateType = "SINGLE";
 
     @Column(name = "assembly_config", columnDefinition = "JSONB")
+    @JdbcTypeCode(SqlTypes.JSON)
     private String assemblyConfig;
+
+    /**
+     * Optional post-merge render settings (watermark, future barcodes), JSON from {@code render-config.json}.
+     */
+    @Column(name = "render_config", columnDefinition = "JSONB")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private String renderConfig;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -80,7 +90,6 @@ public class Template {
         this.updatedAt = Instant.now();
     }
 
-    // ── Getters and Setters ──
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -130,9 +139,13 @@ public class Template {
     public String getAssemblyConfig() { return assemblyConfig; }
     public void setAssemblyConfig(String assemblyConfig) { this.assemblyConfig = assemblyConfig; }
 
+    public String getRenderConfig() { return renderConfig; }
+    public void setRenderConfig(String renderConfig) { this.renderConfig = renderConfig; }
+
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 }
+

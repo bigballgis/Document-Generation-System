@@ -103,7 +103,7 @@ describe('WebhookPanel', () => {
     await flushPromises()
 
     // Find delete buttons in the table
-    const deleteBtn = wrapper.findAll('.el-button--danger').at(0)
+    const deleteBtn = wrapper.findAll('.el-button--danger')[0]
     expect(deleteBtn).toBeDefined()
     await deleteBtn!.trigger('click')
     await flushPromises()

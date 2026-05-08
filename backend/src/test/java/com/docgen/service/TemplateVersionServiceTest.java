@@ -9,7 +9,9 @@ import com.docgen.exception.ResourceNotFoundException;
 import com.docgen.repository.TemplateRepository;
 import com.docgen.repository.TemplateTagMappingRepository;
 import com.docgen.repository.TemplateVersionRepository;
+import com.docgen.service.RenderConfigValidator;
 import com.docgen.util.TenantContext;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.minio.MinioClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,7 +46,11 @@ class TemplateVersionServiceTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        templateService = new TemplateService(templateRepository, templateVersionRepository, mock(TemplateTagMappingRepository.class), minioClient);
+        RenderConfigValidator rcv = mock(RenderConfigValidator.class);
+        lenient().doNothing().when(rcv).validateForImport(any());
+        templateService = new TemplateService(templateRepository, templateVersionRepository, mock(TemplateTagMappingRepository.class),
+                mock(com.docgen.repository.UserRepository.class), mock(com.docgen.repository.TeamRepository.class), minioClient,
+                new ObjectMapper(), rcv);
         Field bucketField = TemplateService.class.getDeclaredField("bucketName");
         bucketField.setAccessible(true);
         bucketField.set(templateService, "docgen-test");
@@ -56,7 +62,6 @@ class TemplateVersionServiceTest {
         TenantContext.clear();
     }
 
-    // ── getTemplateVersions tests ──
 
     @Test
     void getTemplateVersions_returnsVersionsOrderedByVersionNumberDesc() {
@@ -95,7 +100,6 @@ class TemplateVersionServiceTest {
         assertTrue(result.isEmpty());
     }
 
-    // ── updateTemplate auto-version creation tests ──
 
     @Test
     void updateTemplate_createsVersionWithIncrementedNumber() {
@@ -138,7 +142,6 @@ class TemplateVersionServiceTest {
         assertEquals(1, captor.getValue().getVersionNumber());
     }
 
-    // ── rollbackToVersion tests ──
 
     @Test
     void rollbackToVersion_success_createsNewVersion() {
@@ -189,7 +192,6 @@ class TemplateVersionServiceTest {
                 () -> templateService.rollbackToVersion(1L, 99L));
     }
 
-    // ── Version config_json content tests ──
 
     @Test
     void updateTemplate_versionConfigJsonContainsAllMetadata() {
@@ -220,7 +222,6 @@ class TemplateVersionServiceTest {
         assertTrue(configJson.contains("\"status\":\"DRAFT\""));
     }
 
-    // ── Helpers ──
 
     private Template createTestTemplate() {
         Template template = new Template();
@@ -257,3 +258,4 @@ class TemplateVersionServiceTest {
         return version;
     }
 }
+

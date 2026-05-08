@@ -1,0 +1,43 @@
+{
+  "description": "Full render request example — includes watermark, barcode, and qrcode configs",
+  "endpoint": "POST /api/generate/{templateId}",
+  "request_body": {
+    "data": "See data/sample-data.json",
+    "watermark": {
+      "type": "text",
+      "text": "CONFIDENTIAL - DRAFT",
+      "fontSize": 54,
+      "color": "#C8C8C8",
+      "opacity": 0.25,
+      "rotation": -45
+    },
+    "barcodes": {
+      "tracking_barcode": {
+        "type": "barcode",
+        "value": "FOL-2026-000142",
+        "format": "code128",
+        "options": {
+          "scale": 3,
+          "height": 12,
+          "includeText": true
+        }
+      },
+      "verification_qrcode": {
+        "type": "qrcode",
+        "value": "https://verify.gpib.example.com/fol/FOL-2026-000142",
+        "options": {
+          "width": 150,
+          "margin": 2,
+          "errorCorrectionLevel": "H"
+        }
+      }
+    }
+  },
+  "notes": {
+    "composite_template": "This template is COMPOSITE. AssemblyEngineService renders segments in spec/assembly-config.json order and merges outputs.",
+    "conditional_segments": "Part H (Security) and Part I (Guarantee) are conditional segments controlled by has_security and has_guarantor.",
+    "data_scope": "Some segments define dataScope to only expose the minimum required fields.",
+    "derived_parameters": "total_facility_amount, total_fee_amount, weighted_avg_rate, total_security_value, overall_ltv are DERIVED parameters computed by the expression engine.",
+    "aggregations": "facilities.$sum_amount, facilities.$avg_interest_rate, fees.$sum_amount are injected by AggregationResolver."
+  }
+}

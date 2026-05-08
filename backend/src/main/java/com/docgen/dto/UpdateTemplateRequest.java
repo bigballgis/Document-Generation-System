@@ -1,8 +1,5 @@
 package com.docgen.dto;
 
-/**
- * Request DTO for updating an existing template.
- */
 public class UpdateTemplateRequest {
 
     private String name;

@@ -2,21 +2,21 @@
 
 ## Introduction
 
-本需求文档定义了文档生成系统前端补全第二期（frontend-gap-fill-phase2）。第一期（document-generation-frontend）已补全了文档生成、异步任务、文档历史和表达式管理的前端功能。本期覆盖剩余所有后端 API 已存在但前端缺失对应 UI、API 调用层或视图的功能模块，包括：模板导入导出、Webhook 管理、速率限制与用量统计、模板审核补全、模板状态机补全、密码重置、测试用例导入导出、覆盖率导出、变量扫描。
+This document defines **frontend-gap-fill-phase2**. Phase 1 (**document-generation-frontend**) added generation, tasks, document history, and expressions. Phase 2 covers remaining backend APIs that still lacked UI/API modules: template import/export, webhooks, rate limits and usage, review workflow completion, template state machine completion, password reset, test-case import/export, coverage export, and variable scan.
 
 ## Glossary
 
-- **ImportExport_API**: 前端 API 文件 `frontend/src/api/import-export.ts`，封装 ImportExportController 的所有端点
-- **Webhook_API**: 前端 API 文件 `frontend/src/api/webhooks.ts`，封装 WebhookController 的所有端点
-- **RateLimit_API**: 前端 API 文件 `frontend/src/api/rate-limits.ts`，封装 RateLimitController 的所有端点
-- **WebhookPanel**: Webhook 管理面板组件，集成在模板详情页中作为标签页
-- **WebhookFormDialog**: Webhook 创建/编辑对话框组件
-- **WebhookLogDialog**: Webhook 日志查看对话框组件
-- **RateLimitPanel**: 速率限制与用量统计面板，集成在管理页面中
-- **ResetPasswordDialog**: 密码重置对话框或页面
-- **VariableScanButton**: 变量扫描按钮，集成在变量管理面板中
-- **i18n_Keys**: 国际化翻译键，所有用户可见文本必须使用 vue-i18n 的 `$t()` 函数引用
-- **Template_Detail**: 模板详情页 `frontend/src/views/templates/Detail.vue`
+- **ImportExport_API**: `frontend/src/api/import-export.ts` — `ImportExportController`
+- **Webhook_API**: `frontend/src/api/webhooks.ts` — `WebhookController`
+- **RateLimit_API**: `frontend/src/api/rate-limits.ts` — `RateLimitController`
+- **WebhookPanel**: Webhook management tab on template detail
+- **WebhookFormDialog**: Create/edit webhook dialog
+- **WebhookLogDialog**: Webhook delivery log viewer
+- **RateLimitPanel**: Rate limit + usage section on admin page
+- **ResetPasswordDialog**: Forgot-password / reset flow UI
+- **VariableScanButton**: Manual variable scan action in variable panel
+- **i18n_Keys**: vue-i18n keys — user-visible copy via `$t()`
+- **Template_Detail**: `frontend/src/views/templates/Detail.vue`
 
 ## Requirements
 

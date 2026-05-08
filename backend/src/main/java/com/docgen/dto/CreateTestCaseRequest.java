@@ -1,22 +1,25 @@
 package com.docgen.dto;
 
 import com.docgen.entity.ComparisonType;
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-/**
- * Request DTO for creating a new template test case.
- */
 public class CreateTestCaseRequest {
 
     @NotBlank(message = "Test case name is required")
     private String name;
 
     @NotNull(message = "Test data JSON is required")
+    @JsonAlias({"testData"})
     private String testDataJson;
 
+    @JsonAlias({"expectedResult"})
     private String expectedResultJson;
 
+    @JsonDeserialize(using = ComparisonTypeDeserializer.class)
+    @JsonAlias({"compareMode"})
     private ComparisonType comparisonType;
 
     public String getName() { return name; }

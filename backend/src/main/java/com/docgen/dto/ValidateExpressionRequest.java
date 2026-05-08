@@ -2,15 +2,12 @@ package com.docgen.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
-/**
- * Request DTO for validating an expression.
- */
 public class ValidateExpressionRequest {
 
-    @NotBlank(message = "表达式内容不能为空")
+    @NotBlank(message = "Expression text must not be blank")
     private String expression;
 
-    @NotBlank(message = "表达式类型不能为空")
+    @NotBlank(message = "Expression type must not be blank")
     private String expressionType;
 
     public String getExpression() { return expression; }

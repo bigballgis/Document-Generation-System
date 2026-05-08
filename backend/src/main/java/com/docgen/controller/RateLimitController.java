@@ -14,9 +14,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * REST controller for rate limit status and usage statistics queries.
- */
 @RestController
 @RequestMapping("/api")
 public class RateLimitController {

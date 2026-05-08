@@ -3,7 +3,7 @@ package com.docgen.dto;
 import java.time.Instant;
 
 /**
- * Response DTO for user information (excludes sensitive fields like password).
+ * Excludes sensitive authentication fields (password never included).
  */
 public class UserDTO {
 
@@ -13,6 +13,7 @@ public class UserDTO {
     private String email;
     private String role;
     private Long teamId;
+    private String teamReviewLane;
     private String languagePreference;
     private Instant createdAt;
 
@@ -77,6 +78,14 @@ public class UserDTO {
 
     public void setTeamId(Long teamId) {
         this.teamId = teamId;
+    }
+
+    public String getTeamReviewLane() {
+        return teamReviewLane;
+    }
+
+    public void setTeamReviewLane(String teamReviewLane) {
+        this.teamReviewLane = teamReviewLane;
     }
 
     public String getLanguagePreference() {

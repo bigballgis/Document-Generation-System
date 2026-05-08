@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p><b>Validates: Requirements 42.1</b></p>
  */
-@Tag("Feature: low-code-document-generation-system, Property 16: 响应数据提取正确性")
+@Tag("feature-low-code-document-generation-system-property-16")
 class ResponseTransformerPropertyTest {
 
     private final ResponseTransformerService service = new ResponseTransformerService();
@@ -86,13 +86,11 @@ class ResponseTransformerPropertyTest {
                 "Second JSONPath should extract correctly");
     }
 
-    // ── Test data records ──
 
     record JsonWithPath(Map<String, Object> json, String jsonPath, Object expectedValue) {}
     record MultiFieldData(Map<String, Object> json, String path1, Object expected1,
                           String path2, Object expected2) {}
 
-    // ── Generators ──
 
     @Provide
     Arbitrary<JsonWithPath> topLevelJsonData() {
@@ -183,3 +181,4 @@ class ResponseTransformerPropertyTest {
         };
     }
 }
+

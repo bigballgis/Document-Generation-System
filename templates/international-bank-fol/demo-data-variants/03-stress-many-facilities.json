@@ -1,0 +1,12 @@
+{
+  "__use": "templates/international-bank-fol/data/sample-data.json",
+  "facilities": [
+    { "facility_name": "Term Loan A", "facility_type": "TERM_LOAN", "currency": "USD", "amount": 10000000, "interest_rate": 0.0525, "tenor_months": 60, "repayment_schedule": [] },
+    { "facility_name": "Term Loan B", "facility_type": "TERM_LOAN", "currency": "USD", "amount": 8000000, "interest_rate": 0.0550, "tenor_months": 48, "repayment_schedule": [] },
+    { "facility_name": "Revolver", "facility_type": "REVOLVING_CREDIT", "currency": "USD", "amount": 12000000, "interest_rate": 0.0475, "tenor_months": 36, "repayment_schedule": [] },
+    { "facility_name": "Trade Finance", "facility_type": "TRADE_FINANCE", "currency": "EUR", "amount": 15000000, "interest_rate": 0.0395, "tenor_months": 24, "repayment_schedule": [] },
+    { "facility_name": "LC Facility", "facility_type": "LETTER_OF_CREDIT", "currency": "USD", "amount": 5000000, "interest_rate": 0.0200, "tenor_months": 12, "repayment_schedule": [] },
+    { "facility_name": "Accordion", "facility_type": "TERM_LOAN", "currency": "USD", "amount": 5000000, "interest_rate": 0.0600, "tenor_months": 24, "repayment_schedule": [] }
+  ]
+}
+
