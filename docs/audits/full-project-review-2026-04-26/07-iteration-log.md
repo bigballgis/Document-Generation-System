@@ -1037,6 +1037,25 @@ Files changed: `05-traceability-matrix.md`, `07-iteration-log.md`.
 Validation: documentation consistency only.  
 Related tracking items: FRONT-WS-06-T07, WS-06-T07  
 
+## 2026-04-28 — WS-08-T03 / INFRA-DOCKER-FRONT-LOCKFILE-001 verification
+
+Workstream: WS-08 / governance  
+Summary: **`frontend/Dockerfile`** stage `build` copies **`package.json`** + **`package-lock.json`** and runs **`npm ci`** before **`npm run build`** (includes **`vue-tsc`**). **`docker compose build frontend`** succeeds locally using **`Dockerfile.local`** (Nginx + prebuilt **`dist`**). Attempted **`docker build -f frontend/Dockerfile`** failed here due to **Docker Hub registry network timeout** (environment), not Dockerfile logic. Added **`INFRA-DOCKER-FRONT-LOCKFILE-001`** to **`05-traceability-matrix.md`**.  
+Files changed: `05-traceability-matrix.md`, `07-iteration-log.md`.  
+Validation commands: read **`frontend/Dockerfile`**; **`docker compose build frontend`** (repo root).  
+Validation result: compose build **OK** (exit 0); production **`docker build`** not completed (registry).  
+Related tracking items: WS-08-T03, INFRA-DOCKER-FRONT-LOCKFILE-001  
+
+## 2026-05-08 — WS-07-T01: Dirty working tree classification refresh
+
+Workstream: WS-07  
+Task ID: WS-07-T01  
+Summary: Appended **2026-05-08** snapshot to **`13-dirty-working-tree-classification.md`**. Current unstaged changes: **docx-content-diff** Kiro specs (3 files) and audit **`05-traceability-matrix.md`** / **`07-iteration-log.md`**. No untracked paths in **`git status`** for this snapshot. Branch **`feature/parameter-validation-and-ui-polish`** ahead of remote by **39** commits per Git. No files deleted; classification text is English-only.  
+Files changed: `13-dirty-working-tree-classification.md`, `07-iteration-log.md`.  
+Validation commands: Task card `rg "\\p{Han}" docs/audits/full-project-review-2026-04-26` (not run: `rg` unavailable in this shell); snapshot prose reviewed English-only. `git status --short`.  
+Validation result: Document updated; Git matches classification rows for modified paths.  
+Related tracking items: WS-07-T01  
+
 ## Entry Template
 
 ```text

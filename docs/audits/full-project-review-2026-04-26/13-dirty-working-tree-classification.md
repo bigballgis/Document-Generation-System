@@ -158,3 +158,35 @@ The repository currently has both modified tracked files and untracked files. Ev
 ## Next Step
 
 Proceed to `WS-02-T01` (document Java-to-Node contract mismatches) and `WS-01-T01` (characterize OnlyOffice callback behavior) using the execution order in `11-execution-sequence.md`.
+
+---
+
+## Snapshot refresh: 2026-05-08 (WS-07-T01)
+
+### Evidence source
+
+- `git status --short` from an agent session on branch `feature/parameter-validation-and-ui-polish`.
+- Git reported the branch as **ahead** of its remote tracking branch by **39** commits (local commits not pushed).
+
+### Modified tracked files (not staged)
+
+| Path | Classification |
+| --- | --- |
+| `.kiro/specs/docx-content-diff/design.md` | Documentation / specs (intended) |
+| `.kiro/specs/docx-content-diff/requirements.md` | Documentation / specs (intended) |
+| `.kiro/specs/docx-content-diff/tasks.md` | Documentation / specs (intended) |
+| `docs/audits/full-project-review-2026-04-26/05-traceability-matrix.md` | Audit documentation (intended) |
+| `docs/audits/full-project-review-2026-04-26/07-iteration-log.md` | Audit documentation (intended) |
+
+### Untracked files
+
+- None reported in this snapshot.
+
+### Potential secrets
+
+- No paths suggest credential stores. If Kiro specs or audit notes paste sample payloads, verify they do not contain real tokens or production URLs.
+
+### Scope confirmation
+
+- This refresh updates classification documentation only under `docs/audits/full-project-review-2026-04-26/`.
+- No classified files were deleted or modified as part of WS-07-T01 beyond this document and `07-iteration-log.md` (iteration entry).
